@@ -1,12 +1,22 @@
 import React, { useState, useMemo } from 'react';
 import { useProfile } from '../hooks/useProfile';
+import { useTheme } from '../contexts/ThemeContext';
+import { exportAPI } from '../services/api';
+import StoreAccess from './StoreAccess';
+import RolePermissions from './RolePermissions';
+import ConfirmDialog from './ConfirmDialog';
 
 const Settings = ({ onBack, onNavigate }) => {
   const [notificationsOn, setNotificationsOn] = useState(true);
   const [twoFactorOn, setTwoFactorOn] = useState(true);
-  const [appTheme, setAppTheme] = useState('light');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { profile, avatarUrl, initials } = useProfile();
+  const [showStoreAccess, setShowStoreAccess] = useState(false);
+  const [showRolePermissions, setShowRolePermissions] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportMessage, setExportMessage] = useState('');
+  const [showExportConfirm, setShowExportConfirm] = useState(false);
+  const { profile, avatarUrl, initials, refreshProfile } = useProfile();
+  const { theme, toggleTheme, isDark } = useTheme();
 
   const handleHome = () => {
     if (onNavigate) onNavigate('dashboard');
@@ -63,9 +73,9 @@ const Settings = ({ onBack, onNavigate }) => {
         {
           type: 'pill',
           title: 'App Theme',
-          desc: 'Light • red & white',
-          value: appTheme === 'light' ? 'Light Theme' : 'Dark Theme',
-          onToggle: () => setAppTheme(appTheme === 'light' ? 'dark' : 'light'),
+          desc: isDark ? 'Dark mode • Easy on the eyes' : 'Light mode • red & white',
+          value: isDark ? 'Dark Theme' : 'Light Theme',
+          onToggle: toggleTheme,
         },
       ],
     },
@@ -79,6 +89,140 @@ const Settings = ({ onBack, onNavigate }) => {
 
   const toggleSidebar = () => {
     setSidebarOpen((prev) => !prev);
+  };
+
+  // Convert array of objects to CSV
+  const convertToCSV = (data, headers) => {
+    if (!data || data.length === 0) {
+      return headers.join(',') + '\n(No data)\n';
+    }
+
+    // Create CSV header row
+    const csvRows = [headers.join(',')];
+
+    // Create CSV data rows
+    data.forEach(row => {
+      const values = headers.map(header => {
+        let value = row[header];
+        
+        // Handle null/undefined values
+        if (value === null || value === undefined) {
+          value = '';
+        }
+        
+        // Convert to string
+        value = String(value);
+        
+        // Escape commas, quotes, and newlines in values
+        if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+          return `"${value.replace(/"/g, '""')}"`;
+        }
+        return value;
+      });
+      csvRows.push(values.join(','));
+    });
+
+    return csvRows.join('\n');
+  };
+
+  // Download CSV file
+  const downloadCSV = (csvContent, filename) => {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    URL.revokeObjectURL(url);
+  };
+
+  // Handle data export
+  const handleExportData = async () => {
+    setShowExportConfirm(false);
+    setIsExporting(true);
+    setExportMessage('');
+
+    try {
+      // Fetch all data
+      const response = await exportAPI.getAll();
+
+      if (!response.success || !response.data) {
+        throw new Error('Failed to fetch data for export');
+      }
+
+      const { users, staff, products, stores } = response.data;
+
+      // Prepare CSV content with multiple sheets (we'll combine them)
+      let csvContent = '';
+
+      // Add Users section
+      csvContent += '=== USERS/MANAGERS ===\n';
+      csvContent += convertToCSV(users, [
+        'id', 'first_name', 'last_name', 'email', 'username', 'role', 
+        'store_allocated', 'address', 'phone', 'created_at', 'updated_at'
+      ]);
+      csvContent += '\n\n';
+
+      // Add Staff section
+      csvContent += '=== STAFF ===\n';
+      csvContent += convertToCSV(staff, [
+        'id', 'full_name', 'email', 'username', 'role', 
+        'store_allocated', 'address', 'phone', 'created_at', 'updated_at'
+      ]);
+      csvContent += '\n\n';
+
+      // Add Products section
+      csvContent += '=== PRODUCTS ===\n';
+      csvContent += convertToCSV(products, [
+        'id', 'product_name', 'item_code', 'sku_code', 'minimum_quantity', 
+        'current_quantity', 'category', 'store_id', 'status', 'image_url', 
+        'created_at', 'updated_at'
+      ]);
+      csvContent += '\n\n';
+
+      // Add Stores section
+      csvContent += '=== STORES ===\n';
+      csvContent += convertToCSV(stores, [
+        'id', 'store_name', 'store_code', 'address', 'city', 'state', 
+        'pincode', 'phone', 'email', 'status', 'created_at', 'updated_at'
+      ]);
+      csvContent += '\n\n';
+
+      // Add export metadata
+      csvContent += `=== EXPORT INFORMATION ===\n`;
+      csvContent += `Export Date,${new Date().toLocaleString()}\n`;
+      csvContent += `Total Users,${users.length}\n`;
+      csvContent += `Total Staff,${staff.length}\n`;
+      csvContent += `Total Products,${products.length}\n`;
+      csvContent += `Total Stores,${stores.length}\n`;
+
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `anitha_stores_export_${timestamp}.csv`;
+
+      // Download the file
+      downloadCSV(csvContent, filename);
+
+      setExportMessage('Data exported successfully!');
+      setTimeout(() => {
+        setExportMessage('');
+      }, 3000);
+
+    } catch (error) {
+      console.error('Export error:', error);
+      setExportMessage(`Export failed: ${error.message}`);
+      setTimeout(() => {
+        setExportMessage('');
+      }, 5000);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -157,6 +301,20 @@ const Settings = ({ onBack, onNavigate }) => {
               <p>Update profile, security and app preferences.</p>
             </div>
 
+            {/* Export Message */}
+            {exportMessage && (
+              <div style={{ 
+                padding: '12px', 
+                background: exportMessage.includes('successfully') ? '#d4edda' : '#ffe0e0', 
+                color: exportMessage.includes('successfully') ? '#155724' : '#dc3545', 
+                borderRadius: '8px', 
+                marginBottom: '16px',
+                fontSize: '13px'
+              }}>
+                <i className={`fas ${exportMessage.includes('successfully') ? 'fa-check-circle' : 'fa-exclamation-circle'}`}></i> {exportMessage}
+              </div>
+            )}
+
             {sections.map((section) => (
               <div key={section.title} className="settings-section">
                 <h3 className="section-title">{section.title}</h3>
@@ -206,8 +364,26 @@ const Settings = ({ onBack, onNavigate }) => {
                       );
                     }
                     if (item.type === 'link') {
+                      const handleLinkClick = () => {
+                        if (item.title === 'Store Access') {
+                          setShowStoreAccess(true);
+                        } else if (item.title === 'Role Permissions') {
+                          setShowRolePermissions(true);
+                        } else if (item.title === 'Change Password') {
+                          // Navigate to edit profile for password change
+                          if (onNavigate) onNavigate('editProfile');
+                        } else if (item.title === 'Data & Backup') {
+                          setShowExportConfirm(true);
+                        }
+                      };
+                      
                       return (
-                        <div key={idx} className="settings-card link-card">
+                        <div 
+                          key={idx} 
+                          className="settings-card link-card"
+                          onClick={handleLinkClick}
+                          style={{ cursor: 'pointer' }}
+                        >
                           <div className="card-left">
                             <span className="dot-icon"></span>
                             <div className="card-text">
@@ -277,6 +453,37 @@ const Settings = ({ onBack, onNavigate }) => {
           </main>
         </div>
       </div>
+
+      {/* Store Access Modal */}
+      {showStoreAccess && (
+        <StoreAccess
+          onClose={() => {
+            setShowStoreAccess(false);
+            refreshProfile(); // Refresh profile to show updated store scope
+          }}
+          onNavigate={onNavigate}
+          onProfileUpdate={refreshProfile}
+        />
+      )}
+
+      {/* Role Permissions Modal */}
+      {showRolePermissions && (
+        <RolePermissions
+          onClose={() => setShowRolePermissions(false)}
+          onNavigate={onNavigate}
+        />
+      )}
+
+      {/* Export Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showExportConfirm}
+        title="Export Data"
+        message="Are you sure you want to export all data? This will download a CSV file containing all staff, users, products, and stores."
+        confirmText="Yes, Export"
+        cancelText="Cancel"
+        onConfirm={handleExportData}
+        onCancel={() => setShowExportConfirm(false)}
+      />
     </div>
   );
 };

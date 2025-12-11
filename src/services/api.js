@@ -104,6 +104,39 @@ export const productsAPI = {
   },
 };
 
+// Stores API
+export const storesAPI = {
+  getAll: async () => {
+    return apiCall('/stores');
+  },
+  getById: async (id) => {
+    return apiCall(`/stores/${id}`);
+  },
+};
+
+// Permissions API
+export const permissionsAPI = {
+  getAll: async () => {
+    return apiCall('/permissions');
+  },
+  getByRole: async (roleName) => {
+    return apiCall(`/permissions/${roleName}`);
+  },
+  update: async (roleName, permissions) => {
+    return apiCall(`/permissions/${roleName}`, {
+      method: 'PUT',
+      body: JSON.stringify({ permissions }),
+    });
+  },
+};
+
+// Export API
+export const exportAPI = {
+  getAll: async () => {
+    return apiCall('/export/all');
+  },
+};
+
 // Profile API
 export const profileAPI = {
   get: async () => {
@@ -167,6 +200,9 @@ export default {
   usersAPI,
   staffAPI,
   productsAPI,
+  storesAPI,
+  permissionsAPI,
+  exportAPI,
   profileAPI,
 };
 

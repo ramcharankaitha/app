@@ -60,6 +60,47 @@ const initDatabase = async () => {
       console.log('✅ Default stores created');
     }
 
+    // Insert default role permissions
+    const checkPermissions = await pool.query('SELECT id FROM role_permissions LIMIT 1');
+    if (checkPermissions.rows.length === 0) {
+      const defaultPermissions = {
+        'Super Admin': {
+          users: { view: true, create: true, update: true, delete: true },
+          products: { view: true, create: true, update: true, delete: true },
+          staff: { view: true, create: true, update: true, delete: true },
+          stores: { view: true, create: true, update: true, delete: true },
+          settings: { view: true, edit: true },
+          profile: { view: true, edit: true }
+        },
+        'Manager': {
+          users: { view: true, create: false, update: true, delete: false },
+          products: { view: true, create: true, update: true, delete: false },
+          staff: { view: true, create: true, update: true, delete: false },
+          stores: { view: true, create: false, update: false, delete: false },
+          settings: { view: false, edit: false },
+          profile: { view: true, edit: true }
+        },
+        'Staff': {
+          users: { view: true, create: false, update: false, delete: false },
+          products: { view: true, create: false, update: false, delete: false },
+          staff: { view: false, create: false, update: false, delete: false },
+          stores: { view: true, create: false, update: false, delete: false },
+          settings: { view: false, edit: false },
+          profile: { view: true, edit: true }
+        }
+      };
+
+      for (const [roleName, permissions] of Object.entries(defaultPermissions)) {
+        await pool.query(
+          `INSERT INTO role_permissions (role_name, permissions)
+           VALUES ($1, $2)
+           ON CONFLICT (role_name) DO NOTHING`,
+          [roleName, JSON.stringify(permissions)]
+        );
+      }
+      console.log('✅ Default role permissions created');
+    }
+
     console.log('✅ Database initialization completed');
   } catch (error) {
     console.error('❌ Error initializing database:', error);

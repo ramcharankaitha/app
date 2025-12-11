@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { profileAPI } from '../services/api';
+import ConfirmDialog from './ConfirmDialog';
 
 const EditProfile = ({ onBack, onNavigate }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -24,6 +25,7 @@ const EditProfile = ({ onBack, onNavigate }) => {
     newPassword: '',
     confirmPassword: ''
   });
+  const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
 
   const handleHome = () => {
     if (onNavigate) onNavigate('dashboard');
@@ -157,31 +159,7 @@ const EditProfile = ({ onBack, onNavigate }) => {
     }));
   };
 
-  const handleChangePassword = async () => {
-    // Clear previous errors
-    setError('');
-    
-    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
-      setError('All password fields are required');
-      return;
-    }
-
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setError('New passwords do not match');
-      return;
-    }
-
-    if (passwordData.newPassword.length < 6) {
-      setError('New password must be at least 6 characters');
-      return;
-    }
-
-    // Show confirmation dialog before submitting
-    const confirmed = window.confirm('Are you sure you want to change your password?');
-    if (!confirmed) {
-      return;
-    }
-
+  const changePasswordConfirmed = async () => {
     setIsSaving(true);
     setError('');
     setSuccessMessage('');
@@ -208,6 +186,33 @@ const EditProfile = ({ onBack, onNavigate }) => {
     }
   };
 
+  const handleChangePassword = () => {
+    // Clear previous errors
+    setError('');
+    
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      setError('All password fields are required');
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setError('New passwords do not match');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      setError('New password must be at least 6 characters');
+      return;
+    }
+
+    // Show custom confirmation dialog before submitting
+    setConfirmState({
+      open: true,
+      message: 'Are you sure you want to change your password?',
+      onConfirm: changePasswordConfirmed,
+    });
+  };
+
   const getInitials = (name) => {
     if (!name) return 'AR';
     const parts = name.trim().split(' ');
@@ -217,15 +222,7 @@ const EditProfile = ({ onBack, onNavigate }) => {
     return name.substring(0, 2).toUpperCase();
   };
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    
-    // Show confirmation dialog
-    const confirmed = window.confirm('Are you sure you want to submit?');
-    if (!confirmed) {
-      return;
-    }
-
+  const saveProfileConfirmed = async () => {
     setIsSaving(true);
     setError('');
     setSuccessMessage('');
@@ -286,6 +283,15 @@ const EditProfile = ({ onBack, onNavigate }) => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleSave = (e) => {
+    e.preventDefault();
+    setConfirmState({
+      open: true,
+      message: 'Are you sure you want to submit?',
+      onConfirm: saveProfileConfirmed,
+    });
   };
 
   const handleCancel = () => {
@@ -756,6 +762,19 @@ const EditProfile = ({ onBack, onNavigate }) => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmState.open}
+        title="Please Confirm"
+        message={confirmState.message}
+        confirmText="Yes, Continue"
+        cancelText="Cancel"
+        onConfirm={() => {
+          setConfirmState({ open: false, message: '', onConfirm: null });
+          if (confirmState.onConfirm) confirmState.onConfirm();
+        }}
+        onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
+      />
     </div>
   );
 };

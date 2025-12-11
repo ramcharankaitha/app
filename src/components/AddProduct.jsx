@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { productsAPI } from '../services/api';
+import ConfirmDialog from './ConfirmDialog';
 
 const AddProduct = ({ onBack, onCancel, onNavigate }) => {
   const [formData, setFormData] = useState({
@@ -12,6 +13,7 @@ const AddProduct = ({ onBack, onCancel, onNavigate }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
 
   const handleBack = () => {
     if (onNavigate) {
@@ -67,15 +69,7 @@ const AddProduct = ({ onBack, onCancel, onNavigate }) => {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Show confirmation dialog
-    const confirmed = window.confirm('Are you sure you want to submit?');
-    if (!confirmed) {
-      return;
-    }
-
+  const submitProduct = async () => {
     setIsLoading(true);
     setError('');
     setSuccessMessage('');
@@ -102,6 +96,15 @@ const AddProduct = ({ onBack, onCancel, onNavigate }) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setConfirmState({
+      open: true,
+      message: 'Are you sure you want to submit?',
+      onConfirm: submitProduct,
+    });
   };
 
   return (
@@ -285,6 +288,19 @@ const AddProduct = ({ onBack, onCancel, onNavigate }) => {
           </main>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmState.open}
+        title="Confirm Submission"
+        message={confirmState.message}
+        confirmText="Yes, Submit"
+        cancelText="Cancel"
+        onConfirm={() => {
+          setConfirmState({ open: false, message: '', onConfirm: null });
+          if (confirmState.onConfirm) confirmState.onConfirm();
+        }}
+        onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
+      />
     </div>
   );
 };

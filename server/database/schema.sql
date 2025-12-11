@@ -72,12 +72,24 @@ CREATE TABLE IF NOT EXISTS admin_profile (
     role VARCHAR(50) DEFAULT 'Super Admin',
     primary_store VARCHAR(100),
     store_scope VARCHAR(100) DEFAULT 'All stores • Global scope',
+    selected_stores TEXT, -- JSON array of store IDs
     timezone VARCHAR(100) DEFAULT 'IST (GMT+05:30)',
     avatar_url TEXT,
     password_hash VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Add selected_stores column if it doesn't exist (for existing databases)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'admin_profile' AND column_name = 'selected_stores'
+    ) THEN
+        ALTER TABLE admin_profile ADD COLUMN selected_stores TEXT;
+    END IF;
+END $$;
 
 -- Add password_hash column if it doesn't exist (for existing databases)
 DO $$ 
@@ -90,6 +102,15 @@ BEGIN
     END IF;
 END $$;
 
+-- Role Permissions Table
+CREATE TABLE IF NOT EXISTS role_permissions (
+    id SERIAL PRIMARY KEY,
+    role_name VARCHAR(50) UNIQUE NOT NULL,
+    permissions JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
@@ -97,4 +118,5 @@ CREATE INDEX IF NOT EXISTS idx_staff_email ON staff(email);
 CREATE INDEX IF NOT EXISTS idx_products_item_code ON products(item_code);
 CREATE INDEX IF NOT EXISTS idx_products_sku_code ON products(sku_code);
 CREATE INDEX IF NOT EXISTS idx_stores_store_code ON stores(store_code);
+CREATE INDEX IF NOT EXISTS idx_role_permissions_role ON role_permissions(role_name);
 

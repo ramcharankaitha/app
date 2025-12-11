@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Managers from './components/Users';
@@ -133,7 +134,11 @@ function App() {
     }
   };
 
-  return <>{renderPage()}</>;
+  return (
+    <ThemeProvider>
+      {renderPage()}
+    </ThemeProvider>
+  );
 }
 
 export default App;

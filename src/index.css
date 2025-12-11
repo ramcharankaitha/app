@@ -1,3 +1,43 @@
+:root {
+    /* Light Theme Colors */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --bg-tertiary: #fdf1f3;
+    --text-primary: #333333;
+    --text-secondary: #666666;
+    --text-tertiary: #999999;
+    --border-color: #e9ecef;
+    --border-light: #f0f0f0;
+    --accent-color: #dc3545;
+    --accent-hover: #c82333;
+    --accent-light: #fff5f5;
+    --accent-lighter: #ffe5e8;
+    --card-bg: #ffffff;
+    --shadow: rgba(0, 0, 0, 0.08);
+    --shadow-light: rgba(0, 0, 0, 0.05);
+    --overlay: rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] {
+    /* Dark Theme Colors */
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #242424;
+    --bg-tertiary: #2d2d2d;
+    --text-primary: #ffffff;
+    --text-secondary: #cccccc;
+    --text-tertiary: #999999;
+    --border-color: #404040;
+    --border-light: #333333;
+    --accent-color: #dc3545;
+    --accent-hover: #e74c5c;
+    --accent-light: #3a1f22;
+    --accent-lighter: #4a2a2d;
+    --card-bg: #2d2d2d;
+    --shadow: rgba(0, 0, 0, 0.3);
+    --shadow-light: rgba(0, 0, 0, 0.2);
+    --overlay: rgba(0, 0, 0, 0.7);
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -6,9 +46,10 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #ffffff;
+    background: var(--bg-primary);
     min-height: 100vh;
-    color: #333;
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Login page specific - no scrolling */
@@ -56,14 +97,16 @@ body {
 .store-name {
     font-size: 16px;
     font-weight: 700;
-    color: #000;
+    color: var(--text-primary);
     margin-bottom: 0;
+    transition: color 0.3s ease;
 }
 
 .subtitle {
     font-size: 11px;
-    color: #dc3545;
+    color: var(--accent-color);
     font-weight: 500;
+    transition: color 0.3s ease;
 }
 
 /* Main Content */
@@ -80,15 +123,16 @@ body {
 .login-card {
     width: 100%;
     max-width: 380px;
-    background: #fff;
+    background: var(--card-bg);
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 30px var(--shadow);
     display: flex;
     flex-direction: column;
     opacity: 0;
     transform: translateY(20px);
     animation: fadeInUp 0.5s ease forwards;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 @keyframes fadeInUp {

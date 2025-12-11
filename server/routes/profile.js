@@ -46,7 +46,18 @@ router.get('/', async (req, res) => {
       return res.status(404).json({ error: 'Profile not found' });
     }
 
-    res.json({ success: true, profile: result.rows[0] });
+    const profile = result.rows[0];
+    
+    // Parse selected_stores if it's a JSON string
+    if (profile.selected_stores && typeof profile.selected_stores === 'string') {
+      try {
+        profile.selected_stores = JSON.parse(profile.selected_stores);
+      } catch (e) {
+        profile.selected_stores = [];
+      }
+    }
+
+    res.json({ success: true, profile });
   } catch (error) {
     console.error('Get profile error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -56,7 +67,7 @@ router.get('/', async (req, res) => {
 // Update admin profile
 router.put('/', async (req, res) => {
   try {
-    const { fullName, email, phone, primaryStore, storeScope, timezone, avatarUrl, password, currentPassword } = req.body;
+    const { fullName, email, phone, primaryStore, storeScope, selectedStores, timezone, avatarUrl, password, currentPassword } = req.body;
     
     console.log('Profile update request received');
     
@@ -114,6 +125,12 @@ router.put('/', async (req, res) => {
       updates.push(`store_scope = $${paramCount++}`);
       values.push(storeScope);
     }
+    if (selectedStores !== undefined) {
+      // Store as JSON string
+      const selectedStoresJson = Array.isArray(selectedStores) ? JSON.stringify(selectedStores) : selectedStores;
+      updates.push(`selected_stores = $${paramCount++}`);
+      values.push(selectedStoresJson);
+    }
     if (timezone !== undefined) {
       updates.push(`timezone = $${paramCount++}`);
       values.push(timezone);
@@ -137,7 +154,7 @@ router.put('/', async (req, res) => {
       UPDATE admin_profile 
       SET ${updates.join(', ')}
       WHERE id = $${paramCount}
-      RETURNING id, full_name, email, phone, role, primary_store, store_scope, timezone, avatar_url, created_at, updated_at
+      RETURNING id, full_name, email, phone, role, primary_store, store_scope, selected_stores, timezone, avatar_url, created_at, updated_at
     `;
     values.push(currentProfile.rows[0].id);
 
@@ -179,7 +196,7 @@ router.post('/upload-avatar', upload.single('avatar'), async (req, res) => {
       `UPDATE admin_profile 
        SET avatar_url = $1, updated_at = CURRENT_TIMESTAMP
        WHERE id = (SELECT id FROM admin_profile LIMIT 1)
-       RETURNING id, full_name, email, phone, role, primary_store, store_scope, timezone, avatar_url, created_at, updated_at`
+       RETURNING id, full_name, email, phone, role, primary_store, store_scope, selected_stores, timezone, avatar_url, created_at, updated_at`
     , [fileUrl]);
 
     if (result.rows.length === 0) {

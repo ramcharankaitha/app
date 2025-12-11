@@ -13,6 +13,9 @@ const userRoutes = require('./routes/users');
 const staffRoutes = require('./routes/staff');
 const productRoutes = require('./routes/products');
 const profileRoutes = require('./routes/profile');
+const storeRoutes = require('./routes/stores');
+const permissionRoutes = require('./routes/permissions');
+const exportRoutes = require('./routes/export');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -36,6 +39,9 @@ app.use('/api/users', userRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/stores', storeRoutes);
+app.use('/api/permissions', permissionRoutes);
+app.use('/api/export', exportRoutes);
 
 // Initialize database and start server
 const startServer = async () => {
