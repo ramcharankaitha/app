@@ -91,6 +91,7 @@ function App() {
           <Settings
             onBack={() => setCurrentPage('dashboard')}
             onNavigate={handleNavigation}
+            onLogout={handleLogout}
           />
         );
       case 'profile':

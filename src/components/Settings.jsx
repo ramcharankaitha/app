@@ -6,7 +6,7 @@ import StoreAccess from './StoreAccess';
 import RolePermissions from './RolePermissions';
 import ConfirmDialog from './ConfirmDialog';
 
-const Settings = ({ onBack, onNavigate }) => {
+const Settings = ({ onBack, onNavigate, onLogout }) => {
   const [notificationsOn, setNotificationsOn] = useState(true);
   const [twoFactorOn, setTwoFactorOn] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -15,6 +15,8 @@ const Settings = ({ onBack, onNavigate }) => {
   const [isExporting, setIsExporting] = useState(false);
   const [exportMessage, setExportMessage] = useState('');
   const [showExportConfirm, setShowExportConfirm] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showLogoutSecondConfirm, setShowLogoutSecondConfirm] = useState(false);
   const { profile, avatarUrl, initials, refreshProfile } = useProfile();
   const { theme, toggleTheme, isDark } = useTheme();
 
@@ -440,11 +442,16 @@ const Settings = ({ onBack, onNavigate }) => {
 
             {/* Logout */}
             <div className="settings-section">
-              <div className="settings-card logout-card">
+              <div 
+                className="settings-card logout-card"
+                onClick={() => setShowLogoutConfirm(true)}
+                style={{ cursor: 'pointer' }}
+              >
                 <div className="card-left">
                   <span className="dot-icon alert"></span>
                   <div className="card-text">
                     <div className="card-title">Logout of Admin Account</div>
+                    <div className="card-desc">Sign out from your admin account</div>
                   </div>
                 </div>
                 <i className="fas fa-chevron-right chevron"></i>
@@ -483,6 +490,38 @@ const Settings = ({ onBack, onNavigate }) => {
         cancelText="Cancel"
         onConfirm={handleExportData}
         onCancel={() => setShowExportConfirm(false)}
+      />
+
+      {/* First Logout Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showLogoutConfirm}
+        title="Confirm Logout"
+        message="Are you sure you want to logout from your admin account? You will need to sign in again to access the system."
+        confirmText="Yes, Logout"
+        cancelText="Cancel"
+        onConfirm={() => {
+          setShowLogoutConfirm(false);
+          // Show second confirmation
+          setShowLogoutSecondConfirm(true);
+        }}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
+
+      {/* Second Logout Confirmation Dialog (Double Verification) */}
+      <ConfirmDialog
+        isOpen={showLogoutSecondConfirm}
+        title="Final Confirmation"
+        message="This is your final confirmation. Are you absolutely sure you want to logout? All unsaved changes will be lost."
+        confirmText="Yes, Logout Now"
+        cancelText="Cancel"
+        onConfirm={() => {
+          setShowLogoutSecondConfirm(false);
+          // Perform logout
+          if (onLogout) {
+            onLogout();
+          }
+        }}
+        onCancel={() => setShowLogoutSecondConfirm(false)}
       />
     </div>
   );
