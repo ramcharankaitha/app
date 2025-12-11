@@ -23,12 +23,22 @@ const initDatabase = async () => {
 
     if (checkAdmin.rows.length === 0) {
       await pool.query(
-        `INSERT INTO admin_profile (full_name, email, role, primary_store, store_scope, timezone)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        `INSERT INTO admin_profile (full_name, email, role, primary_store, store_scope, timezone, password_hash)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          ON CONFLICT DO NOTHING`,
-        ['Admin Root', 'admin@anithastores.com', 'Super Admin', 'Global', 'All stores • Global scope', 'IST (GMT+05:30)']
+        ['Admin Root', 'admin@anithastores.com', 'Super Admin', 'Global', 'All stores • Global scope', 'IST (GMT+05:30)', hashedPassword]
       );
       console.log('✅ Default admin profile created');
+    } else {
+      // Update password if not set
+      const admin = checkAdmin.rows[0];
+      if (!admin.password_hash) {
+        await pool.query(
+          `UPDATE admin_profile SET password_hash = $1 WHERE email = $2`,
+          [hashedPassword, 'admin@anithastores.com']
+        );
+        console.log('✅ Default admin password set');
+      }
     }
 
     // Insert default stores

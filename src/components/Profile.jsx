@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { profileAPI } from '../services/api';
+import React, { useState } from 'react';
+import { useProfile } from '../hooks/useProfile';
 
 const Profile = ({ onBack, onNavigate }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [profile, setProfile] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { profile, avatarUrl, initials } = useProfile();
 
   const handleHome = () => {
     if (onNavigate) onNavigate('dashboard');
@@ -23,34 +22,6 @@ const Profile = ({ onBack, onNavigate }) => {
   const handleEditProfile = () => {
     if (onNavigate) onNavigate('editProfile');
   };
-
-  // Fetch profile from database
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        setIsLoading(true);
-        const response = await profileAPI.get();
-        if (response.success) {
-          setProfile(response.profile);
-        }
-      } catch (err) {
-        console.error('Error fetching profile:', err);
-        // Use default values if API fails
-        setProfile({
-          full_name: 'Admin Root',
-          email: 'admin@anithastores.com',
-          phone: '+91 98765 43210',
-          role: 'Super Admin',
-          primary_store: 'Global',
-          store_scope: 'All stores • Global scope'
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, []);
 
   return (
     <div className="dashboard-container">
@@ -118,73 +89,93 @@ const Profile = ({ onBack, onNavigate }) => {
 
           {/* Content */}
           <main className="profile-content">
-            {isLoading ? (
-              <div style={{ textAlign: 'center', padding: '40px' }}>
-                <i className="fas fa-spinner fa-spin" style={{ fontSize: '24px', color: '#dc3545' }}></i>
-                <p>Loading profile...</p>
+            {/* Admin Profile Card */}
+            <div className="profile-card admin-profile-card">
+              <div className="admin-avatar-large" style={{ position: 'relative', overflow: 'hidden' }}>
+                {avatarUrl ? (
+                  <img 
+                    src={avatarUrl}
+                    alt="Profile"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      zIndex: 1
+                    }}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      const span = e.target.nextSibling;
+                      if (span) {
+                        span.style.display = 'flex';
+                      }
+                    }}
+                  />
+                ) : null}
+                <span style={{ 
+                  display: avatarUrl ? 'none' : 'flex',
+                  position: avatarUrl ? 'absolute' : 'relative',
+                  zIndex: avatarUrl ? 0 : 1
+                }}>
+                  {initials}
+                </span>
               </div>
-            ) : profile ? (
-              <>
-                {/* Admin Profile Card */}
-                <div className="profile-card admin-profile-card">
-                  <div className="admin-avatar-large">
-                    <span>{profile.full_name ? profile.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'A'}</span>
-                  </div>
-                  <div className="admin-info">
-                    <div className="admin-name">{profile.full_name || 'Admin'}</div>
-                    <div className="admin-role-scope">{profile.role || 'Super Admin'} • {profile.store_scope || 'Global Scope'}</div>
-                    <div className="active-badge">
-                      <span className="active-dot"></span>
-                      <span>Active Admin</span>
-                    </div>
-                  </div>
-                  <button className="edit-profile-btn" onClick={handleEditProfile}>
-                    Edit Profile
-                  </button>
+              <div className="admin-info">
+                <div className="admin-name">{profile.full_name || 'Admin'}</div>
+                <div className="admin-role-scope">{profile.role || 'Super Admin'} • {profile.store_scope || 'Global Scope'}</div>
+                <div className="active-badge">
+                  <span className="active-dot"></span>
+                  <span>Active Admin</span>
                 </div>
+              </div>
+              <button className="edit-profile-btn" onClick={handleEditProfile}>
+                Edit Profile
+              </button>
+            </div>
 
-                {/* Contact Information Card */}
-                <div className="profile-card contact-card">
-                  <div className="card-header">
-                    <h3 className="card-title">Contact information</h3>
-                    <p className="card-subtitle">Keep your contact details up to date.</p>
-                  </div>
-                  <div className="contact-item">
-                    <i className="fas fa-envelope contact-icon"></i>
-                    <div className="contact-details">
-                      <div className="contact-label">Email</div>
-                      <div className="contact-value">{profile.email || 'admin@anithastores.com'}</div>
-                    </div>
-                  </div>
-                  {profile.phone && (
-                    <div className="contact-item">
-                      <i className="fas fa-phone contact-icon"></i>
-                      <div className="contact-details">
-                        <div className="contact-label">Phone</div>
-                        <div className="contact-value">{profile.phone}</div>
-                      </div>
-                    </div>
-                  )}
+            {/* Contact Information Card */}
+            <div className="profile-card contact-card">
+              <div className="card-header">
+                <h3 className="card-title">Contact information</h3>
+                <p className="card-subtitle">Keep your contact details up to date.</p>
+              </div>
+              <div className="contact-item">
+                <i className="fas fa-envelope contact-icon"></i>
+                <div className="contact-details">
+                  <div className="contact-label">Email</div>
+                  <div className="contact-value">{profile.email || 'admin@anithastores.com'}</div>
                 </div>
+              </div>
+              {profile.phone && (
+                <div className="contact-item">
+                  <i className="fas fa-phone contact-icon"></i>
+                  <div className="contact-details">
+                    <div className="contact-label">Phone</div>
+                    <div className="contact-value">{profile.phone}</div>
+                  </div>
+                </div>
+              )}
+            </div>
 
-                {/* Role & Access Card */}
-                <div className="profile-card role-access-card">
-                  <div className="card-header">
-                    <h3 className="card-title">Role & access</h3>
-                    <p className="card-subtitle">Controls what this account can see and do.</p>
-                    <a href="#" className="manage-link">Manage &gt;&gt;</a>
-                  </div>
-                  <div className="role-item">
-                    <div className="role-label">Role</div>
-                    <div className="role-badge">{profile.role || 'Super Admin'}</div>
-                  </div>
-                  <div className="role-item">
-                    <div className="role-label">Store access</div>
-                    <div className="role-badge">{profile.store_scope || 'All stores • Global scope'}</div>
-                  </div>
-                </div>
-              </>
-            ) : null}
+            {/* Role & Access Card */}
+            <div className="profile-card role-access-card">
+              <div className="card-header">
+                <h3 className="card-title">Role & access</h3>
+                <p className="card-subtitle">Controls what this account can see and do.</p>
+                <a href="#" className="manage-link">Manage &gt;&gt;</a>
+              </div>
+              <div className="role-item">
+                <div className="role-label">Role</div>
+                <div className="role-badge">{profile.role || 'Super Admin'}</div>
+              </div>
+              <div className="role-item">
+                <div className="role-label">Store access</div>
+                <div className="role-badge">{profile.store_scope || 'All stores • Global scope'}</div>
+              </div>
+            </div>
 
             {/* Quick Actions Card */}
             <div className="profile-card quick-actions-card">

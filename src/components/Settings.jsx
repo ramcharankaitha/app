@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useProfile } from '../hooks/useProfile';
 
 const Settings = ({ onBack, onNavigate }) => {
   const [notificationsOn, setNotificationsOn] = useState(true);
   const [twoFactorOn, setTwoFactorOn] = useState(true);
   const [appTheme, setAppTheme] = useState('light');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { profile, avatarUrl, initials } = useProfile();
 
   const handleHome = () => {
     if (onNavigate) onNavigate('dashboard');
@@ -16,14 +18,14 @@ const Settings = ({ onBack, onNavigate }) => {
   const handleStaff = () => onNavigate && onNavigate('staff');
   const handleSettings = () => onNavigate && onNavigate('settings');
 
-  const sections = [
+  const sections = useMemo(() => [
     {
       title: 'ACCOUNT',
       items: [
         {
           type: 'profile',
-          title: 'Admin Root',
-          subtitle: 'Super Admin • Global',
+          title: profile.full_name || 'Admin Root',
+          subtitle: `${profile.role || 'Super Admin'} • ${profile.store_scope || 'Global'}`,
           action: 'Edit Profile',
         },
       ],
@@ -73,7 +75,7 @@ const Settings = ({ onBack, onNavigate }) => {
         { type: 'link', title: 'Data & Backup', desc: 'Export or backup store data' },
       ],
     },
-  ];
+  ], [profile]);
 
   const toggleSidebar = () => {
     setSidebarOpen((prev) => !prev);
@@ -163,7 +165,38 @@ const Settings = ({ onBack, onNavigate }) => {
                     if (item.type === 'profile') {
                       return (
                         <div key={idx} className="settings-card profile-card">
-                          <div className="profile-badge">AD</div>
+                          <div className="profile-badge" style={{ position: 'relative', overflow: 'hidden' }}>
+                            {avatarUrl ? (
+                              <img 
+                                src={avatarUrl}
+                                alt="Profile"
+                                style={{
+                                  width: '100%',
+                                  height: '100%',
+                                  borderRadius: '50%',
+                                  objectFit: 'cover',
+                                  position: 'absolute',
+                                  top: 0,
+                                  left: 0,
+                                  zIndex: 1
+                                }}
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  const span = e.target.nextSibling;
+                                  if (span) {
+                                    span.style.display = 'flex';
+                                  }
+                                }}
+                              />
+                            ) : null}
+                            <span style={{ 
+                              display: avatarUrl ? 'none' : 'flex',
+                              position: avatarUrl ? 'absolute' : 'relative',
+                              zIndex: avatarUrl ? 0 : 1
+                            }}>
+                              {initials}
+                            </span>
+                          </div>
                           <div className="profile-info">
                             <div className="profile-name">{item.title}</div>
                             <div className="profile-role">{item.subtitle}</div>

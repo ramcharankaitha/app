@@ -74,9 +74,21 @@ CREATE TABLE IF NOT EXISTS admin_profile (
     store_scope VARCHAR(100) DEFAULT 'All stores • Global scope',
     timezone VARCHAR(100) DEFAULT 'IST (GMT+05:30)',
     avatar_url TEXT,
+    password_hash VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Add password_hash column if it doesn't exist (for existing databases)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'admin_profile' AND column_name = 'password_hash'
+    ) THEN
+        ALTER TABLE admin_profile ADD COLUMN password_hash VARCHAR(255);
+    END IF;
+END $$;
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);

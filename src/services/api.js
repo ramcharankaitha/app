@@ -11,15 +11,27 @@ const apiCall = async (endpoint, options = {}) => {
       ...options,
     });
 
-    const data = await response.json();
+    // Check if response is ok before trying to parse JSON
+    let data;
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      throw new Error(text || `HTTP error! status: ${response.status}`);
+    }
 
     if (!response.ok) {
-      throw new Error(data.error || 'API request failed');
+      throw new Error(data.error || `API request failed: ${response.status}`);
     }
 
     return data;
   } catch (error) {
     console.error('API Error:', error);
+    // If it's a network error, provide a more helpful message
+    if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+      throw new Error('Network error: Could not connect to server. Please check if the server is running.');
+    }
     throw error;
   }
 };
@@ -101,6 +113,51 @@ export const profileAPI = {
     return apiCall('/profile', {
       method: 'PUT',
       body: JSON.stringify(profileData),
+    });
+  },
+  uploadAvatar: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+      
+      const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${API_BASE_URL}/profile/upload-avatar`, {
+        method: 'POST',
+        body: formData,
+        // Don't set Content-Type header - let browser set it with boundary for FormData
+      });
+
+      // Check if response is ok before trying to parse JSON
+      let data;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(text || `HTTP error! status: ${response.status}`);
+      }
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to upload avatar');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      // If it's a network error, provide a more helpful message
+      if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+        throw new Error('Network error: Could not connect to server. Please check if the server is running.');
+      }
+      throw error;
+    }
+  },
+  changePassword: async (currentPassword, newPassword) => {
+    return apiCall('/profile', {
+      method: 'PUT',
+      body: JSON.stringify({
+        password: newPassword,
+        currentPassword: currentPassword
+      }),
     });
   },
 };

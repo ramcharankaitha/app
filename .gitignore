@@ -24,5 +24,6 @@ yarn-error.log*
 # Backend
 /server/node_modules
 /server/.env
+/server/uploads
 
 .vercel

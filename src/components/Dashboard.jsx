@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useProfile } from '../hooks/useProfile';
 
 const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
   const [activeScope, setActiveScope] = useState('All Stores');
@@ -7,6 +8,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
   const [activeNav, setActiveNav] = useState('home');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const menuRef = useRef(null);
+  const { profile, avatarUrl, initials } = useProfile();
 
   const handleNavClick = (navItem, e) => {
     if (e) {
@@ -214,8 +216,34 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
           <button className="sidebar-toggle" onClick={toggleSidebar}>
             <i className="fas fa-bars"></i>
           </button>
-          <div className="admin-icon">
-            <span>A</span>
+          <div className="admin-icon" style={{ position: 'relative', overflow: 'hidden' }}>
+            {avatarUrl ? (
+              <img 
+                src={avatarUrl}
+                alt="Profile"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0
+                }}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  const span = e.target.nextSibling;
+                  if (span) span.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <span style={{ 
+              display: avatarUrl ? 'none' : 'flex',
+              position: avatarUrl ? 'absolute' : 'relative',
+              zIndex: avatarUrl ? 0 : 1
+            }}>
+              {initials}
+            </span>
           </div>
           <div className="header-title">
             <h1>Admin Panel</h1>

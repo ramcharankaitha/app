@@ -5,7 +5,6 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStore, setSelectedStore] = useState('All Stores');
   const [users, setUsers] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
   const handleBack = () => {
@@ -48,11 +47,10 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
     }
   };
 
-  // Fetch users from database
+  // Fetch users from database in background (non-blocking)
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        setIsLoading(true);
         const response = await usersAPI.getAll();
         if (response.success) {
           // Transform database users to display format
@@ -67,10 +65,8 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
           setUsers(formattedUsers);
         }
       } catch (err) {
-        setError('Failed to load users. Please try again.');
         console.error('Error fetching users:', err);
-      } finally {
-        setIsLoading(false);
+        // Silently fail - show empty state
       }
     };
 
@@ -182,7 +178,7 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
 
         {/* Results Count */}
         <div className="users-count">
-          {isLoading ? 'Loading...' : `Showing ${filteredUsers.length} of ${users.length} users`}
+          {`Showing ${filteredUsers.length} of ${users.length} users`}
         </div>
 
         {/* Error Message */}
@@ -194,12 +190,7 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
 
         {/* Users List */}
         <div className="users-list">
-          {isLoading ? (
-            <div style={{ textAlign: 'center', padding: '40px' }}>
-              <i className="fas fa-spinner fa-spin" style={{ fontSize: '24px', color: '#dc3545' }}></i>
-              <p>Loading users...</p>
-            </div>
-          ) : users.length === 0 ? (
+          {users.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 40px', color: '#666' }}>
               <i className="fas fa-users" style={{ fontSize: '64px', marginBottom: '20px', opacity: 0.4, color: '#dc3545' }}></i>
               <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>No Managers Available</h3>

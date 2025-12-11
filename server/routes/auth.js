@@ -21,16 +21,25 @@ router.post('/login', async (req, res) => {
       );
 
       if (adminResult.rows.length > 0) {
-        // For now, accept any password for admin (you can add password check later)
-        // In production, you should hash and compare passwords
+        const admin = adminResult.rows[0];
+        
+        // If password_hash exists, verify password
+        if (admin.password_hash) {
+          const isValid = await bcrypt.compare(password, admin.password_hash);
+          if (!isValid) {
+            return res.status(401).json({ error: 'Invalid email or password' });
+          }
+        }
+        // If no password_hash set, allow login (for backward compatibility)
+        
         return res.json({
           success: true,
           user: {
-            id: adminResult.rows[0].id,
-            name: adminResult.rows[0].full_name,
-            email: adminResult.rows[0].email,
-            role: adminResult.rows[0].role || 'Super Admin',
-            store: adminResult.rows[0].primary_store || 'Global'
+            id: admin.id,
+            name: admin.full_name,
+            email: admin.email,
+            role: admin.role || 'Super Admin',
+            store: admin.primary_store || 'Global'
           },
           message: 'Login successful'
         });
