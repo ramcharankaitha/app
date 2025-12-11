@@ -1,0 +1,61 @@
+const fs = require('fs');
+const path = require('path');
+const { pool } = require('../config/database');
+
+const initDatabase = async () => {
+  try {
+    // Read schema file
+    const schemaPath = path.join(__dirname, 'schema.sql');
+    const schema = fs.readFileSync(schemaPath, 'utf8');
+
+    // Execute schema
+    await pool.query(schema);
+    console.log('✅ Database schema initialized successfully');
+
+    // Insert default admin user (password: admin123)
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash('admin123', 10);
+    
+    const checkAdmin = await pool.query(
+      'SELECT id FROM admin_profile WHERE email = $1',
+      ['admin@anithastores.com']
+    );
+
+    if (checkAdmin.rows.length === 0) {
+      await pool.query(
+        `INSERT INTO admin_profile (full_name, email, role, primary_store, store_scope, timezone)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT DO NOTHING`,
+        ['Admin Root', 'admin@anithastores.com', 'Super Admin', 'Global', 'All stores • Global scope', 'IST (GMT+05:30)']
+      );
+      console.log('✅ Default admin profile created');
+    }
+
+    // Insert default stores
+    const checkStores = await pool.query('SELECT id FROM stores LIMIT 1');
+    if (checkStores.rows.length === 0) {
+      await pool.query(
+        `INSERT INTO stores (store_name, store_code, city, state, status)
+         VALUES 
+         ($1, $2, $3, $4, $5),
+         ($6, $7, $8, $9, $10),
+         ($11, $12, $13, $14, $15)
+         ON CONFLICT DO NOTHING`,
+        [
+          'Mart', 'MART001', 'Hyderabad', 'Telangana', 'Active',
+          'Mumbai DMart', 'MUMBAI001', 'Mumbai', 'Maharashtra', 'Active',
+          'Global', 'GLOBAL001', 'Multiple', 'All', 'Active'
+        ]
+      );
+      console.log('✅ Default stores created');
+    }
+
+    console.log('✅ Database initialization completed');
+  } catch (error) {
+    console.error('❌ Error initializing database:', error);
+    throw error;
+  }
+};
+
+module.exports = { initDatabase };
+

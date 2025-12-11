@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anitha Stores - Login</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <span class="time">9:41</span>
+        <div class="toggle-switch">
+            <div class="toggle-slider"></div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <button class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <div class="header-content">
+            <h1 class="store-name">Anitha Stores</h1>
+            <p class="subtitle">Secure login for Admin</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="login-card">
+            <!-- Red Banner Section -->
+            <div class="banner">
+                <div class="banner-pattern"></div>
+                <div class="banner-content">
+                    <div class="user-icon">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h2 class="welcome-text">Welcome Back</h2>
+                    <p class="welcome-subtitle">Sign in to continue</p>
+                </div>
+            </div>
+
+            <!-- Login Form Section -->
+            <div class="form-section">
+                <form class="login-form" id="loginForm">
+                    <!-- Select Role Field -->
+                    <div class="form-group">
+                        <label for="role">Select Role</label>
+                        <div class="input-wrapper role-select">
+                            <i class="fas fa-user input-icon"></i>
+                            <select id="role" name="role" class="form-input">
+                                <option value="admin">Admin</option>
+                                <option value="manager">Manager</option>
+                                <option value="staff">Staff</option>
+                            </select>
+                            <i class="fas fa-chevron-down dropdown-icon"></i>
+                        </div>
+                    </div>
+
+                    <!-- Email Field -->
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-envelope input-icon"></i>
+                            <input 
+                                type="email" 
+                                id="email" 
+                                name="email" 
+                                class="form-input" 
+                                placeholder="Enter your email"
+                                required
+                            >
+                        </div>
+                    </div>
+
+                    <!-- Password Field -->
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-lock input-icon"></i>
+                            <input 
+                                type="password" 
+                                id="password" 
+                                name="password" 
+                                class="form-input" 
+                                placeholder="Enter your password"
+                                required
+                            >
+                            <button type="button" class="password-toggle" id="passwordToggle">
+                                <i class="fas fa-eye-slash"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Remember Me and Forgot -->
+                    <div class="form-options">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="remember" name="remember" checked>
+                            <span class="checkmark"></span>
+                            <span class="checkbox-text">Remember me</span>
+                        </label>
+                        <a href="#" class="forgot-link">Forgot?</a>
+                    </div>
+
+                    <!-- Sign In Button -->
+                    <button type="submit" class="signin-btn">
+                        Sign In
+                    </button>
+
+                    <!-- OR Separator -->
+                    <div class="separator">
+                        <div class="separator-line"></div>
+                        <span class="separator-text">OR</span>
+                        <div class="separator-line"></div>
+                    </div>
+
+                    <!-- Google Sign In Button -->
+                    <button type="button" class="google-btn">
+                        <i class="fab fa-google"></i>
+                        <span>Sign in with Google</span>
+                    </button>
+
+                    <!-- Sign Up Link -->
+                    <div class="signup-section">
+                        <span class="signup-text">Don't have an account?</span>
+                        <a href="#" class="signup-link">Sign up</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="ssl-badge">
+            <i class="fas fa-check-circle ssl-icon"></i>
+            <span class="ssl-text">Secure SSL Encrypted Connection</span>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
+

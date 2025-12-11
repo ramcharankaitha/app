@@ -1,0 +1,313 @@
+/* Settings Layout */
+.settings-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #fdf1f3;
+    min-height: 100vh;
+    padding-bottom: 40px;
+}
+
+.settings-header {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    flex-shrink: 0;
+}
+
+.settings-header .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.settings-header .sidebar-toggle {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    color: #333;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    font-size: 16px;
+}
+
+.settings-header .sidebar-toggle:hover {
+    background: #e9ecef;
+    color: #dc3545;
+}
+
+.settings-header .back-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #dc3545;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.settings-header .back-btn:hover {
+    background: #c82333;
+    transform: scale(1.05);
+}
+
+.settings-header .header-content h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.settings-header .header-content p {
+    margin: 2px 0 0 0;
+    font-size: 12px;
+    color: #666;
+}
+
+.settings-content {
+    flex: 1;
+    padding: 20px;
+    padding-bottom: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.settings-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #ffe5e8;
+    color: #dc3545;
+    padding: 10px 14px;
+    border-radius: 18px;
+    font-weight: 700;
+    font-size: 12px;
+    width: fit-content;
+}
+
+.settings-tab .tab-dot {
+    width: 10px;
+    height: 10px;
+    background: #dc3545;
+    border-radius: 50%;
+}
+
+.settings-hero h2 {
+    margin: 12px 0 6px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1c1c1c;
+}
+
+.settings-hero p {
+    margin: 0;
+    font-size: 13px;
+    color: #666;
+}
+
+.settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.section-title {
+    font-size: 12px;
+    font-weight: 800;
+    color: #a2444d;
+    letter-spacing: 0.5px;
+    margin: 0 0 4px 4px;
+    text-transform: uppercase;
+}
+
+.section-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.settings-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fff;
+    border: 1px solid #f3d7da;
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.profile-card .profile-badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #dc3545;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    margin-right: 12px;
+}
+
+.profile-card {
+    gap: 12px;
+}
+
+.profile-info .profile-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #222;
+}
+
+.profile-info .profile-role {
+    font-size: 12px;
+    color: #666;
+}
+
+.primary-chip {
+    background: #dc3545;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.primary-chip:hover {
+    background: #c82333;
+}
+
+.link-card,
+.toggle-card,
+.pill-card,
+.logout-card {
+    gap: 12px;
+}
+
+.card-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dot-icon {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #dc3545;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.dot-icon.alert {
+    background: linear-gradient(135deg, #ff7777, #d62828);
+}
+
+.card-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #222;
+}
+
+.card-desc {
+    font-size: 12px;
+    color: #666;
+}
+
+.chevron {
+    color: #c94a53;
+    font-size: 14px;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 28px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-switch .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #e5e5e5;
+    transition: 0.3s;
+    border-radius: 28px;
+}
+
+.toggle-switch .slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.toggle-switch input:checked + .slider {
+    background: #dc3545;
+}
+
+.toggle-switch input:checked + .slider:before {
+    transform: translateX(24px);
+}
+
+.pill-btn {
+    border: 1px solid #e9ecef;
+    background: linear-gradient(90deg, #e66060, #c52c2c);
+    color: #fff;
+    border-radius: 14px;
+    padding: 8px 14px;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pill-btn:hover {
+    transform: translateY(-1px);
+}
+
+.logout-card {
+    border: 1px solid #f5c6c6;
+}
+
+@media (max-width: 768px) {
+    .settings-content {
+        padding: 16px;
+    }
+}
+
