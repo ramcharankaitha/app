@@ -13,6 +13,7 @@ const Profile = ({ onBack, onNavigate }) => {
   const handleManagers = () => onNavigate && onNavigate('users');
   const handleProducts = () => onNavigate && onNavigate('products');
   const handleStaff = () => onNavigate && onNavigate('staff');
+  const handleCustomers = () => onNavigate && onNavigate('customers');
   const handleSettings = () => onNavigate && onNavigate('settings');
 
   const toggleSidebar = () => {
@@ -56,6 +57,12 @@ const Profile = ({ onBack, onNavigate }) => {
             <i className="fas fa-user-tie"></i>
           </div>
           <span>Staff</span>
+        </div>
+        <div className="nav-item" onClick={handleCustomers}>
+          <div className="nav-icon">
+            <i className="fas fa-user-friends"></i>
+          </div>
+          <span>Customers</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">

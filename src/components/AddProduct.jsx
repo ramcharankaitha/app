@@ -8,6 +8,12 @@ const AddProduct = ({ onBack, onCancel, onNavigate }) => {
     itemCode: '',
     skuCode: '',
     minQuantity: '',
+    currentQuantity: '',
+    supplierName: '',
+    category: '',
+    mrp: '',
+    discount: '',
+    sellRate: '',
     image: ''
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -47,6 +53,12 @@ const AddProduct = ({ onBack, onCancel, onNavigate }) => {
     }
   };
 
+  const handleCustomers = () => {
+    if (onNavigate) {
+      onNavigate('customers');
+    }
+  };
+
   const handleSettings = () => {
     if (onNavigate) {
       onNavigate('settings');
@@ -69,6 +81,40 @@ const AddProduct = ({ onBack, onCancel, onNavigate }) => {
     }));
   };
 
+  const calculateSellRate = () => {
+    const mrp = parseFloat(formData.mrp);
+    const discount = parseFloat(formData.discount) || 0;
+    
+    if (mrp && mrp > 0) {
+      // Calculate: Sell Rate = MRP - (MRP * discount / 100)
+      const discountAmount = (mrp * discount) / 100;
+      const sellRate = mrp - discountAmount;
+      
+      setFormData(prev => ({
+        ...prev,
+        sellRate: sellRate.toFixed(2)
+      }));
+    }
+  };
+
+  const handlePricingKeyPress = (e, fieldName) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (fieldName === 'mrp' || fieldName === 'discount') {
+        // If MRP or discount is entered, calculate sell rate
+        if (formData.mrp && formData.discount) {
+          calculateSellRate();
+        } else if (fieldName === 'mrp' && formData.mrp) {
+          // If only MRP is entered, set sell rate = MRP (no discount)
+          setFormData(prev => ({
+            ...prev,
+            sellRate: parseFloat(prev.mrp).toFixed(2)
+          }));
+        }
+      }
+    }
+  };
+
   const submitProduct = async () => {
     setIsLoading(true);
     setError('');
@@ -79,7 +125,13 @@ const AddProduct = ({ onBack, onCancel, onNavigate }) => {
         productName: formData.productName,
         itemCode: formData.itemCode,
         skuCode: formData.skuCode,
-        minimumQuantity: parseInt(formData.minQuantity) || 0
+        minimumQuantity: parseInt(formData.minQuantity) || 0,
+        currentQuantity: parseInt(formData.currentQuantity) || 0,
+        supplierName: formData.supplierName,
+        category: formData.category,
+        mrp: formData.mrp ? parseFloat(formData.mrp) : null,
+        discount: formData.discount ? parseFloat(formData.discount) : 0,
+        sellRate: formData.sellRate ? parseFloat(formData.sellRate) : null
       });
 
       if (response.success) {
@@ -140,6 +192,12 @@ const AddProduct = ({ onBack, onCancel, onNavigate }) => {
             <i className="fas fa-user-tie"></i>
           </div>
           <span>Staff</span>
+        </div>
+        <div className="nav-item" onClick={handleCustomers}>
+          <div className="nav-icon">
+            <i className="fas fa-user-friends"></i>
+          </div>
+          <span>Customers</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">
@@ -234,6 +292,123 @@ const AddProduct = ({ onBack, onCancel, onNavigate }) => {
                           value={formData.minQuantity}
                           onChange={handleInputChange}
                           required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="currentQuantity">Current quantity</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-cubes input-icon"></i>
+                        <input
+                          type="number"
+                          id="currentQuantity"
+                          name="currentQuantity"
+                          className="form-input"
+                          placeholder="e.g., 100 units"
+                          value={formData.currentQuantity}
+                          onChange={handleInputChange}
+                          min="0"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="supplierName">Supplier Name</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-truck input-icon"></i>
+                        <input
+                          type="text"
+                          id="supplierName"
+                          name="supplierName"
+                          className="form-input"
+                          placeholder="Enter supplier name"
+                          value={formData.supplierName}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="category">Category</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-th-large input-icon"></i>
+                        <select
+                          id="category"
+                          name="category"
+                          className="form-input"
+                          value={formData.category}
+                          onChange={handleInputChange}
+                        >
+                          <option value="">Select category</option>
+                          <option value="Category 1">Category 1</option>
+                          <option value="Category 2">Category 2</option>
+                          <option value="Category 3">Category 3</option>
+                          <option value="Category 4">Category 4</option>
+                          <option value="Category 5">Category 5</option>
+                        </select>
+                        <i className="fas fa-chevron-down dropdown-icon"></i>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pricing Details Section */}
+                <div className="form-section">
+                  <h3 className="section-title">Pricing details</h3>
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label htmlFor="mrp">MRP</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-rupee-sign input-icon"></i>
+                        <input
+                          type="number"
+                          id="mrp"
+                          name="mrp"
+                          className="form-input"
+                          placeholder="Enter MRP and press Enter"
+                          value={formData.mrp}
+                          onChange={handleInputChange}
+                          onKeyPress={(e) => handlePricingKeyPress(e, 'mrp')}
+                          min="0"
+                          step="0.01"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="discount">Discount (%)</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-percent input-icon"></i>
+                        <input
+                          type="number"
+                          id="discount"
+                          name="discount"
+                          className="form-input"
+                          placeholder="Enter discount % and press Enter"
+                          value={formData.discount}
+                          onChange={handleInputChange}
+                          onKeyPress={(e) => handlePricingKeyPress(e, 'discount')}
+                          min="0"
+                          step="0.01"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="sellRate">Sell rate <span style={{ fontSize: '11px', color: '#666', fontWeight: 'normal' }}>(Auto-calculated)</span></label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-tag input-icon"></i>
+                        <input
+                          type="number"
+                          id="sellRate"
+                          name="sellRate"
+                          className="form-input"
+                          placeholder="Auto-calculated from MRP & discount"
+                          value={formData.sellRate}
+                          onChange={handleInputChange}
+                          min="0"
+                          step="0.01"
                         />
                       </div>
                     </div>

@@ -1,17 +1,14 @@
 import React, { useState } from 'react';
-import { staffAPI } from '../services/api';
+import { suppliersAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 
-const AddStaff = ({ onBack, onCancel, onNavigate }) => {
+const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
   const [formData, setFormData] = useState({
-    fullName: '',
-    storeAllocated: '',
-    email: '',
+    supplierName: '',
+    phone: '',
     address: '',
-    username: '',
-    password: ''
+    email: ''
   });
-  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -19,7 +16,7 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
 
   const handleBack = () => {
     if (onNavigate) {
-      onNavigate('staff');
+      onNavigate('suppliers');
     } else if (onBack) {
       onBack();
     }
@@ -55,6 +52,18 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
     }
   };
 
+  const handleSuppliers = () => {
+    if (onNavigate) {
+      onNavigate('suppliers');
+    }
+  };
+
+  const handleChitPlans = () => {
+    if (onNavigate) {
+      onNavigate('chitPlans');
+    }
+  };
+
   const handleSettings = () => {
     if (onNavigate) {
       onNavigate('settings');
@@ -63,7 +72,7 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
 
   const handleCancel = () => {
     if (onNavigate) {
-      onNavigate('staff');
+      onNavigate('suppliers');
     } else if (onCancel) {
       onCancel();
     }
@@ -77,32 +86,29 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
     }));
   };
 
-  const submitStaff = async () => {
+  const submitSupplier = async () => {
     setIsLoading(true);
     setError('');
     setSuccessMessage('');
 
     try {
-      const response = await staffAPI.create({
-        fullName: formData.fullName,
-        email: formData.email,
-        username: formData.username,
-        password: formData.password,
-        storeAllocated: formData.storeAllocated,
-        address: formData.address
+      const response = await suppliersAPI.create({
+        supplierName: formData.supplierName,
+        phone: formData.phone,
+        address: formData.address,
+        email: formData.email
       });
 
       if (response.success) {
         setSuccessMessage('Save changes are done');
-        // Clear success message and navigate after 2 seconds
         setTimeout(() => {
           setSuccessMessage('');
           handleCancel();
         }, 2000);
       }
     } catch (err) {
-      setError(err.message || 'Failed to create staff. Please try again.');
-      console.error('Create staff error:', err);
+      setError(err.message || 'Failed to create supplier. Please try again.');
+      console.error('Create supplier error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -113,7 +119,7 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
     setConfirmState({
       open: true,
       message: 'Are you sure you want to submit?',
-      onConfirm: submitStaff,
+      onConfirm: submitSupplier,
     });
   };
 
@@ -145,7 +151,7 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
           </div>
           <span>Stores</span>
         </div>
-        <div className="nav-item active" onClick={handleStaff}>
+        <div className="nav-item" onClick={handleStaff}>
           <div className="nav-icon">
             <i className="fas fa-user-tie"></i>
           </div>
@@ -156,6 +162,18 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
             <i className="fas fa-user-friends"></i>
           </div>
           <span>Customers</span>
+        </div>
+        <div className="nav-item active" onClick={handleSuppliers}>
+          <div className="nav-icon">
+            <i className="fas fa-truck"></i>
+          </div>
+          <span>Supply Master</span>
+        </div>
+        <div className="nav-item" onClick={handleChitPlans}>
+          <div className="nav-icon">
+            <i className="fas fa-file-invoice-dollar"></i>
+          </div>
+          <span>Chit Plan</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">
@@ -174,61 +192,48 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
               <i className="fas fa-arrow-left"></i>
             </button>
             <div className="header-content">
-              <h1 className="page-title">Add Staff</h1>
-              <p className="page-subtitle">Create a new account for this store.</p>
+              <h1 className="page-title">Add Supplier</h1>
+              <p className="page-subtitle">Create a new supplier for your store.</p>
             </div>
           </header>
 
           {/* Main Content */}
           <main className="add-user-content">
-            {/* Photo Upload */}
-            <div className="photo-upload-section">
-              <div className="photo-placeholder">
-                <i className="fas fa-camera"></i>
-              </div>
-              <button type="button" className="upload-photo-btn">
-                <i className="fas fa-camera"></i>
-                <span>Upload photo</span>
-              </button>
-            </div>
-
             <form onSubmit={handleSubmit} className="add-user-form">
-                {/* Staff Details Section */}
+                {/* Supplier Details Section */}
                 <div className="form-section">
-                  <h3 className="section-title">Staff details</h3>
+                  <h3 className="section-title">Supplier details</h3>
                   <div className="form-grid">
                     <div className="form-group">
-                      <label htmlFor="fullName">Full name</label>
-                      <input
-                        type="text"
-                        id="fullName"
-                        name="fullName"
-                        className="form-input"
-                        placeholder="Enter full name."
-                        value={formData.fullName}
-                        onChange={handleInputChange}
-                        required
-                      />
+                      <label htmlFor="supplierName">Supplier Name</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-building input-icon"></i>
+                        <input
+                          type="text"
+                          id="supplierName"
+                          name="supplierName"
+                          className="form-input"
+                          placeholder="Enter supplier name."
+                          value={formData.supplierName}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="storeAllocated">Store allocated</label>
+                      <label htmlFor="phone">Phone Number</label>
                       <div className="input-wrapper">
-                        <i className="fas fa-store input-icon"></i>
-                        <select
-                          id="storeAllocated"
-                          name="storeAllocated"
+                        <i className="fas fa-phone input-icon"></i>
+                        <input
+                          type="tel"
+                          id="phone"
+                          name="phone"
                           className="form-input"
-                          value={formData.storeAllocated}
+                          placeholder="Enter phone number."
+                          value={formData.phone}
                           onChange={handleInputChange}
-                          required
-                        >
-                          <option value="">Select store.</option>
-                          <option value="mart">Mart</option>
-                          <option value="global">Global</option>
-                          <option value="mumbai">Mumbai DMart</option>
-                        </select>
-                        <i className="fas fa-chevron-down dropdown-icon"></i>
+                        />
                       </div>
                     </div>
 
@@ -241,10 +246,9 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                           id="email"
                           name="email"
                           className="form-input"
-                          placeholder="name.lastname@dmart.com"
+                          placeholder="supplier@example.com"
                           value={formData.email}
                           onChange={handleInputChange}
-                          required
                         />
                       </div>
                     </div>
@@ -256,7 +260,7 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                   <h3 className="section-title">Address</h3>
                   
                   <div className="form-group">
-                    <label htmlFor="address">Store / home address</label>
+                    <label htmlFor="address">Address</label>
                     <div className="input-wrapper">
                       <i className="fas fa-map-marker-alt input-icon"></i>
                       <textarea
@@ -267,58 +271,14 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                         rows="2"
                         value={formData.address}
                         onChange={handleInputChange}
-                        required
                       ></textarea>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Staff Details Section (Login Credentials) */}
-                <div className="form-section">
-                  <h3 className="section-title">Staff details</h3>
-                  <div className="form-grid two-col">
-                    <div className="form-group">
-                      <label htmlFor="username">username</label>
-                      <input
-                        type="text"
-                        id="username"
-                        name="username"
-                        className="form-input"
-                        placeholder="Enter username."
-                        value={formData.username}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="password">password</label>
-                      <div className="input-wrapper">
-                        <input
-                          type={showPassword ? 'text' : 'password'}
-                          id="password"
-                          name="password"
-                          className="form-input"
-                          placeholder="Enter password."
-                          value={formData.password}
-                          onChange={handleInputChange}
-                          required
-                        />
-                        <button
-                          type="button"
-                          className="password-toggle"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          <i className={showPassword ? 'fas fa-eye' : 'fas fa-eye-slash'}></i>
-                        </button>
-                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Warning Message */}
                 <p className="form-warning">
-                  Make sure email and store allocation are correct before saving.
+                  Make sure all supplier details are correct before saving.
                 </p>
 
                 {/* Error Message */}
@@ -350,7 +310,7 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                 {/* Action Buttons */}
                 <div className="form-actions">
                   <button type="submit" className="create-user-btn" disabled={isLoading}>
-                    {isLoading ? 'Creating...' : 'Create Staff'}
+                    {isLoading ? 'Creating...' : 'Create Supplier'}
                   </button>
                   <button type="button" className="cancel-btn" onClick={handleCancel}>
                     Cancel and go back
@@ -377,5 +337,5 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
   );
 };
 
-export default AddStaff;
+export default AddSupplier;
 

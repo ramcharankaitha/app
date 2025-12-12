@@ -1,10 +1,177 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { productsAPI } from '../services/api';
+import ConfirmDialog from './ConfirmDialog';
 
 const Products = ({ onBack, onAddProduct, onNavigate }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [products, setProducts] = useState([]);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [showOptionsMenu, setShowOptionsMenu] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [editFormData, setEditFormData] = useState({});
+  const menuRef = useRef(null);
+  const categoryMenuRef = useRef(null);
+
+  // Fetch products from database
+  const fetchProducts = async () => {
+    try {
+      setError('');
+      const response = await productsAPI.getAll();
+      if (response.success) {
+        const formattedProducts = response.products.map(product => ({
+          id: product.id,
+          name: product.product_name,
+          itemCode: product.item_code,
+          sku: product.sku_code,
+          qty: product.current_quantity || 0,
+          status: product.status || 'STOCK',
+          category: product.category || 'Uncategorized',
+          mrp: product.mrp,
+          discount: product.discount,
+          sellRate: product.sell_rate
+        }));
+        setProducts(formattedProducts);
+      }
+    } catch (err) {
+      console.error('Error fetching products:', err);
+      setError('Failed to load products. Please try again.');
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  // Get unique categories from products, plus default categories
+  const defaultCategories = ['Category 1', 'Category 2', 'Category 3', 'Category 4', 'Category 5'];
+  const productCategories = products.map(p => p.category).filter(Boolean);
+  const allCategories = [...new Set([...defaultCategories, ...productCategories])];
+  const categories = ['All', ...allCategories];
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowOptionsMenu(null);
+      }
+      if (categoryMenuRef.current && !categoryMenuRef.current.contains(event.target)) {
+        setShowCategoryDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleOptionsClick = (e, productId) => {
+    e.stopPropagation();
+    setShowOptionsMenu(showOptionsMenu === productId ? null : productId);
+  };
+
+  const handleViewProduct = async (product) => {
+    try {
+      const response = await productsAPI.getById(product.id);
+      if (response.success) {
+        setSelectedProduct(response.product);
+        setShowViewModal(true);
+        setShowOptionsMenu(null);
+      }
+    } catch (err) {
+      setError('Failed to load product details');
+    }
+  };
+
+  const handleEditProduct = async (product) => {
+    try {
+      const response = await productsAPI.getById(product.id);
+      if (response.success) {
+        setEditFormData({
+          id: response.product.id,
+          productName: response.product.product_name,
+          itemCode: response.product.item_code,
+          skuCode: response.product.sku_code,
+          minQuantity: response.product.minimum_quantity,
+          currentQuantity: response.product.current_quantity,
+          supplierName: response.product.supplier_name || '',
+          category: response.product.category || '',
+          mrp: response.product.mrp || '',
+          discount: response.product.discount || '',
+          sellRate: response.product.sell_rate || '',
+          status: response.product.status
+        });
+        setShowEditModal(true);
+        setShowOptionsMenu(null);
+      }
+    } catch (err) {
+      setError('Failed to load product for editing');
+    }
+  };
+
+  const handleDeleteProduct = (product) => {
+    setSelectedProduct(product);
+    setShowDeleteConfirm(true);
+    setShowOptionsMenu(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedProduct) return;
+    
+    try {
+      const response = await productsAPI.delete(selectedProduct.id);
+      if (response.success) {
+        setSuccessMessage('Product deleted successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        fetchProducts();
+        setShowDeleteConfirm(false);
+        setSelectedProduct(null);
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to delete product');
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleUpdateProduct = async () => {
+    try {
+      const response = await productsAPI.update(editFormData.id, {
+        productName: editFormData.productName,
+        itemCode: editFormData.itemCode,
+        skuCode: editFormData.skuCode,
+        minimumQuantity: parseInt(editFormData.minQuantity) || 0,
+        currentQuantity: parseInt(editFormData.currentQuantity) || 0,
+        supplierName: editFormData.supplierName,
+        category: editFormData.category,
+        mrp: editFormData.mrp ? parseFloat(editFormData.mrp) : null,
+        discount: editFormData.discount ? parseFloat(editFormData.discount) : 0,
+        sellRate: editFormData.sellRate ? parseFloat(editFormData.sellRate) : null,
+        status: editFormData.status
+      });
+
+      if (response.success) {
+        setSuccessMessage('Product updated successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        fetchProducts();
+        setShowEditModal(false);
+        setEditFormData({});
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to update product');
+    }
+  };
+
+  const handleEditInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
   const handleBack = () => {
     if (onNavigate) {
@@ -34,6 +201,18 @@ const Products = ({ onBack, onAddProduct, onNavigate }) => {
     }
   };
 
+  const handleCustomers = () => {
+    if (onNavigate) {
+      onNavigate('customers');
+    }
+  };
+
+  const handleSuppliers = () => {
+    if (onNavigate) {
+      onNavigate('suppliers');
+    }
+  };
+
   const handleProducts = () => {
     if (onNavigate) {
       onNavigate('products');
@@ -53,9 +232,42 @@ const Products = ({ onBack, onAddProduct, onNavigate }) => {
       p.name.toLowerCase().includes(q) ||
       p.itemCode.toLowerCase().includes(q) ||
       p.sku.toLowerCase().includes(q);
-    const matchesCategory = selectedCategory === 'All' || selectedCategory === p.status;
+    const matchesCategory = selectedCategory === 'All' || selectedCategory === p.category;
     return matchesSearch && matchesCategory;
   });
+
+  const handleCategorySelect = (category) => {
+    setSelectedCategory(category);
+    setShowCategoryDropdown(false);
+  };
+
+  const handleUpdateCategory = async (productId, newCategory) => {
+    try {
+      const product = products.find(p => p.id === productId);
+      if (!product) return;
+
+      const response = await productsAPI.update(productId, {
+        productName: product.name,
+        itemCode: product.itemCode,
+        skuCode: product.sku,
+        minimumQuantity: 0,
+        currentQuantity: product.qty,
+        status: product.status,
+        category: newCategory,
+        mrp: product.mrp,
+        discount: product.discount,
+        sellRate: product.sellRate
+      });
+
+      if (response.success) {
+        setSuccessMessage('Product category updated successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        fetchProducts();
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to update category');
+    }
+  };
 
   return (
     <div className="dashboard-container">
@@ -90,6 +302,24 @@ const Products = ({ onBack, onAddProduct, onNavigate }) => {
             <i className="fas fa-user-tie"></i>
           </div>
           <span>Staff</span>
+        </div>
+        <div className="nav-item" onClick={handleCustomers}>
+          <div className="nav-icon">
+            <i className="fas fa-user-friends"></i>
+          </div>
+          <span>Customers</span>
+        </div>
+        <div className="nav-item" onClick={handleSuppliers}>
+          <div className="nav-icon">
+            <i className="fas fa-truck"></i>
+          </div>
+          <span>Supply Master</span>
+        </div>
+        <div className="nav-item" onClick={() => onNavigate ? onNavigate('chitPlans') : null}>
+          <div className="nav-icon">
+            <i className="fas fa-file-invoice-dollar"></i>
+          </div>
+          <span>Chit Plan</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">
@@ -141,11 +371,58 @@ const Products = ({ onBack, onAddProduct, onNavigate }) => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <button className="category-filter-btn" onClick={() => setSelectedCategory('All')}>
-                <i className="fas fa-th-large"></i>
-                <span>Category</span>
-                <i className="fas fa-chevron-down"></i>
-              </button>
+              <div style={{ position: 'relative' }} ref={categoryMenuRef}>
+                <button 
+                  className="category-filter-btn" 
+                  onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                >
+                  <i className="fas fa-th-large"></i>
+                  <span>{selectedCategory === 'All' ? 'Category' : selectedCategory}</span>
+                  <i className="fas fa-chevron-down"></i>
+                </button>
+                {showCategoryDropdown && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    right: 0,
+                    marginTop: '8px',
+                    background: '#fff',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    zIndex: 1000,
+                    minWidth: '180px',
+                    padding: '8px 0',
+                    maxHeight: '300px',
+                    overflow: 'auto'
+                  }}>
+                    {categories.map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => handleCategorySelect(cat)}
+                        style={{
+                          width: '100%',
+                          padding: '10px 16px',
+                          border: 'none',
+                          background: selectedCategory === cat ? '#f8f9fa' : 'transparent',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          color: selectedCategory === cat ? '#dc3545' : '#333',
+                          fontWeight: selectedCategory === cat ? '600' : 'normal'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (selectedCategory !== cat) e.target.style.background = '#f8f9fa';
+                        }}
+                        onMouseLeave={(e) => {
+                          if (selectedCategory !== cat) e.target.style.background = 'transparent';
+                        }}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="products-count">
@@ -156,6 +433,13 @@ const Products = ({ onBack, onAddProduct, onNavigate }) => {
             {error && (
               <div style={{ padding: '12px', background: '#ffe0e0', color: '#dc3545', borderRadius: '8px', marginBottom: '20px' }}>
                 <i className="fas fa-exclamation-circle"></i> {error}
+              </div>
+            )}
+
+            {/* Success Message */}
+            {successMessage && (
+              <div style={{ padding: '12px', background: '#d4edda', color: '#155724', borderRadius: '8px', marginBottom: '20px' }}>
+                <i className="fas fa-check-circle"></i> {successMessage}
               </div>
             )}
 
@@ -173,10 +457,10 @@ const Products = ({ onBack, onAddProduct, onNavigate }) => {
                 </div>
               ) : (
                 filtered.map((p) => (
-                <div key={p.id} className="product-card">
+                <div key={p.id} className="product-card" style={{ position: 'relative' }}>
                   <div className="product-info">
                     <div className="product-name">{p.name}</div>
-                    <div className="product-meta">Item Code:</div>
+                    <div className="product-meta">Item Code: {p.itemCode}</div>
                     <div className="product-meta-row">
                       <div className="product-sku">
                         <span className="label">SKU code:</span>
@@ -191,9 +475,82 @@ const Products = ({ onBack, onAddProduct, onNavigate }) => {
                       </div>
                     </div>
                   </div>
-                  <button className="product-options">
-                    <i className="fas fa-ellipsis-v"></i>
-                  </button>
+                  <div style={{ position: 'relative' }} ref={menuRef}>
+                    <button 
+                      className="product-options"
+                      onClick={(e) => handleOptionsClick(e, p.id)}
+                    >
+                      <i className="fas fa-ellipsis-v"></i>
+                    </button>
+                    {showOptionsMenu === p.id && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '30px',
+                        right: '0',
+                        background: '#fff',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        zIndex: 1000,
+                        minWidth: '150px',
+                        padding: '8px 0'
+                      }}>
+                        <button
+                          onClick={() => handleViewProduct(p)}
+                          style={{
+                            width: '100%',
+                            padding: '10px 16px',
+                            border: 'none',
+                            background: 'transparent',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            color: '#333'
+                          }}
+                          onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
+                          onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                        >
+                          <i className="fas fa-eye" style={{ marginRight: '8px', color: '#dc3545' }}></i>
+                          View Details
+                        </button>
+                        <button
+                          onClick={() => handleEditProduct(p)}
+                          style={{
+                            width: '100%',
+                            padding: '10px 16px',
+                            border: 'none',
+                            background: 'transparent',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            color: '#333'
+                          }}
+                          onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
+                          onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                        >
+                          <i className="fas fa-edit" style={{ marginRight: '8px', color: '#007bff' }}></i>
+                          Edit Product
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProduct(p)}
+                          style={{
+                            width: '100%',
+                            padding: '10px 16px',
+                            border: 'none',
+                            background: 'transparent',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            color: '#dc3545'
+                          }}
+                          onMouseEnter={(e) => e.target.style.background = '#ffe0e0'}
+                          onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                        >
+                          <i className="fas fa-trash" style={{ marginRight: '8px' }}></i>
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 ))
               )}
@@ -201,6 +558,258 @@ const Products = ({ onBack, onAddProduct, onNavigate }) => {
           </main>
         </div>
       </div>
+
+      {/* View Product Modal */}
+      {showViewModal && selectedProduct && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000
+        }} onClick={() => setShowViewModal(false)}>
+          <div style={{
+            background: '#fff',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '500px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflow: 'auto'
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0, color: '#333' }}>Product Details</h2>
+              <button onClick={() => setShowViewModal(false)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#666' }}>×</button>
+            </div>
+            <div style={{ display: 'grid', gap: '16px' }}>
+              <div><strong>Product Name:</strong> {selectedProduct.product_name}</div>
+              <div><strong>Item Code:</strong> {selectedProduct.item_code}</div>
+              <div><strong>SKU Code:</strong> {selectedProduct.sku_code}</div>
+              <div><strong>Current Quantity:</strong> {selectedProduct.current_quantity || 0}</div>
+              <div><strong>Minimum Quantity:</strong> {selectedProduct.minimum_quantity || 0}</div>
+              <div><strong>Supplier Name:</strong> {selectedProduct.supplier_name || 'N/A'}</div>
+              <div><strong>Category:</strong> {selectedProduct.category || 'Uncategorized'}</div>
+              <div><strong>MRP:</strong> ₹{selectedProduct.mrp || 'N/A'}</div>
+              <div><strong>Discount:</strong> {selectedProduct.discount || 0}%</div>
+              <div><strong>Sell Rate:</strong> ₹{selectedProduct.sell_rate || 'N/A'}</div>
+              <div><strong>Status:</strong> {selectedProduct.status}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Product Modal */}
+      {showEditModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000
+        }} onClick={() => setShowEditModal(false)}>
+          <div style={{
+            background: '#fff',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '600px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflow: 'auto'
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0, color: '#333' }}>Edit Product</h2>
+              <button onClick={() => setShowEditModal(false)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#666' }}>×</button>
+            </div>
+            <div style={{ display: 'grid', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Product Name</label>
+                <input
+                  type="text"
+                  name="productName"
+                  value={editFormData.productName || ''}
+                  onChange={handleEditInputChange}
+                  style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
+                />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Item Code</label>
+                  <input
+                    type="text"
+                    name="itemCode"
+                    value={editFormData.itemCode || ''}
+                    onChange={handleEditInputChange}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>SKU Code</label>
+                  <input
+                    type="text"
+                    name="skuCode"
+                    value={editFormData.skuCode || ''}
+                    onChange={handleEditInputChange}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Current Quantity</label>
+                  <input
+                    type="number"
+                    name="currentQuantity"
+                    value={editFormData.currentQuantity || ''}
+                    onChange={handleEditInputChange}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Minimum Quantity</label>
+                  <input
+                    type="number"
+                    name="minQuantity"
+                    value={editFormData.minQuantity || ''}
+                    onChange={handleEditInputChange}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
+                  />
+                </div>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Supplier Name</label>
+                <input
+                  type="text"
+                  name="supplierName"
+                  value={editFormData.supplierName || ''}
+                  onChange={handleEditInputChange}
+                  style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
+                  placeholder="Enter supplier name"
+                />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>MRP</label>
+                  <input
+                    type="number"
+                    name="mrp"
+                    value={editFormData.mrp || ''}
+                    onChange={handleEditInputChange}
+                    step="0.01"
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Discount (%)</label>
+                  <input
+                    type="number"
+                    name="discount"
+                    value={editFormData.discount || ''}
+                    onChange={handleEditInputChange}
+                    step="0.01"
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Sell Rate</label>
+                  <input
+                    type="number"
+                    name="sellRate"
+                    value={editFormData.sellRate || ''}
+                    onChange={handleEditInputChange}
+                    step="0.01"
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
+                  />
+                </div>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Category</label>
+                <select
+                  name="category"
+                  value={editFormData.category || ''}
+                  onChange={handleEditInputChange}
+                  style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
+                >
+                  <option value="">Select category</option>
+                  <option value="Category 1">Category 1</option>
+                  <option value="Category 2">Category 2</option>
+                  <option value="Category 3">Category 3</option>
+                  <option value="Category 4">Category 4</option>
+                  <option value="Category 5">Category 5</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Status</label>
+                <select
+                  name="status"
+                  value={editFormData.status || 'STOCK'}
+                  onChange={handleEditInputChange}
+                  style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
+                >
+                  <option value="STOCK">STOCK</option>
+                  <option value="OUT_OF_STOCK">OUT OF STOCK</option>
+                  <option value="LOW_STOCK">LOW STOCK</option>
+                </select>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+                <button
+                  onClick={handleUpdateProduct}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    background: '#dc3545',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: '600'
+                  }}
+                >
+                  Update Product
+                </button>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    background: '#6c757d',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: '600'
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="Delete Product"
+        message={`Are you sure you want to delete "${selectedProduct?.name}"? This action cannot be undone.`}
+        confirmText="Yes, Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setShowDeleteConfirm(false);
+          setSelectedProduct(null);
+        }}
+      />
     </div>
   );
 };

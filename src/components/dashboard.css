@@ -289,10 +289,11 @@
     white-space: nowrap;
     transition: all 0.3s ease;
     box-shadow: 0 2px 4px var(--shadow-light);
+    position: relative;
 }
 
 .scope-button:hover {
-    border-color: #c82333;
+    border-color: var(--accent-hover);
     box-shadow: 0 4px 8px rgba(220, 53, 69, 0.1);
 }
 
@@ -310,10 +311,20 @@
     box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
 }
 
-.sales-report-button:hover {
+.sales-report-button:hover:not(:disabled) {
     background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
     box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
     transform: translateY(-1px);
+}
+
+.sales-report-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.sales-report-button i {
+    margin-right: 6px;
 }
 
 .scope-button i:first-child {
@@ -329,13 +340,63 @@
 }
 
 .scope-value {
-    color: #dc3545;
+    color: var(--text-secondary);
     font-weight: 600;
+    padding: 4px 10px;
+    background: var(--accent-light);
+    border-radius: 10px;
 }
 
 .scope-button i:last-child {
-    color: #dc3545;
+    color: var(--accent-color);
     font-size: 10px;
+}
+
+.scope-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: 0 6px 18px var(--shadow);
+    min-width: 240px;
+    z-index: 20;
+    padding: 8px;
+}
+
+.scope-option {
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.scope-option:hover {
+    background: var(--accent-light);
+}
+
+.scope-option .option-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.scope-option .option-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.scope-message {
+    margin-top: 8px;
+    padding: 10px 12px;
+    background: var(--accent-light);
+    color: var(--accent-color);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
 }
 
 .search-bar {

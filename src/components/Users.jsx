@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { usersAPI } from '../services/api';
 
 const Managers = ({ onBack, onAddUser, onNavigate }) => {
@@ -6,6 +6,9 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
   const [selectedStore, setSelectedStore] = useState('All Stores');
   const [users, setUsers] = useState([]);
   const [error, setError] = useState('');
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [viewManagerModal, setViewManagerModal] = useState(null);
+  const menuRefs = useRef({});
 
   const handleBack = () => {
     if (onNavigate) {
@@ -24,6 +27,18 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
   const handleStaff = () => {
     if (onNavigate) {
       onNavigate('staff');
+    }
+  };
+
+  const handleCustomers = () => {
+    if (onNavigate) {
+      onNavigate('customers');
+    }
+  };
+
+  const handleSuppliers = () => {
+    if (onNavigate) {
+      onNavigate('suppliers');
     }
   };
 
@@ -82,6 +97,43 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
     return matchesSearch && matchesStore;
   });
 
+  // Handle menu toggle
+  const toggleMenu = (userId, e) => {
+    e.stopPropagation();
+    setOpenMenuId(openMenuId === userId ? null : userId);
+  };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (openMenuId && menuRefs.current[openMenuId] && !menuRefs.current[openMenuId].contains(event.target)) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openMenuId]);
+
+  // Handle view manager details
+  const handleViewManagerDetails = async (user) => {
+    setOpenMenuId(null);
+    try {
+      const response = await usersAPI.getById(user.id);
+      if (response.success) {
+        setViewManagerModal(response.user);
+      } else {
+        setError('Failed to fetch manager details');
+      }
+    } catch (err) {
+      console.error('Error fetching manager details:', err);
+      setError('Failed to fetch manager details');
+    }
+  };
+
+  const closeViewModal = () => {
+    setViewManagerModal(null);
+  };
+
   return (
     <div className="dashboard-container">
       {/* Left Sidebar Navigation */}
@@ -115,6 +167,24 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
             <i className="fas fa-user-tie"></i>
           </div>
           <span>Staff</span>
+        </div>
+        <div className="nav-item" onClick={handleCustomers}>
+          <div className="nav-icon">
+            <i className="fas fa-user-friends"></i>
+          </div>
+          <span>Customers</span>
+        </div>
+        <div className="nav-item" onClick={handleSuppliers}>
+          <div className="nav-icon">
+            <i className="fas fa-truck"></i>
+          </div>
+          <span>Supply Master</span>
+        </div>
+        <div className="nav-item" onClick={() => onNavigate ? onNavigate('chitPlans') : null}>
+          <div className="nav-icon">
+            <i className="fas fa-file-invoice-dollar"></i>
+          </div>
+          <span>Chit Plan</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">
@@ -216,9 +286,25 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
                 </div>
               </div>
               <div className="user-email">{user.email}</div>
-              <button className="user-options">
-                <i className="fas fa-ellipsis-v"></i>
-              </button>
+              <div 
+                className="user-options-container" 
+                ref={el => menuRefs.current[user.id] = el}
+              >
+                <button 
+                  className="user-options"
+                  onClick={(e) => toggleMenu(user.id, e)}
+                >
+                  <i className="fas fa-ellipsis-v"></i>
+                </button>
+                {openMenuId === user.id && (
+                  <div className="manager-menu-dropdown">
+                    <div className="menu-item" onClick={() => handleViewManagerDetails(user)}>
+                      <i className="fas fa-eye"></i>
+                      <span>View Manager Details</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             ))
           )}
@@ -226,6 +312,82 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
       </main>
       </div>
       </div>
+
+      {/* View Manager Details Modal */}
+      {viewManagerModal && (
+        <div className="modal-overlay" onClick={closeViewModal}>
+          <div className="customer-details-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Manager Details</h2>
+              <button className="modal-close-btn" onClick={closeViewModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="modal-content">
+              <div className="customer-detail-section">
+                <div className="detail-avatar">
+                  <span>{viewManagerModal.first_name && viewManagerModal.last_name 
+                    ? `${viewManagerModal.first_name[0]}${viewManagerModal.last_name[0]}`.toUpperCase()
+                    : 'MG'}</span>
+                </div>
+                <div className="detail-info">
+                  <div className="detail-row">
+                    <span className="detail-label">First Name:</span>
+                    <span className="detail-value">{viewManagerModal.first_name || 'N/A'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Last Name:</span>
+                    <span className="detail-value">{viewManagerModal.last_name || 'N/A'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Full Name:</span>
+                    <span className="detail-value">{`${viewManagerModal.first_name || ''} ${viewManagerModal.last_name || ''}`.trim() || 'N/A'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Email:</span>
+                    <span className="detail-value">{viewManagerModal.email || 'N/A'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Username:</span>
+                    <span className="detail-value">{viewManagerModal.username || 'N/A'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Role:</span>
+                    <span className="detail-value">{viewManagerModal.role || 'Manager'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Store Allocated:</span>
+                    <span className="detail-value">{viewManagerModal.store_allocated || 'Not Assigned'}</span>
+                  </div>
+                  {viewManagerModal.address && (
+                    <div className="detail-row">
+                      <span className="detail-label">Address:</span>
+                      <span className="detail-value">{viewManagerModal.address}</span>
+                    </div>
+                  )}
+                  {viewManagerModal.created_at && (
+                    <div className="detail-row">
+                      <span className="detail-label">Created At:</span>
+                      <span className="detail-value">{new Date(viewManagerModal.created_at).toLocaleString()}</span>
+                    </div>
+                  )}
+                  {viewManagerModal.updated_at && (
+                    <div className="detail-row">
+                      <span className="detail-label">Updated At:</span>
+                      <span className="detail-value">{new Date(viewManagerModal.updated_at).toLocaleString()}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="modal-close-button" onClick={closeViewModal}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

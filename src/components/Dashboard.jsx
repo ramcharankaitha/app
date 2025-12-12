@@ -1,12 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useProfile } from '../hooks/useProfile';
+import { profileAPI, exportAPI } from '../services/api';
+import ConfirmDialog from './ConfirmDialog';
 
 const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
-  const [activeScope, setActiveScope] = useState('All Stores');
+  const [activeScope, setActiveScope] = useState('All stores • Global scope');
   const [timeRange, setTimeRange] = useState('Live');
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeNav, setActiveNav] = useState('home');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [scopeMenuOpen, setScopeMenuOpen] = useState(false);
+  const [scopeMessage, setScopeMessage] = useState('');
+  const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
+  const [isExportingSales, setIsExportingSales] = useState(false);
   const menuRef = useRef(null);
   const { profile, avatarUrl, initials } = useProfile();
 
@@ -23,6 +29,12 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
       onNavigate('products');
     } else if (navItem === 'staff') {
       onNavigate('staff');
+    } else if (navItem === 'customers') {
+      onNavigate('customers');
+    } else if (navItem === 'suppliers') {
+      onNavigate('suppliers');
+    } else if (navItem === 'chitPlans') {
+      onNavigate('chitPlans');
     } else if (navItem === 'home' || navItem === 'stores') {
       // Only navigate if not already on dashboard
       if (currentPage !== 'dashboard') {
@@ -84,11 +96,134 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
   // Mock chart data for horizontal bars (12 data points for 24 hours)
   const chartData = [45, 60, 55, 70, 65, 80, 75, 90, 85, 70, 65, 75, 80, 85, 75, 70, 65, 60, 55, 50, 45, 50, 55, 60];
 
+  // Convert sales data to CSV
+  const convertSalesToCSV = (sales) => {
+    if (!sales || sales.length === 0) {
+      return 'No sales data available\n';
+    }
+
+    // CSV Headers
+    const headers = [
+      'Sale ID',
+      'Customer Name',
+      'Customer Email',
+      'Customer Phone',
+      'Customer Address',
+      'Item Code',
+      'Product Name',
+      'Quantity',
+      'MRP',
+      'Discount',
+      'Sell Rate',
+      'Total Amount',
+      'Payment Mode',
+      'Sale Date'
+    ];
+
+    const csvRows = [headers.join(',')];
+
+    // Add data rows
+    sales.forEach(sale => {
+      const row = [
+        sale.id || '',
+        sale.customer_name || '',
+        sale.customer_email || '',
+        sale.customer_phone || '',
+        (sale.customer_address || '').replace(/,/g, ';'), // Replace commas in address
+        sale.item_code || '',
+        (sale.product_name || '').replace(/,/g, ';'),
+        sale.quantity || 0,
+        sale.mrp || 0,
+        sale.discount || 0,
+        sale.sell_rate || 0,
+        sale.total_amount || 0,
+        sale.payment_mode || '',
+        sale.sale_date ? new Date(sale.sale_date).toLocaleString() : ''
+      ];
+      
+      // Escape values that contain commas or quotes
+      const escapedRow = row.map(value => {
+        const str = String(value);
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      });
+      
+      csvRows.push(escapedRow.join(','));
+    });
+
+    return csvRows.join('\n');
+  };
+
+  // Download CSV file
+  const downloadCSV = (csvContent, filename) => {
+    // Add BOM for Excel UTF-8 support
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Handle sales report export
+  const handleSalesReport = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    console.log('Sales Report button clicked');
+    setConfirmState({
+      open: true,
+      message: 'Are you sure you want to export the sales report?',
+      onConfirm: async () => {
+        setConfirmState({ open: false, message: '', onConfirm: null });
+        setIsExportingSales(true);
+        
+        try {
+          console.log('Fetching sales data...');
+          const response = await exportAPI.getSales();
+          console.log('Sales data response:', response);
+          
+          if (response.success && response.sales) {
+            const csvContent = convertSalesToCSV(response.sales);
+            const timestamp = new Date().toISOString().split('T')[0];
+            const filename = `sales_report_${timestamp}.csv`;
+            
+            downloadCSV(csvContent, filename);
+            
+            // Show success message
+            setScopeMessage('Sales report downloaded successfully!');
+            setTimeout(() => setScopeMessage(''), 3000);
+          } else {
+            setScopeMessage('No sales data available to export.');
+            setTimeout(() => setScopeMessage(''), 3000);
+          }
+        } catch (error) {
+          console.error('Export sales error:', error);
+          setScopeMessage('Failed to export sales report. Please try again.');
+          setTimeout(() => setScopeMessage(''), 3000);
+        } finally {
+          setIsExportingSales(false);
+        }
+      }
+    });
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setMenuOpen(false);
+        setScopeMenuOpen(false);
       }
     };
 
@@ -100,6 +235,107 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [menuOpen]);
+
+  // Sync active scope with profile
+  useEffect(() => {
+    if (profile?.store_scope) {
+      setActiveScope(profile.store_scope);
+    }
+  }, [profile]);
+
+  // Sync activeNav with currentPage - ensures navigation state persists
+  useEffect(() => {
+    if (currentPage === 'dashboard') {
+      setActiveNav('home');
+    } else if (currentPage === 'users') {
+      setActiveNav('users');
+    } else if (currentPage === 'products') {
+      setActiveNav('products');
+    } else if (currentPage === 'staff') {
+      setActiveNav('staff');
+    } else if (currentPage === 'customers') {
+      setActiveNav('customers');
+    } else if (currentPage === 'suppliers') {
+      setActiveNav('suppliers');
+    } else if (currentPage === 'chitPlans') {
+      setActiveNav('chitPlans');
+    } else if (currentPage === 'settings') {
+      setActiveNav('settings');
+    }
+  }, [currentPage]);
+
+  // Sync activeNav with currentPage
+  useEffect(() => {
+    if (currentPage === 'dashboard') {
+      setActiveNav('home');
+    } else if (currentPage === 'users') {
+      setActiveNav('users');
+    } else if (currentPage === 'products') {
+      setActiveNav('products');
+    } else if (currentPage === 'staff') {
+      setActiveNav('staff');
+    } else if (currentPage === 'customers') {
+      setActiveNav('customers');
+    } else if (currentPage === 'suppliers') {
+      setActiveNav('suppliers');
+    } else if (currentPage === 'chitPlans') {
+      setActiveNav('chitPlans');
+    } else if (currentPage === 'settings') {
+      setActiveNav('settings');
+    }
+  }, [currentPage]);
+
+  const parseSelectedStores = () => {
+    if (!profile || !profile.selected_stores) return [];
+    try {
+      const parsed = JSON.parse(profile.selected_stores);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      return [];
+    }
+  };
+
+  const handleScopeSelect = (scopeKey) => {
+    const selectedStores = parseSelectedStores();
+    if (scopeKey === 'selected' && selectedStores.length === 0) {
+      setScopeMessage('No selected stores found. Please choose stores in Store Access.');
+      setTimeout(() => setScopeMessage(''), 3000);
+      setScopeMenuOpen(false);
+      return;
+    }
+
+    const newScope =
+      scopeKey === 'all'
+        ? 'All stores • Global scope'
+        : profile.store_scope || 'Selected stores';
+
+    setConfirmState({
+      open: true,
+      message:
+        scopeKey === 'all'
+          ? 'Switch active scope to all stores?'
+          : 'Switch active scope to selected stores?',
+      onConfirm: async () => {
+        setConfirmState({ open: false, message: '', onConfirm: null });
+        setScopeMenuOpen(false);
+        setScopeMessage('');
+        setActiveScope(newScope);
+        try {
+          const payload = {
+            storeScope: newScope,
+            selectedStores: scopeKey === 'all' ? [] : selectedStores,
+          };
+          await profileAPI.update(payload);
+          setScopeMessage('Active scope updated');
+          setTimeout(() => setScopeMessage(''), 3000);
+        } catch (err) {
+          console.error('Scope update error:', err);
+          setScopeMessage(err.message || 'Failed to update scope');
+          setTimeout(() => setScopeMessage(''), 3000);
+        }
+      },
+    });
+  };
 
   const handleMenuClick = () => {
     setMenuOpen(!menuOpen);
@@ -193,6 +429,33 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
             <i className="fas fa-user-tie"></i>
           </div>
           <span>Staff</span>
+        </div>
+        <div 
+          className={`nav-item ${activeNav === 'customers' ? 'active' : ''}`} 
+          onClick={(e) => handleNavClick('customers', e)}
+        >
+          <div className="nav-icon">
+            <i className="fas fa-user-friends"></i>
+          </div>
+          <span>Customers</span>
+        </div>
+        <div 
+          className={`nav-item ${activeNav === 'suppliers' ? 'active' : ''}`} 
+          onClick={(e) => handleNavClick('suppliers', e)}
+        >
+          <div className="nav-icon">
+            <i className="fas fa-truck"></i>
+          </div>
+          <span>Supply Master</span>
+        </div>
+        <div 
+          className={`nav-item ${activeNav === 'chitPlans' ? 'active' : ''}`} 
+          onClick={(e) => handleNavClick('chitPlans', e)}
+        >
+          <div className="nav-icon">
+            <i className="fas fa-file-invoice-dollar"></i>
+          </div>
+          <span>Chit Plan</span>
         </div>
         <div 
           className={`nav-item ${activeNav === 'settings' ? 'active' : ''}`} 
@@ -297,20 +560,68 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
       <main className="dashboard-content">
         {/* Active Scope, Sales Report and Search */}
         <div className="controls-section">
-          <button className="scope-button">
+          <div className="scope-button" onClick={() => setScopeMenuOpen((prev) => !prev)}>
             <i className="fas fa-minus"></i>
             <span>Active Scope</span>
             <span className="scope-value">{activeScope}</span>
             <i className="fas fa-chevron-down"></i>
-          </button>
-          <button className="sales-report-button">
-            Sales Report
+            {scopeMenuOpen && (
+              <div className="scope-dropdown">
+                <div
+                  className="scope-option"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleScopeSelect('all');
+                  }}
+                >
+                  <div className="option-title">All stores • Global scope</div>
+                  <div className="option-desc">See data across all stores</div>
+                </div>
+                <div
+                  className="scope-option"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleScopeSelect('selected');
+                  }}
+                >
+                  <div className="option-title">Selected stores</div>
+                  <div className="option-desc">
+                    {parseSelectedStores().length > 0
+                      ? `${parseSelectedStores().length} store(s) selected`
+                      : 'No stores selected yet'}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          <button 
+            type="button"
+            className="sales-report-button" 
+            onClick={handleSalesReport}
+            disabled={isExportingSales}
+          >
+            {isExportingSales ? (
+              <>
+                <i className="fas fa-spinner fa-spin"></i> Exporting...
+              </>
+            ) : (
+              <>
+                <i className="fas fa-file-excel"></i> Sales Report
+              </>
+            )}
           </button>
           <div className="search-bar">
             <i className="fas fa-search"></i>
             <input type="text" placeholder="Search managers, products, stores..." />
           </div>
         </div>
+
+        {/* Scope status message */}
+        {scopeMessage && (
+          <div className="scope-message">
+            {scopeMessage}
+          </div>
+        )}
 
         {/* Stats Cards */}
         <div className="stats-grid">
@@ -396,6 +707,21 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
         </footer>
       </main>
       </div>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmState.open}
+        title="Confirm Export"
+        message={confirmState.message}
+        confirmText="Yes, Export"
+        cancelText="Cancel"
+        onConfirm={() => {
+          if (confirmState.onConfirm) {
+            confirmState.onConfirm();
+          }
+        }}
+        onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
+      />
     </div>
   );
 };

@@ -28,6 +28,8 @@ const Settings = ({ onBack, onNavigate, onLogout }) => {
   const handleManagers = () => onNavigate && onNavigate('users');
   const handleProducts = () => onNavigate && onNavigate('products');
   const handleStaff = () => onNavigate && onNavigate('staff');
+  const handleCustomers = () => onNavigate && onNavigate('customers');
+  const handleSuppliers = () => onNavigate && onNavigate('suppliers');
   const handleSettings = () => onNavigate && onNavigate('settings');
 
   const sections = useMemo(() => [
@@ -260,6 +262,24 @@ const Settings = ({ onBack, onNavigate, onLogout }) => {
             <i className="fas fa-user-tie"></i>
           </div>
           <span>Staff</span>
+        </div>
+        <div className="nav-item" onClick={handleCustomers}>
+          <div className="nav-icon">
+            <i className="fas fa-user-friends"></i>
+          </div>
+          <span>Customers</span>
+        </div>
+        <div className="nav-item" onClick={handleSuppliers}>
+          <div className="nav-icon">
+            <i className="fas fa-truck"></i>
+          </div>
+          <span>Supply Master</span>
+        </div>
+        <div className="nav-item" onClick={() => onNavigate && onNavigate('chitPlans')}>
+          <div className="nav-icon">
+            <i className="fas fa-file-invoice-dollar"></i>
+          </div>
+          <span>Chit Plan</span>
         </div>
         <div className="nav-item active" onClick={handleSettings}>
           <div className="nav-icon">

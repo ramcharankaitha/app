@@ -83,6 +83,9 @@ export const staffAPI = {
   getAll: async () => {
     return apiCall('/staff');
   },
+  getById: async (id) => {
+    return apiCall(`/staff/${id}`);
+  },
   create: async (staffData) => {
     return apiCall('/staff', {
       method: 'POST',
@@ -96,10 +99,27 @@ export const productsAPI = {
   getAll: async () => {
     return apiCall('/products');
   },
+  getById: async (id) => {
+    return apiCall(`/products/${id}`);
+  },
+  getByItemCode: async (itemCode) => {
+    return apiCall(`/products/item-code/${encodeURIComponent(itemCode)}`);
+  },
   create: async (productData) => {
     return apiCall('/products', {
       method: 'POST',
       body: JSON.stringify(productData),
+    });
+  },
+  update: async (id, productData) => {
+    return apiCall(`/products/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(productData),
+    });
+  },
+  delete: async (id) => {
+    return apiCall(`/products/${id}`, {
+      method: 'DELETE',
     });
   },
 };
@@ -130,10 +150,40 @@ export const permissionsAPI = {
   },
 };
 
+// Customers API
+export const customersAPI = {
+  getAll: async () => {
+    return apiCall('/customers');
+  },
+  getById: async (id) => {
+    return apiCall(`/customers/${id}`);
+  },
+  create: async (customerData) => {
+    return apiCall('/customers', {
+      method: 'POST',
+      body: JSON.stringify(customerData),
+    });
+  },
+  update: async (id, customerData) => {
+    return apiCall(`/customers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(customerData),
+    });
+  },
+  delete: async (id) => {
+    return apiCall(`/customers/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
 // Export API
 export const exportAPI = {
   getAll: async () => {
     return apiCall('/export/all');
+  },
+  getSales: async () => {
+    return apiCall('/export/sales');
   },
 };
 
@@ -195,6 +245,66 @@ export const profileAPI = {
   },
 };
 
+// Suppliers API
+export const suppliersAPI = {
+  getAll: async () => {
+    return apiCall('/suppliers');
+  },
+  getById: async (id) => {
+    return apiCall(`/suppliers/${id}`);
+  },
+  create: async (supplierData) => {
+    return apiCall('/suppliers', {
+      method: 'POST',
+      body: JSON.stringify(supplierData),
+    });
+  },
+  update: async (id, supplierData) => {
+    return apiCall(`/suppliers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(supplierData),
+    });
+  },
+  delete: async (id) => {
+    return apiCall(`/suppliers/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Chit Plans API
+export const chitPlansAPI = {
+  getPlans: async () => {
+    return apiCall('/chit-plans/plans');
+  },
+  getPlanById: async (id) => {
+    return apiCall(`/chit-plans/plans/${id}`);
+  },
+  getCustomers: async () => {
+    return apiCall('/chit-plans/customers');
+  },
+  getCustomerById: async (id) => {
+    return apiCall(`/chit-plans/customers/${id}`);
+  },
+  createCustomer: async (customerData) => {
+    return apiCall('/chit-plans/customers', {
+      method: 'POST',
+      body: JSON.stringify(customerData),
+    });
+  },
+  updateCustomer: async (id, customerData) => {
+    return apiCall(`/chit-plans/customers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(customerData),
+    });
+  },
+  deleteCustomer: async (id) => {
+    return apiCall(`/chit-plans/customers/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
 export default {
   authAPI,
   usersAPI,
@@ -203,6 +313,9 @@ export default {
   storesAPI,
   permissionsAPI,
   exportAPI,
+  customersAPI,
   profileAPI,
+  suppliersAPI,
+  chitPlansAPI,
 };
 

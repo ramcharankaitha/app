@@ -50,6 +50,12 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
     }
   };
 
+  const handleCustomers = () => {
+    if (onNavigate) {
+      onNavigate('customers');
+    }
+  };
+
   const handleSettings = () => {
     if (onNavigate) {
       onNavigate('settings');
@@ -89,12 +95,13 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
       });
 
       if (response.success) {
-        setSuccessMessage('Save changes are done');
-        // Clear success message and navigate after 2 seconds
+        const credentialsMessage = `Manager created successfully!\n\nLogin Credentials:\nUsername: ${formData.username}\nPassword: ${formData.password}\n\nPlease save these credentials. They cannot be viewed again.`;
+        setSuccessMessage(credentialsMessage);
+        // Clear success message and navigate after 5 seconds (longer to read credentials)
         setTimeout(() => {
           setSuccessMessage('');
           handleCancel();
-        }, 2000);
+        }, 5000);
       }
     } catch (err) {
       setError(err.message || 'Failed to create user. Please try again.');
@@ -146,6 +153,12 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
             <i className="fas fa-user-tie"></i>
           </div>
           <span>Staff</span>
+        </div>
+        <div className="nav-item" onClick={handleCustomers}>
+          <div className="nav-icon">
+            <i className="fas fa-user-friends"></i>
+          </div>
+          <span>Customers</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">
@@ -340,13 +353,41 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
                 {/* Success Message */}
                 {successMessage && (
                   <div className="success-message" style={{ 
-                    padding: '12px', 
+                    padding: '16px', 
                     background: '#d4edda', 
                     color: '#155724', 
                     borderRadius: '8px', 
-                    marginBottom: '20px' 
+                    marginBottom: '20px',
+                    border: '2px solid #28a745'
                   }}>
-                    <i className="fas fa-check-circle"></i> {successMessage}
+                    <div style={{ marginBottom: '12px', fontWeight: '600', fontSize: '16px' }}>
+                      <i className="fas fa-check-circle"></i> {successMessage.split('\n')[0]}
+                    </div>
+                    {successMessage.includes('Login Credentials') && (
+                      <div style={{ 
+                        marginTop: '12px', 
+                        padding: '12px', 
+                        background: '#fff', 
+                        borderRadius: '6px', 
+                        border: '1px solid #28a745',
+                        fontFamily: 'monospace',
+                        fontSize: '14px'
+                      }}>
+                        <div style={{ marginBottom: '8px', fontWeight: '600' }}>Login Credentials:</div>
+                        <div style={{ marginBottom: '4px' }}><strong>Username:</strong> {formData.username}</div>
+                        <div style={{ marginBottom: '8px' }}><strong>Password:</strong> {formData.password}</div>
+                        <div style={{ 
+                          marginTop: '8px', 
+                          padding: '8px', 
+                          background: '#fff3cd', 
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          color: '#856404'
+                        }}>
+                          <i className="fas fa-exclamation-triangle"></i> <strong>Important:</strong> Save these credentials now. They cannot be viewed again after closing.
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

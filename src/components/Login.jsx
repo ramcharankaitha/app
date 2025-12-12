@@ -62,14 +62,24 @@ const Login = ({ onLoginSuccess }) => {
       const response = await authAPI.login(loginIdentifier, formData.password, formData.role);
       
       if (response.success) {
+        // Normalize role: Super Admin -> admin, Manager -> manager, Staff -> staff
+        let normalizedRole = response.user.role || formData.role;
+        if (normalizedRole === 'Super Admin' || normalizedRole === 'admin') {
+          normalizedRole = 'admin';
+        } else if (normalizedRole.toLowerCase() === 'manager') {
+          normalizedRole = 'manager';
+        } else if (normalizedRole.toLowerCase() === 'staff') {
+          normalizedRole = 'staff';
+        }
+        
         // Successful login
         if (formData.remember) {
           localStorage.setItem('isLoggedIn', 'true');
-          localStorage.setItem('userRole', response.user.role || formData.role);
+          localStorage.setItem('userRole', normalizedRole);
           localStorage.setItem('userData', JSON.stringify(response.user));
         }
         setIsLoading(false);
-        onLoginSuccess();
+        onLoginSuccess(normalizedRole, response.user);
       }
     } catch (apiError) {
       // Fallback to temporary credentials if API fails (only for admin)
@@ -83,10 +93,19 @@ const Login = ({ onLoginSuccess }) => {
         // Successful login with fallback
         if (formData.remember) {
           localStorage.setItem('isLoggedIn', 'true');
-          localStorage.setItem('userRole', formData.role);
+          localStorage.setItem('userRole', 'admin');
+          localStorage.setItem('userData', JSON.stringify({
+            name: 'Admin Root',
+            role: 'admin',
+            email: formData.email
+          }));
         }
         setIsLoading(false);
-        onLoginSuccess();
+        onLoginSuccess('admin', {
+          name: 'Admin Root',
+          role: 'admin',
+          email: formData.email
+        });
       } else {
         // Failed login
         setIsLoading(false);

@@ -1,29 +1,26 @@
-/* Users Container */
-.users-container {
+/* Customers Container - Using staff styles */
+.staff-container {
     width: 100%;
     display: flex;
     flex-direction: column;
-    background: var(--bg-secondary);
-    min-height: 100vh;
-    transition: background-color 0.3s ease;
+    background: #f8f9fa;
 }
 
-/* Users Header */
-.users-header {
+/* Staff Header */
+.staff-header {
     display: flex;
     align-items: center;
     padding: 15px 20px;
-    background: var(--card-bg);
-    box-shadow: 0 2px 8px var(--shadow);
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     flex-shrink: 0;
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.users-header .back-btn {
+.staff-header .back-btn {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: var(--accent-color);
+    background: #dc3545;
     border: none;
     color: #fff;
     cursor: pointer;
@@ -34,33 +31,31 @@
     transition: all 0.3s ease;
 }
 
-.users-header .back-btn:hover {
-    background: var(--accent-hover);
+.staff-header .back-btn:hover {
+    background: #c82333;
     transform: scale(1.05);
 }
 
-.users-header .header-content {
+.staff-header .header-content {
     flex: 1;
 }
 
-.users-header .page-title {
+.staff-header .page-title {
     font-size: 20px;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #000;
     margin: 0;
     line-height: 1.2;
-    transition: color 0.3s ease;
 }
 
-.users-header .page-subtitle {
+.staff-header .page-subtitle {
     font-size: 12px;
-    color: var(--text-secondary);
+    color: #666;
     margin: 2px 0 0 0;
-    transition: color 0.3s ease;
 }
 
-/* Users Content */
-.users-content {
+/* Staff Content */
+.staff-content {
     flex: 1;
     padding: 20px;
     overflow-y: auto;
@@ -68,7 +63,7 @@
 }
 
 /* Top Section */
-.users-top-section {
+.staff-top-section {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -84,24 +79,23 @@
 .tab-dot {
     width: 12px;
     height: 12px;
-    background: var(--accent-color);
+    background: #dc3545;
     border-radius: 50%;
 }
 
 .tab-label {
     font-size: 14px;
     font-weight: 600;
-    color: var(--text-primary);
+    color: #333;
     letter-spacing: 1px;
-    transition: color 0.3s ease;
 }
 
-.add-user-btn {
+.add-staff-btn {
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 10px 16px;
-    background: var(--accent-color);
+    background: #dc3545;
     border: none;
     border-radius: 10px;
     color: #fff;
@@ -111,65 +105,64 @@
     transition: all 0.3s ease;
 }
 
-.add-user-btn:hover {
-    background: var(--accent-hover);
+.add-staff-btn:hover {
+    background: #c82333;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
 }
 
-/* Users Heading */
-.users-heading {
+/* Staff Heading */
+.staff-heading {
     margin-bottom: 20px;
 }
 
-.users-heading h2 {
+.staff-heading h2 {
     font-size: 18px;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #000;
     margin: 0 0 6px 0;
 }
 
-.users-heading p {
+.staff-heading p {
     font-size: 13px;
-    color: var(--text-secondary);
+    color: #666;
     margin: 0;
 }
 
-/* Users Controls */
-.users-controls {
+/* Staff Controls */
+.staff-controls {
     display: flex;
     gap: 12px;
     margin-bottom: 15px;
 }
 
-.users-search-bar {
+.staff-search-bar {
     flex: 1;
     position: relative;
     display: flex;
     align-items: center;
 }
 
-.users-search-bar i {
+.staff-search-bar i {
     position: absolute;
     left: 12px;
-    color: var(--accent-color);
+    color: #dc3545;
     font-size: 14px;
 }
 
-.users-search-bar input {
+.staff-search-bar input {
     width: 100%;
     padding: 12px 14px 12px 38px;
-    border: 2px solid var(--border-color);
+    border: 2px solid #e9ecef;
     border-radius: 12px;
-    background: var(--card-bg);
+    background: #fff;
     font-size: 13px;
     outline: none;
     transition: all 0.3s ease;
-    color: var(--text-primary);
 }
 
-.users-search-bar input:focus {
-    border-color: var(--accent-color);
+.staff-search-bar input:focus {
+    border-color: #dc3545;
     box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
 }
 
@@ -178,7 +171,7 @@
     align-items: center;
     gap: 8px;
     padding: 12px 16px;
-    background: var(--accent-color);
+    background: #dc3545;
     border: none;
     border-radius: 12px;
     color: #fff;
@@ -190,7 +183,7 @@
 }
 
 .store-filter-btn:hover {
-    background: var(--accent-hover);
+    background: #c82333;
 }
 
 .store-filter-btn i:first-child {
@@ -201,43 +194,43 @@
     font-size: 10px;
 }
 
-/* Users Count */
-.users-count {
+/* Staff Count */
+.staff-count {
     font-size: 13px;
-    color: var(--text-secondary);
+    color: #666;
     margin-bottom: 15px;
     font-weight: 500;
 }
 
-/* Users List */
-.users-list {
+/* Staff List */
+.staff-list {
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
 
-.user-card {
-    background: var(--card-bg);
+.staff-card {
+    background: #fff5f5;
     border-radius: 14px;
     padding: 16px;
     display: flex;
     align-items: center;
     gap: 14px;
-    box-shadow: 0 2px 8px var(--shadow-light);
-    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid #ffe0e0;
     transition: all 0.3s ease;
 }
 
-.user-card:hover {
+.staff-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.user-avatar {
+.staff-avatar {
     width: 50px;
     height: 50px;
     border-radius: 50%;
-    background: var(--accent-color);
+    background: #dc3545;
     color: #fff;
     display: flex;
     align-items: center;
@@ -247,71 +240,74 @@
     flex-shrink: 0;
 }
 
-.user-info {
+.staff-info {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
-.user-name {
+.staff-name {
     font-size: 15px;
     font-weight: 600;
-    color: var(--text-primary);
+    color: #000;
     margin-bottom: 4px;
 }
 
-.user-role {
+.staff-role {
     font-size: 12px;
-    color: var(--text-secondary);
-    margin-bottom: 6px;
+    color: #666;
+    margin-bottom: 0;
 }
 
-.user-store-badge {
+.staff-store-badge {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 4px 10px;
-    background: var(--accent-light);
-    border: 1px solid var(--border-color);
+    background: #fff;
+    border: 1px solid #dc3545;
     border-radius: 8px;
     font-size: 11px;
-    color: var(--accent-color);
+    color: #dc3545;
     font-weight: 500;
 }
 
-.user-store-badge i {
+.staff-store-badge i {
     font-size: 10px;
-    color: var(--accent-color);
+    color: #dc3545;
 }
 
-.user-email {
+.staff-email {
     font-size: 12px;
-    color: var(--text-secondary);
+    color: #666;
     text-align: right;
     flex-shrink: 0;
     min-width: 180px;
 }
 
-.user-options-container {
+.staff-options-container {
     position: relative;
     flex-shrink: 0;
 }
 
-.user-options {
+.staff-options {
     background: none;
     border: none;
-    color: var(--accent-color);
+    color: #dc3545;
     font-size: 16px;
     cursor: pointer;
     padding: 8px;
     transition: all 0.3s ease;
 }
 
-.user-options:hover {
+.staff-options:hover {
     color: #c82333;
     transform: scale(1.1);
 }
 
-.manager-menu-dropdown {
+.customer-menu-dropdown {
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
@@ -324,7 +320,7 @@
     overflow: hidden;
 }
 
-.manager-menu-dropdown .menu-item {
+.menu-item {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -336,26 +332,33 @@
     border-bottom: 1px solid #f0f0f0;
 }
 
-.manager-menu-dropdown .menu-item:last-child {
+.menu-item:last-child {
     border-bottom: none;
 }
 
-.manager-menu-dropdown .menu-item:hover {
+.menu-item:hover {
     background: #f8f9fa;
 }
 
-.manager-menu-dropdown .menu-item i {
+.menu-item i {
     color: #dc3545;
     font-size: 14px;
     width: 18px;
     text-align: center;
 }
 
-.manager-menu-dropdown .menu-item span {
+.menu-item span {
     flex: 1;
 }
 
-/* Manager Details Modal */
+.menu-divider {
+    height: 1px;
+    background: #e9ecef;
+    margin: 4px 0;
+}
+
+
+/* Customer Details Modal */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -514,12 +517,26 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-    .user-email {
+    .staff-email {
         display: none;
     }
 
-    .users-controls {
+    .staff-controls {
         flex-direction: column;
+    }
+
+    .customer-details-modal {
+        width: 95%;
+        max-height: 95vh;
+    }
+
+    .detail-row {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .detail-value {
+        text-align: left;
     }
 }
 

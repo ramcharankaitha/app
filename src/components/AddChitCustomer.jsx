@@ -1,25 +1,39 @@
-import React, { useState } from 'react';
-import { staffAPI } from '../services/api';
+import React, { useState, useEffect } from 'react';
+import { chitPlansAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 
-const AddStaff = ({ onBack, onCancel, onNavigate }) => {
+const AddChitCustomer = ({ onBack, onCancel, onNavigate }) => {
   const [formData, setFormData] = useState({
-    fullName: '',
-    storeAllocated: '',
-    email: '',
+    customerName: '',
+    phone: '',
     address: '',
-    username: '',
-    password: ''
+    email: '',
+    chitPlanId: '',
+    paymentMode: ''
   });
-  const [showPassword, setShowPassword] = useState(false);
+  const [plans, setPlans] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
 
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const response = await chitPlansAPI.getPlans();
+        if (response.success) {
+          setPlans(response.plans);
+        }
+      } catch (err) {
+        console.error('Error fetching chit plans:', err);
+      }
+    };
+    fetchPlans();
+  }, []);
+
   const handleBack = () => {
     if (onNavigate) {
-      onNavigate('staff');
+      onNavigate('chitPlans');
     } else if (onBack) {
       onBack();
     }
@@ -55,6 +69,18 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
     }
   };
 
+  const handleSuppliers = () => {
+    if (onNavigate) {
+      onNavigate('suppliers');
+    }
+  };
+
+  const handleChitPlans = () => {
+    if (onNavigate) {
+      onNavigate('chitPlans');
+    }
+  };
+
   const handleSettings = () => {
     if (onNavigate) {
       onNavigate('settings');
@@ -63,7 +89,7 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
 
   const handleCancel = () => {
     if (onNavigate) {
-      onNavigate('staff');
+      onNavigate('chitPlans');
     } else if (onCancel) {
       onCancel();
     }
@@ -77,32 +103,31 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
     }));
   };
 
-  const submitStaff = async () => {
+  const submitCustomer = async () => {
     setIsLoading(true);
     setError('');
     setSuccessMessage('');
 
     try {
-      const response = await staffAPI.create({
-        fullName: formData.fullName,
+      const response = await chitPlansAPI.createCustomer({
+        customerName: formData.customerName,
+        phone: formData.phone,
+        address: formData.address,
         email: formData.email,
-        username: formData.username,
-        password: formData.password,
-        storeAllocated: formData.storeAllocated,
-        address: formData.address
+        chitPlanId: parseInt(formData.chitPlanId),
+        paymentMode: formData.paymentMode
       });
 
       if (response.success) {
         setSuccessMessage('Save changes are done');
-        // Clear success message and navigate after 2 seconds
         setTimeout(() => {
           setSuccessMessage('');
           handleCancel();
         }, 2000);
       }
     } catch (err) {
-      setError(err.message || 'Failed to create staff. Please try again.');
-      console.error('Create staff error:', err);
+      setError(err.message || 'Failed to create chit customer. Please try again.');
+      console.error('Create chit customer error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -113,9 +138,11 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
     setConfirmState({
       open: true,
       message: 'Are you sure you want to submit?',
-      onConfirm: submitStaff,
+      onConfirm: submitCustomer,
     });
   };
+
+  const selectedPlan = plans.find(p => p.id === parseInt(formData.chitPlanId));
 
   return (
     <div className="dashboard-container">
@@ -145,7 +172,7 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
           </div>
           <span>Stores</span>
         </div>
-        <div className="nav-item active" onClick={handleStaff}>
+        <div className="nav-item" onClick={handleStaff}>
           <div className="nav-icon">
             <i className="fas fa-user-tie"></i>
           </div>
@@ -156,6 +183,18 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
             <i className="fas fa-user-friends"></i>
           </div>
           <span>Customers</span>
+        </div>
+        <div className="nav-item" onClick={handleSuppliers}>
+          <div className="nav-icon">
+            <i className="fas fa-truck"></i>
+          </div>
+          <span>Supply Master</span>
+        </div>
+        <div className="nav-item active" onClick={handleChitPlans}>
+          <div className="nav-icon">
+            <i className="fas fa-file-invoice-dollar"></i>
+          </div>
+          <span>Chit Plan</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">
@@ -174,61 +213,48 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
               <i className="fas fa-arrow-left"></i>
             </button>
             <div className="header-content">
-              <h1 className="page-title">Add Staff</h1>
-              <p className="page-subtitle">Create a new account for this store.</p>
+              <h1 className="page-title">Add Chit Customer</h1>
+              <p className="page-subtitle">Enroll a new customer in a chit plan.</p>
             </div>
           </header>
 
           {/* Main Content */}
           <main className="add-user-content">
-            {/* Photo Upload */}
-            <div className="photo-upload-section">
-              <div className="photo-placeholder">
-                <i className="fas fa-camera"></i>
-              </div>
-              <button type="button" className="upload-photo-btn">
-                <i className="fas fa-camera"></i>
-                <span>Upload photo</span>
-              </button>
-            </div>
-
             <form onSubmit={handleSubmit} className="add-user-form">
-                {/* Staff Details Section */}
+                {/* Customer Details Section */}
                 <div className="form-section">
-                  <h3 className="section-title">Staff details</h3>
+                  <h3 className="section-title">Customer details</h3>
                   <div className="form-grid">
                     <div className="form-group">
-                      <label htmlFor="fullName">Full name</label>
-                      <input
-                        type="text"
-                        id="fullName"
-                        name="fullName"
-                        className="form-input"
-                        placeholder="Enter full name."
-                        value={formData.fullName}
-                        onChange={handleInputChange}
-                        required
-                      />
+                      <label htmlFor="customerName">Customer Name</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-user input-icon"></i>
+                        <input
+                          type="text"
+                          id="customerName"
+                          name="customerName"
+                          className="form-input"
+                          placeholder="Enter customer name."
+                          value={formData.customerName}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="storeAllocated">Store allocated</label>
+                      <label htmlFor="phone">Phone Number</label>
                       <div className="input-wrapper">
-                        <i className="fas fa-store input-icon"></i>
-                        <select
-                          id="storeAllocated"
-                          name="storeAllocated"
+                        <i className="fas fa-phone input-icon"></i>
+                        <input
+                          type="tel"
+                          id="phone"
+                          name="phone"
                           className="form-input"
-                          value={formData.storeAllocated}
+                          placeholder="Enter phone number."
+                          value={formData.phone}
                           onChange={handleInputChange}
-                          required
-                        >
-                          <option value="">Select store.</option>
-                          <option value="mart">Mart</option>
-                          <option value="global">Global</option>
-                          <option value="mumbai">Mumbai DMart</option>
-                        </select>
-                        <i className="fas fa-chevron-down dropdown-icon"></i>
+                        />
                       </div>
                     </div>
 
@@ -241,12 +267,71 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                           id="email"
                           name="email"
                           className="form-input"
-                          placeholder="name.lastname@dmart.com"
+                          placeholder="customer@example.com"
                           value={formData.email}
                           onChange={handleInputChange}
-                          required
                         />
                       </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Chit Plan Selection */}
+                <div className="form-section">
+                  <h3 className="section-title">Chit Plan Selection</h3>
+                  
+                  <div className="form-group">
+                    <label htmlFor="chitPlanId">Chit Plan</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-file-invoice-dollar input-icon"></i>
+                      <select
+                        id="chitPlanId"
+                        name="chitPlanId"
+                        className="form-input"
+                        value={formData.chitPlanId}
+                        onChange={handleInputChange}
+                        required
+                      >
+                        <option value="">Select a chit plan</option>
+                        {plans.map(plan => (
+                          <option key={plan.id} value={plan.id}>
+                            {plan.plan_name} - ₹{parseFloat(plan.plan_amount).toLocaleString('en-IN')}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {selectedPlan && (
+                      <div style={{ 
+                        marginTop: '8px', 
+                        padding: '8px 12px', 
+                        background: '#f8f9fa', 
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        color: '#666'
+                      }}>
+                        <strong>Selected Plan:</strong> {selectedPlan.plan_name} - ₹{parseFloat(selectedPlan.plan_amount).toLocaleString('en-IN')}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="paymentMode">Payment Mode</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-credit-card input-icon"></i>
+                      <select
+                        id="paymentMode"
+                        name="paymentMode"
+                        className="form-input"
+                        value={formData.paymentMode}
+                        onChange={handleInputChange}
+                      >
+                        <option value="">Select payment mode</option>
+                        <option value="Cash">Cash</option>
+                        <option value="UPI">UPI</option>
+                        <option value="Card">Card</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="Cheque">Cheque</option>
+                      </select>
                     </div>
                   </div>
                 </div>
@@ -256,7 +341,7 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                   <h3 className="section-title">Address</h3>
                   
                   <div className="form-group">
-                    <label htmlFor="address">Store / home address</label>
+                    <label htmlFor="address">Address</label>
                     <div className="input-wrapper">
                       <i className="fas fa-map-marker-alt input-icon"></i>
                       <textarea
@@ -267,58 +352,26 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                         rows="2"
                         value={formData.address}
                         onChange={handleInputChange}
-                        required
                       ></textarea>
                     </div>
                   </div>
                 </div>
 
-                {/* Staff Details Section (Login Credentials) */}
-                <div className="form-section">
-                  <h3 className="section-title">Staff details</h3>
-                  <div className="form-grid two-col">
-                    <div className="form-group">
-                      <label htmlFor="username">username</label>
-                      <input
-                        type="text"
-                        id="username"
-                        name="username"
-                        className="form-input"
-                        placeholder="Enter username."
-                        value={formData.username}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="password">password</label>
-                      <div className="input-wrapper">
-                        <input
-                          type={showPassword ? 'text' : 'password'}
-                          id="password"
-                          name="password"
-                          className="form-input"
-                          placeholder="Enter password."
-                          value={formData.password}
-                          onChange={handleInputChange}
-                          required
-                        />
-                        <button
-                          type="button"
-                          className="password-toggle"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          <i className={showPassword ? 'fas fa-eye' : 'fas fa-eye-slash'}></i>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                {/* Info Message */}
+                <div style={{ 
+                  padding: '12px', 
+                  background: '#e7f3ff', 
+                  color: '#0066cc', 
+                  borderRadius: '8px', 
+                  marginBottom: '20px',
+                  fontSize: '13px'
+                }}>
+                  <i className="fas fa-info-circle"></i> Enrollment date will be automatically set to today's date.
                 </div>
 
                 {/* Warning Message */}
                 <p className="form-warning">
-                  Make sure email and store allocation are correct before saving.
+                  Make sure all customer details are correct before saving.
                 </p>
 
                 {/* Error Message */}
@@ -350,7 +403,7 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                 {/* Action Buttons */}
                 <div className="form-actions">
                   <button type="submit" className="create-user-btn" disabled={isLoading}>
-                    {isLoading ? 'Creating...' : 'Create Staff'}
+                    {isLoading ? 'Creating...' : 'Create Customer'}
                   </button>
                   <button type="button" className="cancel-btn" onClick={handleCancel}>
                     Cancel and go back
@@ -377,5 +430,5 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
   );
 };
 
-export default AddStaff;
+export default AddChitCustomer;
 
