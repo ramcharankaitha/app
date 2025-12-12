@@ -31,5 +31,41 @@ router.get('/all', async (req, res) => {
   }
 });
 
+// Export sales report
+router.get('/sales', async (req, res) => {
+  try {
+    // Fetch all sales data from customers table with product information
+    const salesResult = await pool.query(
+      `SELECT 
+        c.id,
+        c.full_name AS customer_name,
+        c.email AS customer_email,
+        c.phone AS customer_phone,
+        c.address AS customer_address,
+        c.item_code,
+        p.product_name,
+        c.quantity,
+        c.mrp,
+        c.discount,
+        c.sell_rate,
+        (c.quantity * c.sell_rate) AS total_amount,
+        c.payment_mode,
+        c.created_at AS sale_date
+      FROM customers c
+      LEFT JOIN products p ON c.item_code = p.item_code
+      WHERE c.item_code IS NOT NULL AND c.quantity > 0
+      ORDER BY c.created_at DESC`
+    );
+
+    res.json({
+      success: true,
+      sales: salesResult.rows
+    });
+  } catch (error) {
+    console.error('Export sales error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;
 

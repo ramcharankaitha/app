@@ -101,6 +101,25 @@ const initDatabase = async () => {
       console.log('✅ Default role permissions created');
     }
 
+    // Insert default chit plans
+    const checkChitPlans = await pool.query('SELECT id FROM chit_plans LIMIT 1');
+    if (checkChitPlans.rows.length === 0) {
+      await pool.query(
+        `INSERT INTO chit_plans (plan_name, plan_amount, description)
+         VALUES 
+         ($1, $2, $3),
+         ($4, $5, $6),
+         ($7, $8, $9)
+         ON CONFLICT DO NOTHING`,
+        [
+          'Chit Plan 1', 1000.00, 'Monthly chit plan of ₹1000',
+          'Chit Plan 2', 5000.00, 'Monthly chit plan of ₹5000',
+          'Chit Plan 3', 10000.00, 'Monthly chit plan of ₹10000'
+        ]
+      );
+      console.log('✅ Default chit plans created');
+    }
+
     console.log('✅ Database initialization completed');
   } catch (error) {
     console.error('❌ Error initializing database:', error);

@@ -43,6 +43,10 @@ CREATE TABLE IF NOT EXISTS products (
     store_id INTEGER,
     status VARCHAR(50) DEFAULT 'STOCK',
     image_url TEXT,
+    mrp DECIMAL(10, 2),
+    discount DECIMAL(10, 2) DEFAULT 0,
+    sell_rate DECIMAL(10, 2),
+    supplier_name VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -101,6 +105,137 @@ BEGIN
         ALTER TABLE admin_profile ADD COLUMN password_hash VARCHAR(255);
     END IF;
 END $$;
+
+-- Customers Table
+CREATE TABLE IF NOT EXISTS customers (
+    id SERIAL PRIMARY KEY,
+    full_name VARCHAR(200) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    phone VARCHAR(20),
+    address TEXT,
+    store_id INTEGER,
+    item_code VARCHAR(100),
+    quantity INTEGER DEFAULT 0,
+    mrp DECIMAL(10, 2),
+    sell_rate DECIMAL(10, 2),
+    discount DECIMAL(10, 2) DEFAULT 0,
+    payment_mode VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Add new columns to customers table if they don't exist (for existing databases)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'customers' AND column_name = 'item_code'
+    ) THEN
+        ALTER TABLE customers ADD COLUMN item_code VARCHAR(100);
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'customers' AND column_name = 'quantity'
+    ) THEN
+        ALTER TABLE customers ADD COLUMN quantity INTEGER DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'customers' AND column_name = 'mrp'
+    ) THEN
+        ALTER TABLE customers ADD COLUMN mrp DECIMAL(10, 2);
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'customers' AND column_name = 'sell_rate'
+    ) THEN
+        ALTER TABLE customers ADD COLUMN sell_rate DECIMAL(10, 2);
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'customers' AND column_name = 'discount'
+    ) THEN
+        ALTER TABLE customers ADD COLUMN discount DECIMAL(10, 2) DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'customers' AND column_name = 'payment_mode'
+    ) THEN
+        ALTER TABLE customers ADD COLUMN payment_mode VARCHAR(50);
+    END IF;
+END $$;
+
+-- Add new columns to products table if they don't exist (for existing databases)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'products' AND column_name = 'mrp'
+    ) THEN
+        ALTER TABLE products ADD COLUMN mrp DECIMAL(10, 2);
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'products' AND column_name = 'discount'
+    ) THEN
+        ALTER TABLE products ADD COLUMN discount DECIMAL(10, 2) DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'products' AND column_name = 'sell_rate'
+    ) THEN
+        ALTER TABLE products ADD COLUMN sell_rate DECIMAL(10, 2);
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'products' AND column_name = 'supplier_name'
+    ) THEN
+        ALTER TABLE products ADD COLUMN supplier_name VARCHAR(255);
+    END IF;
+END $$;
+
+-- Suppliers Table
+CREATE TABLE IF NOT EXISTS suppliers (
+    id SERIAL PRIMARY KEY,
+    supplier_name VARCHAR(255) NOT NULL,
+    phone VARCHAR(20),
+    address TEXT,
+    email VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Chit Plans Table
+CREATE TABLE IF NOT EXISTS chit_plans (
+    id SERIAL PRIMARY KEY,
+    plan_name VARCHAR(100) UNIQUE NOT NULL,
+    plan_amount DECIMAL(10, 2) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Chit Customers Table
+CREATE TABLE IF NOT EXISTS chit_customers (
+    id SERIAL PRIMARY KEY,
+    customer_name VARCHAR(200) NOT NULL,
+    phone VARCHAR(20),
+    address TEXT,
+    email VARCHAR(255),
+    chit_plan_id INTEGER REFERENCES chit_plans(id),
+    payment_mode VARCHAR(50),
+    enrollment_date DATE DEFAULT CURRENT_DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- Role Permissions Table
 CREATE TABLE IF NOT EXISTS role_permissions (

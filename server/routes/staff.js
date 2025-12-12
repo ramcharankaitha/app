@@ -16,6 +16,46 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get staff by ID with sales
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Get staff details
+    const staffResult = await pool.query(
+      'SELECT * FROM staff WHERE id = $1',
+      [id]
+    );
+    
+    if (staffResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Staff not found' });
+    }
+
+    const staff = staffResult.rows[0];
+
+    // Get sales/transactions for this staff member
+    // Since customers table doesn't have staff_id yet, we'll get all sales
+    // In future, we can add staff_id to customers table to link sales to staff
+    const salesResult = await pool.query(
+      `SELECT c.*, p.product_name 
+       FROM customers c 
+       LEFT JOIN products p ON c.item_code = p.item_code 
+       WHERE c.item_code IS NOT NULL AND c.quantity > 0
+       ORDER BY c.created_at DESC 
+       LIMIT 50`
+    );
+
+    res.json({
+      success: true,
+      staff: staff,
+      sales: salesResult.rows
+    });
+  } catch (error) {
+    console.error('Get staff by ID error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Create new staff
 router.post('/', async (req, res) => {
   try {

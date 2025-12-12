@@ -16,6 +16,9 @@ const profileRoutes = require('./routes/profile');
 const storeRoutes = require('./routes/stores');
 const permissionRoutes = require('./routes/permissions');
 const exportRoutes = require('./routes/export');
+const customerRoutes = require('./routes/customers');
+const supplierRoutes = require('./routes/suppliers');
+const chitPlanRoutes = require('./routes/chitPlans');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -42,6 +45,9 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/stores', storeRoutes);
 app.use('/api/permissions', permissionRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/customers', customerRoutes);
+app.use('/api/suppliers', supplierRoutes);
+app.use('/api/chit-plans', chitPlanRoutes);
 
 // Initialize database and start server
 const startServer = async () => {
