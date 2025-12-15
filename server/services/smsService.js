@@ -1,18 +1,11 @@
-/**
- * SMS and WhatsApp Service
- * Sends SMS and WhatsApp messages using Twilio
- */
-
-// For development/testing without Twilio, set WHATSAPP_ENABLED=false in .env
 const WHATSAPP_ENABLED = process.env.WHATSAPP_ENABLED !== 'false';
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER;
-const TWILIO_WHATSAPP_NUMBER = process.env.TWILIO_WHATSAPP_NUMBER || 'whatsapp:+14155238886'; // Default Twilio Sandbox number
+const TWILIO_WHATSAPP_NUMBER = process.env.TWILIO_WHATSAPP_NUMBER || 'whatsapp:+14155238886';
 
 let twilioClient = null;
 
-// Initialize Twilio client if credentials are available
 if (WHATSAPP_ENABLED && TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN) {
   try {
     const twilio = require('twilio');
@@ -24,26 +17,17 @@ if (WHATSAPP_ENABLED && TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN) {
   }
 }
 
-/**
- * Format phone number to E.164 format
- * @param {string} phoneNumber - Raw phone number
- * @returns {string} - Formatted phone number
- */
 function formatPhoneNumber(phoneNumber) {
   if (!phoneNumber || !phoneNumber.trim()) {
     return null;
   }
 
-  // Clean phone number (remove spaces, dashes, etc.)
   let cleaned = phoneNumber.trim().replace(/[\s\-\(\)]/g, '');
   
-  // Add country code if not present (assuming India +91)
   if (!cleaned.startsWith('+')) {
-    // If it starts with 0, remove it
     if (cleaned.startsWith('0')) {
       cleaned = cleaned.substring(1);
     }
-    // Add India country code if it's a 10-digit number
     if (cleaned.length === 10) {
       cleaned = '+91' + cleaned;
     } else {

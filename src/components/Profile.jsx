@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useProfile } from '../hooks/useProfile';
 
-const Profile = ({ onBack, onNavigate }) => {
+const Profile = ({ onBack, onNavigate, userRole = 'admin' }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { profile, avatarUrl, initials } = useProfile();
 
+  const homePage = userRole === 'admin' ? 'dashboard' : 'managerHome';
+
   const handleHome = () => {
-    if (onNavigate) onNavigate('dashboard');
+    if (onNavigate) onNavigate(homePage);
     else if (onBack) onBack();
   };
 
@@ -46,7 +48,7 @@ const Profile = ({ onBack, onNavigate }) => {
           </div>
           <span>Products</span>
         </div>
-        <div className="nav-item" onClick={() => onNavigate && onNavigate('dashboard')}>
+        <div className="nav-item" onClick={() => onNavigate && onNavigate(homePage)}>
           <div className="nav-icon">
             <i className="fas fa-store"></i>
           </div>
@@ -96,7 +98,7 @@ const Profile = ({ onBack, onNavigate }) => {
 
           {/* Content */}
           <main className="profile-content">
-            {/* Admin Profile Card */}
+            {/* Profile Card */}
             <div className="profile-card admin-profile-card">
               <div className="admin-avatar-large" style={{ position: 'relative', overflow: 'hidden' }}>
                 {avatarUrl ? (
@@ -131,11 +133,11 @@ const Profile = ({ onBack, onNavigate }) => {
                 </span>
               </div>
               <div className="admin-info">
-                <div className="admin-name">{profile.full_name || 'Admin'}</div>
-                <div className="admin-role-scope">{profile.role || 'Super Admin'} • {profile.store_scope || 'Global Scope'}</div>
+                <div className="admin-name">{profile.full_name || (userRole === 'manager' ? 'Manager' : 'Admin')}</div>
+                <div className="admin-role-scope">{profile.role || (userRole === 'manager' ? 'Manager' : 'Super Admin')} • {profile.store_scope || 'Global Scope'}</div>
                 <div className="active-badge">
                   <span className="active-dot"></span>
-                  <span>Active Admin</span>
+                  <span>Active {userRole === 'manager' ? 'Manager' : 'Admin'}</span>
                 </div>
               </div>
               <button className="edit-profile-btn" onClick={handleEditProfile}>

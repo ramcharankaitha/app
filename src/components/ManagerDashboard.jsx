@@ -259,7 +259,7 @@ const ManagerDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
             </div>
           </div>
 
-          <div className="panel">
+          <div className="panel checkin-card">
             <div className="panel-header">
               <div>
                 <div className="panel-title">Check-in / Check-out</div>
@@ -331,7 +331,7 @@ const ManagerDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
               <span className="dot"></span>
               <div>
                 <div className="notif-title">Warning: Check-in after allowed time</div>
-                <div className="notif-desc">Manager &amp; Admin notified</div>
+                <div className="notif-desc">Manager team notified</div>
               </div>
               <span className="time">5 min ago</span>
             </div>
@@ -344,6 +344,10 @@ const ManagerDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
               <span className="time">20 min</span>
             </div>
           </div>
+
+          <footer className="dashboard-footer">
+            <p>&copy; 2025 Anitha Stores. All rights reserved.</p>
+          </footer>
         </main>
       </div>
     </div>

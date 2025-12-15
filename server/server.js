@@ -2,12 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 
-// Load .env file from server directory
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const { testConnection } = require('./config/database');
 const { initDatabase } = require('./database/init');
 
-// Import routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const staffRoutes = require('./routes/staff');
@@ -23,20 +21,16 @@ const chitPlanRoutes = require('./routes/chitPlans');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
 });
 
-// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/staff', staffRoutes);
@@ -49,17 +43,13 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/chit-plans', chitPlanRoutes);
 
-// Initialize database and start server
 const startServer = async () => {
   try {
-    // Test database connection
     const isConnected = await testConnection();
     
     if (isConnected) {
-      // Initialize database schema
       await initDatabase();
       
-      // Start server
       app.listen(PORT, () => {
         console.log(`🚀 Server is running on http://localhost:${PORT}`);
         console.log(`📡 API endpoints available at http://localhost:${PORT}/api`);

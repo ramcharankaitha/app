@@ -1,6 +1,5 @@
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-// Helper function for API calls
 const apiCall = async (endpoint, options = {}) => {
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -11,7 +10,6 @@ const apiCall = async (endpoint, options = {}) => {
       ...options,
     });
 
-    // Check if response is ok before trying to parse JSON
     let data;
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
@@ -28,7 +26,6 @@ const apiCall = async (endpoint, options = {}) => {
     return data;
   } catch (error) {
     console.error('API Error:', error);
-    // If it's a network error, provide a more helpful message
     if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
       throw new Error('Network error: Could not connect to server. Please check if the server is running.');
     }
@@ -36,10 +33,8 @@ const apiCall = async (endpoint, options = {}) => {
   }
 };
 
-// Auth API
 export const authAPI = {
   login: async (identifier, password, role) => {
-    // For admin: send email, for manager/staff: send username
     const payload = role === 'admin' 
       ? { email: identifier, password }
       : { username: identifier, password };
@@ -51,7 +46,6 @@ export const authAPI = {
   },
 };
 
-// Users API
 export const usersAPI = {
   getAll: async () => {
     return apiCall('/users');
@@ -78,7 +72,6 @@ export const usersAPI = {
   },
 };
 
-// Staff API
 export const staffAPI = {
   getAll: async () => {
     return apiCall('/staff');
@@ -94,7 +87,6 @@ export const staffAPI = {
   },
 };
 
-// Products API
 export const productsAPI = {
   getAll: async () => {
     return apiCall('/products');
@@ -124,7 +116,6 @@ export const productsAPI = {
   },
 };
 
-// Stores API
 export const storesAPI = {
   getAll: async () => {
     return apiCall('/stores');
@@ -134,7 +125,6 @@ export const storesAPI = {
   },
 };
 
-// Permissions API
 export const permissionsAPI = {
   getAll: async () => {
     return apiCall('/permissions');
@@ -150,7 +140,6 @@ export const permissionsAPI = {
   },
 };
 
-// Customers API
 export const customersAPI = {
   getAll: async () => {
     return apiCall('/customers');
@@ -177,7 +166,6 @@ export const customersAPI = {
   },
 };
 
-// Export API
 export const exportAPI = {
   getAll: async () => {
     return apiCall('/export/all');
@@ -187,7 +175,6 @@ export const exportAPI = {
   },
 };
 
-// Profile API
 export const profileAPI = {
   get: async () => {
     return apiCall('/profile');
@@ -207,10 +194,8 @@ export const profileAPI = {
       const response = await fetch(`${API_BASE_URL}/profile/upload-avatar`, {
         method: 'POST',
         body: formData,
-        // Don't set Content-Type header - let browser set it with boundary for FormData
       });
 
-      // Check if response is ok before trying to parse JSON
       let data;
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
@@ -227,7 +212,6 @@ export const profileAPI = {
       return data;
     } catch (error) {
       console.error('Avatar upload error:', error);
-      // If it's a network error, provide a more helpful message
       if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
         throw new Error('Network error: Could not connect to server. Please check if the server is running.');
       }
@@ -245,7 +229,6 @@ export const profileAPI = {
   },
 };
 
-// Suppliers API
 export const suppliersAPI = {
   getAll: async () => {
     return apiCall('/suppliers');
@@ -272,7 +255,6 @@ export const suppliersAPI = {
   },
 };
 
-// Chit Plans API
 export const chitPlansAPI = {
   getPlans: async () => {
     return apiCall('/chit-plans/plans');

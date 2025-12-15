@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 
-// Get all chit plans
 router.get('/plans', async (req, res) => {
   try {
     const result = await pool.query(
@@ -15,7 +14,6 @@ router.get('/plans', async (req, res) => {
   }
 });
 
-// Get chit plan by ID
 router.get('/plans/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -32,7 +30,6 @@ router.get('/plans/:id', async (req, res) => {
   }
 });
 
-// Get all chit customers
 router.get('/customers', async (req, res) => {
   try {
     const result = await pool.query(
@@ -51,7 +48,6 @@ router.get('/customers', async (req, res) => {
   }
 });
 
-// Get chit customer by ID
 router.get('/customers/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -77,7 +73,6 @@ router.get('/customers/:id', async (req, res) => {
   }
 });
 
-// Create new chit customer
 router.post('/customers', async (req, res) => {
   try {
     const { customerName, phone, address, email, chitPlanId, paymentMode } = req.body;
@@ -114,7 +109,6 @@ router.post('/customers', async (req, res) => {
   }
 });
 
-// Update chit customer
 router.put('/customers/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -153,7 +147,6 @@ router.put('/customers/:id', async (req, res) => {
   }
 });
 
-// Delete chit customer
 router.delete('/customers/:id', async (req, res) => {
   try {
     const { id } = req.params;

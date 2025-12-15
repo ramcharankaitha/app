@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 
-// Get all products
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
@@ -15,7 +14,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get product by ID
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -32,7 +30,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Get product by item code
 router.get('/item-code/:itemCode', async (req, res) => {
   try {
     const { itemCode } = req.params;
@@ -52,7 +49,6 @@ router.get('/item-code/:itemCode', async (req, res) => {
   }
 });
 
-// Create new product
 router.post('/', async (req, res) => {
   try {
     const { productName, itemCode, skuCode, minimumQuantity, currentQuantity, supplierName, category, mrp, discount, sellRate } = req.body;
@@ -94,7 +90,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update product
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -140,7 +135,6 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Delete product
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;

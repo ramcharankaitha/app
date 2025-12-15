@@ -4,15 +4,12 @@ const { pool } = require('../config/database');
 
 const initDatabase = async () => {
   try {
-    // Read schema file
     const schemaPath = path.join(__dirname, 'schema.sql');
     const schema = fs.readFileSync(schemaPath, 'utf8');
 
-    // Execute schema
     await pool.query(schema);
     console.log('✅ Database schema initialized successfully');
 
-    // Insert default admin user (password: admin123)
     const bcrypt = require('bcryptjs');
     const hashedPassword = await bcrypt.hash('admin123', 10);
     
@@ -30,7 +27,6 @@ const initDatabase = async () => {
       );
       console.log('✅ Default admin profile created');
     } else {
-      // Update password if not set
       const admin = checkAdmin.rows[0];
       if (!admin.password_hash) {
         await pool.query(
@@ -41,7 +37,6 @@ const initDatabase = async () => {
       }
     }
 
-    // Insert default stores
     const checkStores = await pool.query('SELECT id FROM stores LIMIT 1');
     if (checkStores.rows.length === 0) {
       await pool.query(

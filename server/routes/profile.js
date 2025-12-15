@@ -6,7 +6,6 @@ const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const { pool } = require('../config/database');
 
-// Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(__dirname, '../uploads/avatars');
@@ -37,7 +36,6 @@ const upload = multer({
   }
 });
 
-// Get admin profile
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM admin_profile LIMIT 1');
@@ -48,7 +46,6 @@ router.get('/', async (req, res) => {
 
     const profile = result.rows[0];
     
-    // Parse selected_stores if it's a JSON string
     if (profile.selected_stores && typeof profile.selected_stores === 'string') {
       try {
         profile.selected_stores = JSON.parse(profile.selected_stores);
@@ -64,7 +61,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Update admin profile
 router.put('/', async (req, res) => {
   try {
     const { fullName, email, phone, primaryStore, storeScope, selectedStores, timezone, avatarUrl, password, currentPassword } = req.body;
@@ -73,15 +69,12 @@ router.put('/', async (req, res) => {
     
     console.log('Profile update request:', { fullName, email, phone, primaryStore, storeScope, timezone, avatarUrl: avatarUrl ? 'provided' : 'not provided', password: password ? 'provided' : 'not provided' });
 
-    // Get current profile to verify password if changing password
     const currentProfile = await pool.query('SELECT * FROM admin_profile LIMIT 1');
     if (currentProfile.rows.length === 0) {
       return res.status(404).json({ error: 'Profile not found' });
     }
 
-    // If password is being changed, verify current password
     if (password) {
-      // If admin has a password set, require current password
       if (currentProfile.rows[0].password_hash) {
         if (!currentPassword) {
           return res.status(400).json({ error: 'Current password is required to change password' });
@@ -91,16 +84,13 @@ router.put('/', async (req, res) => {
           return res.status(401).json({ error: 'Current password is incorrect' });
         }
       }
-      // If no password is set, allow setting password without current password (first time setup)
     }
 
-    // Hash new password if provided
     let passwordHash = null;
     if (password) {
       passwordHash = await bcrypt.hash(password, 10);
     }
 
-    // Build update query dynamically
     const updates = [];
     const values = [];
     let paramCount = 1;
@@ -126,7 +116,6 @@ router.put('/', async (req, res) => {
       values.push(storeScope);
     }
     if (selectedStores !== undefined) {
-      // Store as JSON string
       const selectedStoresJson = Array.isArray(selectedStores) ? JSON.stringify(selectedStores) : selectedStores;
       updates.push(`selected_stores = $${paramCount++}`);
       values.push(selectedStoresJson);
@@ -180,18 +169,15 @@ router.put('/', async (req, res) => {
   }
 });
 
-// Upload profile photo
 router.post('/upload-avatar', upload.single('avatar'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    // Get the file URL (relative path for frontend)
     const fileUrl = `/uploads/avatars/${req.file.filename}`;
     const fullUrl = `${req.protocol}://${req.get('host')}${fileUrl}`;
     
-    // Update profile with new avatar URL
     const result = await pool.query(
       `UPDATE admin_profile 
        SET avatar_url = $1, updated_at = CURRENT_TIMESTAMP

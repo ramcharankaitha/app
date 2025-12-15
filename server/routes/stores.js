@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 
-// Get all stores
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
@@ -19,7 +18,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get store by ID
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;

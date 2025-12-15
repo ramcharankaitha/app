@@ -2,14 +2,12 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 
-// Get all role permissions
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
       'SELECT id, role_name, permissions, created_at, updated_at FROM role_permissions ORDER BY role_name ASC'
     );
     
-    // Parse JSON permissions
     const permissions = result.rows.map(row => ({
       ...row,
       permissions: typeof row.permissions === 'string' ? JSON.parse(row.permissions) : row.permissions
@@ -25,7 +23,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get permissions for a specific role
 router.get('/:roleName', async (req, res) => {
   try {
     const { roleName } = req.params;
@@ -63,14 +60,12 @@ router.put('/:roleName', async (req, res) => {
       return res.status(400).json({ error: 'Permissions are required' });
     }
     
-    // Check if role exists
     const checkRole = await pool.query(
       'SELECT id FROM role_permissions WHERE role_name = $1',
       [roleName]
     );
     
     if (checkRole.rows.length === 0) {
-      // Create new role permission
       const result = await pool.query(
         `INSERT INTO role_permissions (role_name, permissions, updated_at)
          VALUES ($1, $2, CURRENT_TIMESTAMP)
@@ -87,7 +82,6 @@ router.put('/:roleName', async (req, res) => {
         message: 'Role permissions created successfully'
       });
     } else {
-      // Update existing role permission
       const result = await pool.query(
         `UPDATE role_permissions 
          SET permissions = $1, updated_at = CURRENT_TIMESTAMP

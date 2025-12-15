@@ -3,7 +3,6 @@ const router = express.Router();
 const { pool } = require('../config/database');
 const { sendCustomerWelcomeMessage } = require('../services/smsService');
 
-// Get all customers
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
@@ -16,7 +15,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get customer by ID
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -33,7 +31,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create new customer
 router.post('/', async (req, res) => {
   const client = await pool.connect();
   
@@ -49,9 +46,7 @@ router.post('/', async (req, res) => {
 
     const customerQuantity = quantity || 0;
 
-    // If itemCode and quantity are provided, update product quantity
     if (itemCode && customerQuantity > 0) {
-      // Find the product by item code
       const productResult = await client.query(
         'SELECT id, current_quantity, product_name FROM products WHERE item_code = $1',
         [itemCode]
@@ -66,7 +61,6 @@ router.post('/', async (req, res) => {
       const currentQuantity = parseInt(product.current_quantity) || 0;
       const requestedQuantity = parseInt(customerQuantity);
 
-      // Check if enough stock is available
       if (currentQuantity < requestedQuantity) {
         await client.query('ROLLBACK');
         return res.status(400).json({ 
@@ -74,7 +68,6 @@ router.post('/', async (req, res) => {
         });
       }
 
-      // Update product quantity (subtract the purchased quantity)
       const newQuantity = Math.max(0, currentQuantity - requestedQuantity);
       await client.query(
         'UPDATE products SET current_quantity = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
@@ -84,7 +77,6 @@ router.post('/', async (req, res) => {
       console.log(`Product "${product.product_name}" (${product.id}) quantity updated: ${currentQuantity} -> ${newQuantity} (sold ${requestedQuantity})`);
     }
 
-    // Create the customer record
     const result = await client.query(
       `INSERT INTO customers (full_name, email, phone, address, item_code, quantity, mrp, sell_rate, discount, payment_mode)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
@@ -107,7 +99,6 @@ router.post('/', async (req, res) => {
 
     const customer = result.rows[0];
 
-    // Send WhatsApp message to customer if phone number is provided
     let whatsappResult = null;
     if (phone && phone.trim()) {
       try {
@@ -118,7 +109,6 @@ router.post('/', async (req, res) => {
           console.warn(`⚠️  Failed to send WhatsApp to ${fullName}: ${whatsappResult.error}`);
         }
       } catch (whatsappError) {
-        // Don't fail the customer creation if WhatsApp fails
         console.error('WhatsApp error (non-blocking):', whatsappError);
       }
     }
@@ -143,7 +133,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update customer
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -179,7 +168,6 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Delete customer
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;

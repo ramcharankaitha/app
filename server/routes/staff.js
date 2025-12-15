@@ -3,7 +3,6 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const { pool } = require('../config/database');
 
-// Get all staff
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
@@ -16,12 +15,10 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get staff by ID with sales
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Get staff details
     const staffResult = await pool.query(
       'SELECT * FROM staff WHERE id = $1',
       [id]
@@ -33,9 +30,6 @@ router.get('/:id', async (req, res) => {
 
     const staff = staffResult.rows[0];
 
-    // Get sales/transactions for this staff member
-    // Since customers table doesn't have staff_id yet, we'll get all sales
-    // In future, we can add staff_id to customers table to link sales to staff
     const salesResult = await pool.query(
       `SELECT c.*, p.product_name 
        FROM customers c 
@@ -56,7 +50,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create new staff
 router.post('/', async (req, res) => {
   try {
     const { fullName, email, username, password, storeAllocated, address } = req.body;
@@ -65,10 +58,8 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Required fields are missing' });
     }
 
-    // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
     
-    // Verify the hash was created (for debugging)
     if (!passwordHash) {
       console.error('Password hash creation failed');
       return res.status(500).json({ error: 'Failed to hash password' });

@@ -2,10 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 
-// Export all data
 router.get('/all', async (req, res) => {
   try {
-    // Fetch all data from different tables
     const [usersResult, staffResult, productsResult, storesResult] = await Promise.all([
       pool.query('SELECT * FROM users ORDER BY created_at DESC'),
       pool.query('SELECT * FROM staff ORDER BY created_at DESC'),
@@ -31,10 +29,8 @@ router.get('/all', async (req, res) => {
   }
 });
 
-// Export sales report
 router.get('/sales', async (req, res) => {
   try {
-    // Fetch all sales data from customers table with product information
     const salesResult = await pool.query(
       `SELECT 
         c.id,

@@ -3,7 +3,6 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const { pool } = require('../config/database');
 
-// Get all users
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
@@ -16,7 +15,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get user by ID
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -33,7 +31,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create new user
 router.post('/', async (req, res) => {
   try {
     const { firstName, lastName, email, username, password, storeAllocated, address } = req.body;
@@ -42,10 +39,8 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Required fields are missing' });
     }
 
-    // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
     
-    // Verify the hash was created (for debugging)
     if (!passwordHash) {
       console.error('Password hash creation failed');
       return res.status(500).json({ error: 'Failed to hash password' });

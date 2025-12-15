@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 
-// Get all suppliers
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
@@ -15,7 +14,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get supplier by ID
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -32,7 +30,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create new supplier
 router.post('/', async (req, res) => {
   try {
     const { supplierName, phone, address, email } = req.body;
@@ -67,7 +64,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update supplier
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -104,7 +100,6 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Delete supplier
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;

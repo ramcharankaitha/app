@@ -38,12 +38,10 @@ function App() {
   const [userData, setUserData] = useState(null);
 
   useEffect(() => {
-    // Check if user is already logged in
     const loggedIn = localStorage.getItem('isLoggedIn');
     let storedRole = localStorage.getItem('userRole') || 'admin';
     const storedUser = localStorage.getItem('userData');
     
-    // Normalize role: Super Admin -> admin
     if (storedRole === 'Super Admin' || storedRole === 'admin') {
       storedRole = 'admin';
     }
@@ -63,7 +61,6 @@ function App() {
   }, []);
 
   const handleLoginSuccess = (role = 'admin', user = null) => {
-    // Normalize role: Super Admin -> admin
     let normalizedRole = role;
     if (role === 'Super Admin' || role === 'admin') {
       normalizedRole = 'admin';
@@ -85,8 +82,15 @@ function App() {
     setCurrentPage('dashboard');
   };
 
+  const mapPageForRole = (page) => {
+    if (page === 'dashboard' && userRole !== 'admin') {
+      return 'managerHome';
+    }
+    return page;
+  };
+
   const handleNavigation = (page) => {
-    setCurrentPage(page);
+    setCurrentPage(mapPageForRole(page));
   };
 
   const renderPage = () => {
@@ -134,6 +138,7 @@ function App() {
             onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : 'managerHome')}
             onNavigate={handleNavigation}
             onLogout={handleLogout}
+            userRole={userRole}
           />
         );
       case 'profile':
@@ -141,6 +146,7 @@ function App() {
           <Profile
             onBack={() => setCurrentPage('settings')}
             onNavigate={handleNavigation}
+            userRole={userRole}
           />
         );
       case 'editProfile':

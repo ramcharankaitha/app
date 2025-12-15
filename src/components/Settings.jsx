@@ -6,7 +6,7 @@ import StoreAccess from './StoreAccess';
 import RolePermissions from './RolePermissions';
 import ConfirmDialog from './ConfirmDialog';
 
-const Settings = ({ onBack, onNavigate, onLogout }) => {
+const Settings = ({ onBack, onNavigate, onLogout, userRole = 'admin' }) => {
   const [notificationsOn, setNotificationsOn] = useState(true);
   const [twoFactorOn, setTwoFactorOn] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -20,8 +20,9 @@ const Settings = ({ onBack, onNavigate, onLogout }) => {
   const { profile, avatarUrl, initials, refreshProfile } = useProfile();
   const { theme, toggleTheme, isDark } = useTheme();
 
+  const homePage = userRole === 'admin' ? 'dashboard' : 'managerHome';
   const handleHome = () => {
-    if (onNavigate) onNavigate('dashboard');
+    if (onNavigate) onNavigate(homePage);
     else if (onBack) onBack();
   };
 
@@ -32,14 +33,17 @@ const Settings = ({ onBack, onNavigate, onLogout }) => {
   const handleSuppliers = () => onNavigate && onNavigate('suppliers');
   const handleSettings = () => onNavigate && onNavigate('settings');
 
+  const displayName = profile.full_name || (userRole === 'manager' ? 'Manager Account' : 'Admin Root');
+  const displayRole = profile.role || (userRole === 'manager' ? 'Manager' : 'Super Admin');
+
   const sections = useMemo(() => [
     {
       title: 'ACCOUNT',
       items: [
         {
           type: 'profile',
-          title: profile.full_name || 'Admin Root',
-          subtitle: `${profile.role || 'Super Admin'} • ${profile.store_scope || 'Global'}`,
+          title: displayName,
+          subtitle: `${displayRole} • ${profile.store_scope || 'Global'}`,
           action: 'Edit Profile',
         },
       ],
@@ -47,14 +51,14 @@ const Settings = ({ onBack, onNavigate, onLogout }) => {
     {
       title: 'STORES & ROLES',
       items: [
-        { type: 'link', title: 'Store Access', desc: 'Choose stores this admin can manage' },
-        { type: 'link', title: 'Role Permissions', desc: 'Define access for Admin / Staff' },
+        { type: 'link', title: 'Store Access', desc: `Choose stores this ${userRole === 'manager' ? 'manager' : 'admin'} can manage` },
+        { type: 'link', title: 'Role Permissions', desc: `Define access for ${userRole === 'manager' ? 'Manager / Staff' : 'Admin / Staff'}` },
       ],
     },
     {
       title: 'SECURITY',
       items: [
-        { type: 'link', title: 'Change Password', desc: 'Update your admin password' },
+        { type: 'link', title: 'Change Password', desc: 'Update your password' },
         {
           type: 'toggle',
           title: 'Two-Factor Authentication',
@@ -89,7 +93,7 @@ const Settings = ({ onBack, onNavigate, onLogout }) => {
         { type: 'link', title: 'Data & Backup', desc: 'Export or backup store data' },
       ],
     },
-  ], [profile]);
+  ], [profile, displayName, displayRole, userRole, notificationsOn, isDark, twoFactorOn]);
 
   const toggleSidebar = () => {
     setSidebarOpen((prev) => !prev);
@@ -251,7 +255,7 @@ const Settings = ({ onBack, onNavigate, onLogout }) => {
           </div>
           <span>Products</span>
         </div>
-        <div className="nav-item" onClick={() => onNavigate && onNavigate('dashboard')}>
+        <div className="nav-item" onClick={() => onNavigate && onNavigate(homePage)}>
           <div className="nav-icon">
             <i className="fas fa-store"></i>
           </div>
@@ -470,8 +474,8 @@ const Settings = ({ onBack, onNavigate, onLogout }) => {
                 <div className="card-left">
                   <span className="dot-icon alert"></span>
                   <div className="card-text">
-                    <div className="card-title">Logout of Admin Account</div>
-                    <div className="card-desc">Sign out from your admin account</div>
+                    <div className="card-title">Logout of {userRole === 'manager' ? 'Manager' : 'Admin'} Account</div>
+                    <div className="card-desc">Sign out from your {userRole === 'manager' ? 'manager' : 'admin'} account</div>
                   </div>
                 </div>
                 <i className="fas fa-chevron-right chevron"></i>
@@ -516,7 +520,7 @@ const Settings = ({ onBack, onNavigate, onLogout }) => {
       <ConfirmDialog
         isOpen={showLogoutConfirm}
         title="Confirm Logout"
-        message="Are you sure you want to logout from your admin account? You will need to sign in again to access the system."
+        message={`Are you sure you want to logout from your ${userRole === 'manager' ? 'manager' : 'admin'} account? You will need to sign in again to access the system.`}
         confirmText="Yes, Logout"
         cancelText="Cancel"
         onConfirm={() => {

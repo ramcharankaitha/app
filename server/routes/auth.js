@@ -3,7 +3,6 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const { pool } = require('../config/database');
 
-// Login endpoint
 router.post('/login', async (req, res) => {
   try {
     const { email, username, password } = req.body;
@@ -12,9 +11,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Password is required' });
     }
 
-    // Admin login with email
     if (email) {
-      // Check admin profile first
       const adminResult = await pool.query(
         'SELECT * FROM admin_profile WHERE email = $1',
         [email]
@@ -23,14 +20,12 @@ router.post('/login', async (req, res) => {
       if (adminResult.rows.length > 0) {
         const admin = adminResult.rows[0];
         
-        // If password_hash exists, verify password
         if (admin.password_hash) {
           const isValid = await bcrypt.compare(password, admin.password_hash);
           if (!isValid) {
             return res.status(401).json({ error: 'Invalid email or password' });
           }
         }
-        // If no password_hash set, allow login (for backward compatibility)
         
         return res.json({
           success: true,
@@ -46,9 +41,7 @@ router.post('/login', async (req, res) => {
       }
     }
 
-    // Manager/Staff login with username
     if (username) {
-      // Check users table (managers)
       const userResult = await pool.query(
         'SELECT * FROM users WHERE username = $1',
         [username]
@@ -57,13 +50,11 @@ router.post('/login', async (req, res) => {
       if (userResult.rows.length > 0) {
         const user = userResult.rows[0];
         
-        // Check if password_hash exists
         if (!user.password_hash) {
           console.error('Manager has no password hash:', user.username);
           return res.status(401).json({ error: 'Invalid username or password' });
         }
         
-        // Verify password
         console.log('Attempting login for manager:', user.username);
         const isValid = await bcrypt.compare(password, user.password_hash);
         console.log('Password comparison result:', isValid);
@@ -88,7 +79,6 @@ router.post('/login', async (req, res) => {
         });
       }
 
-      // Check staff table
       const staffResult = await pool.query(
         'SELECT * FROM staff WHERE username = $1',
         [username]
@@ -97,13 +87,11 @@ router.post('/login', async (req, res) => {
       if (staffResult.rows.length > 0) {
         const staff = staffResult.rows[0];
         
-        // Check if password_hash exists
         if (!staff.password_hash) {
           console.error('Staff has no password hash:', staff.username);
           return res.status(401).json({ error: 'Invalid username or password' });
         }
         
-        // Verify password
         const isValid = await bcrypt.compare(password, staff.password_hash);
         if (!isValid) {
           console.error('Password mismatch for staff:', staff.username);
