@@ -4,7 +4,7 @@ import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import SupervisorDashboard from './components/SupervisorDashboard';
 import StaffDashboard from './components/StaffDashboard';
-import Managers from './components/Users';
+import Supervisors from './components/Users';
 import AddUser from './components/AddUser';
 import Staff from './components/Staff';
 import AddStaff from './components/AddStaff';
@@ -118,7 +118,7 @@ function App() {
     switch (currentPage) {
       case 'users':
         return (
-          <Managers
+          <Supervisors
             onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : 'supervisorHome')}
             onAddUser={() => setCurrentPage('addUser')}
             onNavigate={handleNavigation}
@@ -148,6 +148,7 @@ function App() {
             onBack={() => setCurrentPage('products')}
             onCancel={() => setCurrentPage('products')}
             onNavigate={handleNavigation}
+            userRole={userRole}
           />
         );
       case 'settings':
@@ -181,6 +182,7 @@ function App() {
             onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : 'supervisorHome')}
             onAddStaff={() => setCurrentPage('addStaff')}
             onNavigate={handleNavigation}
+            userRole={userRole}
           />
         );
       case 'addStaff':
@@ -206,6 +208,7 @@ function App() {
             onBack={() => setCurrentPage('customers')}
             onCancel={() => setCurrentPage('customers')}
             onNavigate={handleNavigation}
+            userRole={userRole}
           />
         );
       case 'suppliers':
@@ -223,6 +226,7 @@ function App() {
             onBack={() => setCurrentPage('suppliers')}
             onCancel={() => setCurrentPage('suppliers')}
             onNavigate={handleNavigation}
+            userRole={userRole}
           />
         );
       case 'dispatch':
@@ -257,6 +261,7 @@ function App() {
             onBack={() => setCurrentPage('transport')}
             onCancel={() => setCurrentPage('transport')}
             onNavigate={handleNavigation}
+            userRole={userRole}
           />
         );
       case 'chitPlans':
@@ -274,6 +279,7 @@ function App() {
             onBack={() => setCurrentPage('chitPlans')}
             onCancel={() => setCurrentPage('chitPlans')}
             onNavigate={handleNavigation}
+            userRole={userRole}
           />
         );
       case 'masterMenu':

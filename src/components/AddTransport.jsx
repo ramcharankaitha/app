@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { transportAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 
-const AddTransport = ({ onBack, onCancel, onNavigate }) => {
+const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
     name: '',
     travelsName: '',
@@ -115,6 +115,14 @@ const AddTransport = ({ onBack, onCancel, onNavigate }) => {
           </div>
           <span>Home</span>
         </div>
+        {userRole === 'admin' && (
+          <div className="nav-item" onClick={handleManagers}>
+            <div className="nav-icon">
+              <i className="fas fa-users"></i>
+            </div>
+            <span>Supervisors</span>
+          </div>
+        )}
         <div className="nav-item" onClick={handleStaff}>
           <div className="nav-icon">
             <i className="fas fa-user-tie"></i>

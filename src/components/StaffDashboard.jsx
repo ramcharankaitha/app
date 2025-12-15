@@ -16,6 +16,8 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
   const [checkOutTime, setCheckOutTime] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [warningMessage, setWarningMessage] = useState('');
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -147,7 +149,7 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
     setShowAttendanceModal(true);
   };
 
-  const handleAttendanceSuccess = (type, time, warning) => {
+  const handleAttendanceSuccess = (type, time, message, warning) => {
     if (type === 'checkin') {
       setCheckInTime(time);
       setAttendanceStatus('Checked in');
@@ -157,6 +159,18 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
     }
     setShowAttendanceModal(false);
     setAttendanceType(null);
+    
+    // Display success message in-app
+    setSuccessMessage(message || `${type === 'checkin' ? 'Checked in' : 'Checked out'} successfully`);
+    if (warning) {
+      setWarningMessage(warning);
+    }
+    
+    // Auto-hide messages after 5 seconds
+    setTimeout(() => {
+      setSuccessMessage('');
+      setWarningMessage('');
+    }, 5000);
     
     // Refresh notifications if there's a warning
     if (warning) {
@@ -298,6 +312,41 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
 
         {/* Main Content */}
         <main className="dashboard-content">
+          {/* Success and Warning Messages */}
+          {successMessage && (
+            <div style={{ 
+              padding: '16px', 
+              background: '#d4edda', 
+              color: '#155724', 
+              borderRadius: '8px', 
+              marginBottom: '20px',
+              border: '1px solid #c3e6cb',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              <i className="fas fa-check-circle" style={{ fontSize: '20px' }}></i>
+              <span style={{ fontWeight: '500' }}>{successMessage}</span>
+            </div>
+          )}
+
+          {warningMessage && (
+            <div style={{ 
+              padding: '16px', 
+              background: '#fff3cd', 
+              color: '#856404', 
+              borderRadius: '8px', 
+              marginBottom: '20px',
+              border: '1px solid #ffeaa7',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              <i className="fas fa-exclamation-triangle" style={{ fontSize: '20px' }}></i>
+              <span style={{ fontWeight: '500' }}>{warningMessage}</span>
+            </div>
+          )}
+
           {activeNav === 'masterMenu' ? (
             <div className="master-menu-grid">
               {[

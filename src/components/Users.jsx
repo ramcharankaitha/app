@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { usersAPI } from '../services/api';
 
-const Managers = ({ onBack, onAddUser, onNavigate }) => {
+const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStore, setSelectedStore] = useState('All Stores');
   const [users, setUsers] = useState([]);
   const [error, setError] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
-  const [viewManagerModal, setViewManagerModal] = useState(null);
+  const [viewSupervisorModal, setViewSupervisorModal] = useState(null);
   const menuRefs = useRef({});
 
   const handleBack = () => {
@@ -103,23 +103,23 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
   }, [openMenuId]);
 
   // Handle view supervisor details
-  const handleViewManagerDetails = async (user) => {
+  const handleViewSupervisorDetails = async (user) => {
     setOpenMenuId(null);
     try {
       const response = await usersAPI.getById(user.id);
       if (response.success) {
-        setViewManagerModal(response.user);
+        setViewSupervisorModal(response.user);
       } else {
         setError('Failed to fetch supervisor details');
       }
     } catch (err) {
       console.error('Error fetching supervisor details:', err);
-      setError('Failed to fetch manager details');
+      setError('Failed to fetch supervisor details');
     }
   };
 
   const closeViewModal = () => {
-    setViewManagerModal(null);
+    setViewSupervisorModal(null);
   };
 
   return (
@@ -136,7 +136,7 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
           <div className="nav-icon">
             <i className="fas fa-users"></i>
           </div>
-          <span>Managers</span>
+          <span>Supervisors</span>
         </div>
         <div className="nav-item" onClick={handleStaff}>
           <div className="nav-icon">
@@ -173,8 +173,8 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
           <i className="fas fa-arrow-left"></i>
         </button>
         <div className="header-content">
-          <h1 className="page-title">Managers</h1>
-          <p className="page-subtitle">Manage store managers</p>
+          <h1 className="page-title">Supervisors</h1>
+          <p className="page-subtitle">Manage store supervisors</p>
         </div>
       </header>
 
@@ -184,7 +184,7 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
         <div className="users-top-section">
           <div className="tab-indicator">
             <span className="tab-dot"></span>
-            <span className="tab-label">MANAGERS</span>
+            <span className="tab-label">SUPERVISORS</span>
           </div>
           <button className="add-user-btn" onClick={handleAddUser}>
             <i className="fas fa-plus"></i>
@@ -194,8 +194,8 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
 
         {/* Heading */}
         <div className="users-heading">
-          <h2>Manage Store Managers</h2>
-          <p>View managers, their roles, and working stores. Filter quickly.</p>
+          <h2>Manage Store Supervisors</h2>
+          <p>View supervisors, their roles, and working stores. Filter quickly.</p>
         </div>
 
         {/* Search and Filter */}
@@ -233,13 +233,13 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
           {users.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 40px', color: '#666' }}>
               <i className="fas fa-users" style={{ fontSize: '64px', marginBottom: '20px', opacity: 0.4, color: '#dc3545' }}></i>
-              <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>No Managers Available</h3>
+              <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>No Supervisors Available</h3>
               <p style={{ fontSize: '14px', color: '#666' }}>Start by adding your first supervisor to the system.</p>
             </div>
           ) : filteredUsers.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
               <i className="fas fa-search" style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}></i>
-              <p>No managers found matching your search</p>
+              <p>No supervisors found matching your search</p>
             </div>
           ) : (
             filteredUsers.map((user) => (
@@ -268,7 +268,7 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
                 </button>
                 {openMenuId === user.id && (
                   <div className="supervisor-menu-dropdown">
-                    <div className="menu-item" onClick={() => handleViewManagerDetails(user)}>
+                    <div className="menu-item" onClick={() => handleViewSupervisorDetails(user)}>
                       <i className="fas fa-eye"></i>
                       <span>View Supervisor Details</span>
                     </div>
@@ -283,8 +283,8 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
       </div>
       </div>
 
-      {/* View Manager Details Modal */}
-      {viewManagerModal && (
+      {/* View Supervisor Details Modal */}
+      {viewSupervisorModal && (
         <div className="modal-overlay" onClick={closeViewModal}>
           <div className="customer-details-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -296,55 +296,55 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
             <div className="modal-content">
               <div className="customer-detail-section">
                 <div className="detail-avatar">
-                  <span>{viewManagerModal.first_name && viewManagerModal.last_name 
-                    ? `${viewManagerModal.first_name[0]}${viewManagerModal.last_name[0]}`.toUpperCase()
-                    : 'MG'}</span>
+                  <span>{viewSupervisorModal.first_name && viewSupervisorModal.last_name 
+                    ? `${viewSupervisorModal.first_name[0]}${viewSupervisorModal.last_name[0]}`.toUpperCase()
+                    : 'SP'}</span>
                 </div>
                 <div className="detail-info">
                   <div className="detail-row">
                     <span className="detail-label">First Name:</span>
-                    <span className="detail-value">{viewManagerModal.first_name || 'N/A'}</span>
+                    <span className="detail-value">{viewSupervisorModal.first_name || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">Last Name:</span>
-                    <span className="detail-value">{viewManagerModal.last_name || 'N/A'}</span>
+                    <span className="detail-value">{viewSupervisorModal.last_name || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">Full Name:</span>
-                    <span className="detail-value">{`${viewManagerModal.first_name || ''} ${viewManagerModal.last_name || ''}`.trim() || 'N/A'}</span>
+                    <span className="detail-value">{`${viewSupervisorModal.first_name || ''} ${viewSupervisorModal.last_name || ''}`.trim() || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">Email:</span>
-                    <span className="detail-value">{viewManagerModal.email || 'N/A'}</span>
+                    <span className="detail-value">{viewSupervisorModal.email || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">Username:</span>
-                    <span className="detail-value">{viewManagerModal.username || 'N/A'}</span>
+                    <span className="detail-value">{viewSupervisorModal.username || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">Role:</span>
-                    <span className="detail-value">{viewManagerModal.role || 'Supervisor'}</span>
+                    <span className="detail-value">{viewSupervisorModal.role || 'Supervisor'}</span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">Store Allocated:</span>
-                    <span className="detail-value">{viewManagerModal.store_allocated || 'Not Assigned'}</span>
+                    <span className="detail-value">{viewSupervisorModal.store_allocated || 'Not Assigned'}</span>
                   </div>
-                  {viewManagerModal.address && (
+                  {viewSupervisorModal.address && (
                     <div className="detail-row">
                       <span className="detail-label">Address:</span>
-                      <span className="detail-value">{viewManagerModal.address}</span>
+                      <span className="detail-value">{viewSupervisorModal.address}</span>
                     </div>
                   )}
-                  {viewManagerModal.created_at && (
+                  {viewSupervisorModal.created_at && (
                     <div className="detail-row">
                       <span className="detail-label">Created At:</span>
-                      <span className="detail-value">{new Date(viewManagerModal.created_at).toLocaleString()}</span>
+                      <span className="detail-value">{new Date(viewSupervisorModal.created_at).toLocaleString()}</span>
                     </div>
                   )}
-                  {viewManagerModal.updated_at && (
+                  {viewSupervisorModal.updated_at && (
                     <div className="detail-row">
                       <span className="detail-label">Updated At:</span>
-                      <span className="detail-value">{new Date(viewManagerModal.updated_at).toLocaleString()}</span>
+                      <span className="detail-value">{new Date(viewSupervisorModal.updated_at).toLocaleString()}</span>
                     </div>
                   )}
                 </div>
@@ -362,5 +362,5 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
   );
 };
 
-export default Managers;
+export default Supervisors;
 

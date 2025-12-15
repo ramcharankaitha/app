@@ -48,7 +48,26 @@ export const useProfile = () => {
           return;
         }
 
-        // For admin and supervisor, fetch from API
+        // For supervisor users, use userData directly (from users table)
+        if (userRole === 'supervisor' && userData) {
+          setProfile({
+            full_name: userData.name || userData.full_name || 'Supervisor Account',
+            email: userData.email || '',
+            phone: userData.phone || '',
+            role: userData.role || 'Supervisor',
+            primary_store: userData.store || userData.store_allocated || '',
+            store_scope: userData.store_allocated || 'Store Access',
+            avatar_url: userData.avatar_url || null
+          });
+          if (userData.avatar_url) {
+            setAvatarUrl(userData.avatar_url);
+          } else {
+            setAvatarUrl('');
+          }
+          return;
+        }
+
+        // For admin only, fetch from API (admin_profile table)
         const response = await profileAPI.get();
         if (response.success) {
           const profileData = response.profile;
@@ -78,7 +97,12 @@ export const useProfile = () => {
   };
 
   const getInitials = () => {
-    if (!profile.full_name) return 'AR';
+    if (!profile.full_name) {
+      const userRole = localStorage.getItem('userRole') || 'admin';
+      if (userRole === 'supervisor') return 'SP';
+      if (userRole === 'staff') return 'ST';
+      return 'AR';
+    }
     const parts = profile.full_name.trim().split(' ');
     if (parts.length >= 2) {
       return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -124,7 +148,26 @@ export const useProfile = () => {
           return;
         }
 
-        // For admin and supervisor, fetch from API
+        // For supervisor users, use userData directly (from users table)
+        if (userRole === 'supervisor' && userData) {
+          setProfile({
+            full_name: userData.name || userData.full_name || 'Supervisor Account',
+            email: userData.email || '',
+            phone: userData.phone || '',
+            role: userData.role || 'Supervisor',
+            primary_store: userData.store || userData.store_allocated || '',
+            store_scope: userData.store_allocated || 'Store Access',
+            avatar_url: userData.avatar_url || null
+          });
+          if (userData.avatar_url) {
+            setAvatarUrl(userData.avatar_url);
+          } else {
+            setAvatarUrl('');
+          }
+          return;
+        }
+
+        // For admin only, fetch from API (admin_profile table)
         const response = await profileAPI.get();
         if (response.success) {
           const profileData = response.profile;

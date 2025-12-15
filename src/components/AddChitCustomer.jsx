@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { chitPlansAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 
-const AddChitCustomer = ({ onBack, onCancel, onNavigate }) => {
+const AddChitCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
     customerName: '',
     phone: '',
@@ -154,6 +154,14 @@ const AddChitCustomer = ({ onBack, onCancel, onNavigate }) => {
           </div>
           <span>Home</span>
         </div>
+        {userRole === 'admin' && (
+          <div className="nav-item" onClick={handleManagers}>
+            <div className="nav-icon">
+              <i className="fas fa-users"></i>
+            </div>
+            <span>Supervisors</span>
+          </div>
+        )}
         <div className="nav-item" onClick={handleStaff}>
           <div className="nav-icon">
             <i className="fas fa-user-tie"></i>

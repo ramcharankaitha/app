@@ -159,7 +159,7 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
           <div className="nav-icon">
             <i className="fas fa-users"></i>
           </div>
-          <span>Managers</span>
+          <span>Supervisors</span>
         </div>
         <div className="nav-item" onClick={handleStaff}>
           <div className="nav-icon">

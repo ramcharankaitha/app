@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { staffAPI } from '../services/api';
 
-const Staff = ({ onBack, onAddStaff, onNavigate }) => {
+const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStore, setSelectedStore] = useState('All Stores');
   const [staff, setStaff] = useState([]);
@@ -142,6 +142,14 @@ const Staff = ({ onBack, onAddStaff, onNavigate }) => {
           </div>
           <span>Home</span>
         </div>
+        {userRole === 'admin' && (
+          <div className="nav-item" onClick={handleManagers}>
+            <div className="nav-icon">
+              <i className="fas fa-users"></i>
+            </div>
+            <span>Supervisors</span>
+          </div>
+        )}
         <div className="nav-item active">
           <div className="nav-icon">
             <i className="fas fa-user-tie"></i>

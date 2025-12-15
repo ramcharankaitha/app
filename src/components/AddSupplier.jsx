@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { suppliersAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 
-const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
+const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
     supplierName: '',
     phone: '',
@@ -133,6 +133,14 @@ const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
           </div>
           <span>Home</span>
         </div>
+        {userRole === 'admin' && (
+          <div className="nav-item" onClick={handleManagers}>
+            <div className="nav-icon">
+              <i className="fas fa-users"></i>
+            </div>
+            <span>Supervisors</span>
+          </div>
+        )}
         <div className="nav-item" onClick={handleStaff}>
           <div className="nav-icon">
             <i className="fas fa-user-tie"></i>

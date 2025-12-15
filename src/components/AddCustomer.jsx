@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { customersAPI, productsAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 
-const AddCustomer = ({ onBack, onCancel, onNavigate }) => {
+const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -50,6 +50,12 @@ const AddCustomer = ({ onBack, onCancel, onNavigate }) => {
   const handleManagers = () => {
     if (onNavigate) {
       onNavigate('users');
+    }
+  };
+
+  const handleStaff = () => {
+    if (onNavigate) {
+      onNavigate('staff');
     }
   };
 
@@ -387,19 +393,15 @@ const AddCustomer = ({ onBack, onCancel, onNavigate }) => {
           </div>
           <span>Home</span>
         </div>
-        <div className="nav-item" onClick={handleManagers}>
-          <div className="nav-icon">
-            <i className="fas fa-users"></i>
+        {userRole === 'admin' && (
+          <div className="nav-item" onClick={handleManagers}>
+            <div className="nav-icon">
+              <i className="fas fa-users"></i>
+            </div>
+            <span>Supervisors</span>
           </div>
-          <span>Managers</span>
-        </div>
-        <div className="nav-item" onClick={handleManagers}>
-          <div className="nav-icon">
-            <i className="fas fa-users"></i>
-          </div>
-          <span>Managers</span>
-        </div>
-        <div className="nav-item" onClick={handleHome}>
+        )}
+        <div className="nav-item" onClick={handleStaff}>
           <div className="nav-icon">
             <i className="fas fa-user-tie"></i>
           </div>
@@ -410,6 +412,12 @@ const AddCustomer = ({ onBack, onCancel, onNavigate }) => {
             <i className="fas fa-user-friends"></i>
           </div>
           <span>Customers</span>
+        </div>
+        <div className="nav-item" onClick={() => onNavigate && onNavigate('masterMenu')}>
+          <div className="nav-icon">
+            <i className="fas fa-th-large"></i>
+          </div>
+          <span>Master Menu</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">

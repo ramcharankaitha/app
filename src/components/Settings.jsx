@@ -242,6 +242,14 @@ const Settings = ({ onBack, onNavigate, onLogout, userRole = 'admin' }) => {
           </div>
           <span>Home</span>
         </div>
+        {userRole === 'admin' && (
+          <div className="nav-item" onClick={handleManagers}>
+            <div className="nav-icon">
+              <i className="fas fa-users"></i>
+            </div>
+            <span>Supervisors</span>
+          </div>
+        )}
         {userRole !== 'staff' && (
           <div className="nav-item" onClick={handleStaff}>
             <div className="nav-icon">

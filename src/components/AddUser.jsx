@@ -134,13 +134,7 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
           <div className="nav-icon">
             <i className="fas fa-users"></i>
           </div>
-          <span>Managers</span>
-        </div>
-        <div className="nav-item" onClick={handleProducts}>
-          <div className="nav-icon">
-            <i className="fas fa-box"></i>
-          </div>
-          <span>Products</span>
+          <span>Supervisors</span>
         </div>
         <div className="nav-item" onClick={handleStaff}>
           <div className="nav-icon">
@@ -153,6 +147,12 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
             <i className="fas fa-user-friends"></i>
           </div>
           <span>Customers</span>
+        </div>
+        <div className="nav-item" onClick={() => onNavigate && onNavigate('masterMenu')}>
+          <div className="nav-icon">
+            <i className="fas fa-th-large"></i>
+          </div>
+          <span>Master Menu</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">

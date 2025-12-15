@@ -86,14 +86,9 @@ const AttendanceModal = ({ type, onSuccess, onClose }) => {
 
       if (response.ok && data.success) {
         stopCamera();
-        // Show success message with warning if applicable
-        if (data.warning) {
-          alert(`✅ ${data.message}\n⚠️ ${data.warning}`);
-        } else {
-          alert(`✅ ${data.message}`);
-        }
+        // Pass success message and warning to parent component to display in-app
         setTimeout(() => {
-          onSuccess(type, data.attendance.check_in_time || data.attendance.check_out_time, data.warning);
+          onSuccess(type, data.attendance.check_in_time || data.attendance.check_out_time, data.message, data.warning);
         }, 500);
       } else {
         setError(data.error || 'Failed to record attendance. Please try again.');

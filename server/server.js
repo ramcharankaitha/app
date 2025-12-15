@@ -44,12 +44,24 @@ const corsOptions = {
       return callback(null, true);
     }
     
-    // In production, check against allowed origins
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    // In production, allow Vercel domains and specified frontend URL
+    // Vercel apps can have multiple domains (*.vercel.app, custom domains)
+    const isVercelDomain = origin.includes('.vercel.app') || 
+                          origin.includes('vercel.app') ||
+                          allowedOrigins.some(allowed => origin === allowed);
+    
+    if (isVercelDomain || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
       console.warn(`⚠️  CORS blocked origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      console.warn(`⚠️  Allowed origins: ${allowedOrigins.join(', ')}`);
+      // In production, be more permissive if FRONTEND_URL is not set
+      if (!process.env.FRONTEND_URL) {
+        console.warn('⚠️  FRONTEND_URL not set - allowing all origins');
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
     }
   },
   credentials: true
