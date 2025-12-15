@@ -1,4 +1,16 @@
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+// Require an explicit API base URL in deployed environments to avoid falling back to localhost
+const getApiBaseUrl = () => {
+  const envUrl = process.env.REACT_APP_API_URL;
+  if (envUrl && envUrl.trim().length > 0) {
+    return envUrl.trim().replace(/\/+$/, ''); // strip trailing slashes
+  }
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('REACT_APP_API_URL is not set. Please configure it in your deployment environment.');
+  }
+  return 'http://localhost:5000/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 const apiCall = async (endpoint, options = {}) => {
   try {
