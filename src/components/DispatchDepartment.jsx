@@ -1,40 +1,34 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { suppliersAPI } from '../services/api';
+import { dispatchAPI } from '../services/api';
 import './suppliers.css';
 
-const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) => {
+const DispatchDepartment = ({ onBack, onAddDispatch, onNavigate, userRole = 'admin' }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [suppliers, setSuppliers] = useState([]);
+  const [dispatches, setDispatches] = useState([]);
   const [error, setError] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
-  const [viewSupplierModal, setViewSupplierModal] = useState(null);
+  const [viewDispatchModal, setViewDispatchModal] = useState(null);
   const menuRefs = useRef({});
 
   const handleBack = () => {
     if (onNavigate) {
-      onNavigate('dashboard');
+      onNavigate('masterMenu');
     } else if (onBack) {
       onBack();
     }
   };
 
-  const handleAddSupplier = () => {
-    if (onAddSupplier) {
-      onAddSupplier();
+  const handleAddDispatch = () => {
+    if (onAddDispatch) {
+      onAddDispatch();
     } else if (onNavigate) {
-      onNavigate('addSupplier');
+      onNavigate('addDispatch');
     }
   };
 
   const handleManagers = () => {
     if (onNavigate) {
       onNavigate('users');
-    }
-  };
-
-  const handleProducts = () => {
-    if (onNavigate) {
-      onNavigate('products');
     }
   };
 
@@ -50,60 +44,54 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
     }
   };
 
-  const handleChitPlans = () => {
-    if (onNavigate) {
-      onNavigate('chitPlans');
-    }
-  };
-
   const handleSettings = () => {
     if (onNavigate) {
       onNavigate('settings');
     }
   };
 
-  // Fetch suppliers from database
-  const fetchSuppliers = async () => {
+  // Fetch dispatches from database
+  const fetchDispatches = async () => {
     try {
       setError('');
-      const response = await suppliersAPI.getAll();
+      const response = await dispatchAPI.getAll();
       if (response.success) {
-        const formattedSuppliers = response.suppliers.map(supplier => ({
-          id: supplier.id,
-          name: supplier.supplier_name,
-          initials: supplier.supplier_name 
-            ? supplier.supplier_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
-            : 'SU',
-          phone: supplier.phone,
-          address: supplier.address,
-          email: supplier.email,
-          created_at: supplier.created_at
+        const formattedDispatches = response.dispatches.map(dispatch => ({
+          id: dispatch.id,
+          customer: dispatch.customer,
+          name: dispatch.name,
+          phone: dispatch.phone,
+          transportName: dispatch.transport_name,
+          initials: dispatch.name 
+            ? dispatch.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+            : 'DP',
+          created_at: dispatch.created_at
         }));
-        setSuppliers(formattedSuppliers);
+        setDispatches(formattedDispatches);
       }
     } catch (err) {
-      console.error('Error fetching suppliers:', err);
-      setError('Failed to load suppliers. Please try again.');
+      console.error('Error fetching dispatches:', err);
+      setError('Failed to load dispatches. Please try again.');
     }
   };
 
   useEffect(() => {
-    fetchSuppliers();
+    fetchDispatches();
   }, []);
 
-  // Filter suppliers based on search
-  const filteredSuppliers = suppliers.filter(supplier => {
-    const matchesSearch = supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         supplier.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         supplier.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         supplier.email?.toLowerCase().includes(searchQuery.toLowerCase());
+  // Filter dispatches based on search
+  const filteredDispatches = dispatches.filter(dispatch => {
+    const matchesSearch = dispatch.customer?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         dispatch.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         dispatch.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         dispatch.transportName?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
 
   // Handle menu toggle
-  const toggleMenu = (supplierId, e) => {
+  const toggleMenu = (dispatchId, e) => {
     e.stopPropagation();
-    setOpenMenuId(openMenuId === supplierId ? null : supplierId);
+    setOpenMenuId(openMenuId === dispatchId ? null : dispatchId);
   };
 
   // Close menu when clicking outside
@@ -117,24 +105,24 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [openMenuId]);
 
-  // Handle view supplier details
-  const handleViewSupplierDetails = async (supplier) => {
+  // Handle view dispatch details
+  const handleViewDispatchDetails = async (dispatch) => {
     setOpenMenuId(null);
     try {
-      const response = await suppliersAPI.getById(supplier.id);
+      const response = await dispatchAPI.getById(dispatch.id);
       if (response.success) {
-        setViewSupplierModal(response.supplier);
+        setViewDispatchModal(response.dispatch);
       } else {
-        setError('Failed to fetch supplier details');
+        setError('Failed to fetch dispatch details');
       }
     } catch (err) {
-      console.error('Error fetching supplier details:', err);
-      setError('Failed to fetch supplier details');
+      console.error('Error fetching dispatch details:', err);
+      setError('Failed to fetch dispatch details');
     }
   };
 
   const closeViewModal = () => {
-    setViewSupplierModal(null);
+    setViewDispatchModal(null);
   };
 
   return (
@@ -184,8 +172,8 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
           <i className="fas fa-arrow-left"></i>
         </button>
         <div className="header-content">
-          <h1 className="page-title">Supply Master</h1>
-          <p className="page-subtitle">Manage suppliers</p>
+          <h1 className="page-title">Dispatch Department</h1>
+          <p className="page-subtitle">Manage dispatch records</p>
         </div>
       </header>
 
@@ -195,18 +183,18 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
         <div className="staff-top-section">
           <div className="tab-indicator">
             <span className="tab-dot"></span>
-            <span className="tab-label">SUPPLIERS</span>
+            <span className="tab-label">DISPATCH</span>
           </div>
-          <button className="add-staff-btn" onClick={handleAddSupplier}>
+          <button className="add-staff-btn" onClick={handleAddDispatch}>
             <i className="fas fa-plus"></i>
-            <span>Add New Supplier</span>
+            <span>Add New Dispatch</span>
           </button>
         </div>
 
         {/* Heading */}
         <div className="staff-heading">
-          <h2>Manage Suppliers</h2>
-          <p>View suppliers, their contact information, and addresses. Filter quickly.</p>
+          <h2>Manage Dispatch Records</h2>
+          <p>View dispatch records with customer, name, phone, and transport details. Filter quickly.</p>
         </div>
 
         {/* Search and Filter */}
@@ -215,7 +203,7 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
             <i className="fas fa-search"></i>
             <input
               type="text"
-              placeholder="Search name, phone, address..."
+              placeholder="Search customer, name, phone, transport..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -224,7 +212,7 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
 
         {/* Results Count */}
         <div className="staff-count">
-          {`Showing ${filteredSuppliers.length} of ${suppliers.length} suppliers`}
+          {`Showing ${filteredDispatches.length} of ${dispatches.length} dispatches`}
         </div>
 
         {/* Error Message */}
@@ -234,58 +222,61 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
           </div>
         )}
 
-        {/* Suppliers List */}
+        {/* Dispatches List */}
         <div className="staff-list">
-          {suppliers.length === 0 ? (
+          {dispatches.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 40px', color: '#666' }}>
-              <i className="fas fa-truck" style={{ fontSize: '64px', marginBottom: '20px', opacity: 0.4, color: '#dc3545' }}></i>
-              <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>No Suppliers Available</h3>
-              <p style={{ fontSize: '14px', color: '#666' }}>Start by adding your first supplier to the system.</p>
+              <i className="fas fa-shipping-fast" style={{ fontSize: '64px', marginBottom: '20px', opacity: 0.4, color: '#dc3545' }}></i>
+              <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>No Dispatch Records Available</h3>
+              <p style={{ fontSize: '14px', color: '#666' }}>Start by adding your first dispatch record to the system.</p>
             </div>
-          ) : filteredSuppliers.length === 0 ? (
+          ) : filteredDispatches.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
               <i className="fas fa-search" style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}></i>
-              <p>No suppliers found matching your search</p>
+              <p>No dispatch records found matching your search</p>
             </div>
           ) : (
-            filteredSuppliers.map((supplier) => (
-            <div key={supplier.id} className="staff-card">
+            filteredDispatches.map((dispatch) => (
+            <div key={dispatch.id} className="staff-card">
               <div className="staff-avatar">
-                <span>{supplier.initials}</span>
+                <span>{dispatch.initials}</span>
               </div>
               <div className="staff-info">
-                <div className="staff-name">{supplier.name}</div>
-                {supplier.phone && (
+                <div className="staff-name">{dispatch.name || 'N/A'}</div>
+                {dispatch.customer && (
                   <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px' }}>
-                    <i className="fas fa-phone" style={{ marginRight: '6px', fontSize: '10px' }}></i>
-                    {supplier.phone}
+                    <i className="fas fa-user" style={{ marginRight: '6px', fontSize: '10px' }}></i>
+                    Customer: {dispatch.customer}
                   </div>
                 )}
-                {supplier.address && (
+                {dispatch.phone && (
+                  <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px' }}>
+                    <i className="fas fa-phone" style={{ marginRight: '6px', fontSize: '10px' }}></i>
+                    {dispatch.phone}
+                  </div>
+                )}
+                {dispatch.transportName && (
                   <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <i className="fas fa-map-marker-alt" style={{ fontSize: '10px', color: '#666' }}></i>
-                    <span>{supplier.address.length > 40 ? supplier.address.substring(0, 40) + '...' : supplier.address}</span>
+                    <i className="fas fa-truck" style={{ fontSize: '10px', color: '#666' }}></i>
+                    <span>{dispatch.transportName}</span>
                   </div>
                 )}
               </div>
-              {supplier.email && (
-                <div className="staff-email">{supplier.email}</div>
-              )}
               <div 
                 className="staff-options-container" 
-                ref={el => menuRefs.current[supplier.id] = el}
+                ref={el => menuRefs.current[dispatch.id] = el}
               >
                 <button 
                   className="staff-options"
-                  onClick={(e) => toggleMenu(supplier.id, e)}
+                  onClick={(e) => toggleMenu(dispatch.id, e)}
                 >
                   <i className="fas fa-ellipsis-v"></i>
                 </button>
-                {openMenuId === supplier.id && (
+                {openMenuId === dispatch.id && (
                   <div className="staff-menu-dropdown">
-                    <div className="menu-item" onClick={() => handleViewSupplierDetails(supplier)}>
+                    <div className="menu-item" onClick={() => handleViewDispatchDetails(dispatch)}>
                       <i className="fas fa-eye"></i>
-                      <span>View Supplier Details</span>
+                      <span>View Dispatch Details</span>
                     </div>
                   </div>
                 )}
@@ -298,12 +289,12 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
       </div>
       </div>
 
-      {/* View Supplier Details Modal */}
-      {viewSupplierModal && (
+      {/* View Dispatch Details Modal */}
+      {viewDispatchModal && (
         <div className="modal-overlay" onClick={closeViewModal}>
           <div className="customer-details-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Supplier Details</h2>
+              <h2>Dispatch Details</h2>
               <button className="modal-close-btn" onClick={closeViewModal}>
                 <i className="fas fa-times"></i>
               </button>
@@ -311,33 +302,31 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
             <div className="modal-content">
               <div className="customer-detail-section">
                 <div className="detail-avatar">
-                  <span>{viewSupplierModal.supplier_name 
-                    ? viewSupplierModal.supplier_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
-                    : 'SU'}</span>
+                  <span>{viewDispatchModal.name 
+                    ? viewDispatchModal.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+                    : 'DP'}</span>
                 </div>
                 <div className="detail-info">
                   <div className="detail-row">
-                    <span className="detail-label">Supplier Name:</span>
-                    <span className="detail-value">{viewSupplierModal.supplier_name || 'N/A'}</span>
+                    <span className="detail-label">Customer:</span>
+                    <span className="detail-value">{viewDispatchModal.customer || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
-                    <span className="detail-label">Phone:</span>
-                    <span className="detail-value">{viewSupplierModal.phone || 'N/A'}</span>
+                    <span className="detail-label">Name:</span>
+                    <span className="detail-value">{viewDispatchModal.name || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
-                    <span className="detail-label">Address:</span>
-                    <span className="detail-value">{viewSupplierModal.address || 'N/A'}</span>
+                    <span className="detail-label">Phone Number:</span>
+                    <span className="detail-value">{viewDispatchModal.phone || 'N/A'}</span>
                   </div>
-                  {viewSupplierModal.email && (
-                    <div className="detail-row">
-                      <span className="detail-label">Email:</span>
-                      <span className="detail-value">{viewSupplierModal.email}</span>
-                    </div>
-                  )}
-                  {viewSupplierModal.created_at && (
+                  <div className="detail-row">
+                    <span className="detail-label">Transport Name:</span>
+                    <span className="detail-value">{viewDispatchModal.transport_name || 'N/A'}</span>
+                  </div>
+                  {viewDispatchModal.created_at && (
                     <div className="detail-row">
                       <span className="detail-label">Created At:</span>
-                      <span className="detail-value">{new Date(viewSupplierModal.created_at).toLocaleString()}</span>
+                      <span className="detail-value">{new Date(viewDispatchModal.created_at).toLocaleString()}</span>
                     </div>
                   )}
                 </div>
@@ -355,5 +344,5 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
   );
 };
 
-export default Suppliers;
+export default DispatchDepartment;
 

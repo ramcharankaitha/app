@@ -95,7 +95,7 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
       });
 
       if (response.success) {
-        const credentialsMessage = `Manager created successfully!\n\nLogin Credentials:\nUsername: ${formData.username}\nPassword: ${formData.password}\n\nPlease save these credentials. They cannot be viewed again.`;
+        const credentialsMessage = `Supervisor created successfully!\n\nLogin Credentials:\nUsername: ${formData.username}\nPassword: ${formData.password}\n\nPlease save these credentials. They cannot be viewed again.`;
         setSuccessMessage(credentialsMessage);
         // Clear success message and navigate after 5 seconds (longer to read credentials)
         setTimeout(() => {
@@ -142,12 +142,6 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
           </div>
           <span>Products</span>
         </div>
-        <div className="nav-item" onClick={handleHome}>
-          <div className="nav-icon">
-            <i className="fas fa-store"></i>
-          </div>
-          <span>Stores</span>
-        </div>
         <div className="nav-item" onClick={handleStaff}>
           <div className="nav-icon">
             <i className="fas fa-user-tie"></i>
@@ -177,8 +171,8 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
               <i className="fas fa-arrow-left"></i>
             </button>
             <div className="header-content">
-              <h1 className="page-title">Add Manager</h1>
-              <p className="page-subtitle">Create a new manager account for this store.</p>
+              <h1 className="page-title">Add Supervisor</h1>
+              <p className="page-subtitle">Create a new supervisor account for this store.</p>
             </div>
           </header>
 
@@ -198,7 +192,7 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
             <form onSubmit={handleSubmit} className="add-user-form">
                 {/* User Details Section */}
                 <div className="form-section">
-                  <h3 className="section-title">Manager details</h3>
+                  <h3 className="section-title">Supervisor details</h3>
                   <div className="form-grid">
                     <div className="form-group">
                       <label htmlFor="firstName">First name</label>
@@ -289,7 +283,7 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
                   </div>
                 </div>
 
-                {/* Manager Details Section (Login Credentials) */}
+                {/* Supervisor Details Section (Login Credentials) */}
                 <div className="form-section">
                   <h3 className="section-title">Login Credentials</h3>
                   <div className="form-grid two-col">

@@ -1,12 +1,14 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useProfile } from '../hooks/useProfile';
 import ConfirmDialog from './ConfirmDialog';
+import StaffAttendanceView from './StaffAttendanceView';
 
-const ManagerDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
+const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
   const { profile, avatarUrl, initials } = useProfile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeNav, setActiveNav] = useState('home');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showAttendanceView, setShowAttendanceView] = useState(false);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -23,20 +25,24 @@ const ManagerDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
 
   // Sync activeNav with currentPage
   useEffect(() => {
-    if (currentPage === 'managerHome') {
+    if (currentPage === 'supervisorHome') {
       setActiveNav('home');
-    } else if (currentPage === 'users') {
-      setActiveNav('users');
-    } else if (currentPage === 'products') {
-      setActiveNav('products');
     } else if (currentPage === 'staff') {
       setActiveNav('staff');
     } else if (currentPage === 'customers') {
       setActiveNav('customers');
+    } else if (currentPage === 'products') {
+      setActiveNav('masterMenu');
     } else if (currentPage === 'suppliers') {
-      setActiveNav('suppliers');
+      setActiveNav('masterMenu');
+    } else if (currentPage === 'dispatch') {
+      setActiveNav('masterMenu');
+    } else if (currentPage === 'transport') {
+      setActiveNav('masterMenu');
     } else if (currentPage === 'chitPlans') {
-      setActiveNav('chitPlans');
+      setActiveNav('masterMenu');
+    } else if (currentPage === 'masterMenu') {
+      setActiveNav('masterMenu');
     } else if (currentPage === 'settings') {
       setActiveNav('settings');
     }
@@ -56,23 +62,17 @@ const ManagerDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
     }
     setActiveNav(navItem);
     if (!onNavigate) return;
-    if (navItem === 'home' || navItem === 'stores') {
-      // Only navigate if not already on managerHome
-      if (currentPage !== 'managerHome') {
-        onNavigate('managerHome');
+    if (navItem === 'home') {
+      // Only navigate if not already on supervisorHome
+      if (currentPage !== 'supervisorHome') {
+        onNavigate('supervisorHome');
       }
-    } else if (navItem === 'users') {
-      onNavigate('users');
-    } else if (navItem === 'products') {
-      onNavigate('products');
     } else if (navItem === 'staff') {
       onNavigate('staff');
     } else if (navItem === 'customers') {
       onNavigate('customers');
-    } else if (navItem === 'suppliers') {
-      onNavigate('suppliers');
-    } else if (navItem === 'chitPlans') {
-      onNavigate('chitPlans');
+    } else if (navItem === 'masterMenu') {
+      onNavigate('masterMenu');
     } else if (navItem === 'settings') {
       onNavigate('settings');
     }
@@ -94,33 +94,6 @@ const ManagerDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
           <span>Home</span>
         </div>
         <div 
-          className={`nav-item ${activeNav === 'users' ? 'active' : ''}`} 
-          onClick={(e) => handleNavClick('users', e)}
-        >
-          <div className="nav-icon">
-            <i className="fas fa-users"></i>
-          </div>
-          <span>Managers</span>
-        </div>
-        <div 
-          className={`nav-item ${activeNav === 'products' ? 'active' : ''}`} 
-          onClick={(e) => handleNavClick('products', e)}
-        >
-          <div className="nav-icon">
-            <i className="fas fa-box"></i>
-          </div>
-          <span>Products</span>
-        </div>
-        <div 
-          className={`nav-item ${activeNav === 'stores' ? 'active' : ''}`} 
-          onClick={(e) => handleNavClick('stores', e)}
-        >
-          <div className="nav-icon">
-            <i className="fas fa-store"></i>
-          </div>
-          <span>Stores</span>
-        </div>
-        <div 
           className={`nav-item ${activeNav === 'staff' ? 'active' : ''}`} 
           onClick={(e) => handleNavClick('staff', e)}
         >
@@ -139,22 +112,13 @@ const ManagerDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
           <span>Customers</span>
         </div>
         <div 
-          className={`nav-item ${activeNav === 'suppliers' ? 'active' : ''}`} 
-          onClick={(e) => handleNavClick('suppliers', e)}
+          className={`nav-item ${activeNav === 'masterMenu' ? 'active' : ''}`} 
+          onClick={(e) => handleNavClick('masterMenu', e)}
         >
           <div className="nav-icon">
-            <i className="fas fa-truck"></i>
+            <i className="fas fa-th-large"></i>
           </div>
-          <span>Supply Master</span>
-        </div>
-        <div 
-          className={`nav-item ${activeNav === 'chitPlans' ? 'active' : ''}`} 
-          onClick={(e) => handleNavClick('chitPlans', e)}
-        >
-          <div className="nav-icon">
-            <i className="fas fa-file-invoice-dollar"></i>
-          </div>
-          <span>Chit Plan</span>
+          <span>Master Menu</span>
         </div>
         <div 
           className={`nav-item ${activeNav === 'settings' ? 'active' : ''}`} 
@@ -209,7 +173,7 @@ const ManagerDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
               </span>
             </div>
             <div className="header-title">
-              <h1>Manager Panel</h1>
+              <h1>Supervisor Panel</h1>
               <p>Anitha Stores</p>
             </div>
           </div>
@@ -241,23 +205,57 @@ const ManagerDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
 
         {/* Main Content */}
         <main className="dashboard-content">
-          <div className="controls-section">
-            <div className="scope-button">
-              <i className="fas fa-store"></i>
-              <span>Working at</span>
-              <span className="scope-value">{workingStore}</span>
+          {activeNav === 'masterMenu' ? (
+            <div className="master-menu-grid">
+              {[
+                { title: 'Dispatch Department', desc: 'Manage dispatch workflows', icon: 'fa-shipping-fast', target: 'dispatch' },
+                { title: 'Transport Master', desc: 'Transport partners & routes', icon: 'fa-truck-moving', target: 'transport' },
+                { title: 'Category Master', desc: 'Organize product categories', icon: 'fa-tags', target: 'products' },
+                { title: 'Products', desc: 'Catalog and pricing', icon: 'fa-box', target: 'products' },
+                { title: 'Supply Master', desc: 'Suppliers and logistics', icon: 'fa-truck', target: 'suppliers' },
+                { title: 'Chit Plans', desc: 'Chit plan setup & customers', icon: 'fa-file-invoice-dollar', target: 'chitPlans' },
+              ].map((item) => (
+                <div
+                  key={item.title}
+                  className="stat-card"
+                  style={{ cursor: item.target ? 'pointer' : 'default' }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (item.target && onNavigate) {
+                      onNavigate(item.target);
+                    }
+                  }}
+                >
+                  <div className="stat-content">
+                    <h3 className="stat-title">{item.title}</h3>
+                    <p className="stat-subtitle">{item.desc}</p>
+                  </div>
+                  <div className="stat-icon" style={{ backgroundColor: '#dc354520', color: '#dc3545' }}>
+                    <i className={`fas ${item.icon}`}></i>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="sales-report-button" style={{ background: 'var(--card-bg)', color: 'var(--text-primary)', boxShadow: '0 2px 4px var(--shadow-light)', border: '1px solid var(--border-color)' }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                <span className="shift-dot" style={{ width: 10, height: 10, borderRadius: '50%', background: '#35c759' }}></span>
-                Shift {shiftLabel}
-              </span>
-            </div>
-            <div className="search-bar">
-              <i className="fas fa-search"></i>
-              <input type="text" placeholder="Search tasks, products, inventory..." />
-            </div>
-          </div>
+          ) : (
+            <>
+              <div className="controls-section">
+                <div className="scope-button">
+                  <i className="fas fa-store"></i>
+                  <span>Working at</span>
+                  <span className="scope-value">{workingStore}</span>
+                </div>
+                <div className="sales-report-button" style={{ background: 'var(--card-bg)', color: 'var(--text-primary)', boxShadow: '0 2px 4px var(--shadow-light)', border: '1px solid var(--border-color)' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                    <span className="shift-dot" style={{ width: 10, height: 10, borderRadius: '50%', background: '#35c759' }}></span>
+                    Shift {shiftLabel}
+                  </span>
+                </div>
+                <div className="search-bar">
+                  <i className="fas fa-search"></i>
+                  <input type="text" placeholder="Search tasks, products, inventory..." />
+                </div>
+              </div>
 
           <div className="panel checkin-card">
             <div className="panel-header">
@@ -320,6 +318,16 @@ const ManagerDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
                 <i className="fas fa-list"></i>
               </div>
             </div>
+            <div className="stat-card" onClick={() => setShowAttendanceView(true)} style={{ cursor: 'pointer' }}>
+              <div className="stat-content">
+                <h3 className="stat-title">Staff Attendance</h3>
+                <p className="stat-value">View today</p>
+                <p className="stat-subtitle">Check all staff attendance</p>
+              </div>
+              <div className="stat-icon" style={{ backgroundColor: '#2196F320', color: '#2196F3' }}>
+                <i className="fas fa-calendar-check"></i>
+              </div>
+            </div>
           </div>
 
           <div className="panel">
@@ -331,28 +339,34 @@ const ManagerDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
               <span className="dot"></span>
               <div>
                 <div className="notif-title">Warning: Check-in after allowed time</div>
-                <div className="notif-desc">Manager team notified</div>
+                <div className="notif-desc">Supervisor team notified</div>
               </div>
               <span className="time">5 min ago</span>
             </div>
             <div className="notif-row success">
               <span className="dot"></span>
               <div>
-                <div className="notif-title">New task assigned by Manager</div>
+                <div className="notif-title">New task assigned by Supervisor</div>
                 <div className="notif-desc">Tap to open Assigned Tasks</div>
               </div>
               <span className="time">20 min</span>
             </div>
           </div>
 
-          <footer className="dashboard-footer">
-            <p>&copy; 2025 Anitha Stores. All rights reserved.</p>
-          </footer>
+              <footer className="dashboard-footer">
+                <p>&copy; 2025 Anitha Stores. All rights reserved.</p>
+              </footer>
+            </>
+          )}
         </main>
       </div>
+
+      {showAttendanceView && (
+        <StaffAttendanceView onClose={() => setShowAttendanceView(false)} />
+      )}
     </div>
   );
 };
 
-export default ManagerDashboard;
+export default SupervisorDashboard;
 

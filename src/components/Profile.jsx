@@ -5,7 +5,7 @@ const Profile = ({ onBack, onNavigate, userRole = 'admin' }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { profile, avatarUrl, initials } = useProfile();
 
-  const homePage = userRole === 'admin' ? 'dashboard' : 'managerHome';
+  const homePage = userRole === 'admin' ? 'dashboard' : userRole === 'supervisor' ? 'supervisorHome' : 'staffHome';
 
   const handleHome = () => {
     if (onNavigate) onNavigate(homePage);
@@ -133,11 +133,11 @@ const Profile = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 </span>
               </div>
               <div className="admin-info">
-                <div className="admin-name">{profile.full_name || (userRole === 'manager' ? 'Manager' : 'Admin')}</div>
-                <div className="admin-role-scope">{profile.role || (userRole === 'manager' ? 'Manager' : 'Super Admin')} • {profile.store_scope || 'Global Scope'}</div>
+                <div className="admin-name">{profile.full_name || (userRole === 'supervisor' ? 'Supervisor' : 'Admin')}</div>
+                <div className="admin-role-scope">{profile.role || (userRole === 'supervisor' ? 'Supervisor' : 'Super Admin')} • {profile.store_scope || 'Global Scope'}</div>
                 <div className="active-badge">
                   <span className="active-dot"></span>
-                  <span>Active {userRole === 'manager' ? 'Manager' : 'Admin'}</span>
+                  <span>Active {userRole === 'supervisor' ? 'Supervisor' : 'Admin'}</span>
                 </div>
               </div>
               <button className="edit-profile-btn" onClick={handleEditProfile}>

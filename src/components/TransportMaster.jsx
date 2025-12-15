@@ -1,40 +1,34 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { suppliersAPI } from '../services/api';
+import { transportAPI } from '../services/api';
 import './suppliers.css';
 
-const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) => {
+const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin' }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [suppliers, setSuppliers] = useState([]);
+  const [transports, setTransports] = useState([]);
   const [error, setError] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
-  const [viewSupplierModal, setViewSupplierModal] = useState(null);
+  const [viewTransportModal, setViewTransportModal] = useState(null);
   const menuRefs = useRef({});
 
   const handleBack = () => {
     if (onNavigate) {
-      onNavigate('dashboard');
+      onNavigate('masterMenu');
     } else if (onBack) {
       onBack();
     }
   };
 
-  const handleAddSupplier = () => {
-    if (onAddSupplier) {
-      onAddSupplier();
+  const handleAddTransport = () => {
+    if (onAddTransport) {
+      onAddTransport();
     } else if (onNavigate) {
-      onNavigate('addSupplier');
+      onNavigate('addTransport');
     }
   };
 
   const handleManagers = () => {
     if (onNavigate) {
       onNavigate('users');
-    }
-  };
-
-  const handleProducts = () => {
-    if (onNavigate) {
-      onNavigate('products');
     }
   };
 
@@ -50,60 +44,54 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
     }
   };
 
-  const handleChitPlans = () => {
-    if (onNavigate) {
-      onNavigate('chitPlans');
-    }
-  };
-
   const handleSettings = () => {
     if (onNavigate) {
       onNavigate('settings');
     }
   };
 
-  // Fetch suppliers from database
-  const fetchSuppliers = async () => {
+  // Fetch transports from database
+  const fetchTransports = async () => {
     try {
       setError('');
-      const response = await suppliersAPI.getAll();
+      const response = await transportAPI.getAll();
       if (response.success) {
-        const formattedSuppliers = response.suppliers.map(supplier => ({
-          id: supplier.id,
-          name: supplier.supplier_name,
-          initials: supplier.supplier_name 
-            ? supplier.supplier_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
-            : 'SU',
-          phone: supplier.phone,
-          address: supplier.address,
-          email: supplier.email,
-          created_at: supplier.created_at
+        const formattedTransports = response.transports.map(transport => ({
+          id: transport.id,
+          name: transport.name,
+          travelsName: transport.travels_name,
+          city: transport.city,
+          service: transport.service,
+          initials: transport.name 
+            ? transport.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+            : 'TM',
+          created_at: transport.created_at
         }));
-        setSuppliers(formattedSuppliers);
+        setTransports(formattedTransports);
       }
     } catch (err) {
-      console.error('Error fetching suppliers:', err);
-      setError('Failed to load suppliers. Please try again.');
+      console.error('Error fetching transports:', err);
+      setError('Failed to load transports. Please try again.');
     }
   };
 
   useEffect(() => {
-    fetchSuppliers();
+    fetchTransports();
   }, []);
 
-  // Filter suppliers based on search
-  const filteredSuppliers = suppliers.filter(supplier => {
-    const matchesSearch = supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         supplier.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         supplier.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         supplier.email?.toLowerCase().includes(searchQuery.toLowerCase());
+  // Filter transports based on search
+  const filteredTransports = transports.filter(transport => {
+    const matchesSearch = transport.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         transport.travelsName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         transport.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         transport.service?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
 
   // Handle menu toggle
-  const toggleMenu = (supplierId, e) => {
+  const toggleMenu = (transportId, e) => {
     e.stopPropagation();
-    setOpenMenuId(openMenuId === supplierId ? null : supplierId);
+    setOpenMenuId(openMenuId === transportId ? null : transportId);
   };
 
   // Close menu when clicking outside
@@ -117,24 +105,24 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [openMenuId]);
 
-  // Handle view supplier details
-  const handleViewSupplierDetails = async (supplier) => {
+  // Handle view transport details
+  const handleViewTransportDetails = async (transport) => {
     setOpenMenuId(null);
     try {
-      const response = await suppliersAPI.getById(supplier.id);
+      const response = await transportAPI.getById(transport.id);
       if (response.success) {
-        setViewSupplierModal(response.supplier);
+        setViewTransportModal(response.transport);
       } else {
-        setError('Failed to fetch supplier details');
+        setError('Failed to fetch transport details');
       }
     } catch (err) {
-      console.error('Error fetching supplier details:', err);
-      setError('Failed to fetch supplier details');
+      console.error('Error fetching transport details:', err);
+      setError('Failed to fetch transport details');
     }
   };
 
   const closeViewModal = () => {
-    setViewSupplierModal(null);
+    setViewTransportModal(null);
   };
 
   return (
@@ -184,8 +172,8 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
           <i className="fas fa-arrow-left"></i>
         </button>
         <div className="header-content">
-          <h1 className="page-title">Supply Master</h1>
-          <p className="page-subtitle">Manage suppliers</p>
+          <h1 className="page-title">Transport Master</h1>
+          <p className="page-subtitle">Manage transport services</p>
         </div>
       </header>
 
@@ -195,18 +183,18 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
         <div className="staff-top-section">
           <div className="tab-indicator">
             <span className="tab-dot"></span>
-            <span className="tab-label">SUPPLIERS</span>
+            <span className="tab-label">TRANSPORT</span>
           </div>
-          <button className="add-staff-btn" onClick={handleAddSupplier}>
+          <button className="add-staff-btn" onClick={handleAddTransport}>
             <i className="fas fa-plus"></i>
-            <span>Add New Supplier</span>
+            <span>Add New Transport</span>
           </button>
         </div>
 
         {/* Heading */}
         <div className="staff-heading">
-          <h2>Manage Suppliers</h2>
-          <p>View suppliers, their contact information, and addresses. Filter quickly.</p>
+          <h2>Manage Transport Services</h2>
+          <p>View transport services with name, travels name, city, and service details. Filter quickly.</p>
         </div>
 
         {/* Search and Filter */}
@@ -215,7 +203,7 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
             <i className="fas fa-search"></i>
             <input
               type="text"
-              placeholder="Search name, phone, address..."
+              placeholder="Search name, travels, city, service..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -224,7 +212,7 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
 
         {/* Results Count */}
         <div className="staff-count">
-          {`Showing ${filteredSuppliers.length} of ${suppliers.length} suppliers`}
+          {`Showing ${filteredTransports.length} of ${transports.length} transports`}
         </div>
 
         {/* Error Message */}
@@ -234,58 +222,61 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
           </div>
         )}
 
-        {/* Suppliers List */}
+        {/* Transports List */}
         <div className="staff-list">
-          {suppliers.length === 0 ? (
+          {transports.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 40px', color: '#666' }}>
-              <i className="fas fa-truck" style={{ fontSize: '64px', marginBottom: '20px', opacity: 0.4, color: '#dc3545' }}></i>
-              <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>No Suppliers Available</h3>
-              <p style={{ fontSize: '14px', color: '#666' }}>Start by adding your first supplier to the system.</p>
+              <i className="fas fa-truck-moving" style={{ fontSize: '64px', marginBottom: '20px', opacity: 0.4, color: '#dc3545' }}></i>
+              <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>No Transport Records Available</h3>
+              <p style={{ fontSize: '14px', color: '#666' }}>Start by adding your first transport record to the system.</p>
             </div>
-          ) : filteredSuppliers.length === 0 ? (
+          ) : filteredTransports.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
               <i className="fas fa-search" style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}></i>
-              <p>No suppliers found matching your search</p>
+              <p>No transport records found matching your search</p>
             </div>
           ) : (
-            filteredSuppliers.map((supplier) => (
-            <div key={supplier.id} className="staff-card">
+            filteredTransports.map((transport) => (
+            <div key={transport.id} className="staff-card">
               <div className="staff-avatar">
-                <span>{supplier.initials}</span>
+                <span>{transport.initials}</span>
               </div>
               <div className="staff-info">
-                <div className="staff-name">{supplier.name}</div>
-                {supplier.phone && (
+                <div className="staff-name">{transport.name || 'N/A'}</div>
+                {transport.travelsName && (
                   <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px' }}>
-                    <i className="fas fa-phone" style={{ marginRight: '6px', fontSize: '10px' }}></i>
-                    {supplier.phone}
+                    <i className="fas fa-building" style={{ marginRight: '6px', fontSize: '10px' }}></i>
+                    Travels: {transport.travelsName}
                   </div>
                 )}
-                {supplier.address && (
+                {transport.city && (
+                  <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px' }}>
+                    <i className="fas fa-map-marker-alt" style={{ marginRight: '6px', fontSize: '10px' }}></i>
+                    {transport.city}
+                  </div>
+                )}
+                {transport.service && (
                   <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <i className="fas fa-map-marker-alt" style={{ fontSize: '10px', color: '#666' }}></i>
-                    <span>{supplier.address.length > 40 ? supplier.address.substring(0, 40) + '...' : supplier.address}</span>
+                    <i className="fas fa-cog" style={{ fontSize: '10px', color: '#666' }}></i>
+                    <span>{transport.service}</span>
                   </div>
                 )}
               </div>
-              {supplier.email && (
-                <div className="staff-email">{supplier.email}</div>
-              )}
               <div 
                 className="staff-options-container" 
-                ref={el => menuRefs.current[supplier.id] = el}
+                ref={el => menuRefs.current[transport.id] = el}
               >
                 <button 
                   className="staff-options"
-                  onClick={(e) => toggleMenu(supplier.id, e)}
+                  onClick={(e) => toggleMenu(transport.id, e)}
                 >
                   <i className="fas fa-ellipsis-v"></i>
                 </button>
-                {openMenuId === supplier.id && (
+                {openMenuId === transport.id && (
                   <div className="staff-menu-dropdown">
-                    <div className="menu-item" onClick={() => handleViewSupplierDetails(supplier)}>
+                    <div className="menu-item" onClick={() => handleViewTransportDetails(transport)}>
                       <i className="fas fa-eye"></i>
-                      <span>View Supplier Details</span>
+                      <span>View Transport Details</span>
                     </div>
                   </div>
                 )}
@@ -298,12 +289,12 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
       </div>
       </div>
 
-      {/* View Supplier Details Modal */}
-      {viewSupplierModal && (
+      {/* View Transport Details Modal */}
+      {viewTransportModal && (
         <div className="modal-overlay" onClick={closeViewModal}>
           <div className="customer-details-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Supplier Details</h2>
+              <h2>Transport Details</h2>
               <button className="modal-close-btn" onClick={closeViewModal}>
                 <i className="fas fa-times"></i>
               </button>
@@ -311,33 +302,31 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
             <div className="modal-content">
               <div className="customer-detail-section">
                 <div className="detail-avatar">
-                  <span>{viewSupplierModal.supplier_name 
-                    ? viewSupplierModal.supplier_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
-                    : 'SU'}</span>
+                  <span>{viewTransportModal.name 
+                    ? viewTransportModal.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+                    : 'TM'}</span>
                 </div>
                 <div className="detail-info">
                   <div className="detail-row">
-                    <span className="detail-label">Supplier Name:</span>
-                    <span className="detail-value">{viewSupplierModal.supplier_name || 'N/A'}</span>
+                    <span className="detail-label">Name:</span>
+                    <span className="detail-value">{viewTransportModal.name || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
-                    <span className="detail-label">Phone:</span>
-                    <span className="detail-value">{viewSupplierModal.phone || 'N/A'}</span>
+                    <span className="detail-label">Travels Name:</span>
+                    <span className="detail-value">{viewTransportModal.travels_name || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
-                    <span className="detail-label">Address:</span>
-                    <span className="detail-value">{viewSupplierModal.address || 'N/A'}</span>
+                    <span className="detail-label">City:</span>
+                    <span className="detail-value">{viewTransportModal.city || 'N/A'}</span>
                   </div>
-                  {viewSupplierModal.email && (
-                    <div className="detail-row">
-                      <span className="detail-label">Email:</span>
-                      <span className="detail-value">{viewSupplierModal.email}</span>
-                    </div>
-                  )}
-                  {viewSupplierModal.created_at && (
+                  <div className="detail-row">
+                    <span className="detail-label">Service:</span>
+                    <span className="detail-value">{viewTransportModal.service || 'N/A'}</span>
+                  </div>
+                  {viewTransportModal.created_at && (
                     <div className="detail-row">
                       <span className="detail-label">Created At:</span>
-                      <span className="detail-value">{new Date(viewSupplierModal.created_at).toLocaleString()}</span>
+                      <span className="detail-value">{new Date(viewTransportModal.created_at).toLocaleString()}</span>
                     </div>
                   )}
                 </div>
@@ -355,5 +344,5 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
   );
 };
 
-export default Suppliers;
+export default TransportMaster;
 

@@ -18,12 +18,6 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
     }
   };
 
-  const handleProducts = () => {
-    if (onNavigate) {
-      onNavigate('products');
-    }
-  };
-
   const handleStaff = () => {
     if (onNavigate) {
       onNavigate('staff');
@@ -33,12 +27,6 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
   const handleCustomers = () => {
     if (onNavigate) {
       onNavigate('customers');
-    }
-  };
-
-  const handleSuppliers = () => {
-    if (onNavigate) {
-      onNavigate('suppliers');
     }
   };
 
@@ -73,7 +61,7 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
             id: user.id,
             name: `${user.first_name} ${user.last_name}`,
             initials: `${user.first_name[0]}${user.last_name[0]}`.toUpperCase(),
-            role: user.role || 'Store User/Manager',
+            role: user.role || 'Store User/Supervisor',
             store: user.store_allocated || 'Not Assigned',
             email: user.email
           }));
@@ -114,7 +102,7 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [openMenuId]);
 
-  // Handle view manager details
+  // Handle view supervisor details
   const handleViewManagerDetails = async (user) => {
     setOpenMenuId(null);
     try {
@@ -122,10 +110,10 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
       if (response.success) {
         setViewManagerModal(response.user);
       } else {
-        setError('Failed to fetch manager details');
+        setError('Failed to fetch supervisor details');
       }
     } catch (err) {
-      console.error('Error fetching manager details:', err);
+      console.error('Error fetching supervisor details:', err);
       setError('Failed to fetch manager details');
     }
   };
@@ -150,18 +138,6 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
           </div>
           <span>Managers</span>
         </div>
-        <div className="nav-item" onClick={handleProducts}>
-          <div className="nav-icon">
-            <i className="fas fa-box"></i>
-          </div>
-          <span>Products</span>
-        </div>
-        <div className="nav-item" onClick={handleBack}>
-          <div className="nav-icon">
-            <i className="fas fa-store"></i>
-          </div>
-          <span>Stores</span>
-        </div>
         <div className="nav-item" onClick={handleStaff}>
           <div className="nav-icon">
             <i className="fas fa-user-tie"></i>
@@ -174,17 +150,11 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
           </div>
           <span>Customers</span>
         </div>
-        <div className="nav-item" onClick={handleSuppliers}>
+        <div className="nav-item" onClick={() => onNavigate && onNavigate('masterMenu')}>
           <div className="nav-icon">
-            <i className="fas fa-truck"></i>
+            <i className="fas fa-th-large"></i>
           </div>
-          <span>Supply Master</span>
-        </div>
-        <div className="nav-item" onClick={() => onNavigate ? onNavigate('chitPlans') : null}>
-          <div className="nav-icon">
-            <i className="fas fa-file-invoice-dollar"></i>
-          </div>
-          <span>Chit Plan</span>
+          <span>Master Menu</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">
@@ -218,7 +188,7 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
           </div>
           <button className="add-user-btn" onClick={handleAddUser}>
             <i className="fas fa-plus"></i>
-            <span>Add New Manager</span>
+            <span>Add New Supervisor</span>
           </button>
         </div>
 
@@ -264,7 +234,7 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
             <div style={{ textAlign: 'center', padding: '60px 40px', color: '#666' }}>
               <i className="fas fa-users" style={{ fontSize: '64px', marginBottom: '20px', opacity: 0.4, color: '#dc3545' }}></i>
               <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>No Managers Available</h3>
-              <p style={{ fontSize: '14px', color: '#666' }}>Start by adding your first manager to the system.</p>
+              <p style={{ fontSize: '14px', color: '#666' }}>Start by adding your first supervisor to the system.</p>
             </div>
           ) : filteredUsers.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
@@ -297,10 +267,10 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
                   <i className="fas fa-ellipsis-v"></i>
                 </button>
                 {openMenuId === user.id && (
-                  <div className="manager-menu-dropdown">
+                  <div className="supervisor-menu-dropdown">
                     <div className="menu-item" onClick={() => handleViewManagerDetails(user)}>
                       <i className="fas fa-eye"></i>
-                      <span>View Manager Details</span>
+                      <span>View Supervisor Details</span>
                     </div>
                   </div>
                 )}
@@ -318,7 +288,7 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
         <div className="modal-overlay" onClick={closeViewModal}>
           <div className="customer-details-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Manager Details</h2>
+              <h2>Supervisor Details</h2>
               <button className="modal-close-btn" onClick={closeViewModal}>
                 <i className="fas fa-times"></i>
               </button>
@@ -353,7 +323,7 @@ const Managers = ({ onBack, onAddUser, onNavigate }) => {
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">Role:</span>
-                    <span className="detail-value">{viewManagerModal.role || 'Manager'}</span>
+                    <span className="detail-value">{viewManagerModal.role || 'Supervisor'}</span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">Store Allocated:</span>

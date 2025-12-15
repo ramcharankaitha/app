@@ -246,6 +246,109 @@ CREATE TABLE IF NOT EXISTS role_permissions (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Dispatch Table
+CREATE TABLE IF NOT EXISTS dispatch (
+    id SERIAL PRIMARY KEY,
+    customer VARCHAR(200) NOT NULL,
+    name VARCHAR(200) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    transport_name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Transport Table
+CREATE TABLE IF NOT EXISTS transport (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    travels_name VARCHAR(255) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    service VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Customer Tokens Table (Loyalty Points System)
+-- Attendance Table
+CREATE TABLE IF NOT EXISTS attendance (
+    id SERIAL PRIMARY KEY,
+    staff_id INTEGER NOT NULL REFERENCES staff(id) ON DELETE CASCADE,
+    attendance_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    check_in_time TIMESTAMP,
+    check_out_time TIMESTAMP,
+    check_in_image TEXT,
+    check_out_image TEXT,
+    is_late BOOLEAN DEFAULT FALSE,
+    is_early_logout BOOLEAN DEFAULT FALSE,
+    late_minutes INTEGER DEFAULT 0,
+    early_logout_minutes INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(staff_id, attendance_date)
+);
+
+-- Notifications Table
+CREATE TABLE IF NOT EXISTS notifications (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER,
+    user_type VARCHAR(50) NOT NULL, -- 'staff', 'supervisor', 'admin'
+    notification_type VARCHAR(50) NOT NULL, -- 'warning', 'info', 'success'
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    related_id INTEGER, -- ID of related record (e.g., attendance_id)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Supervisor Attendance Table (for tracking supervisor check-in/out)
+CREATE TABLE IF NOT EXISTS supervisor_attendance (
+    id SERIAL PRIMARY KEY,
+    supervisor_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    attendance_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    check_in_time TIMESTAMP,
+    check_out_time TIMESTAMP,
+    check_in_image TEXT,
+    check_out_image TEXT,
+    is_late BOOLEAN DEFAULT FALSE,
+    is_early_logout BOOLEAN DEFAULT FALSE,
+    late_minutes INTEGER DEFAULT 0,
+    early_logout_minutes INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(supervisor_id, attendance_date)
+);
+
+CREATE TABLE IF NOT EXISTS customer_tokens (
+    id SERIAL PRIMARY KEY,
+    customer_phone VARCHAR(20),
+    customer_email VARCHAR(255),
+    tokens INTEGER DEFAULT 0,
+    total_purchased DECIMAL(10, 2) DEFAULT 0,
+    tokens_earned INTEGER DEFAULT 0,
+    tokens_redeemed INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(customer_phone, customer_email)
+);
+
+-- Add tokens column to customers table if it doesn't exist
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'customers' AND column_name = 'tokens_used'
+    ) THEN
+        ALTER TABLE customers ADD COLUMN tokens_used INTEGER DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'customers' AND column_name = 'tokens_earned'
+    ) THEN
+        ALTER TABLE customers ADD COLUMN tokens_earned INTEGER DEFAULT 0;
+    END IF;
+END $$;
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);

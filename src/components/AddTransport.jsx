@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { suppliersAPI } from '../services/api';
+import { transportAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 
-const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
+const AddTransport = ({ onBack, onCancel, onNavigate }) => {
   const [formData, setFormData] = useState({
-    supplierName: '',
-    phone: '',
-    address: '',
-    email: ''
+    name: '',
+    travelsName: '',
+    city: '',
+    service: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -16,7 +16,7 @@ const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
 
   const handleBack = () => {
     if (onNavigate) {
-      onNavigate('suppliers');
+      onNavigate('transport');
     } else if (onBack) {
       onBack();
     }
@@ -34,12 +34,6 @@ const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
     }
   };
 
-  const handleProducts = () => {
-    if (onNavigate) {
-      onNavigate('products');
-    }
-  };
-
   const handleStaff = () => {
     if (onNavigate) {
       onNavigate('staff');
@@ -52,18 +46,6 @@ const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
     }
   };
 
-  const handleSuppliers = () => {
-    if (onNavigate) {
-      onNavigate('suppliers');
-    }
-  };
-
-  const handleChitPlans = () => {
-    if (onNavigate) {
-      onNavigate('chitPlans');
-    }
-  };
-
   const handleSettings = () => {
     if (onNavigate) {
       onNavigate('settings');
@@ -72,7 +54,7 @@ const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
 
   const handleCancel = () => {
     if (onNavigate) {
-      onNavigate('suppliers');
+      onNavigate('transport');
     } else if (onCancel) {
       onCancel();
     }
@@ -86,17 +68,17 @@ const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
     }));
   };
 
-  const submitSupplier = async () => {
+  const submitTransport = async () => {
     setIsLoading(true);
     setError('');
     setSuccessMessage('');
 
     try {
-      const response = await suppliersAPI.create({
-        supplierName: formData.supplierName,
-        phone: formData.phone,
-        address: formData.address,
-        email: formData.email
+      const response = await transportAPI.create({
+        name: formData.name,
+        travelsName: formData.travelsName,
+        city: formData.city,
+        service: formData.service
       });
 
       if (response.success) {
@@ -107,8 +89,8 @@ const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
         }, 2000);
       }
     } catch (err) {
-      setError(err.message || 'Failed to create supplier. Please try again.');
-      console.error('Create supplier error:', err);
+      setError(err.message || 'Failed to create transport record. Please try again.');
+      console.error('Create transport error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -119,7 +101,7 @@ const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
     setConfirmState({
       open: true,
       message: 'Are you sure you want to submit?',
-      onConfirm: submitSupplier,
+      onConfirm: submitTransport,
     });
   };
 
@@ -168,29 +150,29 @@ const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
               <i className="fas fa-arrow-left"></i>
             </button>
             <div className="header-content">
-              <h1 className="page-title">Add Supplier</h1>
-              <p className="page-subtitle">Create a new supplier for your store.</p>
+              <h1 className="page-title">Add Transport</h1>
+              <p className="page-subtitle">Create a new transport record.</p>
             </div>
           </header>
 
           {/* Main Content */}
           <main className="add-user-content">
             <form onSubmit={handleSubmit} className="add-user-form">
-                {/* Supplier Details Section */}
+                {/* Transport Details Section */}
                 <div className="form-section">
-                  <h3 className="section-title">Supplier details</h3>
+                  <h3 className="section-title">Transport details</h3>
                   <div className="form-grid">
                     <div className="form-group">
-                      <label htmlFor="supplierName">Supplier Name</label>
+                      <label htmlFor="name">Name</label>
                       <div className="input-wrapper">
-                        <i className="fas fa-building input-icon"></i>
+                        <i className="fas fa-user input-icon"></i>
                         <input
                           type="text"
-                          id="supplierName"
-                          name="supplierName"
+                          id="name"
+                          name="name"
                           className="form-input"
-                          placeholder="Enter supplier name."
-                          value={formData.supplierName}
+                          placeholder="Enter name."
+                          value={formData.name}
                           onChange={handleInputChange}
                           required
                         />
@@ -198,63 +180,61 @@ const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="phone">Phone Number</label>
+                      <label htmlFor="travelsName">Travels Name</label>
                       <div className="input-wrapper">
-                        <i className="fas fa-phone input-icon"></i>
+                        <i className="fas fa-building input-icon"></i>
                         <input
-                          type="tel"
-                          id="phone"
-                          name="phone"
+                          type="text"
+                          id="travelsName"
+                          name="travelsName"
                           className="form-input"
-                          placeholder="Enter phone number."
-                          value={formData.phone}
+                          placeholder="Enter travels name."
+                          value={formData.travelsName}
                           onChange={handleInputChange}
+                          required
                         />
                       </div>
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="email">Email</label>
+                      <label htmlFor="city">City</label>
                       <div className="input-wrapper">
-                        <i className="fas fa-envelope input-icon"></i>
+                        <i className="fas fa-map-marker-alt input-icon"></i>
                         <input
-                          type="email"
-                          id="email"
-                          name="email"
+                          type="text"
+                          id="city"
+                          name="city"
                           className="form-input"
-                          placeholder="supplier@example.com"
-                          value={formData.email}
+                          placeholder="Enter city."
+                          value={formData.city}
                           onChange={handleInputChange}
+                          required
                         />
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Address Section */}
-                <div className="form-section">
-                  <h3 className="section-title">Address</h3>
-                  
-                  <div className="form-group">
-                    <label htmlFor="address">Address</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-map-marker-alt input-icon"></i>
-                      <textarea
-                        id="address"
-                        name="address"
-                        className="form-input textarea-input"
-                        placeholder="Street, area, city&#10;State, pincode"
-                        rows="2"
-                        value={formData.address}
-                        onChange={handleInputChange}
-                      ></textarea>
+                    <div className="form-group">
+                      <label htmlFor="service">Service</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-cog input-icon"></i>
+                        <input
+                          type="text"
+                          id="service"
+                          name="service"
+                          className="form-input"
+                          placeholder="Enter service."
+                          value={formData.service}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Warning Message */}
                 <p className="form-warning">
-                  Make sure all supplier details are correct before saving.
+                  Make sure all transport details are correct before saving.
                 </p>
 
                 {/* Error Message */}
@@ -286,7 +266,7 @@ const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
                 {/* Action Buttons */}
                 <div className="form-actions">
                   <button type="submit" className="create-user-btn" disabled={isLoading}>
-                    {isLoading ? 'Creating...' : 'Create Supplier'}
+                    {isLoading ? 'Creating...' : 'Create Transport Record'}
                   </button>
                   <button type="button" className="cancel-btn" onClick={handleCancel}>
                     Cancel and go back
@@ -313,5 +293,5 @@ const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
   );
 };
 
-export default AddSupplier;
+export default AddTransport;
 

@@ -67,7 +67,7 @@ const initDatabase = async () => {
           settings: { view: true, edit: true },
           profile: { view: true, edit: true }
         },
-        'Manager': {
+        'Supervisor': {
           users: { view: true, create: false, update: true, delete: false },
           products: { view: true, create: true, update: true, delete: false },
           staff: { view: true, create: true, update: true, delete: false },

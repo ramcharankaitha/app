@@ -17,11 +17,45 @@ const exportRoutes = require('./routes/export');
 const customerRoutes = require('./routes/customers');
 const supplierRoutes = require('./routes/suppliers');
 const chitPlanRoutes = require('./routes/chitPlans');
+const dispatchRoutes = require('./routes/dispatch');
+const transportRoutes = require('./routes/transport');
+const attendanceRoutes = require('./routes/attendance');
+const notificationRoutes = require('./routes/notifications');
+const supervisorAttendanceRoutes = require('./routes/supervisorAttendance');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+// CORS configuration - Allow frontend and localhost in development
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // List of allowed origins
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      process.env.FRONTEND_URL, // Your Vercel frontend URL
+    ].filter(Boolean);
+    
+    // In development, allow all origins
+    if (process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+    
+    // In production, check against allowed origins
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.warn(`⚠️  CORS blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -42,6 +76,11 @@ app.use('/api/export', exportRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/chit-plans', chitPlanRoutes);
+app.use('/api/dispatch', dispatchRoutes);
+app.use('/api/transport', transportRoutes);
+app.use('/api/attendance', attendanceRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/supervisor-attendance', supervisorAttendanceRoutes);
 
 const startServer = async () => {
   try {

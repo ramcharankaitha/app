@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useProfile } from '../hooks/useProfile';
 import { profileAPI, exportAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
+import SupervisorAttendanceView from './SupervisorAttendanceView';
 
 const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
   const [activeScope, setActiveScope] = useState('All stores • Global scope');
@@ -13,6 +14,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
   const [scopeMessage, setScopeMessage] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
   const [isExportingSales, setIsExportingSales] = useState(false);
+  const [showSupervisorAttendance, setShowSupervisorAttendance] = useState(false);
   const menuRef = useRef(null);
   const { profile, avatarUrl, initials } = useProfile();
 
@@ -25,17 +27,13 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     if (!onNavigate) return;
     if (navItem === 'users') {
       onNavigate('users');
-    } else if (navItem === 'products') {
-      onNavigate('products');
     } else if (navItem === 'staff') {
       onNavigate('staff');
     } else if (navItem === 'customers') {
       onNavigate('customers');
-    } else if (navItem === 'suppliers') {
-      onNavigate('suppliers');
-    } else if (navItem === 'chitPlans') {
-      onNavigate('chitPlans');
-    } else if (navItem === 'home' || navItem === 'stores') {
+    } else if (navItem === 'masterMenu') {
+      onNavigate('masterMenu');
+    } else if (navItem === 'home') {
       // Only navigate if not already on dashboard
       if (currentPage !== 'dashboard') {
         onNavigate('dashboard');
@@ -49,7 +47,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
 
   const stats = [
     {
-      title: 'Total Managers',
+      title: 'Total Supervisors',
       value: '1,248',
       subtitle: '+32 this week',
       icon: 'fa-plus',
@@ -250,15 +248,17 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     } else if (currentPage === 'users') {
       setActiveNav('users');
     } else if (currentPage === 'products') {
-      setActiveNav('products');
+      setActiveNav('masterMenu');
     } else if (currentPage === 'staff') {
       setActiveNav('staff');
     } else if (currentPage === 'customers') {
       setActiveNav('customers');
     } else if (currentPage === 'suppliers') {
-      setActiveNav('suppliers');
+      setActiveNav('masterMenu');
     } else if (currentPage === 'chitPlans') {
-      setActiveNav('chitPlans');
+      setActiveNav('masterMenu');
+    } else if (currentPage === 'masterMenu') {
+      setActiveNav('masterMenu');
     } else if (currentPage === 'settings') {
       setActiveNav('settings');
     }
@@ -271,15 +271,21 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     } else if (currentPage === 'users') {
       setActiveNav('users');
     } else if (currentPage === 'products') {
-      setActiveNav('products');
+      setActiveNav('masterMenu');
     } else if (currentPage === 'staff') {
       setActiveNav('staff');
     } else if (currentPage === 'customers') {
       setActiveNav('customers');
     } else if (currentPage === 'suppliers') {
-      setActiveNav('suppliers');
+      setActiveNav('masterMenu');
+    } else if (currentPage === 'dispatch') {
+      setActiveNav('masterMenu');
+    } else if (currentPage === 'transport') {
+      setActiveNav('masterMenu');
     } else if (currentPage === 'chitPlans') {
-      setActiveNav('chitPlans');
+      setActiveNav('masterMenu');
+    } else if (currentPage === 'masterMenu') {
+      setActiveNav('masterMenu');
     } else if (currentPage === 'settings') {
       setActiveNav('settings');
     }
@@ -381,6 +387,208 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     }
   };
 
+  const masterSections = [
+    { title: 'Dispatch Department', desc: 'Manage dispatch workflows', icon: 'fa-shipping-fast', target: 'dispatch' },
+    { title: 'Transport Master', desc: 'Transport partners & routes', icon: 'fa-truck-moving', target: 'transport' },
+    { title: 'Category Master', desc: 'Organize product categories', icon: 'fa-tags', target: 'products' },
+    { title: 'Products', desc: 'Catalog and pricing', icon: 'fa-box', target: 'products' },
+    { title: 'Supply Master', desc: 'Suppliers and logistics', icon: 'fa-truck', target: 'suppliers' },
+    { title: 'Chit Plans', desc: 'Chit plan setup & customers', icon: 'fa-file-invoice-dollar', target: 'chitPlans' },
+  ];
+
+  const renderContent = () => {
+    if (activeNav === 'masterMenu') {
+      return (
+        <div className="master-menu-grid">
+          {masterSections.map((item) => (
+            <div
+              key={item.title}
+              className="stat-card"
+              style={{ cursor: item.target ? 'pointer' : 'default' }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (item.target && onNavigate) {
+                  onNavigate(item.target);
+                }
+              }}
+            >
+              <div className="stat-content">
+                <h3 className="stat-title">{item.title}</h3>
+                <p className="stat-subtitle">{item.desc}</p>
+              </div>
+              <div className="stat-icon" style={{ backgroundColor: '#dc354520', color: '#dc3545' }}>
+                <i className={`fas ${item.icon}`}></i>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return (
+      <>
+        {/* Active Scope, Sales Report and Search */}
+        <div className="controls-section">
+          <div className="scope-button" onClick={() => setScopeMenuOpen((prev) => !prev)}>
+            <i className="fas fa-minus"></i>
+            <span>Active Scope</span>
+            <span className="scope-value">{activeScope}</span>
+            <i className="fas fa-chevron-down"></i>
+            {scopeMenuOpen && (
+              <div className="scope-dropdown">
+                <div
+                  className="scope-option"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleScopeSelect('all');
+                  }}
+                >
+                  <div className="option-title">All stores • Global scope</div>
+                  <div className="option-desc">See data across all stores</div>
+                </div>
+                <div
+                  className="scope-option"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleScopeSelect('selected');
+                  }}
+                >
+                  <div className="option-title">Selected stores</div>
+                  <div className="option-desc">
+                    {parseSelectedStores().length > 0
+                      ? `${parseSelectedStores().length} store(s) selected`
+                      : 'No stores selected yet'}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          <button 
+            type="button"
+            className="sales-report-button" 
+            onClick={handleSalesReport}
+            disabled={isExportingSales}
+          >
+            {isExportingSales ? (
+              <>
+                <i className="fas fa-spinner fa-spin"></i> Exporting...
+              </>
+            ) : (
+              <>
+                <i className="fas fa-file-excel"></i> Sales Report
+              </>
+            )}
+          </button>
+          <div className="search-bar">
+            <i className="fas fa-search"></i>
+            <input type="text" placeholder="Search supervisors, products, stores..." />
+          </div>
+        </div>
+
+        {/* Scope status message */}
+        {scopeMessage && (
+          <div className="scope-message">
+            {scopeMessage}
+          </div>
+        )}
+
+        {/* Stats Cards */}
+        <div className="stats-grid">
+          {stats.map((stat, index) => (
+            <div key={index} className="stat-card">
+              <div className="stat-content">
+                <h3 className="stat-title">{stat.title}</h3>
+                <p className="stat-value">{stat.value}</p>
+                <p className="stat-subtitle">{stat.subtitle}</p>
+              </div>
+              <div className="stat-icon" style={{ backgroundColor: `${stat.color}20`, color: stat.color }}>
+                <i className={`fas ${stat.icon}`}></i>
+              </div>
+            </div>
+          ))}
+          <div className="stat-card" onClick={() => setShowSupervisorAttendance(true)} style={{ cursor: 'pointer' }}>
+            <div className="stat-content">
+              <h3 className="stat-title">Supervisor Attendance</h3>
+              <p className="stat-value">View today</p>
+              <p className="stat-subtitle">Check all supervisor attendance</p>
+            </div>
+            <div className="stat-icon" style={{ backgroundColor: '#2196F320', color: '#2196F3' }}>
+              <i className="fas fa-calendar-check"></i>
+            </div>
+          </div>
+        </div>
+
+        {/* Store Performance Chart */}
+        <div className="chart-card">
+          <div className="chart-header">
+            <div>
+              <h3>Store Performance</h3>
+              <p>Last 24 hours across selected scope</p>
+            </div>
+            <div className="time-range-selector">
+              <button 
+                className={timeRange === 'Live' ? 'active' : ''}
+                onClick={() => setTimeRange('Live')}
+              >
+                Live
+              </button>
+              <button 
+                className={timeRange === '24h' ? 'active' : ''}
+                onClick={() => setTimeRange('24h')}
+              >
+                24h
+              </button>
+            </div>
+          </div>
+          <div className="chart-container">
+            <div className="chart-bars">
+              {chartData.map((height, index) => (
+                <div key={index} className="chart-bar">
+                  <div className="bar-fill" style={{ height: `${height}%` }}></div>
+                </div>
+              ))}
+            </div>
+            <div className="chart-labels">
+              <span>00</span>
+              <span>06</span>
+              <span>12</span>
+              <span>18</span>
+              <span>24</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Critical Alerts */}
+        <div className="alerts-card">
+          <div className="alerts-header">
+            <h3>Critical Alerts</h3>
+            <span className="active-alerts-badge">5 Active</span>
+          </div>
+          <div className="alerts-list">
+            {alerts.map((alert, index) => (
+              <div key={index} className="alert-item">
+                <span className="alert-priority" style={{ backgroundColor: `${alert.color}20`, color: alert.color }}>
+                  {alert.priority}
+                </span>
+                <div className="alert-content">
+                  <p className="alert-message">{alert.message}</p>
+                  <span className="alert-time">{alert.time}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <a href="#" className="view-all-alerts">View all alerts →</a>
+        </div>
+
+        {/* Footer */}
+        <footer className="dashboard-footer">
+          <p>&copy; 2025 Anitha Stores. All rights reserved.</p>
+        </footer>
+      </>
+    );
+  };
+
   return (
     <div className="dashboard-container">
       {/* Left Sidebar Navigation */}
@@ -401,25 +609,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
           <div className="nav-icon">
             <i className="fas fa-users"></i>
           </div>
-          <span>Managers</span>
-        </div>
-        <div 
-          className={`nav-item ${activeNav === 'products' ? 'active' : ''}`} 
-          onClick={(e) => handleNavClick('products', e)}
-        >
-          <div className="nav-icon">
-            <i className="fas fa-box"></i>
-          </div>
-          <span>Products</span>
-        </div>
-        <div 
-          className={`nav-item ${activeNav === 'stores' ? 'active' : ''}`} 
-          onClick={(e) => handleNavClick('stores', e)}
-        >
-          <div className="nav-icon">
-            <i className="fas fa-store"></i>
-          </div>
-          <span>Stores</span>
+          <span>Supervisors</span>
         </div>
         <div 
           className={`nav-item ${activeNav === 'staff' ? 'active' : ''}`} 
@@ -440,22 +630,13 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
           <span>Customers</span>
         </div>
         <div 
-          className={`nav-item ${activeNav === 'suppliers' ? 'active' : ''}`} 
-          onClick={(e) => handleNavClick('suppliers', e)}
+          className={`nav-item ${activeNav === 'masterMenu' ? 'active' : ''}`} 
+          onClick={(e) => handleNavClick('masterMenu', e)}
         >
           <div className="nav-icon">
-            <i className="fas fa-truck"></i>
+            <i className="fas fa-th-large"></i>
           </div>
-          <span>Supply Master</span>
-        </div>
-        <div 
-          className={`nav-item ${activeNav === 'chitPlans' ? 'active' : ''}`} 
-          onClick={(e) => handleNavClick('chitPlans', e)}
-        >
-          <div className="nav-icon">
-            <i className="fas fa-file-invoice-dollar"></i>
-          </div>
-          <span>Chit Plan</span>
+          <span>Master Menu</span>
         </div>
         <div 
           className={`nav-item ${activeNav === 'settings' ? 'active' : ''}`} 
@@ -535,7 +716,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
                 <div className="dropdown-divider"></div>
                 <div className="dropdown-item" onClick={() => handleMenuAction('addUser')}>
                   <i className="fas fa-user-plus"></i>
-                  <span>Add Manager</span>
+                  <span>Add Supervisor</span>
                 </div>
                 <div className="dropdown-item" onClick={() => handleMenuAction('addProduct')}>
                   <i className="fas fa-box"></i>
@@ -558,153 +739,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
 
       {/* Main Content */}
       <main className="dashboard-content">
-        {/* Active Scope, Sales Report and Search */}
-        <div className="controls-section">
-          <div className="scope-button" onClick={() => setScopeMenuOpen((prev) => !prev)}>
-            <i className="fas fa-minus"></i>
-            <span>Active Scope</span>
-            <span className="scope-value">{activeScope}</span>
-            <i className="fas fa-chevron-down"></i>
-            {scopeMenuOpen && (
-              <div className="scope-dropdown">
-                <div
-                  className="scope-option"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleScopeSelect('all');
-                  }}
-                >
-                  <div className="option-title">All stores • Global scope</div>
-                  <div className="option-desc">See data across all stores</div>
-                </div>
-                <div
-                  className="scope-option"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleScopeSelect('selected');
-                  }}
-                >
-                  <div className="option-title">Selected stores</div>
-                  <div className="option-desc">
-                    {parseSelectedStores().length > 0
-                      ? `${parseSelectedStores().length} store(s) selected`
-                      : 'No stores selected yet'}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          <button 
-            type="button"
-            className="sales-report-button" 
-            onClick={handleSalesReport}
-            disabled={isExportingSales}
-          >
-            {isExportingSales ? (
-              <>
-                <i className="fas fa-spinner fa-spin"></i> Exporting...
-              </>
-            ) : (
-              <>
-                <i className="fas fa-file-excel"></i> Sales Report
-              </>
-            )}
-          </button>
-          <div className="search-bar">
-            <i className="fas fa-search"></i>
-            <input type="text" placeholder="Search managers, products, stores..." />
-          </div>
-        </div>
-
-        {/* Scope status message */}
-        {scopeMessage && (
-          <div className="scope-message">
-            {scopeMessage}
-          </div>
-        )}
-
-        {/* Stats Cards */}
-        <div className="stats-grid">
-          {stats.map((stat, index) => (
-            <div key={index} className="stat-card">
-              <div className="stat-content">
-                <h3 className="stat-title">{stat.title}</h3>
-                <p className="stat-value">{stat.value}</p>
-                <p className="stat-subtitle">{stat.subtitle}</p>
-              </div>
-              <div className="stat-icon" style={{ backgroundColor: `${stat.color}20`, color: stat.color }}>
-                <i className={`fas ${stat.icon}`}></i>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Store Performance Chart */}
-        <div className="chart-card">
-          <div className="chart-header">
-            <div>
-              <h3>Store Performance</h3>
-              <p>Last 24 hours across selected scope</p>
-            </div>
-            <div className="time-range-selector">
-              <button 
-                className={timeRange === 'Live' ? 'active' : ''}
-                onClick={() => setTimeRange('Live')}
-              >
-                Live
-              </button>
-              <button 
-                className={timeRange === '24h' ? 'active' : ''}
-                onClick={() => setTimeRange('24h')}
-              >
-                24h
-              </button>
-            </div>
-          </div>
-          <div className="chart-container">
-            <div className="chart-bars">
-              {chartData.map((height, index) => (
-                <div key={index} className="chart-bar">
-                  <div className="bar-fill" style={{ height: `${height}%` }}></div>
-                </div>
-              ))}
-            </div>
-            <div className="chart-labels">
-              <span>00</span>
-              <span>06</span>
-              <span>12</span>
-              <span>18</span>
-              <span>24</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Critical Alerts */}
-        <div className="alerts-card">
-          <div className="alerts-header">
-            <h3>Critical Alerts</h3>
-            <span className="active-alerts-badge">5 Active</span>
-          </div>
-          <div className="alerts-list">
-            {alerts.map((alert, index) => (
-              <div key={index} className="alert-item">
-                <span className="alert-priority" style={{ backgroundColor: `${alert.color}20`, color: alert.color }}>
-                  {alert.priority}
-                </span>
-                <div className="alert-content">
-                  <p className="alert-message">{alert.message}</p>
-                  <span className="alert-time">{alert.time}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-          <a href="#" className="view-all-alerts">View all alerts →</a>
-        </div>
-
-        {/* Footer */}
-        <footer className="dashboard-footer">
-          <p>&copy; 2025 Anitha Stores. All rights reserved.</p>
-        </footer>
+        {renderContent()}
       </main>
       </div>
 
@@ -722,6 +757,10 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
         }}
         onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
       />
+
+      {showSupervisorAttendance && (
+        <SupervisorAttendanceView onClose={() => setShowSupervisorAttendance(false)} />
+      )}
     </div>
   );
 };

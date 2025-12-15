@@ -7,6 +7,7 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
     fullName: '',
     storeAllocated: '',
     email: '',
+    phoneNumber: '',
     address: '',
     username: '',
     password: ''
@@ -37,9 +38,9 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
     }
   };
 
-  const handleProducts = () => {
+  const handleMasterMenu = () => {
     if (onNavigate) {
-      onNavigate('products');
+      onNavigate('masterMenu');
     }
   };
 
@@ -86,6 +87,7 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
       const response = await staffAPI.create({
         fullName: formData.fullName,
         email: formData.email,
+        phoneNumber: formData.phoneNumber,
         username: formData.username,
         password: formData.password,
         storeAllocated: formData.storeAllocated,
@@ -133,18 +135,6 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
           </div>
           <span>Managers</span>
         </div>
-        <div className="nav-item" onClick={handleProducts}>
-          <div className="nav-icon">
-            <i className="fas fa-box"></i>
-          </div>
-          <span>Products</span>
-        </div>
-        <div className="nav-item" onClick={handleHome}>
-          <div className="nav-icon">
-            <i className="fas fa-store"></i>
-          </div>
-          <span>Stores</span>
-        </div>
         <div className="nav-item active" onClick={handleStaff}>
           <div className="nav-icon">
             <i className="fas fa-user-tie"></i>
@@ -156,6 +146,12 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
             <i className="fas fa-user-friends"></i>
           </div>
           <span>Customers</span>
+        </div>
+        <div className="nav-item" onClick={handleMasterMenu}>
+          <div className="nav-icon">
+            <i className="fas fa-th-large"></i>
+          </div>
+          <span>Master Menu</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">
@@ -212,7 +208,7 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="storeAllocated">Store allocated</label>
+                      <label htmlFor="storeAllocated">Floor allocated</label>
                       <div className="input-wrapper">
                         <i className="fas fa-store input-icon"></i>
                         <select
@@ -223,10 +219,12 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                           onChange={handleInputChange}
                           required
                         >
-                          <option value="">Select store.</option>
-                          <option value="mart">Mart</option>
-                          <option value="global">Global</option>
-                          <option value="mumbai">Mumbai DMart</option>
+                          <option value="">Select Floor.</option>
+                          <option value="1">Floor 1</option>
+                          <option value="2">Floor 2</option>
+                          <option value="3">Floor 3</option>
+                          <option value="4">Floor 4</option>
+                          <option value="5">Floor 5</option>
                         </select>
                         <i className="fas fa-chevron-down dropdown-icon"></i>
                       </div>
@@ -243,6 +241,23 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                           className="form-input"
                           placeholder="name.lastname@dmart.com"
                           value={formData.email}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="phoneNumber">Phone number</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-phone input-icon"></i>
+                        <input
+                          type="tel"
+                          id="phoneNumber"
+                          name="phoneNumber"
+                          className="form-input"
+                          placeholder="Enter phone number"
+                          value={formData.phoneNumber}
                           onChange={handleInputChange}
                           required
                         />

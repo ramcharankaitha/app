@@ -3,24 +3,43 @@ const path = require('path');
 
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
-const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT) || 5432,
-  database: process.env.DB_NAME || 'anitha_stores',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD ? String(process.env.DB_PASSWORD) : '',
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-};
+let pool;
 
-if (!process.env.DB_PASSWORD) {
-  console.warn('⚠️  WARNING: DB_PASSWORD is not set in .env file');
-  console.warn('⚠️  Please create server/.env file with your PostgreSQL password');
-  console.warn('⚠️  See server/.env.example for template');
+// Use DATABASE_URL if available (production - Railway/Heroku style), otherwise use individual configs
+if (process.env.DATABASE_URL) {
+  // Production - Connection string format
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false
+    },
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+  });
+  console.log('✅ Using DATABASE_URL for connection (Production mode)');
+} else {
+  // Development - Individual config values
+  const dbConfig = {
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT) || 5432,
+    database: process.env.DB_NAME || 'anitha_stores',
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD ? String(process.env.DB_PASSWORD) : '',
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+  };
+
+  if (!process.env.DB_PASSWORD) {
+    console.warn('⚠️  WARNING: DB_PASSWORD is not set in .env file');
+    console.warn('⚠️  Please create server/.env file with your PostgreSQL password');
+    console.warn('⚠️  See server/.env.example for template');
+  }
+
+  pool = new Pool(dbConfig);
+  console.log('✅ Using individual DB config (Development mode)');
 }
-
-const pool = new Pool(dbConfig);
 
 pool.on('connect', () => {
   console.log('✅ Connected to PostgreSQL database');

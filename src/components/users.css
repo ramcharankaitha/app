@@ -311,7 +311,7 @@
     transform: scale(1.1);
 }
 
-.manager-menu-dropdown {
+.supervisor-menu-dropdown {
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
@@ -355,7 +355,7 @@
     flex: 1;
 }
 
-/* Manager Details Modal */
+/* Supervisor Details Modal */
 .modal-overlay {
     position: fixed;
     top: 0;

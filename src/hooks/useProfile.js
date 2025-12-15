@@ -17,6 +17,38 @@ export const useProfile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
+        // Get user role and data from localStorage
+        const userRole = localStorage.getItem('userRole') || 'admin';
+        const userDataStr = localStorage.getItem('userData');
+        let userData = null;
+        if (userDataStr) {
+          try {
+            userData = JSON.parse(userDataStr);
+          } catch (e) {
+            console.error('Error parsing userData:', e);
+          }
+        }
+
+        // For staff users, use userData directly
+        if (userRole === 'staff' && userData) {
+          setProfile({
+            full_name: userData.name || userData.full_name || 'Staff Account',
+            email: userData.email || '',
+            phone: userData.phone || '',
+            role: userData.role || 'Staff',
+            primary_store: userData.store || userData.store_allocated || '',
+            store_scope: userData.store_allocated || 'Store Access',
+            avatar_url: userData.avatar_url || null
+          });
+          if (userData.avatar_url) {
+            setAvatarUrl(userData.avatar_url);
+          } else {
+            setAvatarUrl('');
+          }
+          return;
+        }
+
+        // For admin and supervisor, fetch from API
         const response = await profileAPI.get();
         if (response.success) {
           const profileData = response.profile;
@@ -61,6 +93,38 @@ export const useProfile = () => {
     isLoading,
     refreshProfile: async () => {
       try {
+        // Get user role and data from localStorage
+        const userRole = localStorage.getItem('userRole') || 'admin';
+        const userDataStr = localStorage.getItem('userData');
+        let userData = null;
+        if (userDataStr) {
+          try {
+            userData = JSON.parse(userDataStr);
+          } catch (e) {
+            console.error('Error parsing userData:', e);
+          }
+        }
+
+        // For staff users, use userData directly
+        if (userRole === 'staff' && userData) {
+          setProfile({
+            full_name: userData.name || userData.full_name || 'Staff Account',
+            email: userData.email || '',
+            phone: userData.phone || '',
+            role: userData.role || 'Staff',
+            primary_store: userData.store || userData.store_allocated || '',
+            store_scope: userData.store_allocated || 'Store Access',
+            avatar_url: userData.avatar_url || null
+          });
+          if (userData.avatar_url) {
+            setAvatarUrl(userData.avatar_url);
+          } else {
+            setAvatarUrl('');
+          }
+          return;
+        }
+
+        // For admin and supervisor, fetch from API
         const response = await profileAPI.get();
         if (response.success) {
           const profileData = response.profile;

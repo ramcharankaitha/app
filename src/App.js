@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
-import ManagerDashboard from './components/ManagerDashboard';
+import SupervisorDashboard from './components/SupervisorDashboard';
+import StaffDashboard from './components/StaffDashboard';
 import Managers from './components/Users';
 import AddUser from './components/AddUser';
 import Staff from './components/Staff';
@@ -13,6 +14,10 @@ import Customers from './components/Customers';
 import AddCustomer from './components/AddCustomer';
 import Suppliers from './components/Suppliers';
 import AddSupplier from './components/AddSupplier';
+import DispatchDepartment from './components/DispatchDepartment';
+import AddDispatch from './components/AddDispatch';
+import TransportMaster from './components/TransportMaster';
+import AddTransport from './components/AddTransport';
 import ChitPlans from './components/ChitPlans';
 import AddChitCustomer from './components/AddChitCustomer';
 import Settings from './components/Settings';
@@ -29,7 +34,7 @@ import './components/chitPlans.css';
 import './components/settings.css';
 import './components/profile.css';
 import './components/editProfile.css';
-import './components/managerDashboard.css';
+import './components/supervisorDashboard.css';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -56,7 +61,13 @@ function App() {
           setUserData(null);
         }
       }
-      setCurrentPage(storedRole === 'admin' ? 'dashboard' : 'managerHome');
+      if (storedRole === 'admin') {
+        setCurrentPage('dashboard');
+      } else if (storedRole === 'supervisor') {
+        setCurrentPage('supervisorHome');
+      } else if (storedRole === 'staff') {
+        setCurrentPage('staffHome');
+      }
     }
   }, []);
 
@@ -69,7 +80,13 @@ function App() {
     setIsLoggedIn(true);
     setUserRole(normalizedRole);
     setUserData(user);
-    setCurrentPage(normalizedRole === 'admin' ? 'dashboard' : 'managerHome');
+    if (normalizedRole === 'admin') {
+      setCurrentPage('dashboard');
+    } else if (normalizedRole === 'supervisor') {
+      setCurrentPage('supervisorHome');
+    } else if (normalizedRole === 'staff') {
+      setCurrentPage('staffHome');
+    }
   };
 
   const handleLogout = () => {
@@ -84,7 +101,7 @@ function App() {
 
   const mapPageForRole = (page) => {
     if (page === 'dashboard' && userRole !== 'admin') {
-      return 'managerHome';
+      return 'supervisorHome';
     }
     return page;
   };
@@ -102,7 +119,7 @@ function App() {
       case 'users':
         return (
           <Managers
-            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : 'managerHome')}
+            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : 'supervisorHome')}
             onAddUser={() => setCurrentPage('addUser')}
             onNavigate={handleNavigation}
           />
@@ -119,9 +136,10 @@ function App() {
         return (
           <Products
             key="products"
-            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : 'managerHome')}
+            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : userRole === 'supervisor' ? 'supervisorHome' : 'staffHome')}
             onAddProduct={() => setCurrentPage('addProduct')}
             onNavigate={handleNavigation}
+            userRole={userRole}
           />
         );
       case 'addProduct':
@@ -135,7 +153,7 @@ function App() {
       case 'settings':
         return (
           <Settings
-            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : 'managerHome')}
+            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : userRole === 'supervisor' ? 'supervisorHome' : 'staffHome')}
             onNavigate={handleNavigation}
             onLogout={handleLogout}
             userRole={userRole}
@@ -160,7 +178,7 @@ function App() {
         return (
           <Staff
             key="staff"
-            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : 'managerHome')}
+            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : 'supervisorHome')}
             onAddStaff={() => setCurrentPage('addStaff')}
             onNavigate={handleNavigation}
           />
@@ -176,9 +194,10 @@ function App() {
       case 'customers':
         return (
           <Customers
-            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : 'managerHome')}
+            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : userRole === 'supervisor' ? 'supervisorHome' : 'staffHome')}
             onAddCustomer={() => setCurrentPage('addCustomer')}
             onNavigate={handleNavigation}
+            userRole={userRole}
           />
         );
       case 'addCustomer':
@@ -192,9 +211,10 @@ function App() {
       case 'suppliers':
         return (
           <Suppliers
-            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : 'managerHome')}
+            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : userRole === 'supervisor' ? 'supervisorHome' : 'staffHome')}
             onAddSupplier={() => setCurrentPage('addSupplier')}
             onNavigate={handleNavigation}
+            userRole={userRole}
           />
         );
       case 'addSupplier':
@@ -205,12 +225,47 @@ function App() {
             onNavigate={handleNavigation}
           />
         );
+      case 'dispatch':
+        return (
+          <DispatchDepartment
+            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : userRole === 'supervisor' ? 'supervisorHome' : 'staffHome')}
+            onAddDispatch={() => setCurrentPage('addDispatch')}
+            onNavigate={handleNavigation}
+            userRole={userRole}
+          />
+        );
+      case 'addDispatch':
+        return (
+          <AddDispatch
+            onBack={() => setCurrentPage('dispatch')}
+            onCancel={() => setCurrentPage('dispatch')}
+            onNavigate={handleNavigation}
+          />
+        );
+      case 'transport':
+        return (
+          <TransportMaster
+            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : userRole === 'supervisor' ? 'supervisorHome' : 'staffHome')}
+            onAddTransport={() => setCurrentPage('addTransport')}
+            onNavigate={handleNavigation}
+            userRole={userRole}
+          />
+        );
+      case 'addTransport':
+        return (
+          <AddTransport
+            onBack={() => setCurrentPage('transport')}
+            onCancel={() => setCurrentPage('transport')}
+            onNavigate={handleNavigation}
+          />
+        );
       case 'chitPlans':
         return (
           <ChitPlans
-            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : 'managerHome')}
+            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : userRole === 'supervisor' ? 'supervisorHome' : 'staffHome')}
             onAddChitCustomer={() => setCurrentPage('addChitCustomer')}
             onNavigate={handleNavigation}
+            userRole={userRole}
           />
         );
       case 'addChitCustomer':
@@ -221,9 +276,40 @@ function App() {
             onNavigate={handleNavigation}
           />
         );
-      case 'managerHome':
+      case 'masterMenu':
+        return userRole === 'admin' ? (
+          <Dashboard
+            onLogout={handleLogout}
+            onNavigate={handleNavigation}
+            currentPage={currentPage}
+          />
+        ) : userRole === 'supervisor' ? (
+          <SupervisorDashboard
+            onNavigate={handleNavigation}
+            onLogout={handleLogout}
+            userData={userData}
+            currentPage={currentPage}
+          />
+        ) : (
+          <StaffDashboard
+            onNavigate={handleNavigation}
+            onLogout={handleLogout}
+            userData={userData}
+            currentPage={currentPage}
+          />
+        );
+      case 'supervisorHome':
         return (
-          <ManagerDashboard
+          <SupervisorDashboard
+            onNavigate={handleNavigation}
+            onLogout={handleLogout}
+            userData={userData}
+            currentPage={currentPage}
+          />
+        );
+      case 'staffHome':
+        return (
+          <StaffDashboard
             onNavigate={handleNavigation}
             onLogout={handleLogout}
             userData={userData}
@@ -231,10 +317,24 @@ function App() {
           />
         );
       default:
-        return (
+        return userRole === 'admin' ? (
           <Dashboard
             onLogout={handleLogout}
             onNavigate={handleNavigation}
+            currentPage={currentPage}
+          />
+        ) : userRole === 'supervisor' ? (
+          <SupervisorDashboard
+            onNavigate={handleNavigation}
+            onLogout={handleLogout}
+            userData={userData}
+            currentPage={currentPage}
+          />
+        ) : (
+          <StaffDashboard
+            onNavigate={handleNavigation}
+            onLogout={handleLogout}
+            userData={userData}
             currentPage={currentPage}
           />
         );

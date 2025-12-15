@@ -15,6 +15,37 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get customer tokens by phone or email
+router.get('/tokens', async (req, res) => {
+  try {
+    const { phone, email } = req.query;
+    
+    if (!phone && !email) {
+      return res.json({ success: true, tokens: 0 });
+    }
+
+    // Find or create customer_tokens record
+    let tokenResult = await pool.query(
+      'SELECT * FROM customer_tokens WHERE (customer_phone = $1 OR customer_email = $2) AND ($1 IS NOT NULL OR $2 IS NOT NULL)',
+      [phone || null, email || null]
+    );
+
+    if (tokenResult.rows.length === 0) {
+      // Create new token record
+      await pool.query(
+        'INSERT INTO customer_tokens (customer_phone, customer_email, tokens) VALUES ($1, $2, 0)',
+        [phone || null, email || null]
+      );
+      return res.json({ success: true, tokens: 0 });
+    }
+
+    res.json({ success: true, tokens: tokenResult.rows[0].tokens || 0 });
+  } catch (error) {
+    console.error('Get tokens error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -24,7 +55,23 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Customer not found' });
     }
 
-    res.json({ success: true, customer: result.rows[0] });
+    // Get customer tokens
+    const customer = result.rows[0];
+    let tokens = 0;
+    if (customer.phone || customer.email) {
+      const tokenResult = await pool.query(
+        'SELECT tokens FROM customer_tokens WHERE (customer_phone = $1 OR customer_email = $2) AND ($1 IS NOT NULL OR $2 IS NOT NULL)',
+        [customer.phone || null, customer.email || null]
+      );
+      if (tokenResult.rows.length > 0) {
+        tokens = tokenResult.rows[0].tokens || 0;
+      }
+    }
+
+    res.json({ 
+      success: true, 
+      customer: { ...customer, available_tokens: tokens }
+    });
   } catch (error) {
     console.error('Get customer error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -37,7 +84,7 @@ router.post('/', async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    const { fullName, email, phone, address, itemCode, quantity, mrp, sellRate, discount, paymentMode } = req.body;
+    const { fullName, email, phone, address, itemCode, quantity, mrp, sellRate, discount, paymentMode, tokensUsed, tokensEarned, totalAmount } = req.body;
 
     if (!fullName || !email) {
       await client.query('ROLLBACK');
@@ -45,6 +92,9 @@ router.post('/', async (req, res) => {
     }
 
     const customerQuantity = quantity || 0;
+    const tokensToRedeem = parseInt(tokensUsed) || 0;
+    const tokensToEarn = parseInt(tokensEarned) || 0;
+    const finalAmount = parseFloat(totalAmount) || 0;
 
     if (itemCode && customerQuantity > 0) {
       const productResult = await client.query(
@@ -78,8 +128,8 @@ router.post('/', async (req, res) => {
     }
 
     const result = await client.query(
-      `INSERT INTO customers (full_name, email, phone, address, item_code, quantity, mrp, sell_rate, discount, payment_mode)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO customers (full_name, email, phone, address, item_code, quantity, mrp, sell_rate, discount, payment_mode, tokens_used, tokens_earned)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
         fullName, 
@@ -91,9 +141,42 @@ router.post('/', async (req, res) => {
         mrp || null,
         sellRate || null,
         discount || 0,
-        paymentMode || null
+        paymentMode || null,
+        tokensToRedeem,
+        tokensToEarn
       ]
     );
+
+    // Update customer tokens
+    if (phone || email) {
+      // Find or create customer_tokens record
+      let tokenResult = await client.query(
+        'SELECT * FROM customer_tokens WHERE (customer_phone = $1 OR customer_email = $2) AND ($1 IS NOT NULL OR $2 IS NOT NULL)',
+        [phone || null, email || null]
+      );
+
+      if (tokenResult.rows.length === 0) {
+        // Create new token record
+        await client.query(
+          'INSERT INTO customer_tokens (customer_phone, customer_email, tokens, total_purchased, tokens_earned, tokens_redeemed) VALUES ($1, $2, $3, $4, $5, $6)',
+          [phone || null, email || null, tokensToEarn, finalAmount, tokensToEarn, tokensToRedeem]
+        );
+      } else {
+        // Update existing token record
+        const currentTokens = tokenResult.rows[0].tokens || 0;
+        const newTokens = Math.max(0, currentTokens - tokensToRedeem + tokensToEarn);
+        await client.query(
+          `UPDATE customer_tokens 
+           SET tokens = $1, 
+               total_purchased = total_purchased + $2,
+               tokens_earned = tokens_earned + $3,
+               tokens_redeemed = tokens_redeemed + $4,
+               updated_at = CURRENT_TIMESTAMP
+           WHERE (customer_phone = $5 OR customer_email = $6) AND ($5 IS NOT NULL OR $6 IS NOT NULL)`,
+          [newTokens, finalAmount, tokensToEarn, tokensToRedeem, phone || null, email || null]
+        );
+      }
+    }
 
     await client.query('COMMIT');
 
@@ -117,9 +200,10 @@ router.post('/', async (req, res) => {
       success: true,
       customer: customer,
       message: itemCode && customerQuantity > 0 
-        ? `Customer created successfully. Product quantity updated.` 
-        : 'Customer created successfully',
-      whatsappSent: whatsappResult ? whatsappResult.success : false
+        ? `Customer created successfully. Product quantity updated.${tokensToEarn > 0 ? ` Earned ${tokensToEarn} token(s).` : ''}` 
+        : `Customer created successfully.${tokensToEarn > 0 ? ` Earned ${tokensToEarn} token(s).` : ''}`,
+      whatsappSent: whatsappResult ? whatsappResult.success : false,
+      tokensEarned: tokensToEarn
     });
   } catch (error) {
     await client.query('ROLLBACK');

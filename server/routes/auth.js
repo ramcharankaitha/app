@@ -51,20 +51,20 @@ router.post('/login', async (req, res) => {
         const user = userResult.rows[0];
         
         if (!user.password_hash) {
-          console.error('Manager has no password hash:', user.username);
+          console.error('Supervisor has no password hash:', user.username);
           return res.status(401).json({ error: 'Invalid username or password' });
         }
         
-        console.log('Attempting login for manager:', user.username);
+        console.log('Attempting login for supervisor:', user.username);
         const isValid = await bcrypt.compare(password, user.password_hash);
         console.log('Password comparison result:', isValid);
         
         if (!isValid) {
-          console.error('Password mismatch for manager:', user.username);
+          console.error('Password mismatch for supervisor:', user.username);
           return res.status(401).json({ error: 'Invalid username or password' });
         }
         
-        console.log('Manager login successful:', user.username);
+        console.log('Supervisor login successful:', user.username);
 
         return res.json({
           success: true,
@@ -104,6 +104,7 @@ router.post('/login', async (req, res) => {
             id: staff.id,
             name: staff.full_name,
             email: staff.email,
+            username: staff.username,
             role: staff.role || 'Staff',
             store: staff.store_allocated
           },

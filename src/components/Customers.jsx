@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { customersAPI } from '../services/api';
 import './customers.css';
 
-const Customers = ({ onBack, onAddCustomer, onNavigate }) => {
+const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStore, setSelectedStore] = useState('All Stores');
   const [customers, setCustomers] = useState([]);
@@ -143,47 +143,25 @@ const Customers = ({ onBack, onAddCustomer, onNavigate }) => {
           </div>
           <span>Home</span>
         </div>
-        <div className="nav-item" onClick={handleManagers}>
-          <div className="nav-icon">
-            <i className="fas fa-users"></i>
+        {userRole !== 'staff' && (
+          <div className="nav-item" onClick={handleBack}>
+            <div className="nav-icon">
+              <i className="fas fa-user-tie"></i>
+            </div>
+            <span>Staff</span>
           </div>
-          <span>Managers</span>
-        </div>
-        <div className="nav-item" onClick={handleProducts}>
-          <div className="nav-icon">
-            <i className="fas fa-box"></i>
-          </div>
-          <span>Products</span>
-        </div>
-        <div className="nav-item" onClick={handleBack}>
-          <div className="nav-icon">
-            <i className="fas fa-store"></i>
-          </div>
-          <span>Stores</span>
-        </div>
-        <div className="nav-item" onClick={handleBack}>
-          <div className="nav-icon">
-            <i className="fas fa-user-tie"></i>
-          </div>
-          <span>Staff</span>
-        </div>
+        )}
         <div className="nav-item active">
           <div className="nav-icon">
             <i className="fas fa-user-friends"></i>
           </div>
           <span>Customers</span>
         </div>
-        <div className="nav-item" onClick={handleSuppliers}>
+        <div className="nav-item" onClick={() => onNavigate && onNavigate('masterMenu')}>
           <div className="nav-icon">
-            <i className="fas fa-truck"></i>
+            <i className="fas fa-th-large"></i>
           </div>
-          <span>Supply Master</span>
-        </div>
-        <div className="nav-item" onClick={() => onNavigate ? onNavigate('chitPlans') : null}>
-          <div className="nav-icon">
-            <i className="fas fa-file-invoice-dollar"></i>
-          </div>
-          <span>Chit Plan</span>
+          <span>Master Menu</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">
@@ -392,6 +370,39 @@ const Customers = ({ onBack, onAddCustomer, onNavigate }) => {
                     <div className="detail-row">
                       <span className="detail-label">Payment Mode:</span>
                       <span className="detail-value">{viewCustomerModal.payment_mode}</span>
+                    </div>
+                  )}
+                  {viewCustomerModal.available_tokens !== undefined && (
+                    <div className="detail-row" style={{ 
+                      background: '#fff5f5', 
+                      padding: '12px', 
+                      borderRadius: '8px',
+                      border: '2px solid #dc3545',
+                      marginTop: '12px'
+                    }}>
+                      <span className="detail-label" style={{ fontWeight: '600', color: '#dc3545' }}>
+                        <i className="fas fa-gift" style={{ marginRight: '8px' }}></i>
+                        Available Tokens:
+                      </span>
+                      <span className="detail-value" style={{ fontSize: '20px', fontWeight: '700', color: '#dc3545' }}>
+                        {viewCustomerModal.available_tokens || 0}
+                      </span>
+                    </div>
+                  )}
+                  {viewCustomerModal.tokens_earned && (
+                    <div className="detail-row">
+                      <span className="detail-label">Tokens Earned (This Purchase):</span>
+                      <span className="detail-value" style={{ color: '#28a745', fontWeight: '600' }}>
+                        +{viewCustomerModal.tokens_earned}
+                      </span>
+                    </div>
+                  )}
+                  {viewCustomerModal.tokens_used && (
+                    <div className="detail-row">
+                      <span className="detail-label">Tokens Used (This Purchase):</span>
+                      <span className="detail-value" style={{ color: '#dc3545', fontWeight: '600' }}>
+                        -{viewCustomerModal.tokens_used}
+                      </span>
                     </div>
                   )}
                   {viewCustomerModal.created_at && (

@@ -57,18 +57,21 @@ const Login = ({ onLoginSuccess }) => {
 
     try {
       // Try API login first
-      // For admin: use email, for manager/staff: use username
+      // For admin: use email, for supervisor/staff: use username
       const loginIdentifier = formData.role === 'admin' ? formData.email : formData.username;
       const response = await authAPI.login(loginIdentifier, formData.password, formData.role);
       
       if (response.success) {
-        // Normalize role: Super Admin -> admin, Manager -> manager, Staff -> staff
+        // Normalize role: Super Admin -> admin, Supervisor -> supervisor, Staff -> staff
         let normalizedRole = response.user.role || formData.role;
         if (normalizedRole === 'Super Admin' || normalizedRole === 'admin') {
           normalizedRole = 'admin';
-        } else if (normalizedRole.toLowerCase() === 'manager') {
-          normalizedRole = 'manager';
+        } else if (normalizedRole.toLowerCase() === 'supervisor' || normalizedRole.toLowerCase() === 'manager') {
+          normalizedRole = 'supervisor';
         } else if (normalizedRole.toLowerCase() === 'staff') {
+          normalizedRole = 'staff';
+        } else {
+          // Default to staff if role is not recognized
           normalizedRole = 'staff';
         }
         
@@ -163,7 +166,7 @@ const Login = ({ onLoginSuccess }) => {
                     onChange={handleInputChange}
                   >
                     <option value="admin">Admin</option>
-                    <option value="manager">Manager</option>
+                    <option value="supervisor">Supervisor</option>
                     <option value="staff">Staff</option>
                   </select>
                   <i className="fas fa-chevron-down dropdown-icon"></i>

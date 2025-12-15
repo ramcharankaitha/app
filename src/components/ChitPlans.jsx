@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { chitPlansAPI } from '../services/api';
 import './chitPlans.css';
 
-const ChitPlans = ({ onBack, onAddChitCustomer, onNavigate }) => {
+const ChitPlans = ({ onBack, onAddChitCustomer, onNavigate, userRole = 'admin' }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [customers, setCustomers] = useState([]);
   const [plans, setPlans] = useState([]);
@@ -161,47 +161,25 @@ const ChitPlans = ({ onBack, onAddChitCustomer, onNavigate }) => {
           </div>
           <span>Home</span>
         </div>
-        <div className="nav-item" onClick={handleManagers}>
-          <div className="nav-icon">
-            <i className="fas fa-users"></i>
+        {userRole !== 'staff' && (
+          <div className="nav-item" onClick={handleStaff}>
+            <div className="nav-icon">
+              <i className="fas fa-user-tie"></i>
+            </div>
+            <span>Staff</span>
           </div>
-          <span>Managers</span>
-        </div>
-        <div className="nav-item" onClick={handleProducts}>
-          <div className="nav-icon">
-            <i className="fas fa-box"></i>
-          </div>
-          <span>Products</span>
-        </div>
-        <div className="nav-item" onClick={() => onNavigate ? onNavigate('dashboard') : handleBack()}>
-          <div className="nav-icon">
-            <i className="fas fa-store"></i>
-          </div>
-          <span>Stores</span>
-        </div>
-        <div className="nav-item" onClick={handleStaff}>
-          <div className="nav-icon">
-            <i className="fas fa-user-tie"></i>
-          </div>
-          <span>Staff</span>
-        </div>
+        )}
         <div className="nav-item" onClick={handleCustomers}>
           <div className="nav-icon">
             <i className="fas fa-user-friends"></i>
           </div>
           <span>Customers</span>
         </div>
-        <div className="nav-item" onClick={handleSuppliers}>
+        <div className="nav-item active" onClick={() => onNavigate && onNavigate('masterMenu')}>
           <div className="nav-icon">
-            <i className="fas fa-truck"></i>
+            <i className="fas fa-th-large"></i>
           </div>
-          <span>Supply Master</span>
-        </div>
-        <div className="nav-item active">
-          <div className="nav-icon">
-            <i className="fas fa-file-invoice-dollar"></i>
-          </div>
-          <span>Chit Plan</span>
+          <span>Master Menu</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">

@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { suppliersAPI } from '../services/api';
+import { dispatchAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 
-const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
+const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
   const [formData, setFormData] = useState({
-    supplierName: '',
+    customer: '',
     phone: '',
-    address: '',
-    email: ''
+    transportName: ''
   });
+  const [dispatchItems, setDispatchItems] = useState([
+    { id: 1, name: '' }
+  ]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -16,7 +18,7 @@ const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
 
   const handleBack = () => {
     if (onNavigate) {
-      onNavigate('suppliers');
+      onNavigate('dispatch');
     } else if (onBack) {
       onBack();
     }
@@ -34,12 +36,6 @@ const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
     }
   };
 
-  const handleProducts = () => {
-    if (onNavigate) {
-      onNavigate('products');
-    }
-  };
-
   const handleStaff = () => {
     if (onNavigate) {
       onNavigate('staff');
@@ -52,18 +48,6 @@ const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
     }
   };
 
-  const handleSuppliers = () => {
-    if (onNavigate) {
-      onNavigate('suppliers');
-    }
-  };
-
-  const handleChitPlans = () => {
-    if (onNavigate) {
-      onNavigate('chitPlans');
-    }
-  };
-
   const handleSettings = () => {
     if (onNavigate) {
       onNavigate('settings');
@@ -72,7 +56,7 @@ const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
 
   const handleCancel = () => {
     if (onNavigate) {
-      onNavigate('suppliers');
+      onNavigate('dispatch');
     } else if (onCancel) {
       onCancel();
     }
@@ -86,29 +70,67 @@ const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
     }));
   };
 
-  const submitSupplier = async () => {
+  const handleItemChange = (id, value) => {
+    setDispatchItems(prev => 
+      prev.map(item => 
+        item.id === id ? { ...item, name: value } : item
+      )
+    );
+  };
+
+  const addDispatchItem = () => {
+    const newId = dispatchItems.length > 0 
+      ? Math.max(...dispatchItems.map(item => item.id)) + 1 
+      : 1;
+    setDispatchItems(prev => [...prev, { id: newId, name: '' }]);
+  };
+
+  const removeDispatchItem = (id) => {
+    if (dispatchItems.length > 1) {
+      setDispatchItems(prev => prev.filter(item => item.id !== id));
+    }
+  };
+
+  const submitDispatch = async () => {
     setIsLoading(true);
     setError('');
     setSuccessMessage('');
 
     try {
-      const response = await suppliersAPI.create({
-        supplierName: formData.supplierName,
-        phone: formData.phone,
-        address: formData.address,
-        email: formData.email
-      });
+      // Filter out empty items
+      const validItems = dispatchItems.filter(item => item.name.trim() !== '');
+      
+      if (validItems.length === 0) {
+        setError('Please add at least one product to dispatch.');
+        setIsLoading(false);
+        return;
+      }
 
-      if (response.success) {
+      // Create a dispatch record for each item
+      const promises = validItems.map(item =>
+        dispatchAPI.create({
+          customer: formData.customer,
+          name: item.name,
+          phone: formData.phone,
+          transportName: formData.transportName
+        })
+      );
+
+      const results = await Promise.all(promises);
+      const allSuccess = results.every(result => result.success);
+
+      if (allSuccess) {
         setSuccessMessage('Save changes are done');
         setTimeout(() => {
           setSuccessMessage('');
           handleCancel();
         }, 2000);
+      } else {
+        setError('Some dispatch records failed to create. Please try again.');
       }
     } catch (err) {
-      setError(err.message || 'Failed to create supplier. Please try again.');
-      console.error('Create supplier error:', err);
+      setError(err.message || 'Failed to create dispatch records. Please try again.');
+      console.error('Create dispatch error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -119,7 +141,7 @@ const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
     setConfirmState({
       open: true,
       message: 'Are you sure you want to submit?',
-      onConfirm: submitSupplier,
+      onConfirm: submitDispatch,
     });
   };
 
@@ -132,6 +154,12 @@ const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
             <i className="fas fa-home"></i>
           </div>
           <span>Home</span>
+        </div>
+        <div className="nav-item" onClick={handleManagers}>
+          <div className="nav-icon">
+            <i className="fas fa-users"></i>
+          </div>
+          <span>Managers</span>
         </div>
         <div className="nav-item" onClick={handleStaff}>
           <div className="nav-icon">
@@ -168,33 +196,101 @@ const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
               <i className="fas fa-arrow-left"></i>
             </button>
             <div className="header-content">
-              <h1 className="page-title">Add Supplier</h1>
-              <p className="page-subtitle">Create a new supplier for your store.</p>
+              <h1 className="page-title">Add Dispatch Record</h1>
+              <p className="page-subtitle">Create a new dispatch record.</p>
             </div>
           </header>
 
           {/* Main Content */}
           <main className="add-user-content">
             <form onSubmit={handleSubmit} className="add-user-form">
-                {/* Supplier Details Section */}
+                {/* Dispatch Details Section */}
                 <div className="form-section">
-                  <h3 className="section-title">Supplier details</h3>
+                  <h3 className="section-title">Dispatch details</h3>
                   <div className="form-grid">
                     <div className="form-group">
-                      <label htmlFor="supplierName">Supplier Name</label>
+                      <label htmlFor="customer">Customer</label>
                       <div className="input-wrapper">
-                        <i className="fas fa-building input-icon"></i>
+                        <i className="fas fa-user input-icon"></i>
                         <input
                           type="text"
-                          id="supplierName"
-                          name="supplierName"
+                          id="customer"
+                          name="customer"
                           className="form-input"
-                          placeholder="Enter supplier name."
-                          value={formData.supplierName}
+                          placeholder="Enter customer name."
+                          value={formData.customer}
                           onChange={handleInputChange}
                           required
                         />
                       </div>
+                    </div>
+
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                      <label>Products to Dispatch</label>
+                      {dispatchItems.map((item, index) => (
+                        <div key={item.id} style={{ 
+                          display: 'flex', 
+                          gap: '10px', 
+                          marginBottom: '10px',
+                          alignItems: 'flex-start'
+                        }}>
+                          <div className="input-wrapper" style={{ flex: 1 }}>
+                            <i className="fas fa-box input-icon"></i>
+                            <input
+                              type="text"
+                              className="form-input"
+                              placeholder={`Enter product name ${index + 1}...`}
+                              value={item.name}
+                              onChange={(e) => handleItemChange(item.id, e.target.value)}
+                              required={index === 0}
+                            />
+                          </div>
+                          {dispatchItems.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeDispatchItem(item.id)}
+                              style={{
+                                padding: '10px 14px',
+                                background: '#dc3545',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                minWidth: '40px',
+                                height: '40px'
+                              }}
+                              title="Remove this product"
+                            >
+                              <i className="fas fa-times"></i>
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={addDispatchItem}
+                        style={{
+                          marginTop: '10px',
+                          padding: '10px 16px',
+                          background: '#28a745',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}
+                      >
+                        <i className="fas fa-plus"></i>
+                        <span>Add More Products</span>
+                      </button>
                     </div>
 
                     <div className="form-group">
@@ -209,52 +305,33 @@ const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
                           placeholder="Enter phone number."
                           value={formData.phone}
                           onChange={handleInputChange}
+                          required
                         />
                       </div>
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="email">Email</label>
+                      <label htmlFor="transportName">Transport Name</label>
                       <div className="input-wrapper">
-                        <i className="fas fa-envelope input-icon"></i>
+                        <i className="fas fa-truck input-icon"></i>
                         <input
-                          type="email"
-                          id="email"
-                          name="email"
+                          type="text"
+                          id="transportName"
+                          name="transportName"
                           className="form-input"
-                          placeholder="supplier@example.com"
-                          value={formData.email}
+                          placeholder="Enter transport name."
+                          value={formData.transportName}
                           onChange={handleInputChange}
+                          required
                         />
                       </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Address Section */}
-                <div className="form-section">
-                  <h3 className="section-title">Address</h3>
-                  
-                  <div className="form-group">
-                    <label htmlFor="address">Address</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-map-marker-alt input-icon"></i>
-                      <textarea
-                        id="address"
-                        name="address"
-                        className="form-input textarea-input"
-                        placeholder="Street, area, city&#10;State, pincode"
-                        rows="2"
-                        value={formData.address}
-                        onChange={handleInputChange}
-                      ></textarea>
                     </div>
                   </div>
                 </div>
 
                 {/* Warning Message */}
                 <p className="form-warning">
-                  Make sure all supplier details are correct before saving.
+                  Make sure all dispatch details are correct before saving.
                 </p>
 
                 {/* Error Message */}
@@ -286,7 +363,7 @@ const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
                 {/* Action Buttons */}
                 <div className="form-actions">
                   <button type="submit" className="create-user-btn" disabled={isLoading}>
-                    {isLoading ? 'Creating...' : 'Create Supplier'}
+                    {isLoading ? 'Creating...' : 'Create Dispatch Record'}
                   </button>
                   <button type="button" className="cancel-btn" onClick={handleCancel}>
                     Cancel and go back
@@ -313,5 +390,5 @@ const AddSupplier = ({ onBack, onCancel, onNavigate }) => {
   );
 };
 
-export default AddSupplier;
+export default AddDispatch;
 

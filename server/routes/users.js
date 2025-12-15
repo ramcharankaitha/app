@@ -21,7 +21,7 @@ router.get('/:id', async (req, res) => {
     const result = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Manager not found' });
+      return res.status(404).json({ error: 'Supervisor not found' });
     }
 
     res.json({ success: true, user: result.rows[0] });
@@ -50,15 +50,15 @@ router.post('/', async (req, res) => {
       `INSERT INTO users (first_name, last_name, email, username, password_hash, store_allocated, address, role)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING id, first_name, last_name, email, username, role, store_allocated`,
-      [firstName, lastName, email, username, passwordHash, storeAllocated || null, address || null, 'Manager']
+      [firstName, lastName, email, username, passwordHash, storeAllocated || null, address || null, 'Supervisor']
     );
     
-    console.log('Manager created successfully:', result.rows[0].username);
+    console.log('Supervisor created successfully:', result.rows[0].username);
 
     res.status(201).json({
       success: true,
       user: result.rows[0],
-      message: 'Manager created successfully'
+      message: 'Supervisor created successfully'
     });
   } catch (error) {
     if (error.code === '23505') { // Unique violation
@@ -90,13 +90,13 @@ router.put('/:id', async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Manager not found' });
+      return res.status(404).json({ error: 'Supervisor not found' });
     }
 
     res.json({
       success: true,
       user: result.rows[0],
-      message: 'Manager updated successfully'
+      message: 'Supervisor updated successfully'
     });
   } catch (error) {
     console.error('Update user error:', error);
@@ -111,7 +111,7 @@ router.delete('/:id', async (req, res) => {
     const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Manager not found' });
+      return res.status(404).json({ error: 'Supervisor not found' });
     }
 
     res.json({ success: true, message: 'User deleted successfully' });

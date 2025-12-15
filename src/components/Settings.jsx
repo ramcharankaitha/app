@@ -20,21 +20,20 @@ const Settings = ({ onBack, onNavigate, onLogout, userRole = 'admin' }) => {
   const { profile, avatarUrl, initials, refreshProfile } = useProfile();
   const { theme, toggleTheme, isDark } = useTheme();
 
-  const homePage = userRole === 'admin' ? 'dashboard' : 'managerHome';
+  const homePage = userRole === 'admin' ? 'dashboard' : userRole === 'supervisor' ? 'supervisorHome' : 'staffHome';
   const handleHome = () => {
     if (onNavigate) onNavigate(homePage);
     else if (onBack) onBack();
   };
 
   const handleManagers = () => onNavigate && onNavigate('users');
-  const handleProducts = () => onNavigate && onNavigate('products');
   const handleStaff = () => onNavigate && onNavigate('staff');
   const handleCustomers = () => onNavigate && onNavigate('customers');
-  const handleSuppliers = () => onNavigate && onNavigate('suppliers');
+  const handleMasterMenu = () => onNavigate && onNavigate('masterMenu');
   const handleSettings = () => onNavigate && onNavigate('settings');
 
-  const displayName = profile.full_name || (userRole === 'manager' ? 'Manager Account' : 'Admin Root');
-  const displayRole = profile.role || (userRole === 'manager' ? 'Manager' : 'Super Admin');
+  const displayName = profile.full_name || (userRole === 'supervisor' ? 'Supervisor Account' : userRole === 'staff' ? 'Staff Account' : 'Admin Root');
+  const displayRole = profile.role || (userRole === 'supervisor' ? 'Supervisor' : userRole === 'staff' ? 'Staff' : 'Super Admin');
 
   const sections = useMemo(() => [
     {
@@ -51,8 +50,8 @@ const Settings = ({ onBack, onNavigate, onLogout, userRole = 'admin' }) => {
     {
       title: 'STORES & ROLES',
       items: [
-        { type: 'link', title: 'Store Access', desc: `Choose stores this ${userRole === 'manager' ? 'manager' : 'admin'} can manage` },
-        { type: 'link', title: 'Role Permissions', desc: `Define access for ${userRole === 'manager' ? 'Manager / Staff' : 'Admin / Staff'}` },
+        { type: 'link', title: 'Store Access', desc: `Choose stores this ${userRole === 'supervisor' ? 'supervisor' : userRole === 'staff' ? 'staff' : 'admin'} can manage` },
+        { type: 'link', title: 'Role Permissions', desc: `Define access for ${userRole === 'supervisor' ? 'Supervisor / Staff' : userRole === 'staff' ? 'Staff' : 'Admin / Staff'}` },
       ],
     },
     {
@@ -243,47 +242,25 @@ const Settings = ({ onBack, onNavigate, onLogout, userRole = 'admin' }) => {
           </div>
           <span>Home</span>
         </div>
-        <div className="nav-item" onClick={handleManagers}>
-          <div className="nav-icon">
-            <i className="fas fa-users"></i>
+        {userRole !== 'staff' && (
+          <div className="nav-item" onClick={handleStaff}>
+            <div className="nav-icon">
+              <i className="fas fa-user-tie"></i>
+            </div>
+            <span>Staff</span>
           </div>
-          <span>Managers</span>
-        </div>
-        <div className="nav-item" onClick={handleProducts}>
-          <div className="nav-icon">
-            <i className="fas fa-box"></i>
-          </div>
-          <span>Products</span>
-        </div>
-        <div className="nav-item" onClick={() => onNavigate && onNavigate(homePage)}>
-          <div className="nav-icon">
-            <i className="fas fa-store"></i>
-          </div>
-          <span>Stores</span>
-        </div>
-        <div className="nav-item" onClick={handleStaff}>
-          <div className="nav-icon">
-            <i className="fas fa-user-tie"></i>
-          </div>
-          <span>Staff</span>
-        </div>
+        )}
         <div className="nav-item" onClick={handleCustomers}>
           <div className="nav-icon">
             <i className="fas fa-user-friends"></i>
           </div>
           <span>Customers</span>
         </div>
-        <div className="nav-item" onClick={handleSuppliers}>
+        <div className="nav-item" onClick={handleMasterMenu}>
           <div className="nav-icon">
-            <i className="fas fa-truck"></i>
+            <i className="fas fa-th-large"></i>
           </div>
-          <span>Supply Master</span>
-        </div>
-        <div className="nav-item" onClick={() => onNavigate && onNavigate('chitPlans')}>
-          <div className="nav-icon">
-            <i className="fas fa-file-invoice-dollar"></i>
-          </div>
-          <span>Chit Plan</span>
+          <span>Master Menu</span>
         </div>
         <div className="nav-item active" onClick={handleSettings}>
           <div className="nav-icon">
@@ -474,8 +451,8 @@ const Settings = ({ onBack, onNavigate, onLogout, userRole = 'admin' }) => {
                 <div className="card-left">
                   <span className="dot-icon alert"></span>
                   <div className="card-text">
-                    <div className="card-title">Logout of {userRole === 'manager' ? 'Manager' : 'Admin'} Account</div>
-                    <div className="card-desc">Sign out from your {userRole === 'manager' ? 'manager' : 'admin'} account</div>
+                    <div className="card-title">Logout of {userRole === 'supervisor' ? 'Supervisor' : userRole === 'staff' ? 'Staff' : 'Admin'} Account</div>
+                    <div className="card-desc">Sign out from your {userRole === 'supervisor' ? 'supervisor' : userRole === 'staff' ? 'staff' : 'admin'} account</div>
                   </div>
                 </div>
                 <i className="fas fa-chevron-right chevron"></i>
@@ -520,7 +497,7 @@ const Settings = ({ onBack, onNavigate, onLogout, userRole = 'admin' }) => {
       <ConfirmDialog
         isOpen={showLogoutConfirm}
         title="Confirm Logout"
-        message={`Are you sure you want to logout from your ${userRole === 'manager' ? 'manager' : 'admin'} account? You will need to sign in again to access the system.`}
+        message={`Are you sure you want to logout from your ${userRole === 'supervisor' ? 'supervisor' : userRole === 'staff' ? 'staff' : 'admin'} account? You will need to sign in again to access the system.`}
         confirmText="Yes, Logout"
         cancelText="Cancel"
         onConfirm={() => {

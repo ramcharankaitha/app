@@ -10,7 +10,7 @@ const RolePermissions = ({ onClose, onNavigate }) => {
   const [activeRole, setActiveRole] = useState('Super Admin');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
 
-  const roles = ['Super Admin', 'Manager', 'Staff'];
+  const roles = ['Super Admin', 'Supervisor', 'Staff'];
   
   const permissionSections = [
     {

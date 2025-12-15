@@ -159,6 +159,9 @@ export const customersAPI = {
   getById: async (id) => {
     return apiCall(`/customers/${id}`);
   },
+  getTokens: async (phone, email) => {
+    return apiCall(`/customers/tokens?phone=${encodeURIComponent(phone || '')}&email=${encodeURIComponent(email || '')}`);
+  },
   create: async (customerData) => {
     return apiCall('/customers', {
       method: 'POST',
@@ -299,6 +302,58 @@ export const chitPlansAPI = {
   },
 };
 
+export const dispatchAPI = {
+  getAll: async () => {
+    return apiCall('/dispatch');
+  },
+  getById: async (id) => {
+    return apiCall(`/dispatch/${id}`);
+  },
+  create: async (dispatchData) => {
+    return apiCall('/dispatch', {
+      method: 'POST',
+      body: JSON.stringify(dispatchData),
+    });
+  },
+  update: async (id, dispatchData) => {
+    return apiCall(`/dispatch/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(dispatchData),
+    });
+  },
+  delete: async (id) => {
+    return apiCall(`/dispatch/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+export const transportAPI = {
+  getAll: async () => {
+    return apiCall('/transport');
+  },
+  getById: async (id) => {
+    return apiCall(`/transport/${id}`);
+  },
+  create: async (transportData) => {
+    return apiCall('/transport', {
+      method: 'POST',
+      body: JSON.stringify(transportData),
+    });
+  },
+  update: async (id, transportData) => {
+    return apiCall(`/transport/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(transportData),
+    });
+  },
+  delete: async (id) => {
+    return apiCall(`/transport/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
 export default {
   authAPI,
   usersAPI,
@@ -311,5 +366,7 @@ export default {
   profileAPI,
   suppliersAPI,
   chitPlansAPI,
+  dispatchAPI,
+  transportAPI,
 };
 
