@@ -45,6 +45,8 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
       setActiveNav('masterMenu');
     } else if (currentPage === 'masterMenu') {
       setActiveNav('masterMenu');
+    } else if (currentPage === 'transactionMenu' || currentPage === 'stockIn' || currentPage === 'stockOut') {
+      setActiveNav('transactionMenu');
     } else if (currentPage === 'settings') {
       setActiveNav('settings');
     }
@@ -74,9 +76,11 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
     } else if (navItem === 'customers') {
       onNavigate('customers');
     } else if (navItem === 'masterMenu') {
-      onNavigate('masterMenu');
+      // Handle masterMenu as internal state, don't navigate away
+      // Just update the activeNav state, which is already done above
     } else if (navItem === 'transactionMenu') {
-      onNavigate('transactionMenu');
+      // Handle transactionMenu as internal state, don't navigate away
+      // Just update the activeNav state, which is already done above
     } else if (navItem === 'settings') {
       onNavigate('settings');
     }
@@ -227,6 +231,35 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
                 { title: 'Products', desc: 'Catalog and pricing', icon: 'fa-box', target: 'products' },
                 { title: 'Supply Master', desc: 'Suppliers and logistics', icon: 'fa-truck', target: 'suppliers' },
                 { title: 'Chit Plans', desc: 'Chit plan setup & customers', icon: 'fa-file-invoice-dollar', target: 'chitPlans' },
+              ].map((item) => (
+                <div
+                  key={item.title}
+                  className="stat-card"
+                  style={{ cursor: item.target ? 'pointer' : 'default' }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (item.target && onNavigate) {
+                      onNavigate(item.target);
+                    }
+                  }}
+                >
+                  <div className="stat-content">
+                    <h3 className="stat-title">{item.title}</h3>
+                    <p className="stat-subtitle">{item.desc}</p>
+                  </div>
+                  <div className="stat-icon" style={{ backgroundColor: '#dc354520', color: '#dc3545' }}>
+                    <i className={`fas ${item.icon}`}></i>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : activeNav === 'transactionMenu' ? (
+            <div className="master-menu-grid">
+              {[
+                { title: 'Dispatch Department', desc: 'Manage dispatch workflows', icon: 'fa-shipping-fast', target: 'dispatch' },
+                { title: 'Stock In', desc: 'Record stock entries', icon: 'fa-box-open', target: 'stockIn' },
+                { title: 'Stock Out', desc: 'Record stock exits', icon: 'fa-box', target: 'stockOut' },
               ].map((item) => (
                 <div
                   key={item.title}

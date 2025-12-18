@@ -108,6 +108,8 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
       setActiveNav('masterMenu');
     } else if (currentPage === 'masterMenu') {
       setActiveNav('masterMenu');
+    } else if (currentPage === 'transactionMenu' || currentPage === 'stockIn' || currentPage === 'stockOut') {
+      setActiveNav('transactionMenu');
     } else if (currentPage === 'settings') {
       setActiveNav('settings');
     }
@@ -133,9 +135,11 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
     } else if (navItem === 'customers') {
       onNavigate('customers');
     } else if (navItem === 'masterMenu') {
-      onNavigate('masterMenu');
+      // Handle masterMenu as internal state, don't navigate away
+      // Just update the activeNav state, which is already done above
     } else if (navItem === 'transactionMenu') {
-      onNavigate('transactionMenu');
+      // Handle transactionMenu as internal state, don't navigate away
+      // Just update the activeNav state, which is already done above
     } else if (navItem === 'settings') {
       onNavigate('settings');
     }
