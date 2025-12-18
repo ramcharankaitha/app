@@ -6,8 +6,13 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
     name: '',
     travelsName: '',
+    address: '',
     city: '',
-    service: ''
+    state: '',
+    pincode: '',
+    service: '',
+    llrNumber: '',
+    vehicleNumber: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -77,8 +82,13 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
       const response = await transportAPI.create({
         name: formData.name,
         travelsName: formData.travelsName,
+        address: formData.address,
         city: formData.city,
-        service: formData.service
+        state: formData.state,
+        pincode: formData.pincode,
+        service: formData.service,
+        llrNumber: formData.llrNumber,
+        vehicleNumber: formData.vehicleNumber
       });
 
       if (response.success) {
@@ -204,10 +214,26 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       </div>
                     </div>
 
+                    <div className="form-group full-width">
+                      <label htmlFor="address">Street Address</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-map-marker-alt input-icon"></i>
+                        <textarea
+                          id="address"
+                          name="address"
+                          className="form-input textarea-input"
+                          placeholder="Enter street address, area"
+                          rows="2"
+                          value={formData.address}
+                          onChange={handleInputChange}
+                        ></textarea>
+                      </div>
+                    </div>
+
                     <div className="form-group">
                       <label htmlFor="city">City</label>
                       <div className="input-wrapper">
-                        <i className="fas fa-map-marker-alt input-icon"></i>
+                        <i className="fas fa-city input-icon"></i>
                         <input
                           type="text"
                           id="city"
@@ -217,6 +243,39 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           value={formData.city}
                           onChange={handleInputChange}
                           required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="state">State</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-map input-icon"></i>
+                        <input
+                          type="text"
+                          id="state"
+                          name="state"
+                          className="form-input"
+                          placeholder="Enter state."
+                          value={formData.state}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="pincode">Pincode</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-mail-bulk input-icon"></i>
+                        <input
+                          type="text"
+                          id="pincode"
+                          name="pincode"
+                          className="form-input"
+                          placeholder="Enter pincode."
+                          value={formData.pincode}
+                          onChange={handleInputChange}
+                          maxLength="10"
                         />
                       </div>
                     </div>
@@ -234,6 +293,38 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           value={formData.service}
                           onChange={handleInputChange}
                           required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="llrNumber">LLR Number</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-file-alt input-icon"></i>
+                        <input
+                          type="text"
+                          id="llrNumber"
+                          name="llrNumber"
+                          className="form-input"
+                          placeholder="Enter LLR number (optional)"
+                          value={formData.llrNumber}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="vehicleNumber">Vehicle Number</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-truck input-icon"></i>
+                        <input
+                          type="text"
+                          id="vehicleNumber"
+                          name="vehicleNumber"
+                          className="form-input"
+                          placeholder="Enter vehicle number (optional)"
+                          value={formData.vehicleNumber}
+                          onChange={handleInputChange}
                         />
                       </div>
                     </div>

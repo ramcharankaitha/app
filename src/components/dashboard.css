@@ -416,9 +416,9 @@
 .search-bar input {
     width: 100%;
     padding: 12px 14px 12px 40px;
-    border: 2px solid #e9ecef;
+    border: 2px solid var(--border-color);
     border-radius: 12px;
-    background: #fff;
+    background: var(--card-bg);
     font-size: 13px;
     outline: none;
     transition: all 0.3s ease;
@@ -431,7 +431,7 @@
 }
 
 .search-bar input::placeholder {
-    color: #999;
+    color: var(--text-tertiary);
 }
 
 /* Stats Grid */
@@ -450,15 +450,15 @@
 }
 
 .stat-card {
-    background: #fff;
+    background: var(--card-bg);
     border-radius: 14px;
     padding: 18px;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 12px var(--shadow-light);
     transition: all 0.3s ease;
-    border: 1px solid #f0f0f0;
+    border: 1px solid var(--border-light);
 }
 
 .stat-card:hover {
@@ -595,18 +595,18 @@
     display: flex;
     justify-content: space-between;
     font-size: 11px;
-    color: #666;
+    color: var(--text-secondary);
     padding: 0 2px;
 }
 
 /* Alerts Card */
 .alerts-card {
-    background: #fff;
+    background: var(--card-bg);
     border-radius: 14px;
     padding: 20px;
     margin-bottom: 20px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-    border: 1px solid #f0f0f0;
+    box-shadow: 0 2px 12px var(--shadow-light);
+    border: 1px solid var(--border-light);
 }
 
 .alerts-header {
@@ -619,7 +619,7 @@
 .alerts-header h3 {
     font-size: 18px;
     font-weight: 700;
-    color: #000;
+    color: var(--text-primary);
     margin: 0;
 }
 
@@ -644,13 +644,13 @@
     align-items: center;
     gap: 14px;
     padding: 14px 0;
-    border-bottom: 1px solid #f0f0f0;
+    border: 1px solid var(--border-light);
     transition: background 0.2s ease;
     min-height: 60px;
 }
 
 .alert-item:hover {
-    background: #fafafa;
+    background: var(--bg-secondary);
     margin: 0 -20px;
     padding-left: 20px;
     padding-right: 20px;
@@ -682,7 +682,7 @@
 
 .alert-message {
     font-size: 13px;
-    color: #333;
+    color: var(--text-primary);
     margin: 0;
     line-height: 1.5;
     word-wrap: break-word;
@@ -691,7 +691,7 @@
 
 .alert-time {
     font-size: 11px;
-    color: #999;
+    color: var(--text-tertiary);
     display: block;
 }
 
@@ -711,10 +711,10 @@
 
 /* Dashboard Footer */
 .dashboard-footer {
-    background: #fff;
+    background: var(--card-bg);
     padding: 20px;
     text-align: center;
-    border-top: 1px solid #e9ecef;
+    border: 1px solid var(--border-color);
     margin-top: 20px;
     flex-shrink: 0;
     width: 100%;
@@ -725,7 +725,7 @@
 
 .dashboard-footer p {
     margin: 0;
-    color: #666;
+    color: var(--text-secondary);
     font-size: 13px;
     font-weight: 500;
 }

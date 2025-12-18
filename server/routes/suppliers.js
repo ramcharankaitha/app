@@ -32,20 +32,23 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { supplierName, phone, address, email } = req.body;
+    const { supplierName, phone, address, city, state, pincode, email } = req.body;
 
     if (!supplierName) {
       return res.status(400).json({ error: 'Supplier name is required' });
     }
 
     const result = await pool.query(
-      `INSERT INTO suppliers (supplier_name, phone, address, email)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO suppliers (supplier_name, phone, address, city, state, pincode, email)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
       [
         supplierName,
         phone || null,
         address || null,
+        city || null,
+        state || null,
+        pincode || null,
         email || null
       ]
     );
@@ -67,7 +70,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { supplierName, phone, address, email } = req.body;
+    const { supplierName, phone, address, city, state, pincode, email } = req.body;
 
     if (!supplierName) {
       return res.status(400).json({ error: 'Supplier name is required' });
@@ -77,12 +80,15 @@ router.put('/:id', async (req, res) => {
       `UPDATE suppliers 
        SET supplier_name = $1, 
            phone = $2, 
-           address = $3, 
-           email = $4,
+           address = $3,
+           city = $4,
+           state = $5,
+           pincode = $6, 
+           email = $7,
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $5
+       WHERE id = $8
        RETURNING *`,
-      [supplierName, phone || null, address || null, email || null, id]
+      [supplierName, phone || null, address || null, city || null, state || null, pincode || null, email || null, id]
     );
 
     if (result.rows.length === 0) {

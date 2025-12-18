@@ -103,6 +103,9 @@ export const productsAPI = {
   getAll: async () => {
     return apiCall('/products');
   },
+  getPublic: async () => {
+    return apiCall('/products/public');
+  },
   getById: async (id) => {
     return apiCall(`/products/${id}`);
   },
@@ -158,6 +161,14 @@ export const customersAPI = {
   },
   getById: async (id) => {
     return apiCall(`/customers/${id}`);
+  },
+  search: async (name) => {
+    return apiCall(`/customers/search?name=${encodeURIComponent(name || '')}`);
+  },
+  getProducts: async (identifier) => {
+    const encodedIdentifier = encodeURIComponent(identifier);
+    console.log('Fetching products for identifier:', identifier, 'encoded:', encodedIdentifier);
+    return apiCall(`/customers/products/${encodedIdentifier}`);
   },
   getTokens: async (phone, email) => {
     return apiCall(`/customers/tokens?phone=${encodeURIComponent(phone || '')}&email=${encodeURIComponent(email || '')}`);
@@ -334,6 +345,13 @@ export const transportAPI = {
   },
   getById: async (id) => {
     return apiCall(`/transport/${id}`);
+  },
+  getByAddress: async (city, state, pincode) => {
+    const params = new URLSearchParams();
+    if (city && city.trim() !== '') params.append('city', city.trim());
+    if (state && state.trim() !== '') params.append('state', state.trim());
+    if (pincode && pincode.trim() !== '') params.append('pincode', pincode.trim());
+    return apiCall(`/transport/by-address?${params.toString()}`);
   },
   create: async (transportData) => {
     return apiCall('/transport', {

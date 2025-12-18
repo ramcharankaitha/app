@@ -15,6 +15,100 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Search customers by name (for dispatch form)
+router.get('/search', async (req, res) => {
+  try {
+    const { name } = req.query;
+    
+    if (!name || name.trim() === '') {
+      return res.json({ success: true, customers: [] });
+    }
+
+    const result = await pool.query(
+      `SELECT DISTINCT 
+        full_name, 
+        email, 
+        phone, 
+        address, 
+        city, 
+        state, 
+        pincode,
+        MIN(created_at) as first_purchase_date,
+        MAX(created_at) as last_purchase_date
+      FROM customers 
+      WHERE LOWER(full_name) LIKE LOWER($1)
+      GROUP BY full_name, email, phone, address, city, state, pincode
+      ORDER BY full_name ASC
+      LIMIT 20`,
+      [`%${name.trim()}%`]
+    );
+
+    res.json({ success: true, customers: result.rows });
+  } catch (error) {
+    console.error('Search customers error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get all products/purchases for a customer by name, email, or phone
+router.get('/products/:identifier', async (req, res) => {
+  try {
+    const { identifier } = req.params;
+    
+    console.log('Fetching products for customer identifier:', identifier);
+    
+    // Search by name, email, or phone - get all purchases with product details
+    const result = await pool.query(
+      `SELECT DISTINCT
+        c.item_code,
+        c.quantity,
+        c.mrp,
+        c.sell_rate,
+        c.discount,
+        COALESCE(p.product_name, c.item_code) as product_name,
+        p.sku_code,
+        p.category
+      FROM customers c
+      LEFT JOIN products p ON c.item_code = p.item_code
+      WHERE (LOWER(c.full_name) = LOWER($1) 
+         OR LOWER(c.email) = LOWER($1)
+         OR c.phone = $1)
+         AND (c.item_code IS NOT NULL AND c.item_code != '')
+      ORDER BY c.created_at DESC`,
+      [identifier]
+    );
+
+    console.log(`Found ${result.rows.length} product records for customer`);
+
+    // Also get customer details (first record)
+    const customerResult = await pool.query(
+      `SELECT DISTINCT
+        full_name,
+        email,
+        phone,
+        address,
+        city,
+        state,
+        pincode
+      FROM customers
+      WHERE LOWER(full_name) = LOWER($1)
+         OR LOWER(email) = LOWER($1)
+         OR phone = $1
+      LIMIT 1`,
+      [identifier]
+    );
+
+    res.json({ 
+      success: true, 
+      products: result.rows,
+      customer: customerResult.rows[0] || null
+    });
+  } catch (error) {
+    console.error('Get customer products error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get customer tokens by phone or email
 router.get('/tokens', async (req, res) => {
   try {
@@ -84,7 +178,7 @@ router.post('/', async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    const { fullName, email, phone, address, itemCode, quantity, mrp, sellRate, discount, paymentMode, tokensUsed, tokensEarned, totalAmount } = req.body;
+    const { fullName, email, phone, address, city, state, pincode, itemCode, quantity, mrp, sellRate, discount, paymentMode, tokensUsed, tokensEarned, totalAmount } = req.body;
 
     if (!fullName || !email) {
       await client.query('ROLLBACK');
@@ -128,14 +222,17 @@ router.post('/', async (req, res) => {
     }
 
     const result = await client.query(
-      `INSERT INTO customers (full_name, email, phone, address, item_code, quantity, mrp, sell_rate, discount, payment_mode, tokens_used, tokens_earned)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      `INSERT INTO customers (full_name, email, phone, address, city, state, pincode, item_code, quantity, mrp, sell_rate, discount, payment_mode, tokens_used, tokens_earned)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
        RETURNING *`,
       [
         fullName, 
         email, 
         phone || null, 
-        address || null, 
+        address || null,
+        city || null,
+        state || null,
+        pincode || null,
         itemCode || null,
         customerQuantity,
         mrp || null,

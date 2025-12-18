@@ -12,7 +12,7 @@ const DispatchDepartment = ({ onBack, onAddDispatch, onNavigate, userRole = 'adm
 
   const handleBack = () => {
     if (onNavigate) {
-      onNavigate('masterMenu');
+      onNavigate('transactionMenu');
     } else if (onBack) {
       onBack();
     }
@@ -323,6 +323,30 @@ const DispatchDepartment = ({ onBack, onAddDispatch, onNavigate, userRole = 'adm
                     <span className="detail-label">Transport Name:</span>
                     <span className="detail-value">{viewDispatchModal.transport_name || 'N/A'}</span>
                   </div>
+                  {viewDispatchModal.address && (
+                    <div className="detail-row">
+                      <span className="detail-label">Address:</span>
+                      <span className="detail-value">{viewDispatchModal.address}</span>
+                    </div>
+                  )}
+                  {viewDispatchModal.city && (
+                    <div className="detail-row">
+                      <span className="detail-label">City:</span>
+                      <span className="detail-value">{viewDispatchModal.city}</span>
+                    </div>
+                  )}
+                  {viewDispatchModal.state && (
+                    <div className="detail-row">
+                      <span className="detail-label">State:</span>
+                      <span className="detail-value">{viewDispatchModal.state}</span>
+                    </div>
+                  )}
+                  {viewDispatchModal.pincode && (
+                    <div className="detail-row">
+                      <span className="detail-label">Pincode:</span>
+                      <span className="detail-value">{viewDispatchModal.pincode}</span>
+                    </div>
+                  )}
                   {viewDispatchModal.created_at && (
                     <div className="detail-row">
                       <span className="detail-label">Created At:</span>

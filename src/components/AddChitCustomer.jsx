@@ -7,6 +7,9 @@ const AddChitCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =
     customerName: '',
     phone: '',
     address: '',
+    city: '',
+    state: '',
+    pincode: '',
     email: '',
     chitPlanId: '',
     paymentMode: ''
@@ -323,20 +326,70 @@ const AddChitCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =
                 {/* Address Section */}
                 <div className="form-section">
                   <h3 className="section-title">Address</h3>
-                  
-                  <div className="form-group">
-                    <label htmlFor="address">Address</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-map-marker-alt input-icon"></i>
-                      <textarea
-                        id="address"
-                        name="address"
-                        className="form-input textarea-input"
-                        placeholder="Street, area, city&#10;State, pincode"
-                        rows="2"
-                        value={formData.address}
-                        onChange={handleInputChange}
-                      ></textarea>
+                  <div className="form-grid">
+                    <div className="form-group full-width">
+                      <label htmlFor="address">Street Address</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-map-marker-alt input-icon"></i>
+                        <textarea
+                          id="address"
+                          name="address"
+                          className="form-input textarea-input"
+                          placeholder="Enter street address, area"
+                          rows="2"
+                          value={formData.address}
+                          onChange={handleInputChange}
+                        ></textarea>
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="city">City</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-city input-icon"></i>
+                        <input
+                          type="text"
+                          id="city"
+                          name="city"
+                          className="form-input"
+                          placeholder="Enter city"
+                          value={formData.city}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="state">State</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-map input-icon"></i>
+                        <input
+                          type="text"
+                          id="state"
+                          name="state"
+                          className="form-input"
+                          placeholder="Enter state"
+                          value={formData.state}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="pincode">Pincode</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-mail-bulk input-icon"></i>
+                        <input
+                          type="text"
+                          id="pincode"
+                          name="pincode"
+                          className="form-input"
+                          placeholder="Enter pincode"
+                          value={formData.pincode}
+                          onChange={handleInputChange}
+                          maxLength="10"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

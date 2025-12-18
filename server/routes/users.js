@@ -33,7 +33,7 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { firstName, lastName, email, username, password, storeAllocated, address } = req.body;
+    const { firstName, lastName, email, username, password, storeAllocated, address, city, state, pincode } = req.body;
 
     if (!firstName || !lastName || !email || !username || !password) {
       return res.status(400).json({ error: 'Required fields are missing' });
@@ -47,10 +47,10 @@ router.post('/', async (req, res) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO users (first_name, last_name, email, username, password_hash, store_allocated, address, role)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO users (first_name, last_name, email, username, password_hash, store_allocated, address, city, state, pincode, role)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING id, first_name, last_name, email, username, role, store_allocated`,
-      [firstName, lastName, email, username, passwordHash, storeAllocated || null, address || null, 'Supervisor']
+      [firstName, lastName, email, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, 'Supervisor']
     );
     
     console.log('Supervisor created successfully:', result.rows[0].username);
@@ -73,7 +73,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { firstName, lastName, email, storeAllocated, address, role } = req.body;
+    const { firstName, lastName, email, storeAllocated, address, city, state, pincode, role } = req.body;
 
     const result = await pool.query(
       `UPDATE users 
@@ -82,11 +82,14 @@ router.put('/:id', async (req, res) => {
            email = COALESCE($3, email),
            store_allocated = COALESCE($4, store_allocated),
            address = COALESCE($5, address),
-           role = COALESCE($6, role),
+           city = COALESCE($6, city),
+           state = COALESCE($7, state),
+           pincode = COALESCE($8, pincode),
+           role = COALESCE($9, role),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $7
+       WHERE id = $10
        RETURNING id, first_name, last_name, email, role, store_allocated`,
-      [firstName, lastName, email, storeAllocated, address, role, id]
+      [firstName, lastName, email, storeAllocated, address, city, state, pincode, role, id]
     );
 
     if (result.rows.length === 0) {

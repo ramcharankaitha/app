@@ -60,8 +60,13 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
           id: transport.id,
           name: transport.name,
           travelsName: transport.travels_name,
+          address: transport.address,
           city: transport.city,
+          state: transport.state,
+          pincode: transport.pincode,
           service: transport.service,
+          llrNumber: transport.llr_number,
+          vehicleNumber: transport.vehicle_number,
           initials: transport.name 
             ? transport.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
             : 'TM',
@@ -84,7 +89,9 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
     const matchesSearch = transport.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          transport.travelsName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          transport.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         transport.service?.toLowerCase().includes(searchQuery.toLowerCase());
+                         transport.service?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         transport.llrNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         transport.vehicleNumber?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
 
@@ -203,7 +210,7 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
             <i className="fas fa-search"></i>
             <input
               type="text"
-              placeholder="Search name, travels, city, service..."
+              placeholder="Search name, travels, city, service, LLR, vehicle..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -261,6 +268,18 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
                     <span>{transport.service}</span>
                   </div>
                 )}
+                {transport.llrNumber && (
+                  <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px' }}>
+                    <i className="fas fa-file-alt" style={{ marginRight: '6px', fontSize: '10px' }}></i>
+                    LLR: {transport.llrNumber}
+                  </div>
+                )}
+                {transport.vehicleNumber && (
+                  <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px' }}>
+                    <i className="fas fa-truck" style={{ marginRight: '6px', fontSize: '10px' }}></i>
+                    Vehicle: {transport.vehicleNumber}
+                  </div>
+                )}
               </div>
               <div 
                 className="staff-options-container" 
@@ -315,13 +334,39 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
                     <span className="detail-label">Travels Name:</span>
                     <span className="detail-value">{viewTransportModal.travels_name || 'N/A'}</span>
                   </div>
+                  {viewTransportModal.address && (
+                    <div className="detail-row">
+                      <span className="detail-label">Address:</span>
+                      <span className="detail-value">{viewTransportModal.address}</span>
+                    </div>
+                  )}
                   <div className="detail-row">
                     <span className="detail-label">City:</span>
                     <span className="detail-value">{viewTransportModal.city || 'N/A'}</span>
                   </div>
+                  {viewTransportModal.state && (
+                    <div className="detail-row">
+                      <span className="detail-label">State:</span>
+                      <span className="detail-value">{viewTransportModal.state}</span>
+                    </div>
+                  )}
+                  {viewTransportModal.pincode && (
+                    <div className="detail-row">
+                      <span className="detail-label">Pincode:</span>
+                      <span className="detail-value">{viewTransportModal.pincode}</span>
+                    </div>
+                  )}
                   <div className="detail-row">
                     <span className="detail-label">Service:</span>
                     <span className="detail-value">{viewTransportModal.service || 'N/A'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">LLR Number:</span>
+                    <span className="detail-value">{viewTransportModal.llr_number || 'N/A'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Vehicle Number:</span>
+                    <span className="detail-value">{viewTransportModal.vehicle_number || 'N/A'}</span>
                   </div>
                   {viewTransportModal.created_at && (
                     <div className="detail-row">

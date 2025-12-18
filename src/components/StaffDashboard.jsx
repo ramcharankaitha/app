@@ -99,10 +99,12 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
     } else if (currentPage === 'suppliers') {
       setActiveNav('masterMenu');
     } else if (currentPage === 'dispatch') {
-      setActiveNav('masterMenu');
+      setActiveNav('transactionMenu');
     } else if (currentPage === 'transport') {
       setActiveNav('masterMenu');
     } else if (currentPage === 'chitPlans') {
+      setActiveNav('masterMenu');
+    } else if (currentPage === 'categoryMaster') {
       setActiveNav('masterMenu');
     } else if (currentPage === 'masterMenu') {
       setActiveNav('masterMenu');
@@ -132,6 +134,8 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
       onNavigate('customers');
     } else if (navItem === 'masterMenu') {
       onNavigate('masterMenu');
+    } else if (navItem === 'transactionMenu') {
+      onNavigate('transactionMenu');
     } else if (navItem === 'settings') {
       onNavigate('settings');
     }
@@ -226,6 +230,15 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
             <i className="fas fa-th-large"></i>
           </div>
           <span>Master Menu</span>
+        </div>
+        <div 
+          className={`nav-item ${activeNav === 'transactionMenu' ? 'active' : ''}`} 
+          onClick={(e) => handleNavClick('transactionMenu', e)}
+        >
+          <div className="nav-icon">
+            <i className="fas fa-exchange-alt"></i>
+          </div>
+          <span>Transaction</span>
         </div>
         <div 
           className={`nav-item ${activeNav === 'settings' ? 'active' : ''}`} 
@@ -352,10 +365,39 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
               {[
                 { title: 'Dispatch Department', desc: 'Manage dispatch workflows', icon: 'fa-shipping-fast', target: 'dispatch' },
                 { title: 'Transport Master', desc: 'Transport partners & routes', icon: 'fa-truck-moving', target: 'transport' },
-                { title: 'Category Master', desc: 'Organize product categories', icon: 'fa-tags', target: 'products' },
+                { title: 'Category Master', desc: 'Organize product categories', icon: 'fa-tags', target: 'categoryMaster' },
                 { title: 'Products', desc: 'Catalog and pricing', icon: 'fa-box', target: 'products' },
                 { title: 'Supply Master', desc: 'Suppliers and logistics', icon: 'fa-truck', target: 'suppliers' },
                 { title: 'Chit Plans', desc: 'Chit plan setup & customers', icon: 'fa-file-invoice-dollar', target: 'chitPlans' },
+              ].map((item) => (
+                <div
+                  key={item.title}
+                  className="stat-card"
+                  style={{ cursor: item.target ? 'pointer' : 'default' }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (item.target && onNavigate) {
+                      onNavigate(item.target);
+                    }
+                  }}
+                >
+                  <div className="stat-content">
+                    <h3 className="stat-title">{item.title}</h3>
+                    <p className="stat-subtitle">{item.desc}</p>
+                  </div>
+                  <div className="stat-icon" style={{ backgroundColor: '#dc354520', color: '#dc3545' }}>
+                    <i className={`fas ${item.icon}`}></i>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : activeNav === 'transactionMenu' ? (
+            <div className="master-menu-grid">
+              {[
+                { title: 'Dispatch Department', desc: 'Manage dispatch workflows', icon: 'fa-shipping-fast', target: 'dispatch' },
+                { title: 'Stock In', desc: 'Record stock entries', icon: 'fa-box-open', target: 'stockIn' },
+                { title: 'Stock Out', desc: 'Record stock exits', icon: 'fa-box', target: 'stockOut' },
               ].map((item) => (
                 <div
                   key={item.title}

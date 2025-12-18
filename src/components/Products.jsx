@@ -96,6 +96,7 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
           productName: response.product.product_name,
           itemCode: response.product.item_code,
           skuCode: response.product.sku_code,
+          modelNumber: response.product.model_number || '',
           minQuantity: response.product.minimum_quantity,
           currentQuantity: response.product.current_quantity,
           supplierName: response.product.supplier_name || '',
@@ -103,6 +104,10 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
           mrp: response.product.mrp || '',
           discount: response.product.discount || '',
           sellRate: response.product.sell_rate || '',
+          salesRate: response.product.sales_rate || '',
+          nlc: response.product.nlc || '',
+          disc: response.product.disc || '',
+          points: response.product.points || '',
           status: response.product.status
         });
         setShowEditModal(true);
@@ -143,6 +148,7 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
         productName: editFormData.productName,
         itemCode: editFormData.itemCode,
         skuCode: editFormData.skuCode,
+        modelNumber: editFormData.modelNumber,
         minimumQuantity: parseInt(editFormData.minQuantity) || 0,
         currentQuantity: parseInt(editFormData.currentQuantity) || 0,
         supplierName: editFormData.supplierName,
@@ -150,6 +156,10 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
         mrp: editFormData.mrp ? parseFloat(editFormData.mrp) : null,
         discount: editFormData.discount ? parseFloat(editFormData.discount) : 0,
         sellRate: editFormData.sellRate ? parseFloat(editFormData.sellRate) : null,
+        salesRate: editFormData.salesRate ? parseFloat(editFormData.salesRate) : null,
+        nlc: editFormData.nlc ? parseFloat(editFormData.nlc) : null,
+        disc: editFormData.disc ? parseFloat(editFormData.disc) : 0,
+        points: editFormData.points ? parseInt(editFormData.points) : 0,
         status: editFormData.status
       });
 
@@ -662,7 +672,7 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
                   placeholder="Enter supplier name"
                 />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>MRP</label>
                   <input
@@ -693,6 +703,52 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
                     value={editFormData.sellRate || ''}
                     onChange={handleEditInputChange}
                     step="0.01"
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Sales Rate</label>
+                  <input
+                    type="number"
+                    name="salesRate"
+                    value={editFormData.salesRate || ''}
+                    onChange={handleEditInputChange}
+                    step="0.01"
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>NLC</label>
+                  <input
+                    type="number"
+                    name="nlc"
+                    value={editFormData.nlc || ''}
+                    onChange={handleEditInputChange}
+                    step="0.01"
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>DISC</label>
+                  <input
+                    type="number"
+                    name="disc"
+                    value={editFormData.disc || ''}
+                    onChange={handleEditInputChange}
+                    step="0.01"
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Points</label>
+                  <input
+                    type="number"
+                    name="points"
+                    value={editFormData.points || ''}
+                    onChange={handleEditInputChange}
+                    min="0"
                     style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
                   />
                 </div>

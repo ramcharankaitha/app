@@ -1,16 +1,12 @@
 import React, { useState } from 'react';
-import { suppliersAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
+import './addUser.css';
 
-const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
+const AddCategory = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
-    supplierName: '',
-    phone: '',
-    address: '',
-    city: '',
-    state: '',
-    pincode: '',
-    email: ''
+    main: '',
+    sub: '',
+    common: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -19,7 +15,7 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
 
   const handleBack = () => {
     if (onNavigate) {
-      onNavigate('suppliers');
+      onNavigate('categoryMaster');
     } else if (onBack) {
       onBack();
     }
@@ -27,12 +23,13 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
 
   const handleHome = () => {
     if (onNavigate) {
-      onNavigate('dashboard');
+      const backPath = userRole === 'admin' ? 'dashboard' : userRole === 'supervisor' ? 'supervisorHome' : 'staffHome';
+      onNavigate(backPath);
     }
   };
 
   const handleManagers = () => {
-    if (onNavigate) {
+    if (onNavigate && userRole === 'admin') {
       onNavigate('users');
     }
   };
@@ -55,18 +52,6 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     }
   };
 
-  const handleSuppliers = () => {
-    if (onNavigate) {
-      onNavigate('suppliers');
-    }
-  };
-
-  const handleChitPlans = () => {
-    if (onNavigate) {
-      onNavigate('chitPlans');
-    }
-  };
-
   const handleSettings = () => {
     if (onNavigate) {
       onNavigate('settings');
@@ -75,7 +60,7 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
 
   const handleCancel = () => {
     if (onNavigate) {
-      onNavigate('suppliers');
+      onNavigate('categoryMaster');
     } else if (onCancel) {
       onCancel();
     }
@@ -89,29 +74,24 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     }));
   };
 
-  const submitSupplier = async () => {
+  const submitCategory = async () => {
     setIsLoading(true);
     setError('');
     setSuccessMessage('');
 
     try {
-      const response = await suppliersAPI.create({
-        supplierName: formData.supplierName,
-        phone: formData.phone,
-        address: formData.address,
-        email: formData.email
-      });
-
-      if (response.success) {
-        setSuccessMessage('Save changes are done');
-        setTimeout(() => {
-          setSuccessMessage('');
-          handleCancel();
-        }, 2000);
-      }
+      // TODO: Replace with actual categories API when backend is ready
+      // For now, just simulate success
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setSuccessMessage('Category created successfully');
+      setTimeout(() => {
+        setSuccessMessage('');
+        handleCancel();
+      }, 2000);
     } catch (err) {
-      setError(err.message || 'Failed to create supplier. Please try again.');
-      console.error('Create supplier error:', err);
+      setError(err.message || 'Failed to create category. Please try again.');
+      console.error('Create category error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -121,8 +101,8 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     e.preventDefault();
     setConfirmState({
       open: true,
-      message: 'Are you sure you want to submit?',
-      onConfirm: submitSupplier,
+      message: 'Are you sure you want to create this category?',
+      onConfirm: submitCategory,
     });
   };
 
@@ -179,29 +159,29 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
               <i className="fas fa-arrow-left"></i>
             </button>
             <div className="header-content">
-              <h1 className="page-title">Add Supplier</h1>
-              <p className="page-subtitle">Create a new supplier for your store.</p>
+              <h1 className="page-title">Add Category</h1>
+              <p className="page-subtitle">Create a new product category</p>
             </div>
           </header>
 
           {/* Main Content */}
           <main className="add-user-content">
             <form onSubmit={handleSubmit} className="add-user-form">
-                {/* Supplier Details Section */}
+                {/* Category Details Section */} 
                 <div className="form-section">
-                  <h3 className="section-title">Supplier details</h3>
+                  <h3 className="section-title">Category details</h3>
                   <div className="form-grid">
                     <div className="form-group">
-                      <label htmlFor="supplierName">Supplier Name</label>
+                      <label htmlFor="main">Main Category</label>
                       <div className="input-wrapper">
-                        <i className="fas fa-building input-icon"></i>
+                        <i className="fas fa-tag input-icon"></i>
                         <input
                           type="text"
-                          id="supplierName"
-                          name="supplierName"
+                          id="main"
+                          name="main"
                           className="form-input"
-                          placeholder="Enter supplier name."
-                          value={formData.supplierName}
+                          placeholder="e.g., Utensils"
+                          value={formData.main}
                           onChange={handleInputChange}
                           required
                         />
@@ -209,114 +189,40 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="phone">Phone Number</label>
+                      <label htmlFor="sub">Sub Category</label>
                       <div className="input-wrapper">
-                        <i className="fas fa-phone input-icon"></i>
+                        <i className="fas fa-tags input-icon"></i>
                         <input
-                          type="tel"
-                          id="phone"
-                          name="phone"
+                          type="text"
+                          id="sub"
+                          name="sub"
                           className="form-input"
-                          placeholder="Enter phone number."
-                          value={formData.phone}
+                          placeholder="e.g., Kitchen"
+                          value={formData.sub}
                           onChange={handleInputChange}
+                          required
                         />
                       </div>
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="email">Email</label>
+                      <label htmlFor="common">Common Category</label>
                       <div className="input-wrapper">
-                        <i className="fas fa-envelope input-icon"></i>
+                        <i className="fas fa-list input-icon"></i>
                         <input
-                          type="email"
-                          id="email"
-                          name="email"
+                          type="text"
+                          id="common"
+                          name="common"
                           className="form-input"
-                          placeholder="supplier@example.com"
-                          value={formData.email}
+                          placeholder="e.g., Daily Use"
+                          value={formData.common}
                           onChange={handleInputChange}
+                          required
                         />
                       </div>
                     </div>
                   </div>
                 </div>
-
-                {/* Address Section */}
-                <div className="form-section">
-                  <h3 className="section-title">Address</h3>
-                  <div className="form-grid">
-                    <div className="form-group full-width">
-                      <label htmlFor="address">Street Address</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-map-marker-alt input-icon"></i>
-                        <textarea
-                          id="address"
-                          name="address"
-                          className="form-input textarea-input"
-                          placeholder="Enter street address, area"
-                          rows="2"
-                          value={formData.address}
-                          onChange={handleInputChange}
-                        ></textarea>
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="city">City</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-city input-icon"></i>
-                        <input
-                          type="text"
-                          id="city"
-                          name="city"
-                          className="form-input"
-                          placeholder="Enter city"
-                          value={formData.city}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="state">State</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-map input-icon"></i>
-                        <input
-                          type="text"
-                          id="state"
-                          name="state"
-                          className="form-input"
-                          placeholder="Enter state"
-                          value={formData.state}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="pincode">Pincode</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-mail-bulk input-icon"></i>
-                        <input
-                          type="text"
-                          id="pincode"
-                          name="pincode"
-                          className="form-input"
-                          placeholder="Enter pincode"
-                          value={formData.pincode}
-                          onChange={handleInputChange}
-                          maxLength="10"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Warning Message */}
-                <p className="form-warning">
-                  Make sure all supplier details are correct before saving.
-                </p>
 
                 {/* Error Message */}
                 {error && (
@@ -347,10 +253,10 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                 {/* Action Buttons */}
                 <div className="form-actions">
                   <button type="submit" className="create-user-btn" disabled={isLoading}>
-                    {isLoading ? 'Creating...' : 'Create Supplier'}
+                    {isLoading ? 'Creating...' : 'Add Category'}
                   </button>
                   <button type="button" className="cancel-btn" onClick={handleCancel}>
-                    Cancel and go back
+                    Cancel
                   </button>
                 </div>
               </form>
@@ -360,9 +266,9 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
 
       <ConfirmDialog
         isOpen={confirmState.open}
-        title="Confirm Submission"
+        title="Confirm Category Creation"
         message={confirmState.message}
-        confirmText="Yes, Submit"
+        confirmText="Yes, Create"
         cancelText="Cancel"
         onConfirm={() => {
           setConfirmState({ open: false, message: '', onConfirm: null });
@@ -374,5 +280,5 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   );
 };
 
-export default AddSupplier;
+export default AddCategory;
 

@@ -2,6 +2,23 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 
+// Public endpoint for storefront - only returns available products
+router.get('/public', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, product_name, item_code, sku_code, category, mrp, discount, sell_rate, 
+              current_quantity, image_url, status
+       FROM products 
+       WHERE status = 'STOCK' AND current_quantity > 0 AND sell_rate IS NOT NULL
+       ORDER BY created_at DESC`
+    );
+    res.json({ success: true, products: result.rows });
+  } catch (error) {
+    console.error('Get public products error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(

@@ -32,8 +32,14 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     } else if (navItem === 'customers') {
       onNavigate('customers');
     } else if (navItem === 'masterMenu') {
-      onNavigate('masterMenu');
+      // Handle masterMenu as internal state, don't navigate away
+      // Just update the activeNav state, which is already done above
+    } else if (navItem === 'transactionMenu') {
+      // Handle transactionMenu as internal state, don't navigate away
+      // Just update the activeNav state, which is already done above
     } else if (navItem === 'home') {
+      // Reset to home view
+      setActiveNav('home');
       // Only navigate if not already on dashboard
       if (currentPage !== 'dashboard') {
         onNavigate('dashboard');
@@ -279,13 +285,17 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     } else if (currentPage === 'suppliers') {
       setActiveNav('masterMenu');
     } else if (currentPage === 'dispatch') {
-      setActiveNav('masterMenu');
+      setActiveNav('transactionMenu');
     } else if (currentPage === 'transport') {
       setActiveNav('masterMenu');
     } else if (currentPage === 'chitPlans') {
       setActiveNav('masterMenu');
+    } else if (currentPage === 'categoryMaster') {
+      setActiveNav('masterMenu');
     } else if (currentPage === 'masterMenu') {
       setActiveNav('masterMenu');
+    } else if (currentPage === 'transactionMenu' || currentPage === 'stockIn' || currentPage === 'stockOut') {
+      setActiveNav('transactionMenu');
     } else if (currentPage === 'settings') {
       setActiveNav('settings');
     }
@@ -390,10 +400,16 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
   const masterSections = [
     { title: 'Dispatch Department', desc: 'Manage dispatch workflows', icon: 'fa-shipping-fast', target: 'dispatch' },
     { title: 'Transport Master', desc: 'Transport partners & routes', icon: 'fa-truck-moving', target: 'transport' },
-    { title: 'Category Master', desc: 'Organize product categories', icon: 'fa-tags', target: 'products' },
+    { title: 'Category Master', desc: 'Organize product categories', icon: 'fa-tags', target: 'categoryMaster' },
     { title: 'Products', desc: 'Catalog and pricing', icon: 'fa-box', target: 'products' },
     { title: 'Supply Master', desc: 'Suppliers and logistics', icon: 'fa-truck', target: 'suppliers' },
     { title: 'Chit Plans', desc: 'Chit plan setup & customers', icon: 'fa-file-invoice-dollar', target: 'chitPlans' },
+  ];
+
+  const transactionSections = [
+    { title: 'Dispatch Department', desc: 'Manage dispatch workflows', icon: 'fa-shipping-fast', target: 'dispatch' },
+    { title: 'Stock In', desc: 'Record stock entries', icon: 'fa-box-open', target: 'stockIn' },
+    { title: 'Stock Out', desc: 'Record stock exits', icon: 'fa-box', target: 'stockOut' },
   ];
 
   const renderContent = () => {
@@ -401,6 +417,35 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
       return (
         <div className="master-menu-grid">
           {masterSections.map((item) => (
+            <div
+              key={item.title}
+              className="stat-card"
+              style={{ cursor: item.target ? 'pointer' : 'default' }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (item.target && onNavigate) {
+                  onNavigate(item.target);
+                }
+              }}
+            >
+              <div className="stat-content">
+                <h3 className="stat-title">{item.title}</h3>
+                <p className="stat-subtitle">{item.desc}</p>
+              </div>
+              <div className="stat-icon" style={{ backgroundColor: '#dc354520', color: '#dc3545' }}>
+                <i className={`fas ${item.icon}`}></i>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (activeNav === 'transactionMenu') {
+      return (
+        <div className="master-menu-grid">
+          {transactionSections.map((item) => (
             <div
               key={item.title}
               className="stat-card"
@@ -637,6 +682,15 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
             <i className="fas fa-th-large"></i>
           </div>
           <span>Master Menu</span>
+        </div>
+        <div 
+          className={`nav-item ${activeNav === 'transactionMenu' ? 'active' : ''}`} 
+          onClick={(e) => handleNavClick('transactionMenu', e)}
+        >
+          <div className="nav-icon">
+            <i className="fas fa-exchange-alt"></i>
+          </div>
+          <span>Transaction</span>
         </div>
         <div 
           className={`nav-item ${activeNav === 'settings' ? 'active' : ''}`} 

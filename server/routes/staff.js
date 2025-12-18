@@ -52,7 +52,7 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { fullName, email, username, password, storeAllocated, address } = req.body;
+    const { fullName, email, username, password, storeAllocated, address, city, state, pincode } = req.body;
 
     if (!fullName || !email || !username || !password) {
       return res.status(400).json({ error: 'Required fields are missing' });
@@ -66,10 +66,10 @@ router.post('/', async (req, res) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO staff (full_name, email, username, password_hash, store_allocated, address, role)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO staff (full_name, email, username, password_hash, store_allocated, address, city, state, pincode, role)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING id, full_name, email, username, role, store_allocated`,
-      [fullName, email, username, passwordHash, storeAllocated || null, address || null, 'Staff']
+      [fullName, email, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, 'Staff']
     );
     
     console.log('Staff created successfully:', result.rows[0].username);

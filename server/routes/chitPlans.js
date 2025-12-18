@@ -75,20 +75,23 @@ router.get('/customers/:id', async (req, res) => {
 
 router.post('/customers', async (req, res) => {
   try {
-    const { customerName, phone, address, email, chitPlanId, paymentMode } = req.body;
+    const { customerName, phone, address, city, state, pincode, email, chitPlanId, paymentMode } = req.body;
 
     if (!customerName || !chitPlanId) {
       return res.status(400).json({ error: 'Customer name and chit plan are required' });
     }
 
     const result = await pool.query(
-      `INSERT INTO chit_customers (customer_name, phone, address, email, chit_plan_id, payment_mode, enrollment_date)
-       VALUES ($1, $2, $3, $4, $5, $6, CURRENT_DATE)
+      `INSERT INTO chit_customers (customer_name, phone, address, city, state, pincode, email, chit_plan_id, payment_mode, enrollment_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_DATE)
        RETURNING *`,
       [
         customerName,
         phone || null,
         address || null,
+        city || null,
+        state || null,
+        pincode || null,
         email || null,
         chitPlanId,
         paymentMode || null
@@ -112,7 +115,7 @@ router.post('/customers', async (req, res) => {
 router.put('/customers/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { customerName, phone, address, email, chitPlanId, paymentMode } = req.body;
+    const { customerName, phone, address, city, state, pincode, email, chitPlanId, paymentMode } = req.body;
 
     if (!customerName || !chitPlanId) {
       return res.status(400).json({ error: 'Customer name and chit plan are required' });
@@ -122,14 +125,17 @@ router.put('/customers/:id', async (req, res) => {
       `UPDATE chit_customers 
        SET customer_name = $1, 
            phone = $2, 
-           address = $3, 
-           email = $4,
-           chit_plan_id = $5,
-           payment_mode = $6,
+           address = $3,
+           city = $4,
+           state = $5,
+           pincode = $6, 
+           email = $7,
+           chit_plan_id = $8,
+           payment_mode = $9,
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $7
+       WHERE id = $10
        RETURNING *`,
-      [customerName, phone || null, address || null, email || null, chitPlanId, paymentMode || null, id]
+      [customerName, phone || null, address || null, city || null, state || null, pincode || null, email || null, chitPlanId, paymentMode || null, id]
     );
 
     if (result.rows.length === 0) {

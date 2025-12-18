@@ -16,26 +16,56 @@
     --shadow: rgba(0, 0, 0, 0.08);
     --shadow-light: rgba(0, 0, 0, 0.05);
     --overlay: rgba(0, 0, 0, 0.5);
+    --input-bg: #ffffff;
+    --input-border: #e9ecef;
+    --input-hover-bg: #fff5f5;
+    --input-focus-border: #dc3545;
+    --modal-bg: #ffffff;
+    --dropdown-bg: #ffffff;
+    --dropdown-hover: #f8f9fa;
+    --table-header-bg: #f8f9fa;
+    --table-row-hover: #fff5f5;
+    --success-bg: #d4edda;
+    --success-text: #155724;
+    --error-bg: #ffe0e0;
+    --error-text: #dc3545;
+    --warning-bg: #fff3cd;
+    --warning-text: #856404;
 }
 
 [data-theme="dark"] {
-    /* Dark Theme Colors */
-    --bg-primary: #1a1a1a;
-    --bg-secondary: #242424;
-    --bg-tertiary: #2d2d2d;
-    --text-primary: #ffffff;
-    --text-secondary: #cccccc;
-    --text-tertiary: #999999;
-    --border-color: #404040;
-    --border-light: #333333;
+    /* Dark Theme Colors - Enhanced for better contrast and aesthetics */
+    --bg-primary: #0d1117;
+    --bg-secondary: #161b22;
+    --bg-tertiary: #1c2128;
+    --text-primary: #f0f6fc;
+    --text-secondary: #c9d1d9;
+    --text-tertiary: #8b949e;
+    --border-color: #30363d;
+    --border-light: #21262d;
     --accent-color: #dc3545;
-    --accent-hover: #e74c5c;
+    --accent-hover: #ff4757;
     --accent-light: #3a1f22;
     --accent-lighter: #4a2a2d;
-    --card-bg: #2d2d2d;
-    --shadow: rgba(0, 0, 0, 0.3);
-    --shadow-light: rgba(0, 0, 0, 0.2);
-    --overlay: rgba(0, 0, 0, 0.7);
+    --card-bg: #161b22;
+    --shadow: rgba(0, 0, 0, 0.5);
+    --shadow-light: rgba(0, 0, 0, 0.3);
+    --overlay: rgba(0, 0, 0, 0.75);
+    --input-bg: #0d1117;
+    --input-border: #30363d;
+    --input-hover-bg: #161b22;
+    --input-focus-border: #dc3545;
+    --modal-bg: #161b22;
+    --dropdown-bg: #1c2128;
+    --dropdown-hover: #21262d;
+    --table-header-bg: #1c2128;
+    --table-row-hover: #21262d;
+    --success-bg: #1a4d2e;
+    --success-text: #4ade80;
+    --error-bg: #4a1f22;
+    --error-text: #ff6b6b;
+    --warning-bg: #4a3d1a;
+    --warning-text: #fbbf24;
 }
 
 * {
@@ -230,9 +260,10 @@ body {
     display: block;
     font-size: 11px;
     font-weight: 600;
-    color: #333;
+    color: var(--text-primary);
     margin-bottom: 5px;
     letter-spacing: 0.1px;
+    transition: color 0.3s ease;
 }
 
 .input-wrapper {
@@ -254,29 +285,29 @@ body {
 .form-input {
     width: 100%;
     padding: 8px 10px 8px 35px;
-    border: 2px solid #f0f0f0;
+    border: 2px solid var(--input-border);
     border-radius: 8px;
-    background: #fafafa;
+    background: var(--input-bg);
     font-size: 12px;
-    color: #333;
+    color: var(--text-primary);
     outline: none;
     transition: all 0.3s ease;
     font-weight: 400;
 }
 
 .form-input:hover {
-    border-color: #e0e0e0;
-    background: #ffffff;
+    border-color: var(--border-color);
+    background: var(--input-hover-bg);
 }
 
 .form-input:focus {
-    background: #fff5f5;
-    border-color: #dc3545;
+    background: var(--input-hover-bg);
+    border-color: var(--input-focus-border);
     box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
 }
 
 .form-input::placeholder {
-    color: #999;
+    color: var(--text-tertiary);
     opacity: 0.7;
     font-weight: 400;
 }
@@ -294,8 +325,8 @@ body {
 
 .role-select select option {
     padding: 8px;
-    background: #fff;
-    color: #333;
+    background: var(--card-bg);
+    color: var(--text-primary);
 }
 
 .dropdown-icon {
@@ -352,18 +383,18 @@ body {
 .checkmark {
     width: 16px;
     height: 16px;
-    border: 2px solid #dc3545;
+    border: 2px solid var(--accent-color);
     border-radius: 4px;
     margin-right: 6px;
     position: relative;
-    background: #fff;
+    background: var(--card-bg);
     transition: all 0.3s ease;
     flex-shrink: 0;
 }
 
 .checkbox-label input[type="checkbox"]:checked + .checkmark {
-    background: #dc3545;
-    border-color: #dc3545;
+    background: var(--accent-color);
+    border-color: var(--accent-color);
 }
 
 .checkbox-label input[type="checkbox"]:checked + .checkmark::after {
@@ -379,8 +410,9 @@ body {
 
 .checkbox-text {
     font-size: 11px;
-    color: #333;
+    color: var(--text-primary);
     user-select: none;
+    transition: color 0.3s ease;
 }
 
 .forgot-link {
@@ -401,13 +433,14 @@ body {
     align-items: center;
     gap: 6px;
     padding: 8px 10px;
-    background: #fff5f5;
-    border: 1px solid #dc3545;
+    background: var(--error-bg);
+    border: 1px solid var(--error-text);
     border-radius: 6px;
-    color: #dc3545;
+    color: var(--error-text);
     font-size: 11px;
     margin-bottom: 10px;
     margin-top: -2px;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 .error-message i {
@@ -458,7 +491,8 @@ body {
 .separator-line {
     flex: 1;
     height: 1px;
-    background: #e9ecef;
+    background: var(--border-color);
+    transition: background-color 0.3s ease;
 }
 
 .separator-text {
@@ -472,10 +506,10 @@ body {
 .google-btn {
     width: 100%;
     padding: 9px;
-    background: #ffffff;
-    border: 2px solid #e9ecef;
+    background: var(--card-bg);
+    border: 2px solid var(--border-color);
     border-radius: 8px;
-    color: #333;
+    color: var(--text-primary);
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
@@ -488,8 +522,8 @@ body {
 }
 
 .google-btn:hover {
-    background: #fff5f5;
-    border-color: #dc3545;
+    background: var(--accent-light);
+    border-color: var(--accent-color);
 }
 
 .google-btn i {
@@ -505,7 +539,8 @@ body {
 
 .signup-text {
     font-size: 12px;
-    color: #333;
+    color: var(--text-primary);
+    transition: color 0.3s ease;
 }
 
 .signup-link {
@@ -532,11 +567,12 @@ body {
     display: flex;
     align-items: center;
     gap: 6px;
-    background: #fff5f5;
-    border: 1px solid #ffe0e0;
+    background: var(--accent-light);
+    border: 1px solid var(--accent-lighter);
     padding: 6px 12px;
     border-radius: 16px;
     font-size: 11px;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .ssl-icon {

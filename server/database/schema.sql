@@ -11,6 +11,9 @@ CREATE TABLE IF NOT EXISTS users (
     role VARCHAR(50) NOT NULL DEFAULT 'Staff',
     store_allocated VARCHAR(100),
     address TEXT,
+    city VARCHAR(100),
+    state VARCHAR(100),
+    pincode VARCHAR(20),
     phone VARCHAR(20),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -25,6 +28,9 @@ CREATE TABLE IF NOT EXISTS staff (
     password_hash VARCHAR(255) NOT NULL,
     store_allocated VARCHAR(100),
     address TEXT,
+    city VARCHAR(100),
+    state VARCHAR(100),
+    pincode VARCHAR(20),
     phone VARCHAR(20),
     role VARCHAR(50) DEFAULT 'Staff',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -113,6 +119,9 @@ CREATE TABLE IF NOT EXISTS customers (
     email VARCHAR(255) UNIQUE NOT NULL,
     phone VARCHAR(20),
     address TEXT,
+    city VARCHAR(100),
+    state VARCHAR(100),
+    pincode VARCHAR(20),
     store_id INTEGER,
     item_code VARCHAR(100),
     quantity INTEGER DEFAULT 0,
@@ -208,6 +217,9 @@ CREATE TABLE IF NOT EXISTS suppliers (
     supplier_name VARCHAR(255) NOT NULL,
     phone VARCHAR(20),
     address TEXT,
+    city VARCHAR(100),
+    state VARCHAR(100),
+    pincode VARCHAR(20),
     email VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -229,6 +241,9 @@ CREATE TABLE IF NOT EXISTS chit_customers (
     customer_name VARCHAR(200) NOT NULL,
     phone VARCHAR(20),
     address TEXT,
+    city VARCHAR(100),
+    state VARCHAR(100),
+    pincode VARCHAR(20),
     email VARCHAR(255),
     chit_plan_id INTEGER REFERENCES chit_plans(id),
     payment_mode VARCHAR(50),
@@ -252,21 +267,79 @@ CREATE TABLE IF NOT EXISTS dispatch (
     customer VARCHAR(200) NOT NULL,
     name VARCHAR(200) NOT NULL,
     phone VARCHAR(20) NOT NULL,
+    address TEXT,
+    city VARCHAR(100),
+    state VARCHAR(100),
+    pincode VARCHAR(20),
     transport_name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Add address columns to dispatch table if they don't exist (for existing databases)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'dispatch' AND column_name = 'address') THEN
+        ALTER TABLE dispatch ADD COLUMN address TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'dispatch' AND column_name = 'city') THEN
+        ALTER TABLE dispatch ADD COLUMN city VARCHAR(100);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'dispatch' AND column_name = 'state') THEN
+        ALTER TABLE dispatch ADD COLUMN state VARCHAR(100);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'dispatch' AND column_name = 'pincode') THEN
+        ALTER TABLE dispatch ADD COLUMN pincode VARCHAR(20);
+    END IF;
+END $$;
 
 -- Transport Table
 CREATE TABLE IF NOT EXISTS transport (
     id SERIAL PRIMARY KEY,
     name VARCHAR(200) NOT NULL,
     travels_name VARCHAR(255) NOT NULL,
+    address TEXT,
     city VARCHAR(100) NOT NULL,
+    state VARCHAR(100),
+    pincode VARCHAR(20),
     service VARCHAR(255) NOT NULL,
+    llr_number VARCHAR(100),
+    vehicle_number VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Add address, state, pincode columns to transport table if they don't exist (for existing databases)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'transport' AND column_name = 'address') THEN
+        ALTER TABLE transport ADD COLUMN address TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'transport' AND column_name = 'state') THEN
+        ALTER TABLE transport ADD COLUMN state VARCHAR(100);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'transport' AND column_name = 'pincode') THEN
+        ALTER TABLE transport ADD COLUMN pincode VARCHAR(20);
+    END IF;
+END $$;
+
+-- Add new columns to transport table if they don't exist (for existing databases)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'transport' AND column_name = 'llr_number'
+    ) THEN
+        ALTER TABLE transport ADD COLUMN llr_number VARCHAR(100);
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'transport' AND column_name = 'vehicle_number'
+    ) THEN
+        ALTER TABLE transport ADD COLUMN vehicle_number VARCHAR(100);
+    END IF;
+END $$;
 
 -- Customer Tokens Table (Loyalty Points System)
 -- Attendance Table
@@ -346,6 +419,65 @@ BEGIN
         WHERE table_name = 'customers' AND column_name = 'tokens_earned'
     ) THEN
         ALTER TABLE customers ADD COLUMN tokens_earned INTEGER DEFAULT 0;
+    END IF;
+END $$;
+
+-- Add city, state, pincode columns to existing tables (for existing databases)
+DO $$ 
+BEGIN
+    -- Users table
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'city') THEN
+        ALTER TABLE users ADD COLUMN city VARCHAR(100);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'state') THEN
+        ALTER TABLE users ADD COLUMN state VARCHAR(100);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'pincode') THEN
+        ALTER TABLE users ADD COLUMN pincode VARCHAR(20);
+    END IF;
+    
+    -- Staff table
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'staff' AND column_name = 'city') THEN
+        ALTER TABLE staff ADD COLUMN city VARCHAR(100);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'staff' AND column_name = 'state') THEN
+        ALTER TABLE staff ADD COLUMN state VARCHAR(100);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'staff' AND column_name = 'pincode') THEN
+        ALTER TABLE staff ADD COLUMN pincode VARCHAR(20);
+    END IF;
+    
+    -- Customers table
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'customers' AND column_name = 'city') THEN
+        ALTER TABLE customers ADD COLUMN city VARCHAR(100);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'customers' AND column_name = 'state') THEN
+        ALTER TABLE customers ADD COLUMN state VARCHAR(100);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'customers' AND column_name = 'pincode') THEN
+        ALTER TABLE customers ADD COLUMN pincode VARCHAR(20);
+    END IF;
+    
+    -- Suppliers table
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'suppliers' AND column_name = 'city') THEN
+        ALTER TABLE suppliers ADD COLUMN city VARCHAR(100);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'suppliers' AND column_name = 'state') THEN
+        ALTER TABLE suppliers ADD COLUMN state VARCHAR(100);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'suppliers' AND column_name = 'pincode') THEN
+        ALTER TABLE suppliers ADD COLUMN pincode VARCHAR(20);
+    END IF;
+    
+    -- Chit Customers table
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'chit_customers' AND column_name = 'city') THEN
+        ALTER TABLE chit_customers ADD COLUMN city VARCHAR(100);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'chit_customers' AND column_name = 'state') THEN
+        ALTER TABLE chit_customers ADD COLUMN state VARCHAR(100);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'chit_customers' AND column_name = 'pincode') THEN
+        ALTER TABLE chit_customers ADD COLUMN pincode VARCHAR(20);
     END IF;
 END $$;
 

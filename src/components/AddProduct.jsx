@@ -7,6 +7,7 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     productName: '',
     itemCode: '',
     skuCode: '',
+    modelNumber: '',
     minQuantity: '',
     currentQuantity: '',
     supplierName: '',
@@ -14,6 +15,10 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     mrp: '',
     discount: '',
     sellRate: '',
+    salesRate: '',
+    nlc: '',
+    disc: '',
+    points: '',
     image: ''
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -125,13 +130,18 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
         productName: formData.productName,
         itemCode: formData.itemCode,
         skuCode: formData.skuCode,
+        modelNumber: formData.modelNumber,
         minimumQuantity: parseInt(formData.minQuantity) || 0,
         currentQuantity: parseInt(formData.currentQuantity) || 0,
         supplierName: formData.supplierName,
         category: formData.category,
         mrp: formData.mrp ? parseFloat(formData.mrp) : null,
         discount: formData.discount ? parseFloat(formData.discount) : 0,
-        sellRate: formData.sellRate ? parseFloat(formData.sellRate) : null
+        sellRate: formData.sellRate ? parseFloat(formData.sellRate) : null,
+        salesRate: formData.salesRate ? parseFloat(formData.salesRate) : null,
+        nlc: formData.nlc ? parseFloat(formData.nlc) : null,
+        disc: formData.disc ? parseFloat(formData.disc) : 0,
+        points: formData.points ? parseInt(formData.points) : 0
       });
 
       if (response.success) {
@@ -276,6 +286,22 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                     </div>
 
                     <div className="form-group">
+                      <label htmlFor="modelNumber">Model Number</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-tag input-icon"></i>
+                        <input
+                          type="text"
+                          id="modelNumber"
+                          name="modelNumber"
+                          className="form-input"
+                          placeholder="Enter model number"
+                          value={formData.modelNumber}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
                       <label htmlFor="minQuantity">Minimum quantity</label>
                       <div className="input-wrapper">
                         <i className="fas fa-sort-amount-up input-icon"></i>
@@ -405,6 +431,77 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           onChange={handleInputChange}
                           min="0"
                           step="0.01"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="salesRate">Sales Rate</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-rupee-sign input-icon"></i>
+                        <input
+                          type="number"
+                          id="salesRate"
+                          name="salesRate"
+                          className="form-input"
+                          placeholder="Enter sales rate"
+                          value={formData.salesRate}
+                          onChange={handleInputChange}
+                          min="0"
+                          step="0.01"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="nlc">NLC</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-dollar-sign input-icon"></i>
+                        <input
+                          type="number"
+                          id="nlc"
+                          name="nlc"
+                          className="form-input"
+                          placeholder="Enter NLC"
+                          value={formData.nlc}
+                          onChange={handleInputChange}
+                          min="0"
+                          step="0.01"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="disc">DISC</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-percent input-icon"></i>
+                        <input
+                          type="number"
+                          id="disc"
+                          name="disc"
+                          className="form-input"
+                          placeholder="Enter DISC"
+                          value={formData.disc}
+                          onChange={handleInputChange}
+                          min="0"
+                          step="0.01"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="points">Points</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-star input-icon"></i>
+                        <input
+                          type="number"
+                          id="points"
+                          name="points"
+                          className="form-input"
+                          placeholder="Enter points"
+                          value={formData.points}
+                          onChange={handleInputChange}
+                          min="0"
                         />
                       </div>
                     </div>

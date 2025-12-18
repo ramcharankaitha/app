@@ -230,7 +230,7 @@
 
 .user-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px var(--shadow);
 }
 
 .user-avatar {
@@ -315,10 +315,10 @@
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
-    background: #fff;
+    background: var(--card-bg);
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    border: 1px solid #e9ecef;
+    border: 1px solid var(--border-color);
     min-width: 180px;
     z-index: 1000;
     overflow: hidden;
@@ -332,8 +332,8 @@
     cursor: pointer;
     transition: background 0.2s ease;
     font-size: 13px;
-    color: #333;
-    border-bottom: 1px solid #f0f0f0;
+    color: var(--text-primary);
+    border: 1px solid var(--border-light);
 }
 
 .manager-menu-dropdown .menu-item:last-child {
@@ -341,7 +341,7 @@
 }
 
 .manager-menu-dropdown .menu-item:hover {
-    background: #f8f9fa;
+    background: var(--bg-secondary);
 }
 
 .manager-menu-dropdown .menu-item i {
@@ -362,7 +362,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--overlay);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -380,7 +380,7 @@
 }
 
 .customer-details-modal {
-    background: #fff;
+    background: var(--card-bg);
     border-radius: 16px;
     width: 90%;
     max-width: 600px;
@@ -406,21 +406,21 @@
     justify-content: space-between;
     align-items: center;
     padding: 20px 24px;
-    border-bottom: 1px solid #e9ecef;
+    border: 1px solid var(--border-color);
 }
 
 .modal-header h2 {
     margin: 0;
     font-size: 20px;
     font-weight: 700;
-    color: #000;
+    color: var(--text-primary);
 }
 
 .modal-close-btn {
     background: none;
     border: none;
     font-size: 20px;
-    color: #666;
+    color: var(--text-secondary);
     cursor: pointer;
     padding: 4px;
     transition: color 0.2s ease;
@@ -466,7 +466,7 @@
     justify-content: space-between;
     align-items: flex-start;
     padding: 12px 0;
-    border-bottom: 1px solid #f0f0f0;
+    border: 1px solid var(--border-light);
 }
 
 .detail-row:last-child {
@@ -475,13 +475,13 @@
 
 .detail-label {
     font-weight: 600;
-    color: #666;
+    color: var(--text-secondary);
     font-size: 14px;
     min-width: 140px;
 }
 
 .detail-value {
-    color: #000;
+    color: var(--text-primary);
     font-size: 14px;
     text-align: right;
     flex: 1;
@@ -490,7 +490,7 @@
 
 .modal-footer {
     padding: 16px 24px;
-    border-top: 1px solid #e9ecef;
+    border: 1px solid var(--border-color);
     display: flex;
     justify-content: flex-end;
 }

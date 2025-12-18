@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
@@ -20,6 +21,10 @@ import TransportMaster from './components/TransportMaster';
 import AddTransport from './components/AddTransport';
 import ChitPlans from './components/ChitPlans';
 import AddChitCustomer from './components/AddChitCustomer';
+import StockIn from './components/StockIn';
+import StockOut from './components/StockOut';
+import CategoryMaster from './components/CategoryMaster';
+import AddCategory from './components/AddCategory';
 import Settings from './components/Settings';
 import Profile from './components/Profile';
 import EditProfile from './components/EditProfile';
@@ -36,323 +41,462 @@ import './components/profile.css';
 import './components/editProfile.css';
 import './components/supervisorDashboard.css';
 
-function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentPage, setCurrentPage] = useState('dashboard');
-  const [userRole, setUserRole] = useState('admin');
-  const [userData, setUserData] = useState(null);
+// Helper to get user data from localStorage
+const getUserData = () => {
+  const storedRole = localStorage.getItem('userRole') || 'admin';
+  const storedUser = localStorage.getItem('userData');
+  let normalizedRole = storedRole;
+  if (normalizedRole === 'Super Admin' || normalizedRole === 'admin') {
+    normalizedRole = 'admin';
+  }
+  let userData = null;
+  if (storedUser) {
+    try {
+      userData = JSON.parse(storedUser);
+    } catch (e) {
+      userData = null;
+    }
+  }
+  return { userRole: normalizedRole, userData };
+};
+
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const navigate = useNavigate();
 
   useEffect(() => {
     const loggedIn = localStorage.getItem('isLoggedIn');
-    let storedRole = localStorage.getItem('userRole') || 'admin';
-    const storedUser = localStorage.getItem('userData');
-    
-    if (storedRole === 'Super Admin' || storedRole === 'admin') {
-      storedRole = 'admin';
+    if (loggedIn !== 'true') {
+      navigate('/admin/login');
     }
-    
-    if (loggedIn === 'true') {
-      setIsLoggedIn(true);
-      setUserRole(storedRole);
-      if (storedUser) {
-        try {
-          setUserData(JSON.parse(storedUser));
-        } catch (e) {
-          setUserData(null);
-        }
-      }
-      if (storedRole === 'admin') {
-        setCurrentPage('dashboard');
-      } else if (storedRole === 'supervisor') {
-        setCurrentPage('supervisorHome');
-      } else if (storedRole === 'staff') {
-        setCurrentPage('staffHome');
-      }
-    }
-  }, []);
+  }, [navigate]);
 
-  const handleLoginSuccess = (role = 'admin', user = null) => {
-    let normalizedRole = role;
-    if (role === 'Super Admin' || role === 'admin') {
-      normalizedRole = 'admin';
-    }
-    
-    setIsLoggedIn(true);
-    setUserRole(normalizedRole);
-    setUserData(user);
-    if (normalizedRole === 'admin') {
-      setCurrentPage('dashboard');
-    } else if (normalizedRole === 'supervisor') {
-      setCurrentPage('supervisorHome');
-    } else if (normalizedRole === 'staff') {
-      setCurrentPage('staffHome');
-    }
+  const loggedIn = localStorage.getItem('isLoggedIn');
+  if (loggedIn !== 'true') {
+    return (
+      <Login onLoginSuccess={(role, user) => {
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('userRole', role);
+        localStorage.setItem('userData', JSON.stringify(user));
+        navigate('/admin/dashboard');
+      }} />
+    );
+  }
+
+  return children;
+};
+
+// Wrapper components that get user data
+const AdminDashboardWrapper = () => {
+  const navigate = useNavigate();
+  const { userRole, userData } = getUserData();
+
+  const handleNavigation = (page) => {
+    navigate(`/admin/${page}`);
   };
 
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('userRole');
     localStorage.removeItem('userData');
-    setIsLoggedIn(false);
-    setUserRole('admin');
-    setUserData(null);
-    setCurrentPage('dashboard');
+    navigate('/admin/login');
   };
 
-  const mapPageForRole = (page) => {
-    if (page === 'dashboard' && userRole !== 'admin') {
-      return 'supervisorHome';
-    }
-    return page;
-  };
+  const currentPage = window.location.pathname.replace('/admin/', '');
+
+  if (userRole === 'admin') {
+    return <Dashboard onLogout={handleLogout} onNavigate={handleNavigation} currentPage={currentPage} />;
+  } else if (userRole === 'supervisor') {
+    return <SupervisorDashboard onNavigate={handleNavigation} onLogout={handleLogout} userData={userData} currentPage={currentPage} />;
+  } else {
+    return <StaffDashboard onNavigate={handleNavigation} onLogout={handleLogout} userData={userData} currentPage={currentPage} />;
+  }
+};
+
+const SupervisorHomeWrapper = () => {
+  const navigate = useNavigate();
+  const { userData } = getUserData();
 
   const handleNavigation = (page) => {
-    setCurrentPage(mapPageForRole(page));
+    navigate(`/admin/${page}`);
   };
 
-  const renderPage = () => {
-    if (!isLoggedIn) {
-      return <Login onLoginSuccess={handleLoginSuccess} />;
-    }
+  const handleLogout = () => {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userData');
+    navigate('/admin/login');
+  };
 
-    switch (currentPage) {
-      case 'users':
-        return (
-          <Supervisors
-            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : 'supervisorHome')}
-            onAddUser={() => setCurrentPage('addUser')}
-            onNavigate={handleNavigation}
-          />
-        );
-      case 'addUser':
-        return (
-          <AddUser
-            onBack={() => setCurrentPage('users')}
-            onCancel={() => setCurrentPage('users')}
-            onNavigate={handleNavigation}
-          />
-        );
-      case 'products':
-        return (
-          <Products
-            key="products"
-            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : userRole === 'supervisor' ? 'supervisorHome' : 'staffHome')}
-            onAddProduct={() => setCurrentPage('addProduct')}
-            onNavigate={handleNavigation}
-            userRole={userRole}
-          />
-        );
-      case 'addProduct':
-        return (
-          <AddProduct
-            onBack={() => setCurrentPage('products')}
-            onCancel={() => setCurrentPage('products')}
-            onNavigate={handleNavigation}
-            userRole={userRole}
-          />
-        );
-      case 'settings':
-        return (
-          <Settings
-            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : userRole === 'supervisor' ? 'supervisorHome' : 'staffHome')}
-            onNavigate={handleNavigation}
-            onLogout={handleLogout}
-            userRole={userRole}
-          />
-        );
-      case 'profile':
-        return (
-          <Profile
-            onBack={() => setCurrentPage('settings')}
-            onNavigate={handleNavigation}
-            userRole={userRole}
-          />
-        );
-      case 'editProfile':
-        return (
-          <EditProfile
-            onBack={() => setCurrentPage('profile')}
-            onNavigate={handleNavigation}
-          />
-        );
-      case 'staff':
-        return (
-          <Staff
-            key="staff"
-            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : 'supervisorHome')}
-            onAddStaff={() => setCurrentPage('addStaff')}
-            onNavigate={handleNavigation}
-            userRole={userRole}
-          />
-        );
-      case 'addStaff':
-        return (
-          <AddStaff
-            onBack={() => setCurrentPage('staff')}
-            onCancel={() => setCurrentPage('staff')}
-            onNavigate={handleNavigation}
-          />
-        );
-      case 'customers':
-        return (
-          <Customers
-            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : userRole === 'supervisor' ? 'supervisorHome' : 'staffHome')}
-            onAddCustomer={() => setCurrentPage('addCustomer')}
-            onNavigate={handleNavigation}
-            userRole={userRole}
-          />
-        );
-      case 'addCustomer':
-        return (
-          <AddCustomer
-            onBack={() => setCurrentPage('customers')}
-            onCancel={() => setCurrentPage('customers')}
-            onNavigate={handleNavigation}
-            userRole={userRole}
-          />
-        );
-      case 'suppliers':
-        return (
-          <Suppliers
-            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : userRole === 'supervisor' ? 'supervisorHome' : 'staffHome')}
-            onAddSupplier={() => setCurrentPage('addSupplier')}
-            onNavigate={handleNavigation}
-            userRole={userRole}
-          />
-        );
-      case 'addSupplier':
-        return (
-          <AddSupplier
-            onBack={() => setCurrentPage('suppliers')}
-            onCancel={() => setCurrentPage('suppliers')}
-            onNavigate={handleNavigation}
-            userRole={userRole}
-          />
-        );
-      case 'dispatch':
-        return (
-          <DispatchDepartment
-            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : userRole === 'supervisor' ? 'supervisorHome' : 'staffHome')}
-            onAddDispatch={() => setCurrentPage('addDispatch')}
-            onNavigate={handleNavigation}
-            userRole={userRole}
-          />
-        );
-      case 'addDispatch':
-        return (
-          <AddDispatch
-            onBack={() => setCurrentPage('dispatch')}
-            onCancel={() => setCurrentPage('dispatch')}
-            onNavigate={handleNavigation}
-          />
-        );
-      case 'transport':
-        return (
-          <TransportMaster
-            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : userRole === 'supervisor' ? 'supervisorHome' : 'staffHome')}
-            onAddTransport={() => setCurrentPage('addTransport')}
-            onNavigate={handleNavigation}
-            userRole={userRole}
-          />
-        );
-      case 'addTransport':
-        return (
-          <AddTransport
-            onBack={() => setCurrentPage('transport')}
-            onCancel={() => setCurrentPage('transport')}
-            onNavigate={handleNavigation}
-            userRole={userRole}
-          />
-        );
-      case 'chitPlans':
-        return (
-          <ChitPlans
-            onBack={() => setCurrentPage(userRole === 'admin' ? 'dashboard' : userRole === 'supervisor' ? 'supervisorHome' : 'staffHome')}
-            onAddChitCustomer={() => setCurrentPage('addChitCustomer')}
-            onNavigate={handleNavigation}
-            userRole={userRole}
-          />
-        );
-      case 'addChitCustomer':
-        return (
-          <AddChitCustomer
-            onBack={() => setCurrentPage('chitPlans')}
-            onCancel={() => setCurrentPage('chitPlans')}
-            onNavigate={handleNavigation}
-            userRole={userRole}
-          />
-        );
-      case 'masterMenu':
-        return userRole === 'admin' ? (
-          <Dashboard
-            onLogout={handleLogout}
-            onNavigate={handleNavigation}
-            currentPage={currentPage}
-          />
-        ) : userRole === 'supervisor' ? (
-          <SupervisorDashboard
-            onNavigate={handleNavigation}
-            onLogout={handleLogout}
-            userData={userData}
-            currentPage={currentPage}
-          />
-        ) : (
-          <StaffDashboard
-            onNavigate={handleNavigation}
-            onLogout={handleLogout}
-            userData={userData}
-            currentPage={currentPage}
-          />
-        );
-      case 'supervisorHome':
-        return (
-          <SupervisorDashboard
-            onNavigate={handleNavigation}
-            onLogout={handleLogout}
-            userData={userData}
-            currentPage={currentPage}
-          />
-        );
-      case 'staffHome':
-        return (
-          <StaffDashboard
-            onNavigate={handleNavigation}
-            onLogout={handleLogout}
-            userData={userData}
-            currentPage={currentPage}
-          />
-        );
-      default:
-        return userRole === 'admin' ? (
-          <Dashboard
-            onLogout={handleLogout}
-            onNavigate={handleNavigation}
-            currentPage={currentPage}
-          />
-        ) : userRole === 'supervisor' ? (
-          <SupervisorDashboard
-            onNavigate={handleNavigation}
-            onLogout={handleLogout}
-            userData={userData}
-            currentPage={currentPage}
-          />
-        ) : (
-          <StaffDashboard
-            onNavigate={handleNavigation}
-            onLogout={handleLogout}
-            userData={userData}
-            currentPage={currentPage}
-          />
-        );
-    }
+  const currentPage = window.location.pathname.replace('/admin/', '');
+  return <SupervisorDashboard onNavigate={handleNavigation} onLogout={handleLogout} userData={userData} currentPage={currentPage} />;
+};
+
+const StaffHomeWrapper = () => {
+  const navigate = useNavigate();
+  const { userData } = getUserData();
+
+  const handleNavigation = (page) => {
+    navigate(`/admin/${page}`);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userData');
+    navigate('/admin/login');
+  };
+
+  const currentPage = window.location.pathname.replace('/admin/', '');
+  return <StaffDashboard onNavigate={handleNavigation} onLogout={handleLogout} userData={userData} currentPage={currentPage} />;
+};
+
+// Generic wrapper for components that need navigation
+const createNavWrapper = (Component, props = {}) => {
+  return () => {
+    const navigate = useNavigate();
+    const { userRole } = getUserData();
+
+    const handleNavigation = (page) => {
+      navigate(`/admin/${page}`);
+    };
+
+    const handleLogout = () => {
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('userData');
+      navigate('/admin/login');
+    };
+
+    return <Component {...props} onNavigate={handleNavigation} onLogout={handleLogout} userRole={userRole} />;
+  };
+};
+
+// Admin Routes
+const AdminRoutes = () => {
+  const navigate = useNavigate();
+  const { userRole } = getUserData();
+
+  const handleNavigation = (page) => {
+    navigate(`/admin/${page}`);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userData');
+    navigate('/admin/login');
+  };
+
+  const getBackPath = (defaultPath) => {
+    if (userRole === 'admin') return 'dashboard';
+    if (userRole === 'supervisor') return 'supervisorHome';
+    return 'staffHome';
   };
 
   return (
+    <Routes>
+      <Route path="/login" element={<Login onLoginSuccess={(role, user) => {
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('userRole', role);
+        localStorage.setItem('userData', JSON.stringify(user));
+        navigate('/admin/dashboard');
+      }} />} />
+      
+      <Route path="/dashboard" element={<ProtectedRoute><AdminDashboardWrapper /></ProtectedRoute>} />
+      <Route path="/supervisorHome" element={<ProtectedRoute><SupervisorHomeWrapper /></ProtectedRoute>} />
+      <Route path="/staffHome" element={<ProtectedRoute><StaffHomeWrapper /></ProtectedRoute>} />
+      
+      <Route
+        path="/users"
+        element={
+          <ProtectedRoute>
+            <Supervisors
+              onBack={() => handleNavigation(getBackPath('dashboard'))}
+              onAddUser={() => handleNavigation('addUser')}
+              onNavigate={handleNavigation}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/addUser"
+        element={
+          <ProtectedRoute>
+            <AddUser onBack={() => handleNavigation('users')} onCancel={() => handleNavigation('users')} onNavigate={handleNavigation} />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/products"
+        element={
+          <ProtectedRoute>
+            <Products
+              key="products"
+              onBack={() => handleNavigation(getBackPath('dashboard'))}
+              onAddProduct={() => handleNavigation('addProduct')}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/addProduct"
+        element={
+          <ProtectedRoute>
+            <AddProduct onBack={() => handleNavigation('products')} onCancel={() => handleNavigation('products')} onNavigate={handleNavigation} userRole={userRole} />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Settings
+              onBack={() => handleNavigation(getBackPath('dashboard'))}
+              onNavigate={handleNavigation}
+              onLogout={handleLogout}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Profile onBack={() => handleNavigation('settings')} onNavigate={handleNavigation} userRole={userRole} />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/editProfile"
+        element={
+          <ProtectedRoute>
+            <EditProfile onBack={() => handleNavigation('profile')} onNavigate={handleNavigation} />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/staff"
+        element={
+          <ProtectedRoute>
+            <Staff
+              key="staff"
+              onBack={() => handleNavigation(userRole === 'admin' ? 'dashboard' : 'supervisorHome')}
+              onAddStaff={() => handleNavigation('addStaff')}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/addStaff"
+        element={
+          <ProtectedRoute>
+            <AddStaff onBack={() => handleNavigation('staff')} onCancel={() => handleNavigation('staff')} onNavigate={handleNavigation} />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/customers"
+        element={
+          <ProtectedRoute>
+            <Customers
+              onBack={() => handleNavigation(getBackPath('dashboard'))}
+              onAddCustomer={() => handleNavigation('addCustomer')}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/addCustomer"
+        element={
+          <ProtectedRoute>
+            <AddCustomer onBack={() => handleNavigation('customers')} onCancel={() => handleNavigation('customers')} onNavigate={handleNavigation} userRole={userRole} />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/suppliers"
+        element={
+          <ProtectedRoute>
+            <Suppliers
+              onBack={() => handleNavigation(getBackPath('dashboard'))}
+              onAddSupplier={() => handleNavigation('addSupplier')}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/addSupplier"
+        element={
+          <ProtectedRoute>
+            <AddSupplier onBack={() => handleNavigation('suppliers')} onCancel={() => handleNavigation('suppliers')} onNavigate={handleNavigation} userRole={userRole} />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/dispatch"
+        element={
+          <ProtectedRoute>
+            <DispatchDepartment
+              onBack={() => handleNavigation(getBackPath('dashboard'))}
+              onAddDispatch={() => handleNavigation('addDispatch')}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/addDispatch"
+        element={
+          <ProtectedRoute>
+            <AddDispatch onBack={() => handleNavigation('dispatch')} onCancel={() => handleNavigation('dispatch')} onNavigate={handleNavigation} />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/transport"
+        element={
+          <ProtectedRoute>
+            <TransportMaster
+              onBack={() => handleNavigation(getBackPath('dashboard'))}
+              onAddTransport={() => handleNavigation('addTransport')}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/addTransport"
+        element={
+          <ProtectedRoute>
+            <AddTransport onBack={() => handleNavigation('transport')} onCancel={() => handleNavigation('transport')} onNavigate={handleNavigation} />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/chitPlans"
+        element={
+          <ProtectedRoute>
+            <ChitPlans
+              onBack={() => handleNavigation(getBackPath('dashboard'))}
+              onAddChitCustomer={() => handleNavigation('addChitCustomer')}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/addChitCustomer"
+        element={
+          <ProtectedRoute>
+            <AddChitCustomer onBack={() => handleNavigation('chitPlans')} onCancel={() => handleNavigation('chitPlans')} onNavigate={handleNavigation} userRole={userRole} />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/stockIn"
+        element={
+          <ProtectedRoute>
+            <StockIn
+              onBack={() => handleNavigation(getBackPath('dashboard'))}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/stockOut"
+        element={
+          <ProtectedRoute>
+            <StockOut
+              onBack={() => handleNavigation(getBackPath('dashboard'))}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/categoryMaster"
+        element={
+          <ProtectedRoute>
+            <CategoryMaster
+              onBack={() => handleNavigation(getBackPath('dashboard'))}
+              onAddCategory={() => handleNavigation('addCategory')}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/addCategory"
+        element={
+          <ProtectedRoute>
+            <AddCategory onBack={() => handleNavigation('categoryMaster')} onCancel={() => handleNavigation('categoryMaster')} onNavigate={handleNavigation} userRole={userRole} />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+    </Routes>
+  );
+};
+
+// Main App Component
+function App() {
+  return (
     <ThemeProvider>
-      {renderPage()}
+      <BrowserRouter>
+        <Routes>
+          {/* Admin Routes */}
+          <Route path="/admin/*" element={<AdminRoutes />} />
+          
+          {/* Default route - redirect to admin login */}
+          <Route path="/" element={<Navigate to="/admin/login" replace />} />
+          
+          {/* Catch all - redirect to admin login */}
+          <Route path="*" element={<Navigate to="/admin/login" replace />} />
+        </Routes>
+      </BrowserRouter>
     </ThemeProvider>
   );
 }
 
 export default App;
-

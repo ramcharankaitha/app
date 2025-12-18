@@ -32,17 +32,17 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { customer, name, phone, transportName } = req.body;
+    const { customer, name, phone, address, city, state, pincode, transportName } = req.body;
 
     if (!customer || !name || !phone || !transportName) {
-      return res.status(400).json({ error: 'All fields are required: customer, name, phone, transportName' });
+      return res.status(400).json({ error: 'Required fields: customer, name, phone, transportName' });
     }
 
     const result = await pool.query(
-      `INSERT INTO dispatch (customer, name, phone, transport_name)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO dispatch (customer, name, phone, address, city, state, pincode, transport_name)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [customer, name, phone, transportName]
+      [customer, name, phone, address || null, city || null, state || null, pincode || null, transportName]
     );
 
     res.status(201).json({
@@ -59,22 +59,26 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { customer, name, phone, transportName } = req.body;
+    const { customer, name, phone, address, city, state, pincode, transportName } = req.body;
 
     if (!customer || !name || !phone || !transportName) {
-      return res.status(400).json({ error: 'All fields are required: customer, name, phone, transportName' });
+      return res.status(400).json({ error: 'Required fields: customer, name, phone, transportName' });
     }
 
     const result = await pool.query(
       `UPDATE dispatch 
        SET customer = $1, 
            name = $2, 
-           phone = $3, 
-           transport_name = $4,
+           phone = $3,
+           address = $4,
+           city = $5,
+           state = $6,
+           pincode = $7, 
+           transport_name = $8,
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $5
+       WHERE id = $9
        RETURNING *`,
-      [customer, name, phone, transportName, id]
+      [customer, name, phone, address || null, city || null, state || null, pincode || null, transportName, id]
     );
 
     if (result.rows.length === 0) {
