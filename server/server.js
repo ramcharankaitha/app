@@ -68,8 +68,9 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Increase JSON body size limit to handle large base64 image data (50MB)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

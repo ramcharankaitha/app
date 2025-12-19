@@ -88,5 +88,72 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Save face data for staff (must be before /:id route)
+router.post('/face-data', async (req, res) => {
+  try {
+    const { username, faceImage } = req.body;
+    
+    console.log('Face data save request received for staff:', username);
+    console.log('Face image data length:', faceImage ? faceImage.length : 0);
+
+    if (!username || !faceImage) {
+      return res.status(400).json({ error: 'Username and face image are required' });
+    }
+
+    // Find staff by username (case-insensitive search)
+    const staffResult = await pool.query(
+      'SELECT id, username FROM staff WHERE LOWER(username) = LOWER($1)',
+      [username]
+    );
+
+    if (staffResult.rows.length === 0) {
+      // Also check if username exists with different case
+      const allStaffResult = await pool.query('SELECT username FROM staff LIMIT 10');
+      console.log('Available staff usernames in database:', allStaffResult.rows.map(r => r.username));
+      console.log('Searched username:', username);
+      return res.status(404).json({ 
+        error: `Staff not found with username: ${username}. Please check your username and try again.` 
+      });
+    }
+
+    const staffId = staffResult.rows[0].id;
+
+    // Store face data as JSONB in PostgreSQL - simple single image
+    const faceData = {
+      image: faceImage,
+      captured_at: new Date().toISOString()
+    };
+
+    console.log('Storing face data in PostgreSQL for staff ID:', staffId);
+    console.log('Face data size:', JSON.stringify(faceData).length, 'bytes');
+
+    // Store directly in PostgreSQL as JSONB
+    const result = await pool.query(
+      `UPDATE staff 
+       SET face_data = $1::jsonb, updated_at = CURRENT_TIMESTAMP 
+       WHERE id = $2 
+       RETURNING id, username, face_data`,
+      [JSON.stringify(faceData), staffId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(500).json({ error: 'Failed to update face data in database' });
+    }
+
+    console.log('Face data successfully stored in PostgreSQL for:', result.rows[0].username);
+
+    console.log('Face data saved successfully for staff:', username);
+    
+    res.json({
+      success: true,
+      message: 'Face captured successfully! You can now use face recognition for check-in and check-out.'
+    });
+  } catch (error) {
+    console.error('Save face data error:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ error: 'Internal server error: ' + error.message });
+  }
+});
+
 module.exports = router;
 

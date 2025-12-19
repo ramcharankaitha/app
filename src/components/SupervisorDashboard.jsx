@@ -2,6 +2,8 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useProfile } from '../hooks/useProfile';
 import ConfirmDialog from './ConfirmDialog';
 import StaffAttendanceView from './StaffAttendanceView';
+import AttendanceModal from './AttendanceModal';
+import './attendanceModal.css';
 
 const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
   const { profile, avatarUrl, initials } = useProfile();
@@ -9,6 +11,15 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
   const [activeNav, setActiveNav] = useState('home');
   const [menuOpen, setMenuOpen] = useState(false);
   const [showAttendanceView, setShowAttendanceView] = useState(false);
+  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [attendanceType, setAttendanceType] = useState(null); // 'checkin' or 'checkout'
+  const [attendanceStatus, setAttendanceStatus] = useState('Not checked in');
+  const [checkInTime, setCheckInTime] = useState(null);
+  const [checkOutTime, setCheckOutTime] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [warningMessage, setWarningMessage] = useState('');
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -22,6 +33,62 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [menuOpen]);
+
+  // Fetch today's attendance status and notifications
+  useEffect(() => {
+    const fetchTodayAttendance = async () => {
+      try {
+        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/supervisor-attendance/today?username=${userData.username || ''}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.attendance) {
+            setCheckInTime(data.attendance.check_in_time);
+            setCheckOutTime(data.attendance.check_out_time);
+            if (data.attendance.check_out_time) {
+              setAttendanceStatus('Checked out');
+            } else if (data.attendance.check_in_time) {
+              setAttendanceStatus('Checked in');
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching attendance:', err);
+      }
+    };
+
+    const fetchNotifications = async () => {
+      try {
+        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+        if (userData.id) {
+          const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/notifications?userId=${userData.id}&userType=supervisor`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+            }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+              setNotifications(data.notifications || []);
+              setUnreadCount(data.notifications.filter(n => !n.is_read).length);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching notifications:', err);
+      }
+    };
+
+    fetchTodayAttendance();
+    fetchNotifications();
+    // Refresh notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Sync activeNav with currentPage
   useEffect(() => {
@@ -57,7 +124,58 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
   }, [profile]);
 
   const shiftLabel = '9:00 AM – 6:00 PM';
-  const currentStatus = 'Not checked in';
+
+  const handleCheckIn = () => {
+    setAttendanceType('checkin');
+    setShowAttendanceModal(true);
+  };
+
+  const handleCheckOut = () => {
+    setAttendanceType('checkout');
+    setShowAttendanceModal(true);
+  };
+
+  const handleAttendanceSuccess = (type, time, message, warning) => {
+    if (type === 'checkin') {
+      setCheckInTime(time);
+      setAttendanceStatus('Checked in');
+    } else if (type === 'checkout') {
+      setCheckOutTime(time);
+      setAttendanceStatus('Checked out');
+    }
+    setShowAttendanceModal(false);
+    setAttendanceType(null);
+    
+    // Display success message in-app
+    setSuccessMessage(message || `${type === 'checkin' ? 'Checked in' : 'Checked out'} successfully`);
+    if (warning) {
+      setWarningMessage(warning);
+    }
+    
+    // Auto-hide messages after 5 seconds
+    setTimeout(() => {
+      setSuccessMessage('');
+      setWarningMessage('');
+    }, 5000);
+    
+    // Refresh notifications if there's a warning
+    if (warning) {
+      setTimeout(() => {
+        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+        if (userData.id) {
+          fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/notifications?userId=${userData.id}&userType=supervisor`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.success) {
+                setNotifications(data.notifications || []);
+                setUnreadCount(data.notifications.filter(n => !n.is_read).length);
+              }
+            })
+            .catch(err => console.error('Error refreshing notifications:', err));
+        }
+      }, 1000);
+    }
+  };
 
   const handleNavClick = (navItem, e) => {
     if (e) {
@@ -315,12 +433,26 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
             </div>
             <div className="panel-row">
               <div className="label">Current status</div>
-              <div className="status-pill danger">
+              <div className={`status-pill ${attendanceStatus === 'Checked out' ? 'success' : attendanceStatus === 'Checked in' ? 'warning' : 'danger'}`}>
                 <span className="dot"></span>
-                <span>{currentStatus}</span>
+                <span>{attendanceStatus}</span>
               </div>
             </div>
-            <button className="primary-action">Open Face Recognition</button>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              {!checkInTime ? (
+                <button className="primary-action" onClick={handleCheckIn}>
+                  <i className="fas fa-sign-in-alt"></i> Check In
+                </button>
+              ) : !checkOutTime ? (
+                <button className="primary-action" onClick={handleCheckOut}>
+                  <i className="fas fa-sign-out-alt"></i> Check Out
+                </button>
+              ) : (
+                <button className="primary-action" disabled style={{ opacity: 0.6 }}>
+                  <i className="fas fa-check-circle"></i> Completed
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0,1fr))' }}>
@@ -410,9 +542,65 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
       {showAttendanceView && (
         <StaffAttendanceView onClose={() => setShowAttendanceView(false)} />
       )}
+
+      {showAttendanceModal && (
+        <AttendanceModal
+          type={attendanceType}
+          onSuccess={handleAttendanceSuccess}
+          onClose={() => {
+            setShowAttendanceModal(false);
+            setAttendanceType(null);
+          }}
+          userRole="supervisor"
+        />
+      )}
+
+      {/* Success/Warning Messages */}
+      {successMessage && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          background: '#d4edda',
+          color: '#155724',
+          padding: '15px 20px',
+          borderRadius: '8px',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+          zIndex: 10000,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          maxWidth: '400px'
+        }}>
+          <i className="fas fa-check-circle"></i>
+          <span>{successMessage}</span>
+        </div>
+      )}
+
+      {warningMessage && (
+        <div style={{
+          position: 'fixed',
+          top: successMessage ? '80px' : '20px',
+          right: '20px',
+          background: '#fff3cd',
+          color: '#856404',
+          padding: '15px 20px',
+          borderRadius: '8px',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+          zIndex: 10000,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          maxWidth: '400px'
+        }}>
+          <i className="fas fa-exclamation-triangle"></i>
+          <span>{warningMessage}</span>
+        </div>
+      )}
     </div>
   );
 };
 
 export default SupervisorDashboard;
+
 

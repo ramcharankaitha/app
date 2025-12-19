@@ -69,6 +69,79 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Save face data for supervisor (must be before /:id route)
+router.post('/face-data', async (req, res) => {
+  try {
+    const { username, faceImage } = req.body;
+    
+    console.log('Face data save request received for supervisor:', username);
+    console.log('Face image data length:', faceImage ? faceImage.length : 0);
+
+    if (!username || !faceImage) {
+      return res.status(400).json({ error: 'Username and face image are required' });
+    }
+
+    // Trim whitespace from username
+    const trimmedUsername = username.trim();
+    
+    // Find user by username (case-insensitive and trimmed search)
+    const userResult = await pool.query(
+      'SELECT id, username FROM users WHERE LOWER(TRIM(username)) = LOWER($1)',
+      [trimmedUsername]
+    );
+
+    if (userResult.rows.length === 0) {
+      // Also check if username exists with different case
+      const allUsersResult = await pool.query('SELECT id, username, email FROM users ORDER BY id LIMIT 20');
+      console.log('Available supervisors in database:', allUsersResult.rows.map(r => ({ id: r.id, username: r.username, email: r.email })));
+      console.log('Searched username (trimmed):', trimmedUsername);
+      console.log('Searched username (original):', username);
+      return res.status(404).json({ 
+        error: `Supervisor not found with username: "${trimmedUsername}". Available supervisors in database. Check server logs for details.` 
+      });
+    }
+    
+    console.log('Found supervisor:', userResult.rows[0].username, 'ID:', userResult.rows[0].id);
+
+    const userId = userResult.rows[0].id;
+
+    // Store face data as JSONB in PostgreSQL - simple single image
+    const faceData = {
+      image: faceImage,
+      captured_at: new Date().toISOString()
+    };
+
+    console.log('Storing face data in PostgreSQL for user ID:', userId);
+    console.log('Face data size:', JSON.stringify(faceData).length, 'bytes');
+
+    // Store directly in PostgreSQL as JSONB
+    const result = await pool.query(
+      `UPDATE users 
+       SET face_data = $1::jsonb, updated_at = CURRENT_TIMESTAMP 
+       WHERE id = $2 
+       RETURNING id, username, face_data`,
+      [JSON.stringify(faceData), userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(500).json({ error: 'Failed to update face data in database' });
+    }
+
+    console.log('Face data successfully stored in PostgreSQL for:', result.rows[0].username);
+
+    console.log('Face data saved successfully for supervisor:', username);
+    
+    res.json({
+      success: true,
+      message: 'Face captured successfully! You can now use face recognition for check-in and check-out.'
+    });
+  } catch (error) {
+    console.error('Save face data error:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ error: 'Internal server error: ' + error.message });
+  }
+});
+
 // Update user
 router.put('/:id', async (req, res) => {
   try {

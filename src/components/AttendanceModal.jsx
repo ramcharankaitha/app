@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const AttendanceModal = ({ type, onSuccess, onClose }) => {
+const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
   const [stream, setStream] = useState(null);
   const [capturedImage, setCapturedImage] = useState(null);
   const [isCapturing, setIsCapturing] = useState(false);
@@ -70,7 +70,17 @@ const AttendanceModal = ({ type, onSuccess, onClose }) => {
         return;
       }
 
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/attendance/${type}`, {
+      console.log('Submitting attendance with face recognition...');
+      console.log('Username:', userData.username);
+      console.log('Type:', type);
+      console.log('User Role:', userRole);
+
+      // Use supervisor-attendance routes for supervisors, attendance routes for staff
+      const apiEndpoint = userRole === 'supervisor' 
+        ? `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/supervisor-attendance/${type}`
+        : `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/attendance/${type}`;
+
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -78,13 +88,25 @@ const AttendanceModal = ({ type, onSuccess, onClose }) => {
         body: JSON.stringify({
           image: capturedImage,
           timestamp: new Date().toISOString(),
-          username: userData.username
+          username: userData.username.trim()
         })
       });
 
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch (e) {
+          errorData = { error: errorText || `Server error: ${response.status}` };
+        }
+        throw new Error(errorData.error || 'Failed to record attendance');
+      }
+
       const data = await response.json();
 
-      if (response.ok && data.success) {
+      if (data.success) {
+        console.log('Attendance recorded successfully with face recognition');
         stopCamera();
         // Pass success message and warning to parent component to display in-app
         setTimeout(() => {
@@ -96,7 +118,7 @@ const AttendanceModal = ({ type, onSuccess, onClose }) => {
       }
     } catch (err) {
       console.error('Error submitting attendance:', err);
-      setError('Network error. Please check your connection and try again.');
+      setError(err.message || 'Network error. Please check your connection and try again.');
       setIsProcessing(false);
     }
   };
@@ -148,24 +170,39 @@ const AttendanceModal = ({ type, onSuccess, onClose }) => {
               </div>
               {error && (
                 <div className="error-message" style={{ marginTop: '15px', padding: '10px', background: '#fee', color: '#c33', borderRadius: '4px' }}>
-                  {error}
+                  <i className="fas fa-exclamation-circle"></i> {error}
+                </div>
+              )}
+              {isProcessing && !error && (
+                <div style={{ 
+                  padding: '12px 16px',
+                  background: '#d1ecf1',
+                  color: '#0c5460',
+                  borderRadius: '8px',
+                  textAlign: 'center',
+                  fontSize: '14px',
+                  marginTop: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  fontWeight: '500'
+                }}>
+                  <i className="fas fa-spinner fa-spin"></i> 
+                  Verifying face with saved face data...
                 </div>
               )}
               <div className="attendance-actions">
-                <button className="btn-secondary" onClick={retakePhoto} disabled={isProcessing}>
-                  Retake
-                </button>
-                <button className="btn-primary" onClick={submitAttendance} disabled={isProcessing}>
-                  {isProcessing ? (
-                    <>
-                      <i className="fas fa-spinner fa-spin"></i> Processing...
-                    </>
-                  ) : (
-                    <>
+                {!isProcessing && (
+                  <>
+                    <button className="btn-secondary" onClick={retakePhoto}>
+                      Retake
+                    </button>
+                    <button className="btn-primary" onClick={submitAttendance}>
                       <i className="fas fa-check"></i> Confirm {type === 'checkin' ? 'Check In' : 'Check Out'}
-                    </>
-                  )}
-                </button>
+                    </button>
+                  </>
+                )}
               </div>
             </>
           )}

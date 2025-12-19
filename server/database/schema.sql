@@ -447,6 +447,16 @@ BEGIN
         ALTER TABLE staff ADD COLUMN pincode VARCHAR(20);
     END IF;
     
+    -- Add face_data column to staff table for face recognition
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'staff' AND column_name = 'face_data') THEN
+        ALTER TABLE staff ADD COLUMN face_data JSONB;
+    END IF;
+    
+    -- Add face_data column to users table for face recognition (supervisors)
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'face_data') THEN
+        ALTER TABLE users ADD COLUMN face_data JSONB;
+    END IF;
+    
     -- Customers table
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'customers' AND column_name = 'city') THEN
         ALTER TABLE customers ADD COLUMN city VARCHAR(100);

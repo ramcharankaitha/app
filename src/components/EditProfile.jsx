@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { profileAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
+import FaceCaptureModal from './FaceCaptureModal';
 
 const EditProfile = ({ onBack, onNavigate }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -20,6 +21,9 @@ const EditProfile = ({ onBack, onNavigate }) => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showFaceCaptureModal, setShowFaceCaptureModal] = useState(false);
+  const [userRole, setUserRole] = useState('admin');
+  const [username, setUsername] = useState('');
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -41,6 +45,32 @@ const EditProfile = ({ onBack, onNavigate }) => {
   const toggleSidebar = () => {
     setSidebarOpen((prev) => !prev);
   };
+
+  // Fetch user role and username
+  useEffect(() => {
+    const role = localStorage.getItem('userRole') || 'admin';
+    const userDataStr = localStorage.getItem('userData');
+    let userData = null;
+    if (userDataStr) {
+      try {
+        userData = JSON.parse(userDataStr);
+        // Only use username field, not name (name is the full name, not the username)
+        let foundUsername = userData.username || '';
+        if (foundUsername) {
+          foundUsername = foundUsername.trim();
+        }
+        setUsername(foundUsername);
+        console.log('EditProfile - Retrieved username:', foundUsername);
+        console.log('EditProfile - Full userData:', userData);
+      } catch (e) {
+        console.error('Error parsing userData:', e);
+        setUsername('');
+      }
+    } else {
+      setUsername('');
+    }
+    setUserRole(role);
+  }, []);
 
   // Fetch profile from database in background (non-blocking)
   useEffect(() => {
@@ -441,6 +471,16 @@ const EditProfile = ({ onBack, onNavigate }) => {
                   >
                     Change Password
                   </button>
+                  {(userRole === 'staff' || userRole === 'supervisor') && (
+                    <button 
+                      type="button" 
+                      className="change-password-btn"
+                      style={{ marginTop: '12px' }}
+                      onClick={() => setShowFaceCaptureModal(true)}
+                    >
+                      <i className="fas fa-camera"></i> Live Capture Face
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -762,6 +802,20 @@ const EditProfile = ({ onBack, onNavigate }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Face Capture Modal */}
+      {showFaceCaptureModal && (
+        <FaceCaptureModal
+          userRole={userRole}
+          username={username}
+          onSuccess={(message) => {
+            setShowFaceCaptureModal(false);
+            setSuccessMessage(message || 'Face data captured successfully');
+            setTimeout(() => setSuccessMessage(''), 3000);
+          }}
+          onClose={() => setShowFaceCaptureModal(false)}
+        />
       )}
 
       <ConfirmDialog

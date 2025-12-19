@@ -42,9 +42,11 @@ router.post('/login', async (req, res) => {
     }
 
     if (username) {
+      // Trim whitespace from username for lookup
+      const trimmedUsername = username.trim();
       const userResult = await pool.query(
-        'SELECT * FROM users WHERE username = $1',
-        [username]
+        'SELECT * FROM users WHERE LOWER(TRIM(username)) = LOWER($1)',
+        [trimmedUsername]
       );
 
       if (userResult.rows.length > 0) {
@@ -72,6 +74,7 @@ router.post('/login', async (req, res) => {
             id: user.id,
             name: `${user.first_name} ${user.last_name}`,
             email: user.email,
+            username: user.username,
             role: user.role,
             store: user.store_allocated
           },
