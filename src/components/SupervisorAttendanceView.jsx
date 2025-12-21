@@ -44,31 +44,19 @@ const SupervisorAttendanceView = ({ onClose }) => {
 
   const handleExportCSV = async () => {
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/supervisor-attendance/export?date=${selectedDate}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-          }
-        }
-      );
-
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `supervisor_attendance_${selectedDate}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      } else {
-        setError('Failed to export CSV');
-      }
+      setError('');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const url = `${apiUrl}/supervisor-attendance/export?date=${selectedDate}`;
+      
+      // Use downloadFileFromServer for mobile APK compatibility
+      const { downloadFileFromServer } = await import('../utils/fileDownload');
+      const timestamp = selectedDate || new Date().toISOString().split('T')[0];
+      const filename = `supervisor_attendance_${timestamp}.csv`;
+      
+      await downloadFileFromServer(url, filename);
     } catch (err) {
       console.error('Error exporting CSV:', err);
-      setError('Failed to export CSV');
+      setError(err.message || 'Failed to export CSV. Please try again.');
     }
   };
 

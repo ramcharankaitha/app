@@ -5,6 +5,7 @@ import { exportAPI } from '../services/api';
 import StoreAccess from './StoreAccess';
 import RolePermissions from './RolePermissions';
 import ConfirmDialog from './ConfirmDialog';
+import { downloadCSV } from '../utils/fileDownload';
 
 const Settings = ({ onBack, onNavigate, onLogout, userRole = 'admin' }) => {
   const [notificationsOn, setNotificationsOn] = useState(true);
@@ -132,22 +133,7 @@ const Settings = ({ onBack, onNavigate, onLogout, userRole = 'admin' }) => {
     return csvRows.join('\n');
   };
 
-  // Download CSV file
-  const downloadCSV = (csvContent, filename) => {
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    URL.revokeObjectURL(url);
-  };
+  // Download CSV file is now imported from utils/fileDownload.js
 
   // Handle data export
   const handleExportData = async () => {

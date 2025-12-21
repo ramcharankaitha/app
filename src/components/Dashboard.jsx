@@ -3,6 +3,7 @@ import { useProfile } from '../hooks/useProfile';
 import { profileAPI, exportAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import SupervisorAttendanceView from './SupervisorAttendanceView';
+import { downloadCSV } from '../utils/fileDownload';
 
 const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
   const [activeScope, setActiveScope] = useState('All stores • Global scope');
@@ -160,23 +161,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     return csvRows.join('\n');
   };
 
-  // Download CSV file
-  const downloadCSV = (csvContent, filename) => {
-    // Add BOM for Excel UTF-8 support
-    const BOM = '\uFEFF';
-    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
+  // Download CSV file is now imported from utils/fileDownload.js
 
   // Handle sales report export
   const handleSalesReport = (e) => {
