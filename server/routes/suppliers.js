@@ -122,5 +122,129 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// Create supplier transaction (record products received from supplier)
+router.post('/transaction', async (req, res) => {
+  try {
+    const { supplierName, phone, products } = req.body;
+
+    if (!supplierName || !supplierName.trim()) {
+      return res.status(400).json({ error: 'Supplier name is required' });
+    }
+
+    if (!products || !Array.isArray(products) || products.length === 0) {
+      return res.status(400).json({ error: 'At least one product is required' });
+    }
+
+    // Validate products
+    for (const product of products) {
+      if (!product.itemCode || !product.quantity || !product.mrp || !product.sellRate) {
+        return res.status(400).json({ error: 'All product fields (itemCode, quantity, MRP, sellRate) are required' });
+      }
+    }
+
+    // Start transaction
+    await pool.query('BEGIN');
+
+    try {
+      // Find or create supplier
+      let supplierResult = await pool.query(
+        'SELECT id FROM suppliers WHERE LOWER(TRIM(supplier_name)) = LOWER($1)',
+        [supplierName.trim()]
+      );
+
+      let supplierId;
+      if (supplierResult.rows.length === 0) {
+        // Create new supplier
+        const newSupplier = await pool.query(
+          `INSERT INTO suppliers (supplier_name, phone, updated_at)
+           VALUES ($1, $2, CURRENT_TIMESTAMP)
+           RETURNING id`,
+          [supplierName.trim(), phone || null]
+        );
+        supplierId = newSupplier.rows[0].id;
+      } else {
+        supplierId = supplierResult.rows[0].id;
+        // Update supplier phone if provided
+        if (phone) {
+          await pool.query(
+            'UPDATE suppliers SET phone = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+            [phone, supplierId]
+          );
+        }
+      }
+
+      // Process each product
+      for (const product of products) {
+        // Find product by item code
+        const productResult = await pool.query(
+          'SELECT id, current_quantity FROM products WHERE item_code = $1',
+          [product.itemCode.trim()]
+        );
+
+        if (productResult.rows.length === 0) {
+          // Create new product if it doesn't exist
+          await pool.query(
+            `INSERT INTO products (
+              product_name, item_code, sku_code, category, 
+              current_quantity, mrp, sell_rate, supplier_name, 
+              minimum_quantity, status
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+            [
+              product.productName || 'Unknown Product',
+              product.itemCode.trim(),
+              product.skuCode || product.itemCode.trim(),
+              product.category || null,
+              parseFloat(product.quantity) || 0,
+              parseFloat(product.mrp) || 0,
+              parseFloat(product.sellRate) || 0,
+              supplierName.trim(),
+              0,
+              'STOCK'
+            ]
+          );
+        } else {
+          // Update existing product
+          const existingProduct = productResult.rows[0];
+          const newQuantity = (existingProduct.current_quantity || 0) + parseFloat(product.quantity);
+          
+          await pool.query(
+            `UPDATE products 
+             SET current_quantity = $1,
+                 mrp = $2,
+                 sell_rate = $3,
+                 supplier_name = $4,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $5`,
+            [
+              newQuantity,
+              parseFloat(product.mrp),
+              parseFloat(product.sellRate),
+              supplierName.trim(),
+              existingProduct.id
+            ]
+          );
+        }
+      }
+
+      // Commit transaction
+      await pool.query('COMMIT');
+
+      res.status(201).json({
+        success: true,
+        message: 'Supplier transaction created successfully',
+        supplierId: supplierId
+      });
+    } catch (error) {
+      // Rollback on error
+      await pool.query('ROLLBACK');
+      throw error;
+    }
+  } catch (error) {
+    console.error('Create supplier transaction error:', error);
+    res.status(500).json({ error: 'Internal server error: ' + error.message });
+  }
+});
+
 module.exports = router;
 

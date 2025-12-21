@@ -23,6 +23,7 @@ import ChitPlans from './components/ChitPlans';
 import AddChitCustomer from './components/AddChitCustomer';
 import StockIn from './components/StockIn';
 import StockOut from './components/StockOut';
+import CreateSupplierTransaction from './components/CreateSupplierTransaction';
 import CategoryMaster from './components/CategoryMaster';
 import AddCategory from './components/AddCategory';
 import Settings from './components/Settings';
@@ -443,6 +444,20 @@ const AdminRoutes = () => {
           <ProtectedRoute>
             <StockOut
               onBack={() => handleNavigation(getBackPath('dashboard'))}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/createSupplier"
+        element={
+          <ProtectedRoute>
+            <CreateSupplierTransaction
+              onBack={() => handleNavigation(getBackPath('dashboard'))}
+              onCancel={() => handleNavigation(getBackPath('dashboard'))}
               onNavigate={handleNavigation}
               userRole={userRole}
             />

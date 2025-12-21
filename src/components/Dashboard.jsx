@@ -294,7 +294,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
       setActiveNav('masterMenu');
     } else if (currentPage === 'masterMenu') {
       setActiveNav('masterMenu');
-    } else if (currentPage === 'transactionMenu' || currentPage === 'stockIn' || currentPage === 'stockOut') {
+    } else if (currentPage === 'transactionMenu' || currentPage === 'stockIn' || currentPage === 'stockOut' || currentPage === 'createSupplier') {
       setActiveNav('transactionMenu');
     } else if (currentPage === 'settings') {
       setActiveNav('settings');
@@ -410,6 +410,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     { title: 'Dispatch Department', desc: 'Manage dispatch workflows', icon: 'fa-shipping-fast', target: 'dispatch' },
     { title: 'Stock In', desc: 'Record stock entries', icon: 'fa-box-open', target: 'stockIn' },
     { title: 'Stock Out', desc: 'Record stock exits', icon: 'fa-box', target: 'stockOut' },
+    { title: 'Create Supplier', desc: 'Record products from supplier', icon: 'fa-truck', target: 'createSupplier' },
   ];
 
   const renderContent = () => {
