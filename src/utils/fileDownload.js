@@ -5,10 +5,11 @@
 
 /**
  * Download CSV file with mobile APK compatibility
+ * For mobile APK/webview, we use server-side download to ensure it works
  * @param {string} csvContent - The CSV content as a string
  * @param {string} filename - The filename for the downloaded file
  */
-export const downloadCSV = (csvContent, filename) => {
+export const downloadCSV = async (csvContent, filename) => {
   try {
     // Add BOM for Excel UTF-8 support
     const BOM = '\uFEFF';
@@ -18,39 +19,76 @@ export const downloadCSV = (csvContent, filename) => {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const isWebView = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
     
-    // For mobile APK/webview, use data URI approach which is more reliable
+    // For mobile APK/webview, use server-side download approach (most reliable)
     if (isMobile || isWebView) {
-      // Convert to base64
-      const base64Content = btoa(unescape(encodeURIComponent(contentWithBOM)));
-      const dataUri = `data:text/csv;charset=utf-8;base64,${base64Content}`;
-      
-      // Create a temporary link and trigger download
-      const link = document.createElement('a');
-      link.href = dataUri;
-      link.download = filename;
-      link.style.display = 'none';
-      
-      // Append to body (required for iOS)
-      document.body.appendChild(link);
-      
-      // Trigger download
       try {
-        link.click();
-      } catch (err) {
-        console.warn('Link click failed, trying window.open:', err);
-        // Fallback: open in new window/tab
-        window.open(dataUri, '_blank');
+        // Send CSV content to server endpoint which will return it as a downloadable file
+        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+        const response = await fetch(`${apiUrl}/export/download-csv`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+          },
+          body: JSON.stringify({
+            content: contentWithBOM,
+            filename: filename
+          })
+        });
+
+        if (response.ok) {
+          // Get the blob from response
+          const blob = await response.blob();
+          
+          // Create object URL from blob
+          const blobUrl = URL.createObjectURL(blob);
+          
+          // Create a temporary link element
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = filename;
+          link.style.display = 'none';
+          link.target = '_self'; // Important for mobile
+          
+          // Append to body and click
+          document.body.appendChild(link);
+          
+          // Use a small delay to ensure link is ready
+          requestAnimationFrame(() => {
+            try {
+              link.click();
+            } catch (clickError) {
+              // Alternative: dispatch mouse event
+              const event = new MouseEvent('click', {
+                view: window,
+                bubbles: true,
+                cancelable: true
+              });
+              link.dispatchEvent(event);
+            }
+            
+            // Clean up after delay
+            setTimeout(() => {
+              try {
+                document.body.removeChild(link);
+              } catch (e) {
+                // Link might have been removed already
+              }
+              URL.revokeObjectURL(blobUrl);
+            }, 1000);
+          });
+          
+          return;
+        } else {
+          throw new Error('Server download failed');
+        }
+      } catch (serverError) {
+        console.warn('Server download failed, trying direct blob download:', serverError);
+        // Fallback to direct blob download
       }
-      
-      // Clean up after a delay
-      setTimeout(() => {
-        document.body.removeChild(link);
-      }, 100);
-      
-      return;
     }
     
-    // For desktop browsers, use Blob API (more efficient)
+    // For desktop browsers or fallback, use Blob API
     try {
       const blob = new Blob([contentWithBOM], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -58,50 +96,32 @@ export const downloadCSV = (csvContent, filename) => {
       
       link.href = url;
       link.download = filename;
-      link.style.visibility = 'hidden';
       link.style.display = 'none';
+      link.target = '_self';
       
       document.body.appendChild(link);
-      link.click();
       
-      // Clean up
-      setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      }, 100);
+      // Use requestAnimationFrame for better browser compatibility
+      requestAnimationFrame(() => {
+        link.click();
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }, 100);
+      });
     } catch (blobError) {
-      console.warn('Blob download failed, falling back to data URI:', blobError);
-      // Fallback to data URI if Blob fails
-      const base64Content = btoa(unescape(encodeURIComponent(contentWithBOM)));
-      const dataUri = `data:text/csv;charset=utf-8;base64,${base64Content}`;
-      const link = document.createElement('a');
-      link.href = dataUri;
-      link.download = filename;
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => {
-        document.body.removeChild(link);
-      }, 100);
+      console.error('Blob download failed:', blobError);
+      alert('Download failed. Please try again or contact support.');
     }
   } catch (error) {
     console.error('Download CSV error:', error);
-    // Last resort: try window.open with data URI
-    try {
-      const BOM = '\uFEFF';
-      const contentWithBOM = BOM + csvContent;
-      const base64Content = btoa(unescape(encodeURIComponent(contentWithBOM)));
-      const dataUri = `data:text/csv;charset=utf-8;base64,${base64Content}`;
-      window.open(dataUri, '_blank');
-    } catch (fallbackError) {
-      console.error('All download methods failed:', fallbackError);
-      alert('Download failed. Please copy the data manually or try again.');
-    }
+    alert('Download failed. Please try again or contact support.');
   }
 };
 
 /**
  * Download file from server endpoint (for server-generated files)
+ * This works better in mobile APK/webview contexts
  * @param {string} url - The server endpoint URL
  * @param {string} filename - The filename for the downloaded file
  * @param {object} options - Fetch options (headers, method, etc.)
@@ -120,57 +140,49 @@ export const downloadFileFromServer = async (url, filename, options = {}) => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    // Get the content type
-    const contentType = response.headers.get('content-type') || 'application/octet-stream';
-    
     // Get the blob data
     const blob = await response.blob();
     
-    // Check if we're in mobile/webview
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const isWebView = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+    // Create object URL from blob (works in most contexts)
+    const blobUrl = URL.createObjectURL(blob);
     
-    if (isMobile || isWebView) {
-      // For mobile, convert blob to data URI
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUri = reader.result;
-        const link = document.createElement('a');
-        link.href = dataUri;
-        link.download = filename;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        
-        try {
-          link.click();
-        } catch (err) {
-          console.warn('Link click failed, using window.open:', err);
-          window.open(dataUri, '_blank');
-        }
-        
-        setTimeout(() => {
-          document.body.removeChild(link);
-        }, 100);
-      };
-      reader.readAsDataURL(blob);
-    } else {
-      // For desktop, use Blob URL
-      const blobUrl = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = filename;
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
+    // Create download link
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    link.style.display = 'none';
+    link.target = '_self'; // Important for mobile compatibility
+    
+    // Append to body (required for iOS and webview)
+    document.body.appendChild(link);
+    
+    // Use requestAnimationFrame for better compatibility
+    requestAnimationFrame(() => {
+      try {
+        link.click();
+      } catch (clickError) {
+        console.warn('Link click failed, trying programmatic approach:', clickError);
+        // Alternative: dispatch mouse event
+        const event = new MouseEvent('click', {
+          view: window,
+          bubbles: true,
+          cancelable: true
+        });
+        link.dispatchEvent(event);
+      }
       
+      // Clean up after delay
       setTimeout(() => {
-        document.body.removeChild(link);
+        try {
+          document.body.removeChild(link);
+        } catch (e) {
+          // Link might have been removed already
+        }
         URL.revokeObjectURL(blobUrl);
-      }, 100);
-    }
+      }, 1000);
+    });
   } catch (error) {
     console.error('Download file from server error:', error);
     throw error;
   }
 };
-

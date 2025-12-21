@@ -187,7 +187,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
             const timestamp = new Date().toISOString().split('T')[0];
             const filename = `sales_report_${timestamp}.csv`;
             
-            downloadCSV(csvContent, filename);
+            await downloadCSV(csvContent, filename);
             
             // Show success message
             setScopeMessage('Sales report downloaded successfully!');

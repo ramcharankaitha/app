@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 
+// Increase body size limit for CSV content
+router.use(express.json({ limit: '10mb' }));
+router.use(express.text({ limit: '10mb' }));
+
 router.get('/all', async (req, res) => {
   try {
     const [usersResult, staffResult, productsResult, storesResult] = await Promise.all([
@@ -60,6 +64,36 @@ router.get('/sales', async (req, res) => {
   } catch (error) {
     console.error('Export sales error:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Download CSV endpoint for mobile APK compatibility
+// This endpoint accepts CSV content and returns it as a downloadable file with proper headers
+router.post('/download-csv', async (req, res) => {
+  try {
+    const { content, filename } = req.body;
+
+    if (!content) {
+      return res.status(400).json({ error: 'CSV content is required' });
+    }
+
+    const downloadFilename = filename || `export_${new Date().toISOString().split('T')[0]}.csv`;
+
+    // Set headers for file download - these are crucial for mobile downloads
+    res.setHeader('Content-Type', 'text/csv;charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
+    res.setHeader('Content-Length', Buffer.byteLength(content, 'utf8'));
+    
+    // Set cache control headers to prevent caching issues
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    // Send the CSV content directly
+    res.send(content);
+  } catch (error) {
+    console.error('Download CSV error:', error);
+    res.status(500).json({ error: 'Failed to download CSV file' });
   }
 });
 

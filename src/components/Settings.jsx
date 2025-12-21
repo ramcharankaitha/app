@@ -199,8 +199,8 @@ const Settings = ({ onBack, onNavigate, onLogout, userRole = 'admin' }) => {
       const timestamp = new Date().toISOString().split('T')[0];
       const filename = `anitha_stores_export_${timestamp}.csv`;
 
-      // Download the file
-      downloadCSV(csvContent, filename);
+      // Download the file (async for mobile compatibility)
+      await downloadCSV(csvContent, filename);
 
       setExportMessage('Data exported successfully!');
       setTimeout(() => {
