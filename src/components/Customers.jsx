@@ -159,12 +159,6 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
             <span>Staff</span>
           </div>
         )}
-        <div className="nav-item active">
-          <div className="nav-icon">
-            <i className="fas fa-user-friends"></i>
-          </div>
-          <span>Customers</span>
-        </div>
         <div className="nav-item" onClick={() => onNavigate && onNavigate('masterMenu')}>
           <div className="nav-icon">
             <i className="fas fa-th-large"></i>

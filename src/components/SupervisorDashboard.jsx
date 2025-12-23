@@ -98,7 +98,7 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
     } else if (currentPage === 'staff') {
       setActiveNav('staff');
     } else if (currentPage === 'customers') {
-      setActiveNav('customers');
+      setActiveNav('masterMenu');
     } else if (currentPage === 'products') {
       setActiveNav('masterMenu');
     } else if (currentPage === 'suppliers') {
@@ -192,8 +192,6 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
       }
     } else if (navItem === 'staff') {
       onNavigate('staff');
-    } else if (navItem === 'customers') {
-      onNavigate('customers');
     } else if (navItem === 'masterMenu') {
       // Handle masterMenu as internal state, don't navigate away
       // Just update the activeNav state, which is already done above
@@ -228,15 +226,6 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
             <i className="fas fa-user-tie"></i>
           </div>
           <span>Staff</span>
-        </div>
-        <div 
-          className={`nav-item ${activeNav === 'customers' ? 'active' : ''}`} 
-          onClick={(e) => handleNavClick('customers', e)}
-        >
-          <div className="nav-icon">
-            <i className="fas fa-user-friends"></i>
-          </div>
-          <span>Customers</span>
         </div>
         <div 
           className={`nav-item ${activeNav === 'masterMenu' ? 'active' : ''}`} 
@@ -348,6 +337,7 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
                 { title: 'Category Master', desc: 'Organize product categories', icon: 'fa-tags', target: 'categoryMaster' },
                 { title: 'Products', desc: 'Catalog and pricing', icon: 'fa-box', target: 'products' },
                 { title: 'Supply Master', desc: 'Suppliers and logistics', icon: 'fa-truck', target: 'suppliers' },
+                { title: 'Customers', desc: 'Customer management & details', icon: 'fa-user-friends', target: 'customers' },
                 { title: 'Chit Plans', desc: 'Chit plan setup & customers', icon: 'fa-file-invoice-dollar', target: 'chitPlans' },
               ].map((item) => (
                 <div

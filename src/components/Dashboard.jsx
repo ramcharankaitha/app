@@ -357,6 +357,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     { title: 'Category Master', desc: 'Organize product categories', icon: 'fa-tags', target: 'categoryMaster' },
     { title: 'Products', desc: 'Catalog and pricing', icon: 'fa-box', target: 'products' },
     { title: 'Supply Master', desc: 'Suppliers and logistics', icon: 'fa-truck', target: 'suppliers' },
+    { title: 'Customers', desc: 'Customer management & details', icon: 'fa-user-friends', target: 'customers' },
     { title: 'Chit Plans', desc: 'Chit plan setup & customers', icon: 'fa-file-invoice-dollar', target: 'chitPlans' },
   ];
 
@@ -623,15 +624,6 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
             <i className="fas fa-user-tie"></i>
           </div>
           <span>Staff</span>
-        </div>
-        <div 
-          className={`nav-item ${activeNav === 'customers' ? 'active' : ''}`} 
-          onClick={(e) => handleNavClick('customers', e)}
-        >
-          <div className="nav-icon">
-            <i className="fas fa-user-friends"></i>
-          </div>
-          <span>Customers</span>
         </div>
         <div 
           className={`nav-item ${activeNav === 'masterMenu' ? 'active' : ''}`} 

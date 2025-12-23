@@ -6,6 +6,7 @@ const MasterMenu = ({ onNavigate, onBack }) => {
     { title: 'Products', desc: 'Product inventory & management', target: 'products' },
     { title: 'Supply Master', desc: 'Suppliers and logistics', target: 'suppliers' },
     { title: 'Category Master', desc: 'Product categories', target: 'categoryMaster' },
+    { title: 'Customers', desc: 'Customer management & details', target: 'customers' },
     { title: 'Chit Plans', desc: 'Chit plan setup & customers', target: 'chitPlans' },
   ];
 

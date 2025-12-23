@@ -13,6 +13,7 @@ const SalesReportView = ({ onClose }) => {
   const [isExporting, setIsExporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterByCreator, setFilterByCreator] = useState('');
+  const [filterByUserType, setFilterByUserType] = useState('all');
 
   useEffect(() => {
     fetchSales();
@@ -64,6 +65,7 @@ const SalesReportView = ({ onClose }) => {
       'Total Amount',
       'Payment Mode',
       'Created By',
+      'User Type',
       'Sale Date'
     ];
 
@@ -86,6 +88,7 @@ const SalesReportView = ({ onClose }) => {
         sale.total_amount || 0,
         `"${(sale.payment_mode || '').replace(/"/g, '""')}"`,
         `"${(sale.creator_name || sale.created_by || 'N/A').replace(/"/g, '""')}"`,
+        `"${(sale.user_type || 'N/A').replace(/"/g, '""')}"`,
         sale.sale_date ? new Date(sale.sale_date).toLocaleString() : ''
       ];
       
@@ -122,6 +125,13 @@ const SalesReportView = ({ onClose }) => {
       filtered = filtered.filter(sale => {
         const creatorName = sale.creator_name || sale.created_by || '';
         return creatorName.toLowerCase().includes(filterByCreator.toLowerCase());
+      });
+    }
+    
+    // Filter by user type
+    if (filterByUserType && filterByUserType !== 'all') {
+      filtered = filtered.filter(sale => {
+        return sale.user_type === filterByUserType;
       });
     }
     
@@ -235,6 +245,20 @@ const SalesReportView = ({ onClose }) => {
               </select>
             </div>
 
+            <div className="date-selector">
+              <label>Filter by Type:</label>
+              <select
+                value={filterByUserType}
+                onChange={(e) => setFilterByUserType(e.target.value)}
+                style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd', minWidth: '120px' }}
+              >
+                <option value="all">All Types</option>
+                <option value="Admin">Admin</option>
+                <option value="Supervisor">Supervisor</option>
+                <option value="Staff">Staff</option>
+              </select>
+            </div>
+
             <button 
               className="btn-primary" 
               onClick={handleExportCSV}
@@ -342,9 +366,20 @@ const SalesReportView = ({ onClose }) => {
                       <div style={{ fontWeight: '600', color: '#333', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {performer.creator_name || performer.created_by || 'Unknown'}
                       </div>
-                      <div style={{ fontSize: '12px', color: '#666' }}>
+                      <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
                         {formatCurrency(performer.total_revenue)} • {performer.total_sales} sales
                       </div>
+                      {performer.user_type && (
+                        <div>
+                          <span className={`badge ${
+                            performer.user_type === 'Admin' ? 'warning' : 
+                            performer.user_type === 'Supervisor' ? 'info' : 
+                            'success'
+                          }`} style={{ fontSize: '11px' }}>
+                            {performer.user_type}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -385,6 +420,7 @@ const SalesReportView = ({ onClose }) => {
                     <th>Total</th>
                     <th>Payment</th>
                     <th>Created By</th>
+                    <th>User Type</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -421,6 +457,19 @@ const SalesReportView = ({ onClose }) => {
                           <span style={{ color: '#999', fontSize: '12px' }}>N/A</span>
                         )}
                       </td>
+                      <td>
+                        {sale.user_type ? (
+                          <span className={`badge ${
+                            sale.user_type === 'Admin' ? 'warning' : 
+                            sale.user_type === 'Supervisor' ? 'info' : 
+                            'success'
+                          }`} style={{ fontSize: '12px' }}>
+                            {sale.user_type}
+                          </span>
+                        ) : (
+                          <span style={{ color: '#999', fontSize: '12px' }}>N/A</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -432,6 +481,7 @@ const SalesReportView = ({ onClose }) => {
                     <td style={{ textAlign: 'right', padding: '12px', color: '#28a745', fontSize: '16px' }}>
                       {formatCurrency(totals.totalSales)}
                     </td>
+                    <td></td>
                     <td></td>
                     <td></td>
                   </tr>

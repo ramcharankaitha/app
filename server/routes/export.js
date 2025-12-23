@@ -85,6 +85,12 @@ router.get('/sales', async (req, res) => {
             COALESCE((SELECT full_name FROM staff WHERE username = c.created_by OR email = c.created_by OR full_name = c.created_by LIMIT 1), c.created_by)
           ELSE c.created_by
         END AS creator_name,
+        CASE 
+          WHEN EXISTS (SELECT 1 FROM admin_profile WHERE email = c.created_by OR full_name = c.created_by) THEN 'Admin'
+          WHEN EXISTS (SELECT 1 FROM users WHERE username = c.created_by OR email = c.created_by OR (first_name || ' ' || last_name) = c.created_by) THEN 'Supervisor'
+          WHEN EXISTS (SELECT 1 FROM staff WHERE username = c.created_by OR email = c.created_by OR full_name = c.created_by) THEN 'Staff'
+          ELSE 'Admin'
+        END AS user_type,
         c.created_at AS sale_date
       FROM customers c
       LEFT JOIN products p ON c.item_code = p.item_code
@@ -128,6 +134,12 @@ router.get('/sales', async (req, res) => {
             COALESCE((SELECT full_name FROM staff WHERE username = c.created_by OR email = c.created_by OR full_name = c.created_by LIMIT 1), c.created_by)
           ELSE c.created_by
         END AS creator_name,
+        CASE 
+          WHEN EXISTS (SELECT 1 FROM admin_profile WHERE email = c.created_by OR full_name = c.created_by) THEN 'Admin'
+          WHEN EXISTS (SELECT 1 FROM users WHERE username = c.created_by OR email = c.created_by OR (first_name || ' ' || last_name) = c.created_by) THEN 'Supervisor'
+          WHEN EXISTS (SELECT 1 FROM staff WHERE username = c.created_by OR email = c.created_by OR full_name = c.created_by) THEN 'Staff'
+          ELSE 'Admin'
+        END AS user_type,
         COUNT(*) AS total_sales,
         SUM(c.quantity * c.sell_rate) AS total_revenue,
         SUM(c.quantity) AS total_quantity
