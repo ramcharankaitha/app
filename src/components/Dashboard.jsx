@@ -4,6 +4,8 @@ import { profileAPI, exportAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import SupervisorAttendanceView from './SupervisorAttendanceView';
 import UnifiedAttendanceView from './UnifiedAttendanceView';
+import SalesReportView from './SalesReportView';
+import BestSalesPerson from './BestSalesPerson';
 import { downloadCSV } from '../utils/fileDownload';
 
 const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
@@ -18,6 +20,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
   const [isExportingSales, setIsExportingSales] = useState(false);
   const [showSupervisorAttendance, setShowSupervisorAttendance] = useState(false);
   const [showUnifiedAttendance, setShowUnifiedAttendance] = useState(false);
+  const [showSalesReport, setShowSalesReport] = useState(false);
   const menuRef = useRef(null);
   const { profile, avatarUrl, initials } = useProfile();
 
@@ -165,48 +168,13 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
 
   // Download CSV file is now imported from utils/fileDownload.js
 
-  // Handle sales report export
+  // Handle sales report - open view instead of direct export
   const handleSalesReport = (e) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
-    console.log('Sales Report button clicked');
-    setConfirmState({
-      open: true,
-      message: 'Are you sure you want to export the sales report?',
-      onConfirm: async () => {
-        setConfirmState({ open: false, message: '', onConfirm: null });
-        setIsExportingSales(true);
-        
-        try {
-          console.log('Fetching sales data...');
-          const response = await exportAPI.getSales();
-          console.log('Sales data response:', response);
-          
-          if (response.success && response.sales) {
-            const csvContent = convertSalesToCSV(response.sales);
-            const timestamp = new Date().toISOString().split('T')[0];
-            const filename = `sales_report_${timestamp}.csv`;
-            
-            await downloadCSV(csvContent, filename);
-            
-            // Show success message
-            setScopeMessage('Sales report downloaded successfully!');
-            setTimeout(() => setScopeMessage(''), 3000);
-          } else {
-            setScopeMessage('No sales data available to export.');
-            setTimeout(() => setScopeMessage(''), 3000);
-          }
-        } catch (error) {
-          console.error('Export sales error:', error);
-          setScopeMessage('Failed to export sales report. Please try again.');
-          setTimeout(() => setScopeMessage(''), 3000);
-        } finally {
-          setIsExportingSales(false);
-        }
-      }
-    });
+    setShowSalesReport(true);
   };
 
   // Close dropdown when clicking outside
@@ -500,17 +468,8 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
             type="button"
             className="sales-report-button" 
             onClick={handleSalesReport}
-            disabled={isExportingSales}
           >
-            {isExportingSales ? (
-              <>
-                <i className="fas fa-spinner fa-spin"></i> Exporting...
-              </>
-            ) : (
-              <>
-                <i className="fas fa-file-excel"></i> Sales Report
-              </>
-            )}
+            <i className="fas fa-chart-line"></i> Sales Report
           </button>
           <div className="search-bar">
             <i className="fas fa-search"></i>
@@ -524,6 +483,9 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
             {scopeMessage}
           </div>
         )}
+
+        {/* Best Sales Person of the Month */}
+        <BestSalesPerson />
 
         {/* Stats Cards */}
         <div className="stats-grid">
@@ -549,14 +511,14 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
               <i className="fas fa-calendar-alt"></i>
             </div>
           </div>
-          <div className="stat-card" onClick={() => setShowSupervisorAttendance(true)} style={{ cursor: 'pointer' }}>
+          <div className="stat-card" onClick={() => setShowSalesReport(true)} style={{ cursor: 'pointer' }}>
             <div className="stat-content">
-              <h3 className="stat-title">Supervisor Attendance</h3>
-              <p className="stat-value">View today</p>
-              <p className="stat-subtitle">Check all supervisor attendance</p>
+              <h3 className="stat-title">Sales Report</h3>
+              <p className="stat-value">View & Export</p>
+              <p className="stat-subtitle">View sales data and export to CSV</p>
             </div>
-            <div className="stat-icon" style={{ backgroundColor: '#2196F320', color: '#2196F3' }}>
-              <i className="fas fa-calendar-check"></i>
+            <div className="stat-icon" style={{ backgroundColor: '#ff980020', color: '#ff9800' }}>
+              <i className="fas fa-chart-line"></i>
             </div>
           </div>
         </div>
@@ -814,6 +776,9 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
       )}
       {showSupervisorAttendance && (
         <SupervisorAttendanceView onClose={() => setShowSupervisorAttendance(false)} />
+      )}
+      {showSalesReport && (
+        <SalesReportView onClose={() => setShowSalesReport(false)} />
       )}
     </div>
   );

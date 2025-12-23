@@ -410,6 +410,38 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
       // Calculate tokens earned (1 token per ₹1000)
       const tokensEarned = Math.floor(finalBillAmount / 1000);
 
+      // Get current user information for created_by field
+      const getUserIdentifier = () => {
+        const userRole = localStorage.getItem('userRole');
+        const userDataStr = localStorage.getItem('userData');
+        
+        // If admin, use email to identify
+        if (userRole === 'admin') {
+          if (userDataStr) {
+            try {
+              const userData = JSON.parse(userDataStr);
+              return userData.email || userData.name || 'admin';
+            } catch (e) {
+              console.error('Error parsing userData:', e);
+            }
+          }
+          return 'admin';
+        }
+        
+        // For staff/supervisor, use username or name
+        if (userDataStr) {
+          try {
+            const userData = JSON.parse(userDataStr);
+            return userData.username || userData.email || userData.name || userData.full_name || 'system';
+          } catch (e) {
+            console.error('Error parsing userData:', e);
+          }
+        }
+        return 'system';
+      };
+
+      const createdBy = getUserIdentifier();
+
       // Create a customer record for each product item
       const promises = validItems.map(item =>
         customersAPI.create({
@@ -429,7 +461,8 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
           paymentMode: formData.paymentMode,
           tokensUsed: tokensToRedeem,
           tokensEarned: tokensEarned,
-          totalAmount: finalBillAmount
+          totalAmount: finalBillAmount,
+          createdBy: createdBy
         })
       );
 

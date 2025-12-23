@@ -3,6 +3,7 @@ import { useProfile } from '../hooks/useProfile';
 import ConfirmDialog from './ConfirmDialog';
 import StaffAttendanceView from './StaffAttendanceView';
 import AttendanceModal from './AttendanceModal';
+import BestSalesPerson from './BestSalesPerson';
 import './attendanceModal.css';
 
 const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
@@ -454,6 +455,9 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
               )}
             </div>
           </div>
+
+          {/* Best Sales Person of the Month */}
+          <BestSalesPerson />
 
           <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0,1fr))' }}>
             <div className="stat-card">

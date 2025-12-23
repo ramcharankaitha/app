@@ -196,8 +196,19 @@ export const exportAPI = {
   getAll: async () => {
     return apiCall('/export/all');
   },
-  getSales: async () => {
-    return apiCall('/export/sales');
+  getSales: async (startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const queryString = params.toString();
+    return apiCall(`/export/sales${queryString ? '?' + queryString : ''}`);
+  },
+  getBestSalesPerson: async (month, year) => {
+    const params = new URLSearchParams();
+    if (month) params.append('month', month);
+    if (year) params.append('year', year);
+    const queryString = params.toString();
+    return apiCall(`/export/best-sales-person${queryString ? '?' + queryString : ''}`);
   },
 };
 

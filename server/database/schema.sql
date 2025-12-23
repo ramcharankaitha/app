@@ -177,6 +177,13 @@ BEGIN
     ) THEN
         ALTER TABLE customers ADD COLUMN payment_mode VARCHAR(50);
     END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'customers' AND column_name = 'created_by'
+    ) THEN
+        ALTER TABLE customers ADD COLUMN created_by VARCHAR(200);
+    END IF;
 END $$;
 
 -- Add new columns to products table if they don't exist (for existing databases)
