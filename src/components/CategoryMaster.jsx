@@ -255,6 +255,9 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
                           <div className="product-details">
                             <span><strong>Sub:</strong> {category.sub || 'N/A'}</span>
                             <span><strong>Common:</strong> {category.common || 'N/A'}</span>
+                            {category.city && (
+                              <span><strong>City:</strong> {category.city}</span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -350,6 +353,11 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
               <div>
                 <strong>Common Category:</strong> {selectedCategory.common || 'N/A'}
               </div>
+              {selectedCategory.city && (
+                <div>
+                  <strong>City:</strong> {selectedCategory.city}
+                </div>
+              )}
             </div>
             <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
               <button

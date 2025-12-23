@@ -291,6 +291,12 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'dispatch' AND column_name = 'pincode') THEN
         ALTER TABLE dispatch ADD COLUMN pincode VARCHAR(20);
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'dispatch' AND column_name = 'packaging') THEN
+        ALTER TABLE dispatch ADD COLUMN packaging VARCHAR(255);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'dispatch' AND column_name = 'llr_number') THEN
+        ALTER TABLE dispatch ADD COLUMN llr_number VARCHAR(100);
+    END IF;
 END $$;
 
 -- Transport Table
@@ -338,6 +344,13 @@ BEGIN
         WHERE table_name = 'transport' AND column_name = 'vehicle_number'
     ) THEN
         ALTER TABLE transport ADD COLUMN vehicle_number VARCHAR(100);
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'transport' AND column_name = 'addresses'
+    ) THEN
+        ALTER TABLE transport ADD COLUMN addresses JSONB;
     END IF;
 END $$;
 
@@ -420,6 +433,13 @@ BEGIN
     ) THEN
         ALTER TABLE customers ADD COLUMN tokens_earned INTEGER DEFAULT 0;
     END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'customers' AND column_name = 'whatsapp'
+    ) THEN
+        ALTER TABLE customers ADD COLUMN whatsapp VARCHAR(10);
+    END IF;
 END $$;
 
 -- Add city, state, pincode columns to existing tables (for existing databases)
@@ -491,6 +511,23 @@ BEGIN
     END IF;
 END $$;
 
+-- Stock Transactions Table (for tracking all stock movements)
+CREATE TABLE IF NOT EXISTS stock_transactions (
+    id SERIAL PRIMARY KEY,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    item_code VARCHAR(100) NOT NULL,
+    product_name VARCHAR(255) NOT NULL,
+    transaction_type VARCHAR(20) NOT NULL CHECK (transaction_type IN ('STOCK_IN', 'STOCK_OUT', 'SALE', 'SUPPLIER', 'ADJUSTMENT')),
+    quantity INTEGER NOT NULL,
+    previous_quantity INTEGER NOT NULL,
+    new_quantity INTEGER NOT NULL,
+    reference_type VARCHAR(50), -- 'CUSTOMER', 'SUPPLIER', 'DISPATCH', 'MANUAL', etc.
+    reference_id INTEGER, -- ID of the related record (customer_id, supplier_id, dispatch_id, etc.)
+    notes TEXT,
+    created_by VARCHAR(100), -- username or user identifier
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
@@ -499,4 +536,8 @@ CREATE INDEX IF NOT EXISTS idx_products_item_code ON products(item_code);
 CREATE INDEX IF NOT EXISTS idx_products_sku_code ON products(sku_code);
 CREATE INDEX IF NOT EXISTS idx_stores_store_code ON stores(store_code);
 CREATE INDEX IF NOT EXISTS idx_role_permissions_role ON role_permissions(role_name);
+CREATE INDEX IF NOT EXISTS idx_stock_transactions_product_id ON stock_transactions(product_id);
+CREATE INDEX IF NOT EXISTS idx_stock_transactions_item_code ON stock_transactions(item_code);
+CREATE INDEX IF NOT EXISTS idx_stock_transactions_type ON stock_transactions(transaction_type);
+CREATE INDEX IF NOT EXISTS idx_stock_transactions_created_at ON stock_transactions(created_at);
 

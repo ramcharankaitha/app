@@ -372,6 +372,34 @@ export const transportAPI = {
   },
 };
 
+export const stockAPI = {
+  stockIn: async (itemCode, quantity, notes, createdBy) => {
+    return apiCall('/stock/in', {
+      method: 'POST',
+      body: JSON.stringify({ itemCode, quantity, notes, createdBy }),
+    });
+  },
+  stockOut: async (itemCode, quantity, notes, createdBy) => {
+    return apiCall('/stock/out', {
+      method: 'POST',
+      body: JSON.stringify({ itemCode, quantity, notes, createdBy }),
+    });
+  },
+  getTransactions: async (itemCode, productId, type, limit, offset) => {
+    const params = new URLSearchParams();
+    if (itemCode) params.append('itemCode', itemCode);
+    if (productId) params.append('productId', productId);
+    if (type) params.append('type', type);
+    if (limit) params.append('limit', limit);
+    if (offset) params.append('offset', offset);
+    return apiCall(`/stock/transactions?${params.toString()}`);
+  },
+  getCurrentStock: async (itemCode) => {
+    const params = itemCode ? `?itemCode=${encodeURIComponent(itemCode)}` : '';
+    return apiCall(`/stock/current${params}`);
+  },
+};
+
 export default {
   authAPI,
   usersAPI,
@@ -386,5 +414,6 @@ export default {
   chitPlansAPI,
   dispatchAPI,
   transportAPI,
+  stockAPI,
 };
 

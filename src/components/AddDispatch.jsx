@@ -10,7 +10,9 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
     city: '',
     state: '',
     pincode: '',
-    transportName: ''
+    transportName: '',
+    packaging: '',
+    llrNumber: ''
   });
   const [dispatchItems, setDispatchItems] = useState([
     { id: 1, name: '' }
@@ -304,7 +306,9 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
           city: formData.city,
           state: formData.state,
           pincode: formData.pincode,
-          transportName: formData.transportName
+          transportName: formData.transportName,
+          packaging: formData.packaging,
+          llrNumber: formData.llrNumber
         })
       );
 
@@ -399,243 +403,222 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                 {/* Dispatch Details Section */}
                 <div className="form-section">
                   <h3 className="section-title">Dispatch details</h3>
-                  <div className="form-grid">
-                    <div className="form-group" style={{ position: 'relative' }}>
-                      <label htmlFor="customer">Customer</label>
-                      <div className="input-wrapper" ref={customerInputRef}>
-                        <i className="fas fa-user input-icon"></i>
-                        <input
-                          type="text"
-                          id="customer"
-                          name="customer"
-                          className="form-input"
-                          placeholder="Type customer name to search..."
-                          value={formData.customer}
-                          onChange={handleInputChange}
-                          onFocus={() => {
-                            if (formData.customer.trim().length >= 2) {
-                              setShowCustomerDropdown(true);
-                            }
-                          }}
-                          required
-                          autoComplete="off"
-                        />
-                        {isLoadingCustomers && (
-                          <div style={{ 
-                            position: 'absolute', 
-                            right: '10px', 
-                            top: '50%', 
-                            transform: 'translateY(-50%)',
-                            color: '#999'
-                          }}>
-                            <i className="fas fa-spinner fa-spin"></i>
-                          </div>
-                        )}
-                      </div>
-                      {showCustomerDropdown && customerSuggestions.length > 0 && (
-                        <div 
-                          ref={customerDropdownRef}
-                          style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            right: 0,
-                            backgroundColor: '#fff',
-                            border: '1px solid #ddd',
-                            borderRadius: '8px',
-                            marginTop: '4px',
-                            maxHeight: '200px',
-                            overflowY: 'auto',
-                            zIndex: 1000,
-                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-                          }}
-                        >
-                          {customerSuggestions.map((customer, index) => (
-                            <div
-                              key={index}
-                              onClick={() => handleCustomerSelect(customer)}
-                              style={{
-                                padding: '12px 16px',
-                                cursor: 'pointer',
-                                borderBottom: index < customerSuggestions.length - 1 ? '1px solid #eee' : 'none',
-                                transition: 'background-color 0.2s'
-                              }}
-                              onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
-                              onMouseLeave={(e) => e.target.style.backgroundColor = '#fff'}
-                            >
-                              <div style={{ fontWeight: '600', color: '#333', marginBottom: '4px' }}>
-                                {customer.full_name}
-                              </div>
-                              {customer.phone && (
-                                <div style={{ fontSize: '12px', color: '#666' }}>
-                                  <i className="fas fa-phone" style={{ marginRight: '6px' }}></i>
-                                  {customer.phone}
-                                </div>
-                              )}
-                              {customer.city && (
-                                <div style={{ fontSize: '12px', color: '#666' }}>
-                                  <i className="fas fa-map-marker-alt" style={{ marginRight: '6px' }}></i>
-                                  {customer.city}{customer.state ? `, ${customer.state}` : ''}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                      <label>Products to Dispatch</label>
-                      {dispatchItems.map((item, index) => (
-                        <div key={item.id} style={{ 
-                          display: 'flex', 
-                          gap: '10px', 
-                          marginBottom: '10px',
-                          alignItems: 'flex-start'
-                        }}>
-                          <div className="input-wrapper" style={{ flex: 1 }}>
-                            <i className="fas fa-box input-icon"></i>
-                            <input
-                              type="text"
-                              className="form-input"
-                              placeholder={`Enter product name ${index + 1}...`}
-                              value={item.name}
-                              onChange={(e) => handleItemChange(item.id, e.target.value)}
-                              required={index === 0}
-                            />
-                          </div>
-                          {dispatchItems.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removeDispatchItem(item.id)}
-                              style={{
-                                padding: '10px 14px',
-                                background: '#dc3545',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                fontSize: '14px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                minWidth: '40px',
-                                height: '40px'
-                              }}
-                              title="Remove this product"
-                            >
-                              <i className="fas fa-times"></i>
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={addDispatchItem}
-                        style={{
-                          marginTop: '10px',
-                          padding: '10px 16px',
-                          background: '#28a745',
-                          color: '#fff',
-                          border: 'none',
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '8px'
-                        }}
-                      >
-                        <i className="fas fa-plus"></i>
-                        <span>Add More Products</span>
-                      </button>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="phone">Phone Number</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-phone input-icon"></i>
-                        <input
-                          type="tel"
-                          id="phone"
-                          name="phone"
-                          className="form-input"
-                          placeholder="Enter phone number."
-                          value={formData.phone}
-                          onChange={handleInputChange}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="transportName">Transport Name</label>
-                      <div className="input-wrapper" style={{ position: 'relative' }}>
-                        <i className="fas fa-truck input-icon"></i>
-                        {matchingTransports.length > 0 ? (
-                          <select
-                            id="transportName"
-                            name="transportName"
+                  <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                    {/* Left Column */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      {/* Phone Number - First */}
+                      <div className="form-group">
+                        <label htmlFor="phone">Phone Number</label>
+                        <div className="input-wrapper">
+                          <i className="fas fa-phone input-icon"></i>
+                          <input
+                            type="tel"
+                            id="phone"
+                            name="phone"
                             className="form-input"
-                            value={formData.transportName || ''}
+                            placeholder="Enter phone number."
+                            value={formData.phone}
                             onChange={handleInputChange}
                             required
-                            style={{ paddingLeft: '40px', appearance: 'auto', cursor: 'pointer' }}
-                          >
-                            <option value="">Select transport (based on address)</option>
-                            {matchingTransports.map((transport) => (
-                              <option key={transport.id} value={transport.travels_name}>
-                                {transport.travels_name} {transport.name ? `- ${transport.name}` : ''}
-                              </option>
-                            ))}
-                            <option value="__custom__">Enter custom transport name</option>
-                          </select>
-                        ) : (
-                          <>
-                            <input
-                              type="text"
-                              id="transportName"
-                              name="transportName"
-                              className="form-input"
-                              placeholder={isLoadingTransports ? "Loading transports..." : matchingTransports.length > 0 ? "Or type custom transport name" : "Enter transport name"}
-                              value={formData.transportName}
-                              onChange={handleInputChange}
-                              required
-                              disabled={isLoadingTransports}
-                            />
-                            {isLoadingTransports && (
-                              <div style={{ 
-                                position: 'absolute', 
-                                right: '10px', 
-                                top: '50%', 
-                                transform: 'translateY(-50%)',
-                                color: '#999'
-                              }}>
-                                <i className="fas fa-spinner fa-spin"></i>
-                              </div>
-                            )}
-                          </>
-                        )}
-                        {matchingTransports.length > 0 && (
-                          <div style={{ 
-                            fontSize: '11px', 
-                            color: '#28a745', 
-                            marginTop: '4px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
+                          />
+                        </div>
+                      </div>
+
+                      {/* Products to Dispatch - Shorter */}
+                      <div className="form-group">
+                        <label>Products to Dispatch</label>
+                        {dispatchItems.map((item, index) => (
+                          <div key={item.id} style={{ 
+                            display: 'flex', 
+                            gap: '10px', 
+                            marginBottom: '10px',
+                            alignItems: 'flex-start'
                           }}>
-                            <i className="fas fa-info-circle"></i>
-                            Found {matchingTransports.length} transport(s) matching this address
+                            <div className="input-wrapper" style={{ flex: 1 }}>
+                              <i className="fas fa-box input-icon"></i>
+                              <input
+                                type="text"
+                                className="form-input"
+                                placeholder={`Product ${index + 1}...`}
+                                value={item.name}
+                                onChange={(e) => handleItemChange(item.id, e.target.value)}
+                                required={index === 0}
+                              />
+                            </div>
+                            {dispatchItems.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeDispatchItem(item.id)}
+                                style={{
+                                  padding: '10px 14px',
+                                  background: '#dc3545',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '8px',
+                                  cursor: 'pointer',
+                                  fontSize: '14px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  minWidth: '40px',
+                                  height: '40px'
+                                }}
+                                title="Remove this product"
+                              >
+                                <i className="fas fa-times"></i>
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={addDispatchItem}
+                          style={{
+                            marginTop: '10px',
+                            padding: '8px 12px',
+                            background: '#28a745',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          <i className="fas fa-plus"></i>
+                          <span>Add Product</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Right Column */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      {/* Customer Name - Right Side */}
+                      <div className="form-group" style={{ position: 'relative' }}>
+                        <label htmlFor="customer">Customer</label>
+                        <div className="input-wrapper" ref={customerInputRef}>
+                          <i className="fas fa-user input-icon"></i>
+                          <input
+                            type="text"
+                            id="customer"
+                            name="customer"
+                            className="form-input"
+                            placeholder="Type customer name to search..."
+                            value={formData.customer}
+                            onChange={handleInputChange}
+                            onFocus={() => {
+                              if (formData.customer.trim().length >= 2) {
+                                setShowCustomerDropdown(true);
+                              }
+                            }}
+                            required
+                            autoComplete="off"
+                          />
+                          {isLoadingCustomers && (
+                            <div style={{ 
+                              position: 'absolute', 
+                              right: '10px', 
+                              top: '50%', 
+                              transform: 'translateY(-50%)',
+                              color: '#999'
+                            }}>
+                              <i className="fas fa-spinner fa-spin"></i>
+                            </div>
+                          )}
+                        </div>
+                        {showCustomerDropdown && customerSuggestions.length > 0 && (
+                          <div 
+                            ref={customerDropdownRef}
+                            style={{
+                              position: 'absolute',
+                              top: '100%',
+                              left: 0,
+                              right: 0,
+                              backgroundColor: '#fff',
+                              border: '1px solid #ddd',
+                              borderRadius: '8px',
+                              marginTop: '4px',
+                              maxHeight: '200px',
+                              overflowY: 'auto',
+                              zIndex: 1000,
+                              boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                            }}
+                          >
+                            {customerSuggestions.map((customer, index) => (
+                              <div
+                                key={index}
+                                onClick={() => handleCustomerSelect(customer)}
+                                style={{
+                                  padding: '12px 16px',
+                                  cursor: 'pointer',
+                                  borderBottom: index < customerSuggestions.length - 1 ? '1px solid #eee' : 'none',
+                                  transition: 'background-color 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                                onMouseLeave={(e) => e.target.style.backgroundColor = '#fff'}
+                              >
+                                <div style={{ fontWeight: '600', color: '#333', marginBottom: '4px' }}>
+                                  {customer.full_name}
+                                </div>
+                                {customer.phone && (
+                                  <div style={{ fontSize: '12px', color: '#666' }}>
+                                    <i className="fas fa-phone" style={{ marginRight: '6px' }}></i>
+                                    {customer.phone}
+                                  </div>
+                                )}
+                                {customer.city && (
+                                  <div style={{ fontSize: '12px', color: '#666' }}>
+                                    <i className="fas fa-map-marker-alt" style={{ marginRight: '6px' }}></i>
+                                    {customer.city}{customer.state ? `, ${customer.state}` : ''}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
                           </div>
                         )}
+                      </div>
+
+                      {/* Packaging Section - Right Side */}
+                      <div className="form-group">
+                        <label htmlFor="packaging">Packaging</label>
+                        <div className="input-wrapper">
+                          <i className="fas fa-box-open input-icon"></i>
+                          <input
+                            type="text"
+                            id="packaging"
+                            name="packaging"
+                            className="form-input"
+                            placeholder="Enter packaging details..."
+                            value={formData.packaging}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                      </div>
+
+                      {/* LLR Number Section - Right Side */}
+                      <div className="form-group">
+                        <label htmlFor="llrNumber">LLR Number</label>
+                        <div className="input-wrapper">
+                          <i className="fas fa-file-alt input-icon"></i>
+                          <input
+                            type="text"
+                            id="llrNumber"
+                            name="llrNumber"
+                            className="form-input"
+                            placeholder="Enter LLR number..."
+                            value={formData.llrNumber}
+                            onChange={handleInputChange}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Address Section */}
+                {/* Address Section - After LLR Number */}
                 <div className="form-section">
                   <h3 className="section-title">Address</h3>
                   <div className="form-grid">
@@ -701,6 +684,76 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                           onChange={handleInputChange}
                           maxLength="10"
                         />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Transport Name - After Address */}
+                <div className="form-section">
+                  <h3 className="section-title">Transport</h3>
+                  <div className="form-grid">
+                    <div className="form-group full-width">
+                      <label htmlFor="transportName">Transport Name</label>
+                      <div className="input-wrapper" style={{ position: 'relative' }}>
+                        <i className="fas fa-truck input-icon"></i>
+                        {matchingTransports.length > 0 ? (
+                          <select
+                            id="transportName"
+                            name="transportName"
+                            className="form-input"
+                            value={formData.transportName || ''}
+                            onChange={handleInputChange}
+                            required
+                            style={{ paddingLeft: '40px', appearance: 'auto', cursor: 'pointer' }}
+                          >
+                            <option value="">Select transport (based on address)</option>
+                            {matchingTransports.map((transport) => (
+                              <option key={transport.id} value={transport.travels_name}>
+                                {transport.travels_name} {transport.name ? `- ${transport.name}` : ''}
+                              </option>
+                            ))}
+                            <option value="__custom__">Enter custom transport name</option>
+                          </select>
+                        ) : (
+                          <>
+                            <input
+                              type="text"
+                              id="transportName"
+                              name="transportName"
+                              className="form-input"
+                              placeholder={isLoadingTransports ? "Loading transports..." : matchingTransports.length > 0 ? "Or type custom transport name" : "Enter transport name"}
+                              value={formData.transportName}
+                              onChange={handleInputChange}
+                              required
+                              disabled={isLoadingTransports}
+                            />
+                            {isLoadingTransports && (
+                              <div style={{ 
+                                position: 'absolute', 
+                                right: '10px', 
+                                top: '50%', 
+                                transform: 'translateY(-50%)',
+                                color: '#999'
+                              }}>
+                                <i className="fas fa-spinner fa-spin"></i>
+                              </div>
+                            )}
+                          </>
+                        )}
+                        {matchingTransports.length > 0 && (
+                          <div style={{ 
+                            fontSize: '11px', 
+                            color: '#28a745', 
+                            marginTop: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}>
+                            <i className="fas fa-info-circle"></i>
+                            Found {matchingTransports.length} transport(s) matching this address
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

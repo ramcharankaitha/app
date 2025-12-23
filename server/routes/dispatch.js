@@ -32,17 +32,17 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { customer, name, phone, address, city, state, pincode, transportName } = req.body;
+    const { customer, name, phone, address, city, state, pincode, transportName, packaging, llrNumber } = req.body;
 
     if (!customer || !name || !phone || !transportName) {
       return res.status(400).json({ error: 'Required fields: customer, name, phone, transportName' });
     }
 
     const result = await pool.query(
-      `INSERT INTO dispatch (customer, name, phone, address, city, state, pincode, transport_name)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO dispatch (customer, name, phone, address, city, state, pincode, transport_name, packaging, llr_number)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
-      [customer, name, phone, address || null, city || null, state || null, pincode || null, transportName]
+      [customer, name, phone, address || null, city || null, state || null, pincode || null, transportName, packaging || null, llrNumber || null]
     );
 
     res.status(201).json({
@@ -59,7 +59,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { customer, name, phone, address, city, state, pincode, transportName } = req.body;
+    const { customer, name, phone, address, city, state, pincode, transportName, packaging, llrNumber } = req.body;
 
     if (!customer || !name || !phone || !transportName) {
       return res.status(400).json({ error: 'Required fields: customer, name, phone, transportName' });
@@ -75,10 +75,12 @@ router.put('/:id', async (req, res) => {
            state = $6,
            pincode = $7, 
            transport_name = $8,
+           packaging = $9,
+           llr_number = $10,
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $9
+       WHERE id = $11
        RETURNING *`,
-      [customer, name, phone, address || null, city || null, state || null, pincode || null, transportName, id]
+      [customer, name, phone, address || null, city || null, state || null, pincode || null, transportName, packaging || null, llrNumber || null, id]
     );
 
     if (result.rows.length === 0) {

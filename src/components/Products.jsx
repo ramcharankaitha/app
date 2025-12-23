@@ -442,9 +442,36 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
                         <span className="label">SKU code:</span>
                         <span className="value">{p.sku}</span>
                       </div>
-                      <div className="product-qty">
-                        <span className="label">Quantity:</span>
-                        <span className="value">{p.qty}</span>
+                      <div className="product-qty" style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        background: p.qty <= 0 ? '#f8d7da' : p.qty <= 10 ? '#fff3cd' : '#d1ecf1',
+                        border: `2px solid ${p.qty <= 0 ? '#dc3545' : p.qty <= 10 ? '#ffc107' : '#0dcaf0'}`,
+                        fontWeight: '600'
+                      }}>
+                        <i className={`fas ${p.qty <= 0 ? 'fa-exclamation-triangle' : p.qty <= 10 ? 'fa-exclamation-circle' : 'fa-check-circle'}`} 
+                           style={{ 
+                             color: p.qty <= 0 ? '#dc3545' : p.qty <= 10 ? '#856404' : '#28a745',
+                             fontSize: '14px'
+                           }}></i>
+                        <span className="label" style={{ color: p.qty <= 0 ? '#721c24' : p.qty <= 10 ? '#856404' : '#155724' }}>
+                          Stock:
+                        </span>
+                        <span className="value" style={{ 
+                          color: p.qty <= 0 ? '#dc3545' : p.qty <= 10 ? '#856404' : '#28a745',
+                          fontSize: '16px'
+                        }}>
+                          {p.qty}
+                        </span>
+                        {p.qty <= 0 && (
+                          <span style={{ fontSize: '11px', color: '#dc3545', fontWeight: 'bold' }}>OUT</span>
+                        )}
+                        {p.qty > 0 && p.qty <= 10 && (
+                          <span style={{ fontSize: '11px', color: '#856404', fontWeight: 'bold' }}>LOW</span>
+                        )}
                       </div>
                       <div className={`product-status ${p.status === 'STOCK' ? 'status-stock' : 'status-instock'}`}>
                         {p.status}
@@ -566,7 +593,49 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
               <div><strong>Product Name:</strong> {selectedProduct.product_name}</div>
               <div><strong>Item Code:</strong> {selectedProduct.item_code}</div>
               <div><strong>SKU Code:</strong> {selectedProduct.sku_code}</div>
-              <div><strong>Current Quantity:</strong> {selectedProduct.current_quantity || 0}</div>
+              <div style={{
+                padding: '16px',
+                borderRadius: '8px',
+                background: (selectedProduct.current_quantity || 0) <= 0 ? '#f8d7da' : 
+                            (selectedProduct.current_quantity || 0) <= 10 ? '#fff3cd' : '#d1ecf1',
+                border: `2px solid ${
+                  (selectedProduct.current_quantity || 0) <= 0 ? '#dc3545' : 
+                  (selectedProduct.current_quantity || 0) <= 10 ? '#ffc107' : '#0dcaf0'
+                }`,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                fontWeight: '600'
+              }}>
+                <i className={`fas ${(selectedProduct.current_quantity || 0) <= 0 ? 'fa-exclamation-triangle' : 
+                                 (selectedProduct.current_quantity || 0) <= 10 ? 'fa-exclamation-circle' : 'fa-check-circle'}`} 
+                   style={{ 
+                     color: (selectedProduct.current_quantity || 0) <= 0 ? '#dc3545' : 
+                            (selectedProduct.current_quantity || 0) <= 10 ? '#856404' : '#28a745',
+                     fontSize: '20px'
+                   }}></i>
+                <div>
+                  <div style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>Current Stock</div>
+                  <div style={{ 
+                    fontSize: '24px', 
+                    color: (selectedProduct.current_quantity || 0) <= 0 ? '#dc3545' : 
+                           (selectedProduct.current_quantity || 0) <= 10 ? '#856404' : '#28a745',
+                    fontWeight: 'bold'
+                  }}>
+                    {selectedProduct.current_quantity || 0}
+                  </div>
+                  {(selectedProduct.current_quantity || 0) <= 0 && (
+                    <div style={{ fontSize: '12px', color: '#dc3545', marginTop: '4px', fontWeight: 'bold' }}>
+                      OUT OF STOCK
+                    </div>
+                  )}
+                  {(selectedProduct.current_quantity || 0) > 0 && (selectedProduct.current_quantity || 0) <= 10 && (
+                    <div style={{ fontSize: '12px', color: '#856404', marginTop: '4px', fontWeight: 'bold' }}>
+                      LOW STOCK WARNING
+                    </div>
+                  )}
+                </div>
+              </div>
               <div><strong>Minimum Quantity:</strong> {selectedProduct.minimum_quantity || 0}</div>
               <div><strong>Supplier Name:</strong> {selectedProduct.supplier_name || 'N/A'}</div>
               <div><strong>Category:</strong> {selectedProduct.category || 'Uncategorized'}</div>

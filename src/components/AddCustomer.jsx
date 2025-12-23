@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { customersAPI, productsAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 
@@ -11,11 +11,15 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     state: '',
     pincode: '',
     email: '',
+    whatsapp: '',
     paymentMode: '',
     tokensToRedeem: 0
   });
   const [customerTokens, setCustomerTokens] = useState(0);
   const [isCheckingTokens, setIsCheckingTokens] = useState(false);
+  const [phoneExistsError, setPhoneExistsError] = useState('');
+  const [isCheckingPhone, setIsCheckingPhone] = useState(false);
+  const phoneCheckTimeoutRef = useRef(null);
   const [productItems, setProductItems] = useState([
     { 
       id: 1, 
@@ -88,6 +92,43 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     }
   };
 
+  const checkPhoneExists = async (phone) => {
+    if (!phone || phone.trim() === '') {
+      setPhoneExistsError('');
+      return false;
+    }
+
+    setIsCheckingPhone(true);
+    setPhoneExistsError('');
+    
+    try {
+      // Search for customers with this phone number
+      const response = await customersAPI.search(phone.trim());
+      
+      if (response.success && response.customers && response.customers.length > 0) {
+        // Check if any customer has this exact phone number
+        const customerWithPhone = response.customers.find(c => 
+          c.phone && c.phone.trim() === phone.trim()
+        );
+        
+        if (customerWithPhone) {
+          setPhoneExistsError(`Mobile number already exists! This number is registered with customer: ${customerWithPhone.full_name || customerWithPhone.fullName || 'N/A'} (${customerWithPhone.email || 'N/A'})`);
+          return true;
+        }
+      }
+      
+      setPhoneExistsError('');
+      return false;
+    } catch (err) {
+      console.error('Error checking phone number:', err);
+      // Don't show error for API errors, just log it
+      setPhoneExistsError('');
+      return false;
+    } finally {
+      setIsCheckingPhone(false);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -106,7 +147,32 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
         setFormData(prev => ({ ...prev, tokensToRedeem: 0 }));
       }
     }
+
+    // Check if phone number already exists when phone changes
+    if (name === 'phone') {
+      // Clear previous timeout
+      if (phoneCheckTimeoutRef.current) {
+        clearTimeout(phoneCheckTimeoutRef.current);
+      }
+      
+      // Clear error immediately when user starts typing
+      setPhoneExistsError('');
+      
+      // Debounce the check - wait 800ms after user stops typing
+      phoneCheckTimeoutRef.current = setTimeout(() => {
+        checkPhoneExists(value);
+      }, 800);
+    }
   };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (phoneCheckTimeoutRef.current) {
+        clearTimeout(phoneCheckTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const checkCustomerTokens = async (phone, email) => {
     if ((!phone || phone.trim() === '') && (!email || email.trim() === '')) {
@@ -292,6 +358,15 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     setError('');
     setSuccessMessage('');
 
+    // Check if phone number already exists before submission
+    if (formData.phone && formData.phone.trim() !== '') {
+      const phoneExists = await checkPhoneExists(formData.phone);
+      if (phoneExists) {
+        setIsLoading(false);
+        return;
+      }
+    }
+
     // Filter out empty product items
     const validItems = productItems.filter(item => item.itemCode.trim() !== '');
     
@@ -342,6 +417,10 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
           email: formData.email,
           phone: formData.phone,
           address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          pincode: formData.pincode,
+          whatsapp: formData.whatsapp,
           itemCode: item.itemCode,
           quantity: item.quantity ? parseInt(item.quantity) : 0,
           mrp: item.mrp ? parseFloat(item.mrp) : null,
@@ -489,15 +568,37 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           value={formData.phone}
                           onChange={handleInputChange}
                           required
+                          style={phoneExistsError ? { borderColor: '#dc3545' } : {}}
                         />
+                        {isCheckingPhone && (
+                          <i className="fas fa-spinner fa-spin" style={{ 
+                            position: 'absolute', 
+                            right: '12px', 
+                            color: '#666' 
+                          }}></i>
+                        )}
                       </div>
-                      {isCheckingTokens && formData.phone && (
+                      {phoneExistsError && (
+                        <div style={{ 
+                          marginTop: '4px', 
+                          fontSize: '12px', 
+                          color: '#dc3545', 
+                          fontWeight: '600',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}>
+                          <i className="fas fa-exclamation-circle"></i>
+                          {phoneExistsError}
+                        </div>
+                      )}
+                      {!phoneExistsError && isCheckingTokens && formData.phone && (
                         <div style={{ marginTop: '4px', fontSize: '11px', color: '#666', fontStyle: 'italic' }}>
                           <i className="fas fa-spinner fa-spin" style={{ marginRight: '4px' }}></i>
                           Checking for tokens...
                         </div>
                       )}
-                      {!isCheckingTokens && customerTokens > 0 && formData.phone && (
+                      {!phoneExistsError && !isCheckingTokens && customerTokens > 0 && formData.phone && (
                         <div style={{ 
                           marginTop: '4px', 
                           fontSize: '12px', 
@@ -513,41 +614,61 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       )}
                     </div>
 
-                    <div className="form-group">
-                      <label htmlFor="email">Email</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-envelope input-icon"></i>
-                        <input
-                          type="email"
-                          id="email"
-                          name="email"
-                          className="form-input"
-                          placeholder="customer@example.com"
-                          value={formData.email}
-                          onChange={handleInputChange}
-                          required
-                        />
+                    <div className="form-group" style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <label htmlFor="email">Email</label>
+                        <div className="input-wrapper">
+                          <i className="fas fa-envelope input-icon"></i>
+                          <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            className="form-input"
+                            placeholder="customer@example.com"
+                            value={formData.email}
+                            onChange={handleInputChange}
+                            required
+                          />
+                        </div>
+                        {isCheckingTokens && formData.email && !formData.phone && (
+                          <div style={{ marginTop: '4px', fontSize: '11px', color: '#666', fontStyle: 'italic' }}>
+                            <i className="fas fa-spinner fa-spin" style={{ marginRight: '4px' }}></i>
+                            Checking for tokens...
+                          </div>
+                        )}
+                        {!isCheckingTokens && customerTokens > 0 && formData.email && !formData.phone && (
+                          <div style={{ 
+                            marginTop: '4px', 
+                            fontSize: '12px', 
+                            color: '#28a745', 
+                            fontWeight: '600',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}>
+                            <i className="fas fa-gift"></i>
+                            Returning customer! You have {customerTokens} token(s) available.
+                          </div>
+                        )}
                       </div>
-                      {isCheckingTokens && formData.email && !formData.phone && (
-                        <div style={{ marginTop: '4px', fontSize: '11px', color: '#666', fontStyle: 'italic' }}>
-                          <i className="fas fa-spinner fa-spin" style={{ marginRight: '4px' }}></i>
-                          Checking for tokens...
+                      <div style={{ flex: '0 0 150px' }}>
+                        <label htmlFor="whatsapp">WhatsApp</label>
+                        <div className="input-wrapper">
+                          <i className="fab fa-whatsapp input-icon"></i>
+                          <select
+                            id="whatsapp"
+                            name="whatsapp"
+                            className="form-input"
+                            value={formData.whatsapp}
+                            onChange={handleInputChange}
+                          >
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                          </select>
+                          <i className="fas fa-chevron-down dropdown-icon"></i>
                         </div>
-                      )}
-                      {!isCheckingTokens && customerTokens > 0 && formData.email && !formData.phone && (
-                        <div style={{ 
-                          marginTop: '4px', 
-                          fontSize: '12px', 
-                          color: '#28a745', 
-                          fontWeight: '600',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px'
-                        }}>
-                          <i className="fas fa-gift"></i>
-                          Returning customer! You have {customerTokens} token(s) available.
-                        </div>
-                      )}
+                      </div>
                     </div>
                   </div>
                 </div>

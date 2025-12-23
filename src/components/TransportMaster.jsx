@@ -56,22 +56,45 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
       setError('');
       const response = await transportAPI.getAll();
       if (response.success) {
-        const formattedTransports = response.transports.map(transport => ({
-          id: transport.id,
-          name: transport.name,
-          travelsName: transport.travels_name,
-          address: transport.address,
-          city: transport.city,
-          state: transport.state,
-          pincode: transport.pincode,
-          service: transport.service,
-          llrNumber: transport.llr_number,
-          vehicleNumber: transport.vehicle_number,
-          initials: transport.name 
-            ? transport.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
-            : 'TM',
-          created_at: transport.created_at
-        }));
+        const formattedTransports = response.transports.map(transport => {
+          // Parse addresses from JSONB if available, otherwise use legacy fields
+          let addresses = [];
+          if (transport.addresses) {
+            try {
+              addresses = typeof transport.addresses === 'string' 
+                ? JSON.parse(transport.addresses) 
+                : transport.addresses;
+            } catch (e) {
+              console.error('Error parsing addresses:', e);
+            }
+          }
+          
+          // If no addresses in JSONB, create one from legacy fields
+          if (addresses.length === 0 && (transport.city || transport.address)) {
+            addresses = [{
+              address: transport.address || '',
+              city: transport.city || '',
+              state: transport.state || '',
+              pincode: transport.pincode || ''
+            }];
+          }
+
+          return {
+            id: transport.id,
+            name: transport.name,
+            travelsName: transport.travels_name,
+            addresses: addresses,
+            city: transport.city, // Keep for backward compatibility
+            state: transport.state,
+            pincode: transport.pincode,
+            service: transport.service,
+            vehicleNumber: transport.vehicle_number,
+            initials: transport.name 
+              ? transport.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+              : 'TM',
+            created_at: transport.created_at
+          };
+        });
         setTransports(formattedTransports);
       }
     } catch (err) {
@@ -86,13 +109,21 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
 
   // Filter transports based on search
   const filteredTransports = transports.filter(transport => {
-    const matchesSearch = transport.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         transport.travelsName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         transport.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         transport.service?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         transport.llrNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         transport.vehicleNumber?.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
+    const searchLower = searchQuery.toLowerCase();
+    const matchesName = transport.name?.toLowerCase().includes(searchLower);
+    const matchesTravels = transport.travelsName?.toLowerCase().includes(searchLower);
+    const matchesService = transport.service?.toLowerCase().includes(searchLower);
+    const matchesVehicle = transport.vehicleNumber?.toLowerCase().includes(searchLower);
+    
+    // Check all addresses for city/state/pincode matches
+    const matchesAddress = transport.addresses?.some(addr => 
+      addr.city?.toLowerCase().includes(searchLower) ||
+      addr.state?.toLowerCase().includes(searchLower) ||
+      addr.pincode?.toLowerCase().includes(searchLower) ||
+      addr.address?.toLowerCase().includes(searchLower)
+    ) || transport.city?.toLowerCase().includes(searchLower);
+    
+    return matchesName || matchesTravels || matchesService || matchesVehicle || matchesAddress;
   });
 
   // Handle menu toggle
@@ -210,7 +241,7 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
             <i className="fas fa-search"></i>
             <input
               type="text"
-              placeholder="Search name, travels, city, service, LLR, vehicle..."
+              placeholder="Search name, travels, city, service, vehicle..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -256,7 +287,16 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
                     Travels: {transport.travelsName}
                   </div>
                 )}
-                {transport.city && (
+                {transport.addresses && transport.addresses.length > 0 && (
+                  <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px' }}>
+                    <i className="fas fa-map-marker-alt" style={{ marginRight: '6px', fontSize: '10px' }}></i>
+                    {transport.addresses.length === 1 
+                      ? transport.addresses[0].city || 'Multiple locations'
+                      : `${transport.addresses.length} locations: ${transport.addresses.map(a => a.city).filter(Boolean).join(', ')}`
+                    }
+                  </div>
+                )}
+                {(!transport.addresses || transport.addresses.length === 0) && transport.city && (
                   <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px' }}>
                     <i className="fas fa-map-marker-alt" style={{ marginRight: '6px', fontSize: '10px' }}></i>
                     {transport.city}
@@ -266,12 +306,6 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
                   <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <i className="fas fa-cog" style={{ fontSize: '10px', color: '#666' }}></i>
                     <span>{transport.service}</span>
-                  </div>
-                )}
-                {transport.llrNumber && (
-                  <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px' }}>
-                    <i className="fas fa-file-alt" style={{ marginRight: '6px', fontSize: '10px' }}></i>
-                    LLR: {transport.llrNumber}
                   </div>
                 )}
                 {transport.vehicleNumber && (
@@ -334,35 +368,67 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
                     <span className="detail-label">Travels Name:</span>
                     <span className="detail-value">{viewTransportModal.travels_name || 'N/A'}</span>
                   </div>
-                  {viewTransportModal.address && (
-                    <div className="detail-row">
-                      <span className="detail-label">Address:</span>
-                      <span className="detail-value">{viewTransportModal.address}</span>
-                    </div>
-                  )}
-                  <div className="detail-row">
-                    <span className="detail-label">City:</span>
-                    <span className="detail-value">{viewTransportModal.city || 'N/A'}</span>
-                  </div>
-                  {viewTransportModal.state && (
-                    <div className="detail-row">
-                      <span className="detail-label">State:</span>
-                      <span className="detail-value">{viewTransportModal.state}</span>
-                    </div>
-                  )}
-                  {viewTransportModal.pincode && (
-                    <div className="detail-row">
-                      <span className="detail-label">Pincode:</span>
-                      <span className="detail-value">{viewTransportModal.pincode}</span>
-                    </div>
-                  )}
+                  {(() => {
+                    // Parse addresses from JSONB if available
+                    let addresses = [];
+                    if (viewTransportModal.addresses) {
+                      try {
+                        addresses = typeof viewTransportModal.addresses === 'string' 
+                          ? JSON.parse(viewTransportModal.addresses) 
+                          : viewTransportModal.addresses;
+                      } catch (e) {
+                        console.error('Error parsing addresses:', e);
+                      }
+                    }
+                    
+                    // If no addresses in JSONB, create one from legacy fields
+                    if (addresses.length === 0 && (viewTransportModal.city || viewTransportModal.address)) {
+                      addresses = [{
+                        address: viewTransportModal.address || '',
+                        city: viewTransportModal.city || '',
+                        state: viewTransportModal.state || '',
+                        pincode: viewTransportModal.pincode || ''
+                      }];
+                    }
+
+                    if (addresses.length > 0) {
+                      return addresses.map((addr, index) => (
+                        <React.Fragment key={index}>
+                          {addresses.length > 1 && (
+                            <div className="detail-row" style={{ marginTop: index > 0 ? '16px' : '0', paddingTop: index > 0 ? '16px' : '0', borderTop: index > 0 ? '1px solid #eee' : 'none' }}>
+                              <span className="detail-label" style={{ fontWeight: '600', color: '#dc3545' }}>Address {index + 1}:</span>
+                            </div>
+                          )}
+                          {addr.address && (
+                            <div className="detail-row">
+                              <span className="detail-label">Street Address:</span>
+                              <span className="detail-value">{addr.address}</span>
+                            </div>
+                          )}
+                          <div className="detail-row">
+                            <span className="detail-label">City:</span>
+                            <span className="detail-value">{addr.city || 'N/A'}</span>
+                          </div>
+                          {addr.state && (
+                            <div className="detail-row">
+                              <span className="detail-label">State:</span>
+                              <span className="detail-value">{addr.state}</span>
+                            </div>
+                          )}
+                          {addr.pincode && (
+                            <div className="detail-row">
+                              <span className="detail-label">Pincode:</span>
+                              <span className="detail-value">{addr.pincode}</span>
+                            </div>
+                          )}
+                        </React.Fragment>
+                      ));
+                    }
+                    return null;
+                  })()}
                   <div className="detail-row">
                     <span className="detail-label">Service:</span>
                     <span className="detail-value">{viewTransportModal.service || 'N/A'}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">LLR Number:</span>
-                    <span className="detail-value">{viewTransportModal.llr_number || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">Vehicle Number:</span>

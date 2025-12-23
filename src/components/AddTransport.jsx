@@ -6,14 +6,12 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
     name: '',
     travelsName: '',
-    address: '',
-    city: '',
-    state: '',
-    pincode: '',
     service: '',
-    llrNumber: '',
     vehicleNumber: ''
   });
+  const [addresses, setAddresses] = useState([
+    { id: 1, address: '', city: '', state: '', pincode: '' }
+  ]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -73,21 +71,49 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     }));
   };
 
+  const handleAddressChange = (id, field, value) => {
+    setAddresses(prev =>
+      prev.map(addr =>
+        addr.id === id ? { ...addr, [field]: value } : addr
+      )
+    );
+  };
+
+  const addAddress = () => {
+    const newId = addresses.length > 0
+      ? Math.max(...addresses.map(addr => addr.id)) + 1
+      : 1;
+    setAddresses(prev => [...prev, { id: newId, address: '', city: '', state: '', pincode: '' }]);
+  };
+
+  const removeAddress = (id) => {
+    if (addresses.length > 1) {
+      setAddresses(prev => prev.filter(addr => addr.id !== id));
+    }
+  };
+
   const submitTransport = async () => {
     setIsLoading(true);
     setError('');
     setSuccessMessage('');
 
     try {
+      // Filter out empty addresses
+      const validAddresses = addresses.filter(addr => 
+        addr.address.trim() !== '' || addr.city.trim() !== '' || addr.state.trim() !== '' || addr.pincode.trim() !== ''
+      );
+
+      if (validAddresses.length === 0) {
+        setError('Please add at least one address.');
+        setIsLoading(false);
+        return;
+      }
+
       const response = await transportAPI.create({
         name: formData.name,
         travelsName: formData.travelsName,
-        address: formData.address,
-        city: formData.city,
-        state: formData.state,
-        pincode: formData.pincode,
+        addresses: validAddresses,
         service: formData.service,
-        llrNumber: formData.llrNumber,
         vehicleNumber: formData.vehicleNumber
       });
 
@@ -214,70 +240,132 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       </div>
                     </div>
 
-                    <div className="form-group full-width">
-                      <label htmlFor="address">Street Address</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-map-marker-alt input-icon"></i>
-                        <textarea
-                          id="address"
-                          name="address"
-                          className="form-input textarea-input"
-                          placeholder="Enter street address, area"
-                          rows="2"
-                          value={formData.address}
-                          onChange={handleInputChange}
-                        ></textarea>
+                    {/* Multiple Addresses Section */}
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <label>Addresses</label>
+                        <button
+                          type="button"
+                          onClick={addAddress}
+                          style={{
+                            padding: '8px 16px',
+                            background: '#28a745',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          <i className="fas fa-plus"></i>
+                          <span>Add Address</span>
+                        </button>
                       </div>
-                    </div>
+                      {addresses.map((addr, index) => (
+                        <div key={addr.id} style={{
+                          marginBottom: '20px',
+                          padding: '16px',
+                          border: '2px solid #f0f0f0',
+                          borderRadius: '8px',
+                          position: 'relative'
+                        }}>
+                          {addresses.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeAddress(addr.id)}
+                              style={{
+                                position: 'absolute',
+                                top: '10px',
+                                right: '10px',
+                                background: '#dc3545',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '50%',
+                                width: '28px',
+                                height: '28px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '14px'
+                              }}
+                              title="Remove this address"
+                            >
+                              <i className="fas fa-times"></i>
+                            </button>
+                          )}
+                          <div style={{ marginBottom: '12px', fontWeight: '600', color: '#333' }}>
+                            Address {index + 1}
+                          </div>
+                          <div className="form-grid">
+                            <div className="form-group full-width">
+                              <label htmlFor={`address-${addr.id}`}>Street Address</label>
+                              <div className="input-wrapper">
+                                <i className="fas fa-map-marker-alt input-icon"></i>
+                                <textarea
+                                  id={`address-${addr.id}`}
+                                  className="form-input textarea-input"
+                                  placeholder="Enter street address, area"
+                                  rows="2"
+                                  value={addr.address}
+                                  onChange={(e) => handleAddressChange(addr.id, 'address', e.target.value)}
+                                ></textarea>
+                              </div>
+                            </div>
 
-                    <div className="form-group">
-                      <label htmlFor="city">City</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-city input-icon"></i>
-                        <input
-                          type="text"
-                          id="city"
-                          name="city"
-                          className="form-input"
-                          placeholder="Enter city."
-                          value={formData.city}
-                          onChange={handleInputChange}
-                          required
-                        />
-                      </div>
-                    </div>
+                            <div className="form-group">
+                              <label htmlFor={`city-${addr.id}`}>City</label>
+                              <div className="input-wrapper">
+                                <i className="fas fa-city input-icon"></i>
+                                <input
+                                  type="text"
+                                  id={`city-${addr.id}`}
+                                  className="form-input"
+                                  placeholder="Enter city."
+                                  value={addr.city}
+                                  onChange={(e) => handleAddressChange(addr.id, 'city', e.target.value)}
+                                  required={index === 0}
+                                />
+                              </div>
+                            </div>
 
-                    <div className="form-group">
-                      <label htmlFor="state">State</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-map input-icon"></i>
-                        <input
-                          type="text"
-                          id="state"
-                          name="state"
-                          className="form-input"
-                          placeholder="Enter state."
-                          value={formData.state}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    </div>
+                            <div className="form-group">
+                              <label htmlFor={`state-${addr.id}`}>State</label>
+                              <div className="input-wrapper">
+                                <i className="fas fa-map input-icon"></i>
+                                <input
+                                  type="text"
+                                  id={`state-${addr.id}`}
+                                  className="form-input"
+                                  placeholder="Enter state."
+                                  value={addr.state}
+                                  onChange={(e) => handleAddressChange(addr.id, 'state', e.target.value)}
+                                />
+                              </div>
+                            </div>
 
-                    <div className="form-group">
-                      <label htmlFor="pincode">Pincode</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-mail-bulk input-icon"></i>
-                        <input
-                          type="text"
-                          id="pincode"
-                          name="pincode"
-                          className="form-input"
-                          placeholder="Enter pincode."
-                          value={formData.pincode}
-                          onChange={handleInputChange}
-                          maxLength="10"
-                        />
-                      </div>
+                            <div className="form-group">
+                              <label htmlFor={`pincode-${addr.id}`}>Pincode</label>
+                              <div className="input-wrapper">
+                                <i className="fas fa-mail-bulk input-icon"></i>
+                                <input
+                                  type="text"
+                                  id={`pincode-${addr.id}`}
+                                  className="form-input"
+                                  placeholder="Enter pincode."
+                                  value={addr.pincode}
+                                  onChange={(e) => handleAddressChange(addr.id, 'pincode', e.target.value)}
+                                  maxLength="10"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
 
                     <div className="form-group">
@@ -293,22 +381,6 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           value={formData.service}
                           onChange={handleInputChange}
                           required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="llrNumber">LLR Number</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-file-alt input-icon"></i>
-                        <input
-                          type="text"
-                          id="llrNumber"
-                          name="llrNumber"
-                          className="form-input"
-                          placeholder="Enter LLR number (optional)"
-                          value={formData.llrNumber}
-                          onChange={handleInputChange}
                         />
                       </div>
                     </div>

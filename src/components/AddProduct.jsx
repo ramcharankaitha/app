@@ -234,23 +234,31 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                 <div className="form-section">
                   <h3 className="section-title">Product details</h3>
                   <div className="form-grid">
+                    {/* 1. Category - First */}
                     <div className="form-group">
-                      <label htmlFor="productName">Product Name</label>
+                      <label htmlFor="category">Category</label>
                       <div className="input-wrapper">
-                        <i className="fas fa-tag input-icon"></i>
-                        <input
-                          type="text"
-                          id="productName"
-                          name="productName"
+                        <i className="fas fa-th-large input-icon"></i>
+                        <select
+                          id="category"
+                          name="category"
                           className="form-input"
-                          placeholder="e.g., Classic Basmati Rice"
-                          value={formData.productName}
+                          value={formData.category}
                           onChange={handleInputChange}
                           required
-                        />
+                        >
+                          <option value="">Select category</option>
+                          <option value="Category 1">Category 1</option>
+                          <option value="Category 2">Category 2</option>
+                          <option value="Category 3">Category 3</option>
+                          <option value="Category 4">Category 4</option>
+                          <option value="Category 5">Category 5</option>
+                        </select>
+                        <i className="fas fa-chevron-down dropdown-icon"></i>
                       </div>
                     </div>
 
+                    {/* 2. Item Code */}
                     <div className="form-group">
                       <label htmlFor="itemCode">Item Code</label>
                       <div className="input-wrapper">
@@ -268,8 +276,27 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       </div>
                     </div>
 
+                    {/* 3. Product Name */}
                     <div className="form-group">
-                      <label htmlFor="skuCode">SKU Code</label>
+                      <label htmlFor="productName">Product</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-tag input-icon"></i>
+                        <input
+                          type="text"
+                          id="productName"
+                          name="productName"
+                          className="form-input"
+                          placeholder="e.g., Classic Basmati Rice"
+                          value={formData.productName}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* 4. SKV (SKU Code) */}
+                    <div className="form-group">
+                      <label htmlFor="skuCode">SKV</label>
                       <div className="input-wrapper">
                         <i className="fas fa-boxes input-icon"></i>
                         <input
@@ -285,8 +312,9 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       </div>
                     </div>
 
+                    {/* 5. Model */}
                     <div className="form-group">
-                      <label htmlFor="modelNumber">Model Number</label>
+                      <label htmlFor="modelNumber">Model</label>
                       <div className="input-wrapper">
                         <i className="fas fa-tag input-icon"></i>
                         <input
@@ -301,25 +329,9 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       </div>
                     </div>
 
+                    {/* 6. Current Quantity */}
                     <div className="form-group">
-                      <label htmlFor="minQuantity">Minimum quantity</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-sort-amount-up input-icon"></i>
-                        <input
-                          type="number"
-                          id="minQuantity"
-                          name="minQuantity"
-                          className="form-input"
-                          placeholder="e.g., 50 units"
-                          value={formData.minQuantity}
-                          onChange={handleInputChange}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="currentQuantity">Opening quantity</label>
+                      <label htmlFor="currentQuantity">Current Quantity</label>
                       <div className="input-wrapper">
                         <i className="fas fa-cubes input-icon"></i>
                         <input
@@ -335,6 +347,7 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       </div>
                     </div>
 
+                    {/* Supplier Name - kept for backward compatibility */}
                     <div className="form-group">
                       <label htmlFor="supplierName">Supplier Name</label>
                       <div className="input-wrapper">
@@ -348,28 +361,6 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           value={formData.supplierName}
                           onChange={handleInputChange}
                         />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="category">Category</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-th-large input-icon"></i>
-                        <select
-                          id="category"
-                          name="category"
-                          className="form-input"
-                          value={formData.category}
-                          onChange={handleInputChange}
-                        >
-                          <option value="">Select category</option>
-                          <option value="Category 1">Category 1</option>
-                          <option value="Category 2">Category 2</option>
-                          <option value="Category 3">Category 3</option>
-                          <option value="Category 4">Category 4</option>
-                          <option value="Category 5">Category 5</option>
-                        </select>
-                        <i className="fas fa-chevron-down dropdown-icon"></i>
                       </div>
                     </div>
                   </div>

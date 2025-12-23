@@ -3,6 +3,7 @@ import { useProfile } from '../hooks/useProfile';
 import { profileAPI, exportAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import SupervisorAttendanceView from './SupervisorAttendanceView';
+import UnifiedAttendanceView from './UnifiedAttendanceView';
 import { downloadCSV } from '../utils/fileDownload';
 
 const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
@@ -16,6 +17,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
   const [isExportingSales, setIsExportingSales] = useState(false);
   const [showSupervisorAttendance, setShowSupervisorAttendance] = useState(false);
+  const [showUnifiedAttendance, setShowUnifiedAttendance] = useState(false);
   const menuRef = useRef(null);
   const { profile, avatarUrl, initials } = useProfile();
 
@@ -383,7 +385,6 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
   };
 
   const masterSections = [
-    { title: 'Dispatch Department', desc: 'Manage dispatch workflows', icon: 'fa-shipping-fast', target: 'dispatch' },
     { title: 'Transport Master', desc: 'Transport partners & routes', icon: 'fa-truck-moving', target: 'transport' },
     { title: 'Category Master', desc: 'Organize product categories', icon: 'fa-tags', target: 'categoryMaster' },
     { title: 'Products', desc: 'Catalog and pricing', icon: 'fa-box', target: 'products' },
@@ -538,6 +539,16 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
               </div>
             </div>
           ))}
+          <div className="stat-card" onClick={() => setShowUnifiedAttendance(true)} style={{ cursor: 'pointer' }}>
+            <div className="stat-content">
+              <h3 className="stat-title">All Attendance</h3>
+              <p className="stat-value">View & Export</p>
+              <p className="stat-subtitle">Staff & Supervisor attendance</p>
+            </div>
+            <div className="stat-icon" style={{ backgroundColor: '#28a74520', color: '#28a745' }}>
+              <i className="fas fa-calendar-alt"></i>
+            </div>
+          </div>
           <div className="stat-card" onClick={() => setShowSupervisorAttendance(true)} style={{ cursor: 'pointer' }}>
             <div className="stat-content">
               <h3 className="stat-title">Supervisor Attendance</h3>
@@ -798,6 +809,9 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
         onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
       />
 
+      {showUnifiedAttendance && (
+        <UnifiedAttendanceView onClose={() => setShowUnifiedAttendance(false)} />
+      )}
       {showSupervisorAttendance && (
         <SupervisorAttendanceView onClose={() => setShowSupervisorAttendance(false)} />
       )}

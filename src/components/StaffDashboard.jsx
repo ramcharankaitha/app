@@ -367,7 +367,6 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
           {activeNav === 'masterMenu' ? (
             <div className="master-menu-grid">
               {[
-                { title: 'Dispatch Department', desc: 'Manage dispatch workflows', icon: 'fa-shipping-fast', target: 'dispatch' },
                 { title: 'Transport Master', desc: 'Transport partners & routes', icon: 'fa-truck-moving', target: 'transport' },
                 { title: 'Category Master', desc: 'Organize product categories', icon: 'fa-tags', target: 'categoryMaster' },
                 { title: 'Products', desc: 'Catalog and pricing', icon: 'fa-box', target: 'products' },

@@ -25,27 +25,27 @@ router.get('/by-address', async (req, res) => {
       return res.json({ success: true, transports: [] });
     }
     
-    let query = 'SELECT * FROM transport WHERE 1=1';
-    const params = [];
-    let paramCount = 1;
-
-    if (city && city.trim() !== '') {
-      query += ` AND LOWER(TRIM(city)) = LOWER(TRIM($${paramCount}))`;
-      params.push(city.trim());
-      paramCount++;
-    }
-
-    if (state && state.trim() !== '') {
-      query += ` AND LOWER(TRIM(state)) = LOWER(TRIM($${paramCount}))`;
-      params.push(state.trim());
-      paramCount++;
-    }
-
-    if (pincode && pincode.trim() !== '') {
-      query += ` AND TRIM(pincode) = TRIM($${paramCount})`;
-      params.push(pincode.trim());
-      paramCount++;
-    }
+    // Query that checks both legacy fields and JSONB addresses array
+    let query = `SELECT * FROM transport WHERE (
+      -- Check legacy fields
+      (LOWER(TRIM(city)) = LOWER(TRIM($1)) OR $1 IS NULL OR $1 = '')
+      AND (LOWER(TRIM(state)) = LOWER(TRIM($2)) OR $2 IS NULL OR $2 = '')
+      AND (TRIM(pincode) = TRIM($3) OR $3 IS NULL OR $3 = '')
+    ) OR (
+      -- Check JSONB addresses array
+      EXISTS (
+        SELECT 1 FROM jsonb_array_elements(COALESCE(addresses, '[]'::jsonb)) AS addr
+        WHERE (LOWER(TRIM(addr->>'city')) = LOWER(TRIM($1)) OR $1 IS NULL OR $1 = '')
+          AND (LOWER(TRIM(addr->>'state')) = LOWER(TRIM($2)) OR $2 IS NULL OR $2 = '')
+          AND (TRIM(addr->>'pincode') = TRIM($3) OR $3 IS NULL OR $3 = '')
+      )
+    )`;
+    
+    const params = [
+      city && city.trim() !== '' ? city.trim() : null,
+      state && state.trim() !== '' ? state.trim() : null,
+      pincode && pincode.trim() !== '' ? pincode.trim() : null
+    ];
 
     query += ' ORDER BY travels_name ASC';
 
@@ -77,17 +77,41 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { name, travelsName, address, city, state, pincode, service, llrNumber, vehicleNumber } = req.body;
+    const { name, travelsName, addresses, service, vehicleNumber } = req.body;
 
-    if (!name || !travelsName || !city || !service) {
-      return res.status(400).json({ error: 'Required fields: name, travelsName, city, service' });
+    if (!name || !travelsName || !service) {
+      return res.status(400).json({ error: 'Required fields: name, travelsName, service' });
     }
 
+    if (!addresses || !Array.isArray(addresses) || addresses.length === 0) {
+      return res.status(400).json({ error: 'At least one address is required' });
+    }
+
+    // Validate that at least one address has a city
+    const hasValidCity = addresses.some(addr => addr.city && addr.city.trim() !== '');
+    if (!hasValidCity) {
+      return res.status(400).json({ error: 'At least one address must have a city' });
+    }
+
+    // Store addresses as JSONB, also keep first address in legacy fields for backward compatibility
+    const firstAddress = addresses[0];
+    const addressesJson = JSON.stringify(addresses);
+
     const result = await pool.query(
-      `INSERT INTO transport (name, travels_name, address, city, state, pincode, service, llr_number, vehicle_number)
+      `INSERT INTO transport (name, travels_name, address, city, state, pincode, service, vehicle_number, addresses)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [name, travelsName, address || null, city, state || null, pincode || null, service, llrNumber || null, vehicleNumber || null]
+      [
+        name, 
+        travelsName, 
+        firstAddress.address || null, 
+        firstAddress.city || null, 
+        firstAddress.state || null, 
+        firstAddress.pincode || null, 
+        service, 
+        vehicleNumber || null,
+        addressesJson
+      ]
     );
 
     res.status(201).json({
@@ -104,11 +128,25 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, travelsName, address, city, state, pincode, service, llrNumber, vehicleNumber } = req.body;
+    const { name, travelsName, addresses, service, vehicleNumber } = req.body;
 
-    if (!name || !travelsName || !city || !service) {
-      return res.status(400).json({ error: 'Required fields: name, travelsName, city, service' });
+    if (!name || !travelsName || !service) {
+      return res.status(400).json({ error: 'Required fields: name, travelsName, service' });
     }
+
+    if (!addresses || !Array.isArray(addresses) || addresses.length === 0) {
+      return res.status(400).json({ error: 'At least one address is required' });
+    }
+
+    // Validate that at least one address has a city
+    const hasValidCity = addresses.some(addr => addr.city && addr.city.trim() !== '');
+    if (!hasValidCity) {
+      return res.status(400).json({ error: 'At least one address must have a city' });
+    }
+
+    // Store addresses as JSONB, also keep first address in legacy fields for backward compatibility
+    const firstAddress = addresses[0];
+    const addressesJson = JSON.stringify(addresses);
 
     const result = await pool.query(
       `UPDATE transport 
@@ -119,12 +157,23 @@ router.put('/:id', async (req, res) => {
            state = $5,
            pincode = $6, 
            service = $7,
-           llr_number = $8,
-           vehicle_number = $9,
+           vehicle_number = $8,
+           addresses = $9,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $10
        RETURNING *`,
-      [name, travelsName, address || null, city, state || null, pincode || null, service, llrNumber || null, vehicleNumber || null, id]
+      [
+        name, 
+        travelsName, 
+        firstAddress.address || null, 
+        firstAddress.city || null, 
+        firstAddress.state || null, 
+        firstAddress.pincode || null, 
+        service, 
+        vehicleNumber || null,
+        addressesJson,
+        id
+      ]
     );
 
     if (result.rows.length === 0) {

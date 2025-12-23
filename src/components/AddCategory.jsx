@@ -6,7 +6,8 @@ const AddCategory = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
     main: '',
     sub: '',
-    common: ''
+    common: '',
+    city: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -218,6 +219,22 @@ const AddCategory = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           value={formData.common}
                           onChange={handleInputChange}
                           required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="city">City</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-city input-icon"></i>
+                        <input
+                          type="text"
+                          id="city"
+                          name="city"
+                          className="form-input"
+                          placeholder="Enter city"
+                          value={formData.city}
+                          onChange={handleInputChange}
                         />
                       </div>
                     </div>

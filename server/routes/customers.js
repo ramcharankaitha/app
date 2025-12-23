@@ -15,7 +15,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Search customers by name (for dispatch form)
+// Search customers by name or phone (for dispatch form and phone validation)
 router.get('/search', async (req, res) => {
   try {
     const { name } = req.query;
@@ -24,8 +24,37 @@ router.get('/search', async (req, res) => {
       return res.json({ success: true, customers: [] });
     }
 
-    const result = await pool.query(
-      `SELECT DISTINCT 
+    const searchTerm = name.trim();
+    
+    // Check if search term looks like a phone number (contains only digits, spaces, +, -, etc.)
+    const isPhoneNumber = /^[\d\s\+\-\(\)]+$/.test(searchTerm);
+    
+    let query;
+    let params;
+    
+    if (isPhoneNumber) {
+      // Search by phone number (exact match or partial)
+      const phoneDigits = searchTerm.replace(/\D/g, ''); // Remove non-digits
+      query = `SELECT DISTINCT 
+        full_name, 
+        email, 
+        phone, 
+        address, 
+        city, 
+        state, 
+        pincode,
+        MIN(created_at) as first_purchase_date,
+        MAX(created_at) as last_purchase_date
+      FROM customers 
+      WHERE REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', '') LIKE $1
+         OR phone = $2
+      GROUP BY full_name, email, phone, address, city, state, pincode
+      ORDER BY full_name ASC
+      LIMIT 20`;
+      params = [`%${phoneDigits}%`, searchTerm];
+    } else {
+      // Search by name
+      query = `SELECT DISTINCT 
         full_name, 
         email, 
         phone, 
@@ -39,9 +68,11 @@ router.get('/search', async (req, res) => {
       WHERE LOWER(full_name) LIKE LOWER($1)
       GROUP BY full_name, email, phone, address, city, state, pincode
       ORDER BY full_name ASC
-      LIMIT 20`,
-      [`%${name.trim()}%`]
-    );
+      LIMIT 20`;
+      params = [`%${searchTerm}%`];
+    }
+
+    const result = await pool.query(query, params);
 
     res.json({ success: true, customers: result.rows });
   } catch (error) {
@@ -178,11 +209,27 @@ router.post('/', async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    const { fullName, email, phone, address, city, state, pincode, itemCode, quantity, mrp, sellRate, discount, paymentMode, tokensUsed, tokensEarned, totalAmount } = req.body;
+    const { fullName, email, phone, address, city, state, pincode, whatsapp, itemCode, quantity, mrp, sellRate, discount, paymentMode, tokensUsed, tokensEarned, totalAmount } = req.body;
 
     if (!fullName || !email) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Full name and email are required' });
+    }
+
+    // Check if phone number already exists
+    if (phone && phone.trim() !== '') {
+      const existingCustomer = await client.query(
+        'SELECT id, full_name, email FROM customers WHERE phone = $1 LIMIT 1',
+        [phone.trim()]
+      );
+      
+      if (existingCustomer.rows.length > 0) {
+        await client.query('ROLLBACK');
+        const existing = existingCustomer.rows[0];
+        return res.status(400).json({ 
+          error: `Mobile number already exists! This number is registered with customer: ${existing.full_name} (${existing.email})` 
+        });
+      }
     }
 
     const customerQuantity = quantity || 0;
@@ -222,8 +269,8 @@ router.post('/', async (req, res) => {
     }
 
     const result = await client.query(
-      `INSERT INTO customers (full_name, email, phone, address, city, state, pincode, item_code, quantity, mrp, sell_rate, discount, payment_mode, tokens_used, tokens_earned)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      `INSERT INTO customers (full_name, email, phone, address, city, state, pincode, whatsapp, item_code, quantity, mrp, sell_rate, discount, payment_mode, tokens_used, tokens_earned)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
        RETURNING *`,
       [
         fullName, 
@@ -233,6 +280,7 @@ router.post('/', async (req, res) => {
         city || null,
         state || null,
         pincode || null,
+        whatsapp || null,
         itemCode || null,
         customerQuantity,
         mrp || null,

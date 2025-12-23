@@ -2,7 +2,6 @@ import React from 'react';
 
 const MasterMenu = ({ onNavigate, onBack }) => {
   const sections = [
-    { title: 'Dispatch Department', desc: 'Manage dispatch workflows', target: 'dispatch' },
     { title: 'Transport Master', desc: 'Transport partners & routes', target: 'transport' },
     { title: 'Products', desc: 'Product inventory & management', target: 'products' },
     { title: 'Supply Master', desc: 'Suppliers and logistics', target: 'suppliers' },
