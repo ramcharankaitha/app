@@ -98,7 +98,7 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
     } else if (currentPage === 'staff') {
       setActiveNav('staff');
     } else if (currentPage === 'customers') {
-      setActiveNav('masterMenu');
+      setActiveNav('customers');
     } else if (currentPage === 'products') {
       setActiveNav('masterMenu');
     } else if (currentPage === 'suppliers') {
@@ -192,6 +192,8 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
       }
     } else if (navItem === 'staff') {
       onNavigate('staff');
+    } else if (navItem === 'customers') {
+      onNavigate('customers');
     } else if (navItem === 'masterMenu') {
       // Handle masterMenu as internal state, don't navigate away
       // Just update the activeNav state, which is already done above
@@ -366,8 +368,8 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
             <div className="master-menu-grid">
               {[
                 { title: 'Dispatch Department', desc: 'Manage dispatch workflows', icon: 'fa-shipping-fast', target: 'dispatch' },
-                { title: 'Stock In', desc: 'Record stock entries', icon: 'fa-box-open', target: 'stockIn' },
-                { title: 'Stock Out', desc: 'Record stock exits', icon: 'fa-box', target: 'stockOut' },
+                { title: 'Stock In', desc: 'Record stock entries', icon: 'fa-box-open', target: 'stockInMaster' },
+                { title: 'Stock Out', desc: 'Record stock exits', icon: 'fa-box', target: 'stockOutMaster' },
                 { title: 'Create Supplier', desc: 'Record products from supplier', icon: 'fa-truck', target: 'createSupplier' },
               ].map((item) => (
                 <div

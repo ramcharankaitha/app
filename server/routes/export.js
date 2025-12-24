@@ -153,8 +153,8 @@ router.get('/sales', async (req, res) => {
 
     res.json({
       success: true,
-      sales: salesResult.rows,
-      topPerformers: topPerformersResult.rows
+      sales: salesResult.rows || [],
+      topPerformers: topPerformersResult.rows || []
     });
   } catch (error) {
     console.error('Export sales error:', error);
@@ -294,6 +294,260 @@ router.get('/best-sales-person', async (req, res) => {
     });
   } catch (error) {
     console.error('Get best sales person error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get Stock In Report
+router.get('/stock-in', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    
+    let dateFilter = '';
+    const params = [];
+    let paramCount = 1;
+    
+    if (startDate || endDate) {
+      dateFilter = ' AND ';
+      const conditions = [];
+      
+      if (startDate) {
+        conditions.push(`DATE(created_at) >= $${paramCount}`);
+        params.push(startDate);
+        paramCount++;
+      }
+      
+      if (endDate) {
+        conditions.push(`DATE(created_at) <= $${paramCount}`);
+        params.push(endDate);
+        paramCount++;
+      }
+      
+      dateFilter += conditions.join(' AND ');
+    }
+
+    const result = await pool.query(
+      `SELECT 
+        id,
+        item_code,
+        product_name,
+        quantity,
+        previous_quantity,
+        new_quantity,
+        notes,
+        created_by,
+        created_at
+      FROM stock_transactions
+      WHERE transaction_type = 'STOCK_IN' ${dateFilter}
+      ORDER BY created_at DESC`,
+      params
+    );
+
+    res.json({
+      success: true,
+      transactions: result.rows
+    });
+  } catch (error) {
+    console.error('Export stock in error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get Stock Out Report
+router.get('/stock-out', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    
+    let dateFilter = '';
+    const params = [];
+    let paramCount = 1;
+    
+    if (startDate || endDate) {
+      dateFilter = ' AND ';
+      const conditions = [];
+      
+      if (startDate) {
+        conditions.push(`DATE(created_at) >= $${paramCount}`);
+        params.push(startDate);
+        paramCount++;
+      }
+      
+      if (endDate) {
+        conditions.push(`DATE(created_at) <= $${paramCount}`);
+        params.push(endDate);
+        paramCount++;
+      }
+      
+      dateFilter += conditions.join(' AND ');
+    }
+
+    const result = await pool.query(
+      `SELECT 
+        id,
+        item_code,
+        product_name,
+        quantity,
+        previous_quantity,
+        new_quantity,
+        notes,
+        created_by,
+        created_at
+      FROM stock_transactions
+      WHERE transaction_type = 'STOCK_OUT' ${dateFilter}
+      ORDER BY created_at DESC`,
+      params
+    );
+
+    res.json({
+      success: true,
+      transactions: result.rows
+    });
+  } catch (error) {
+    console.error('Export stock out error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get Stock Details Report
+router.get('/stock-details', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT 
+        id,
+        product_name,
+        item_code,
+        sku_code,
+        category,
+        current_quantity,
+        minimum_quantity,
+        mrp,
+        CASE 
+          WHEN current_quantity <= 0 THEN 'Out of Stock'
+          WHEN current_quantity <= minimum_quantity OR (minimum_quantity = 0 AND current_quantity <= 10) THEN 'Low Stock'
+          ELSE 'In Stock'
+        END as status
+      FROM products
+      ORDER BY 
+        CASE 
+          WHEN current_quantity <= 0 THEN 1
+          WHEN current_quantity <= minimum_quantity OR (minimum_quantity = 0 AND current_quantity <= 10) THEN 2
+          ELSE 3
+        END,
+        product_name ASC`
+    );
+
+    res.json({
+      success: true,
+      stockDetails: result.rows
+    });
+  } catch (error) {
+    console.error('Export stock details error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get Low Stock Report
+router.get('/low-stock', async (req, res) => {
+  try {
+    const { threshold } = req.query;
+    const stockThreshold = threshold ? parseInt(threshold) : 10;
+
+    const result = await pool.query(
+      `SELECT 
+        id,
+        product_name,
+        item_code,
+        sku_code,
+        category,
+        current_quantity,
+        minimum_quantity,
+        mrp
+      FROM products
+      WHERE current_quantity <= $1
+      ORDER BY 
+        CASE 
+          WHEN current_quantity <= 0 THEN 1
+          ELSE 2
+        END,
+        current_quantity ASC,
+        product_name ASC`,
+      [stockThreshold]
+    );
+
+    res.json({
+      success: true,
+      items: result.rows
+    });
+  } catch (error) {
+    console.error('Export low stock error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get Stock Performance Report (which products sold the most)
+router.get('/stock-performance', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    
+    let dateFilter = '';
+    const params = [];
+    let paramCount = 1;
+    
+    if (startDate || endDate) {
+      dateFilter = ' AND ';
+      const conditions = [];
+      
+      if (startDate) {
+        conditions.push(`DATE(c.created_at) >= $${paramCount}`);
+        params.push(startDate);
+        paramCount++;
+      }
+      
+      if (endDate) {
+        conditions.push(`DATE(c.created_at) <= $${paramCount}`);
+        params.push(endDate);
+        paramCount++;
+      }
+      
+      dateFilter += conditions.join(' AND ');
+    }
+
+    const result = await pool.query(
+      `SELECT 
+        c.item_code,
+        p.product_name,
+        p.category,
+        SUM(c.quantity) AS total_sold,
+        SUM(c.quantity * c.sell_rate) AS total_revenue,
+        AVG(c.sell_rate) AS average_price,
+        COUNT(*) AS transaction_count
+      FROM customers c
+      LEFT JOIN products p ON c.item_code = p.item_code
+      WHERE c.item_code IS NOT NULL 
+        AND c.quantity > 0 
+        AND c.sell_rate IS NOT NULL
+        ${dateFilter}
+      GROUP BY c.item_code, p.product_name, p.category
+      ORDER BY total_revenue DESC, total_sold DESC
+      LIMIT 100`,
+      params
+    );
+
+    res.json({
+      success: true,
+      performance: result.rows.map((row, index) => ({
+        id: index + 1,
+        item_code: row.item_code,
+        product_name: row.product_name || 'Unknown Product',
+        category: row.category || 'N/A',
+        total_sold: parseInt(row.total_sold) || 0,
+        total_revenue: parseFloat(row.total_revenue) || 0,
+        average_price: parseFloat(row.average_price) || 0,
+        transaction_count: parseInt(row.transaction_count) || 0
+      }))
+    });
+  } catch (error) {
+    console.error('Export stock performance error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -94,7 +94,7 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
     if (currentPage === 'staffHome') {
       setActiveNav('home');
     } else if (currentPage === 'customers') {
-      setActiveNav('masterMenu');
+      setActiveNav('customers');
     } else if (currentPage === 'products') {
       setActiveNav('masterMenu');
     } else if (currentPage === 'suppliers') {
@@ -363,7 +363,6 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
                 { title: 'Category Master', desc: 'Organize product categories', icon: 'fa-tags', target: 'categoryMaster' },
                 { title: 'Products', desc: 'Catalog and pricing', icon: 'fa-box', target: 'products' },
                 { title: 'Supply Master', desc: 'Suppliers and logistics', icon: 'fa-truck', target: 'suppliers' },
-                { title: 'Customers', desc: 'Customer management & details', icon: 'fa-user-friends', target: 'customers' },
                 { title: 'Chit Plans', desc: 'Chit plan setup & customers', icon: 'fa-file-invoice-dollar', target: 'chitPlans' },
               ].map((item) => (
                 <div
@@ -392,8 +391,8 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
             <div className="master-menu-grid">
               {[
                 { title: 'Dispatch Department', desc: 'Manage dispatch workflows', icon: 'fa-shipping-fast', target: 'dispatch' },
-                { title: 'Stock In', desc: 'Record stock entries', icon: 'fa-box-open', target: 'stockIn' },
-                { title: 'Stock Out', desc: 'Record stock exits', icon: 'fa-box', target: 'stockOut' },
+                { title: 'Stock In', desc: 'Record stock entries', icon: 'fa-box-open', target: 'stockInMaster' },
+                { title: 'Stock Out', desc: 'Record stock exits', icon: 'fa-box', target: 'stockOutMaster' },
                 { title: 'Create Supplier', desc: 'Record products from supplier', icon: 'fa-truck', target: 'createSupplier' },
               ].map((item) => (
                 <div

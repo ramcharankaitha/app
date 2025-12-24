@@ -1,7 +1,9 @@
 import React from 'react';
 
-const ConfirmDialog = ({ isOpen, title, message, onConfirm, onCancel, confirmText = 'Yes', cancelText = 'Cancel' }) => {
-  if (!isOpen) return null;
+const ConfirmDialog = ({ isOpen, open, title, message, onConfirm, onCancel, confirmText = 'Yes', cancelText = 'Cancel' }) => {
+  // Support both 'isOpen' and 'open' props for backward compatibility
+  const isDialogOpen = isOpen !== undefined ? isOpen : open;
+  if (!isDialogOpen) return null;
 
   return (
     <div 
@@ -64,15 +66,16 @@ const ConfirmDialog = ({ isOpen, title, message, onConfirm, onCancel, confirmTex
         )}
 
         {/* Message */}
-        <p style={{
+        <div style={{
           margin: '0 0 24px 0',
           color: 'var(--text-secondary)',
           fontSize: '14px',
           lineHeight: '1.6',
-          transition: 'color 0.3s ease'
+          transition: 'color 0.3s ease',
+          whiteSpace: 'pre-line'
         }}>
           {message}
-        </p>
+        </div>
 
         {/* Buttons */}
         <div style={{
@@ -103,7 +106,11 @@ const ConfirmDialog = ({ isOpen, title, message, onConfirm, onCancel, confirmTex
             {cancelText}
           </button>
           <button
-            onClick={onConfirm}
+            onClick={() => {
+              if (onConfirm) {
+                onConfirm();
+              }
+            }}
             style={{
               padding: '10px 20px',
               background: 'var(--accent-color)',

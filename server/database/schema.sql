@@ -548,3 +548,19 @@ CREATE INDEX IF NOT EXISTS idx_stock_transactions_item_code ON stock_transaction
 CREATE INDEX IF NOT EXISTS idx_stock_transactions_type ON stock_transactions(transaction_type);
 CREATE INDEX IF NOT EXISTS idx_stock_transactions_created_at ON stock_transactions(created_at);
 
+-- Categories Table
+CREATE TABLE IF NOT EXISTS categories (
+    id SERIAL PRIMARY KEY,
+    main VARCHAR(100) NOT NULL,
+    sub VARCHAR(100) NOT NULL,
+    common VARCHAR(100) NOT NULL,
+    city VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for categories
+CREATE INDEX IF NOT EXISTS idx_categories_main ON categories(main);
+CREATE INDEX IF NOT EXISTS idx_categories_sub ON categories(sub);
+CREATE INDEX IF NOT EXISTS idx_categories_common ON categories(common);
+

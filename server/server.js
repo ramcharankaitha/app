@@ -23,6 +23,7 @@ const attendanceRoutes = require('./routes/attendance');
 const notificationRoutes = require('./routes/notifications');
 const supervisorAttendanceRoutes = require('./routes/supervisorAttendance');
 const stockRoutes = require('./routes/stock');
+const categoryRoutes = require('./routes/categories');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -96,6 +97,7 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/supervisor-attendance', supervisorAttendanceRoutes);
 app.use('/api/stock', stockRoutes);
+app.use('/api/categories', categoryRoutes);
 
 const startServer = async () => {
   try {

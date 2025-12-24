@@ -4,8 +4,13 @@ import ConfirmDialog from './ConfirmDialog';
 
 const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
+    category: '',
     itemCode: '',
-    quantity: '',
+    productName: '',
+    skuCode: '',
+    modelNumber: '',
+    quantity: '', // Current stock in store (display only)
+    stockOutQuantity: '', // New quantity to remove
     notes: ''
   });
   const [productInfo, setProductInfo] = useState(null);
@@ -30,7 +35,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
 
   const handleBack = () => {
     if (onNavigate) {
-      onNavigate('dashboard');
+      onNavigate('stockOutMaster');
     } else if (onBack) {
       onBack();
     }
@@ -46,12 +51,21 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
     // Reset product info if item code changes
     if (name === 'itemCode') {
       setProductInfo(null);
+      setFormData(prev => ({
+        ...prev,
+        category: '',
+        productName: '',
+        skuCode: '',
+        modelNumber: '',
+        quantity: '',
+        stockOutQuantity: ''
+      }));
       setError('');
       setSuccessMessage('');
     }
 
     // Validate quantity if product info is available
-    if (name === 'quantity' && productInfo) {
+    if (name === 'stockOutQuantity' && productInfo) {
       const qty = parseInt(value);
       if (!isNaN(qty) && qty > productInfo.currentQuantity) {
         setError(`Insufficient stock! Available: ${productInfo.currentQuantity}, Requested: ${qty}`);
@@ -60,6 +74,13 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
       } else {
         setError('');
       }
+    }
+  };
+
+  // Auto-fetch product when item code is entered and loses focus
+  const handleItemCodeBlur = async () => {
+    if (formData.itemCode && formData.itemCode.trim() && !productInfo) {
+      await fetchProductByItemCode();
     }
   };
 
@@ -86,19 +107,31 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
       
       if (response.success && response.product) {
         const product = response.product;
-        setProductInfo({
+        const productData = {
           id: product.id,
           productName: product.product_name || product.productName || '',
           itemCode: product.item_code || product.itemCode || '',
           skuCode: product.sku_code || product.skuCode || '',
           currentQuantity: product.current_quantity || 0,
-          category: product.category || ''
-        });
+          category: product.category || '',
+          modelNumber: product.model_number || product.modelNumber || ''
+        };
+        setProductInfo(productData);
+        
+        // Auto-populate form fields
+        setFormData(prev => ({
+          ...prev,
+          category: productData.category || '',
+          productName: productData.productName,
+          skuCode: productData.skuCode || '',
+          modelNumber: productData.modelNumber || '',
+          quantity: productData.currentQuantity.toString()
+        }));
         
         if (product.current_quantity <= 0) {
           setError('This product is out of stock!');
         } else {
-          setSuccessMessage('Product found! Enter quantity to remove stock.');
+          setSuccessMessage('Product found! Enter stock out quantity.');
           setTimeout(() => setSuccessMessage(''), 3000);
         }
       } else {
@@ -124,8 +157,8 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
       return;
     }
 
-    if (!formData.quantity || parseFloat(formData.quantity) <= 0) {
-      setError('Please enter a valid quantity (greater than 0)');
+    if (!formData.stockOutQuantity || parseFloat(formData.stockOutQuantity) <= 0) {
+      setError('Please enter a valid stock out quantity (greater than 0)');
       return;
     }
 
@@ -134,9 +167,9 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
       return;
     }
 
-    const quantity = parseInt(formData.quantity);
+    const quantity = parseInt(formData.stockOutQuantity);
     if (isNaN(quantity) || quantity <= 0) {
-      setError('Quantity must be a positive number');
+      setError('Stock out quantity must be a positive number');
       return;
     }
 
@@ -170,20 +203,22 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
           );
           
           if (response.success) {
-            setSuccessMessage(`Stock removed successfully! New quantity: ${response.product.newQuantity}`);
+            const newQuantity = response.product.newQuantity;
+            setSuccessMessage(`Stock removed successfully! New quantity: ${newQuantity}`);
             
             // Update product info
             setProductInfo(prev => ({
               ...prev,
-              currentQuantity: response.product.newQuantity
+              currentQuantity: newQuantity
             }));
             
-            // Reset form
-            setFormData({
-              itemCode: formData.itemCode, // Keep item code
-              quantity: '',
+            // Update form data with new quantity and reset stock out quantity
+            setFormData(prev => ({
+              ...prev,
+              quantity: newQuantity.toString(),
+              stockOutQuantity: '',
               notes: ''
-            });
+            }));
             
             setTimeout(() => {
               setSuccessMessage('');
@@ -218,7 +253,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
           <h1 className="add-user-title">Stock Out</h1>
         </div>
         <div className="header-right">
-          <button className="header-btn" onClick={() => onNavigate && onNavigate('dashboard')}>
+          <button className="header-btn" onClick={() => onNavigate && onNavigate('stockOutMaster')}>
             <i className="fas fa-home"></i>
           </button>
         </div>
@@ -229,9 +264,27 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
         <form onSubmit={handleSubmit} className="add-user-form">
           {/* Stock Out Details Section */}
           <div className="form-section">
-            <h3 className="section-title">Remove Stock</h3>
+            <h3 className="section-title">Stock Out</h3>
             <div className="form-grid">
-              {/* Item Code */}
+              {/* 1. Category */}
+              <div className="form-group">
+                <label htmlFor="category">Category</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-tags input-icon"></i>
+                  <input
+                    type="text"
+                    id="category"
+                    name="category"
+                    className="form-input"
+                    placeholder="Category"
+                    value={formData.category}
+                    readOnly
+                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                  />
+                </div>
+              </div>
+
+              {/* 2. Item Code */}
               <div className="form-group">
                 <label htmlFor="itemCode">Item Code *</label>
                 <div className="input-wrapper" style={{ position: 'relative' }}>
@@ -241,10 +294,11 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     id="itemCode"
                     name="itemCode"
                     className="form-input"
-                    placeholder="Enter item code and press Enter"
+                    placeholder="Enter item code"
                     value={formData.itemCode}
                     onChange={handleInputChange}
                     onKeyPress={handleItemCodeKeyPress}
+                    onBlur={handleItemCodeBlur}
                     required
                     autoFocus
                   />
@@ -279,94 +333,117 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 </button>
               </div>
 
-              {/* Product Info Display */}
-              {productInfo && (
-                <div className="form-group full-width" style={{
-                  background: '#f8f9fa',
-                  padding: '16px',
-                  borderRadius: '8px',
-                  border: '1px solid #dee2e6'
-                }}>
-                  <h4 style={{ margin: '0 0 12px 0', color: '#495057' }}>Product Information</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-                    <div>
-                      <strong>Product Name:</strong> {productInfo.productName}
-                    </div>
-                    <div>
-                      <strong>Item Code:</strong> {productInfo.itemCode}
-                    </div>
-                    <div>
-                      <strong>SKU Code:</strong> {productInfo.skuCode || 'N/A'}
-                    </div>
-                    <div>
-                      <strong>Category:</strong> {productInfo.category || 'N/A'}
-                    </div>
-                    <div style={{ 
-                      gridColumn: '1 / -1',
-                      padding: '12px',
-                      background: productInfo.currentQuantity <= 0 ? '#f8d7da' : 
-                                  productInfo.currentQuantity <= 10 ? '#fff3cd' : '#d1ecf1',
-                      borderRadius: '6px',
-                      border: `2px solid ${
-                        productInfo.currentQuantity <= 0 ? '#dc3545' : 
-                        productInfo.currentQuantity <= 10 ? '#ffc107' : '#0dcaf0'
-                      }`
-                    }}>
-                      <strong style={{ fontSize: '16px', color: '#495057' }}>
-                        Current Stock: <span style={{ 
-                          color: productInfo.currentQuantity <= 0 ? '#dc3545' : 
-                                 productInfo.currentQuantity <= 10 ? '#856404' : '#28a745',
-                          fontSize: '18px'
-                        }}>{productInfo.currentQuantity}</span>
-                      </strong>
-                      {productInfo.currentQuantity <= 0 && (
-                        <div style={{ marginTop: '8px', color: '#721c24', fontSize: '14px' }}>
-                          <i className="fas fa-exclamation-triangle"></i> Out of Stock!
-                        </div>
-                      )}
-                      {productInfo.currentQuantity > 0 && productInfo.currentQuantity <= 10 && (
-                        <div style={{ marginTop: '8px', color: '#856404', fontSize: '14px' }}>
-                          <i className="fas fa-exclamation-triangle"></i> Low Stock Warning!
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Quantity */}
+              {/* 3. Product Name */}
               <div className="form-group">
-                <label htmlFor="quantity">Quantity to Remove *</label>
+                <label htmlFor="productName">Product Name</label>
                 <div className="input-wrapper">
-                  <i className="fas fa-minus-circle input-icon"></i>
+                  <i className="fas fa-box input-icon"></i>
+                  <input
+                    type="text"
+                    id="productName"
+                    name="productName"
+                    className="form-input"
+                    placeholder="Product Name"
+                    value={formData.productName}
+                    readOnly
+                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                  />
+                </div>
+              </div>
+
+              {/* 4. SKU Code */}
+              <div className="form-group">
+                <label htmlFor="skuCode">SKU Code</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-boxes input-icon"></i>
+                  <input
+                    type="text"
+                    id="skuCode"
+                    name="skuCode"
+                    className="form-input"
+                    placeholder="SKU Code"
+                    value={formData.skuCode}
+                    readOnly
+                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                  />
+                </div>
+              </div>
+
+              {/* 5. Model Number */}
+              <div className="form-group">
+                <label htmlFor="modelNumber">Model Number</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-tag input-icon"></i>
+                  <input
+                    type="text"
+                    id="modelNumber"
+                    name="modelNumber"
+                    className="form-input"
+                    placeholder="Model Number"
+                    value={formData.modelNumber}
+                    readOnly
+                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                  />
+                </div>
+              </div>
+
+              {/* 6. Quantity (Current Stock in Store) */}
+              <div className="form-group">
+                <label htmlFor="quantity">Quantity (Current Stock in Store)</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-warehouse input-icon"></i>
                   <input
                     type="number"
                     id="quantity"
                     name="quantity"
                     className="form-input"
-                    placeholder="Enter quantity"
+                    placeholder="Current Stock"
                     value={formData.quantity}
+                    readOnly
+                    style={{ 
+                      background: formData.quantity && parseInt(formData.quantity) <= 0 ? '#fff3cd' : '#f8f9fa', 
+                      cursor: 'not-allowed',
+                      fontWeight: 'bold',
+                      color: formData.quantity && parseInt(formData.quantity) <= 0 ? '#dc3545' : '#495057'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* 7. Stock Out Quantity */}
+              <div className="form-group">
+                <label htmlFor="stockOutQuantity">Stock Out Quantity *</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-minus-circle input-icon"></i>
+                  <input
+                    type="number"
+                    id="stockOutQuantity"
+                    name="stockOutQuantity"
+                    className="form-input"
+                    placeholder="Enter quantity to remove"
+                    value={formData.stockOutQuantity}
                     onChange={handleInputChange}
                     min="1"
                     max={productInfo ? productInfo.currentQuantity : undefined}
                     step="1"
                     required
+                    disabled={!productInfo}
                   />
                 </div>
-                {productInfo && formData.quantity && !isNaN(parseInt(formData.quantity)) && (
+                {productInfo && formData.stockOutQuantity && !isNaN(parseInt(formData.stockOutQuantity)) && (
                   <div style={{ 
                     marginTop: '8px', 
                     padding: '8px', 
-                    background: parseInt(formData.quantity) > productInfo.currentQuantity ? '#f8d7da' : '#d4edda', 
+                    background: parseInt(formData.stockOutQuantity) > productInfo.currentQuantity ? '#f8d7da' : '#d4edda', 
                     borderRadius: '6px',
                     fontSize: '13px',
-                    color: parseInt(formData.quantity) > productInfo.currentQuantity ? '#721c24' : '#155724'
+                    color: parseInt(formData.stockOutQuantity) > productInfo.currentQuantity ? '#721c24' : '#155724'
                   }}>
-                    <i className={`fas ${parseInt(formData.quantity) > productInfo.currentQuantity ? 'fa-exclamation-triangle' : 'fa-info-circle'}`} style={{ marginRight: '6px' }}></i>
-                    {parseInt(formData.quantity) > productInfo.currentQuantity ? (
+                    <i className={`fas ${parseInt(formData.stockOutQuantity) > productInfo.currentQuantity ? 'fa-exclamation-triangle' : 'fa-info-circle'}`} style={{ marginRight: '6px' }}></i>
+                    {parseInt(formData.stockOutQuantity) > productInfo.currentQuantity ? (
                       <strong>Insufficient stock!</strong>
                     ) : (
-                      <>New stock will be: <strong>{productInfo.currentQuantity - parseInt(formData.quantity)}</strong></>
+                      <>New stock will be: <strong>{productInfo.currentQuantity - parseInt(formData.stockOutQuantity)}</strong></>
                     )}
                   </div>
                 )}
@@ -381,7 +458,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     id="notes"
                     name="notes"
                     className="form-input textarea-input"
-                    placeholder="Add any notes about this stock removal (e.g., reason, damage, return, etc.)..."
+                    placeholder="Add any notes about this stock removal..."
                     rows="3"
                     value={formData.notes}
                     onChange={handleInputChange}
@@ -406,7 +483,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
 
           {/* Warning Message */}
           <p className="form-warning">
-            Make sure all details are correct before removing stock. This action cannot be undone.
+            Make sure all details are correct before removing stock.
           </p>
 
           {/* Submit Button */}
@@ -422,7 +499,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
             <button
               type="submit"
               className="btn-primary"
-              disabled={isLoading || !productInfo || (productInfo && productInfo.currentQuantity <= 0)}
+              disabled={isLoading || !productInfo || !formData.stockOutQuantity}
             >
               {isLoading ? (
                 <>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { categoriesAPI } from '../services/api';
 import './products.css';
 
 const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' }) => {
@@ -16,13 +17,12 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
   const fetchCategories = async () => {
     try {
       setError('');
-      // TODO: Replace with actual categories API when backend is ready
-      // For now, using mock data
-      const mockCategories = [
-        { id: 1, main: 'Utensils', sub: 'Kitchen', common: 'Daily Use' },
-        { id: 2, main: 'Utensils', sub: 'Dining', common: 'Common' },
-      ];
-      setCategories(mockCategories);
+      const response = await categoriesAPI.getAll();
+      if (response && response.success) {
+        setCategories(response.categories || []);
+      } else {
+        setError('Failed to load categories');
+      }
     } catch (err) {
       console.error('Error fetching categories:', err);
       setError('Failed to load categories. Please try again.');
@@ -66,10 +66,14 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
     if (!selectedCategory) return;
     
     try {
-      // TODO: Replace with actual delete API call when backend is ready
-      setSuccessMessage('Category deleted successfully');
-      setTimeout(() => setSuccessMessage(''), 3000);
-      fetchCategories();
+      const response = await categoriesAPI.delete(selectedCategory.id);
+      if (response && response.success) {
+        setSuccessMessage('Category deleted successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        fetchCategories();
+      } else {
+        setError(response?.error || 'Failed to delete category');
+      }
       setShowDeleteConfirm(false);
       setSelectedCategory(null);
     } catch (err) {

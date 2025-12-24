@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { productsAPI } from '../services/api';
+import { productsAPI, categoriesAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 
 const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
@@ -15,6 +15,7 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [editFormData, setEditFormData] = useState({});
+  const [categories, setCategories] = useState([]);
   const menuRef = useRef(null);
   const categoryMenuRef = useRef(null);
 
@@ -46,13 +47,25 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
 
-  // Get unique categories from products, plus default categories
-  const defaultCategories = ['Category 1', 'Category 2', 'Category 3', 'Category 4', 'Category 5'];
+  // Fetch categories from database
+  const fetchCategories = async () => {
+    try {
+      const response = await categoriesAPI.getAll();
+      if (response && response.success) {
+        setCategories(response.categories || []);
+      }
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+    }
+  };
+
+  // Get unique categories from products for filtering
   const productCategories = products.map(p => p.category).filter(Boolean);
-  const allCategories = [...new Set([...defaultCategories, ...productCategories])];
-  const categories = ['All', ...allCategories];
+  const uniqueProductCategories = [...new Set(productCategories)];
+  const categoryFilterOptions = ['All', ...uniqueProductCategories];
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -371,7 +384,7 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
                     maxHeight: '300px',
                     overflow: 'auto'
                   }}>
-                    {categories.map((cat) => (
+                    {categoryFilterOptions.map((cat) => (
                       <button
                         key={cat}
                         onClick={() => handleCategorySelect(cat)}
@@ -831,11 +844,14 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
                   style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
                 >
                   <option value="">Select category</option>
-                  <option value="Category 1">Category 1</option>
-                  <option value="Category 2">Category 2</option>
-                  <option value="Category 3">Category 3</option>
-                  <option value="Category 4">Category 4</option>
-                  <option value="Category 5">Category 5</option>
+                  {categories.map((cat) => {
+                    const categoryLabel = `${cat.main}${cat.sub ? ' - ' + cat.sub : ''}${cat.common ? ' - ' + cat.common : ''}`;
+                    return (
+                      <option key={cat.id} value={categoryLabel}>
+                        {categoryLabel}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
               <div>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { categoriesAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import './addUser.css';
 
@@ -81,15 +82,22 @@ const AddCategory = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     setSuccessMessage('');
 
     try {
-      // TODO: Replace with actual categories API when backend is ready
-      // For now, just simulate success
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const response = await categoriesAPI.create({
+        main: formData.main,
+        sub: formData.sub,
+        common: formData.common,
+        city: formData.city
+      });
       
-      setSuccessMessage('Category created successfully');
-      setTimeout(() => {
-        setSuccessMessage('');
-        handleCancel();
-      }, 2000);
+      if (response && response.success) {
+        setSuccessMessage('Category created successfully');
+        setTimeout(() => {
+          setSuccessMessage('');
+          handleCancel();
+        }, 2000);
+      } else {
+        setError(response?.error || 'Failed to create category. Please try again.');
+      }
     } catch (err) {
       setError(err.message || 'Failed to create category. Please try again.');
       console.error('Create category error:', err);

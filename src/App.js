@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
@@ -22,7 +22,9 @@ import AddTransport from './components/AddTransport';
 import ChitPlans from './components/ChitPlans';
 import AddChitCustomer from './components/AddChitCustomer';
 import StockIn from './components/StockIn';
+import StockInMaster from './components/StockInMaster';
 import StockOut from './components/StockOut';
+import StockOutMaster from './components/StockOutMaster';
 import CreateSupplierTransaction from './components/CreateSupplierTransaction';
 import CategoryMaster from './components/CategoryMaster';
 import AddCategory from './components/AddCategory';
@@ -426,11 +428,39 @@ const AdminRoutes = () => {
       />
       
       <Route
+        path="/stockInMaster"
+        element={
+          <ProtectedRoute>
+            <StockInMaster
+              onBack={() => handleNavigation(getBackPath('dashboard'))}
+              onAddStockIn={() => handleNavigation('stockIn')}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
         path="/stockIn"
         element={
           <ProtectedRoute>
             <StockIn
+              onBack={() => handleNavigation('stockInMaster')}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/stockOutMaster"
+        element={
+          <ProtectedRoute>
+            <StockOutMaster
               onBack={() => handleNavigation(getBackPath('dashboard'))}
+              onAddStockOut={() => handleNavigation('stockOut')}
               onNavigate={handleNavigation}
               userRole={userRole}
             />
@@ -443,7 +473,7 @@ const AdminRoutes = () => {
         element={
           <ProtectedRoute>
             <StockOut
-              onBack={() => handleNavigation(getBackPath('dashboard'))}
+              onBack={() => handleNavigation('stockOutMaster')}
               onNavigate={handleNavigation}
               userRole={userRole}
             />

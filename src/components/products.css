@@ -222,6 +222,14 @@
     gap: 12px;
 }
 
+/* Products Grid */
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+    width: 100%;
+}
+
 .product-card {
     background: var(--card-bg);
     border-radius: 14px;
@@ -238,6 +246,184 @@
     transform: translateY(-2px);
     box-shadow: 0 4px 12px var(--shadow);
     border-color: var(--border-color);
+}
+
+/* Stock In Card - Grid Layout */
+.stock-in-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+}
+
+.stock-in-card .product-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.stock-in-card .product-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    flex: 1;
+    line-height: 1.3;
+}
+
+.stock-in-card .product-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.stock-in-card .product-badge i {
+    font-size: 11px;
+}
+
+.stock-in-card .product-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.stock-in-card .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.stock-in-card .detail-row:last-child {
+    border-bottom: none;
+}
+
+.stock-in-card .detail-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.stock-in-card .detail-value {
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: 600;
+    text-align: right;
+    word-break: break-word;
+}
+
+.stock-in-card .product-notes {
+    margin-top: 8px;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    border-left: 3px solid #dc3545;
+}
+
+.stock-in-card .product-notes i {
+    margin-right: 6px;
+    color: #dc3545;
+}
+
+/* Stock Out Card - Grid Layout */
+.stock-out-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+}
+
+.stock-out-card .product-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.stock-out-card .product-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    flex: 1;
+    line-height: 1.3;
+}
+
+.stock-out-card .product-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.stock-out-card .product-badge i {
+    font-size: 11px;
+}
+
+.stock-out-card .product-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.stock-out-card .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.stock-out-card .detail-row:last-child {
+    border-bottom: none;
+}
+
+.stock-out-card .detail-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.stock-out-card .detail-value {
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: 600;
+    text-align: right;
+    word-break: break-word;
+}
+
+.stock-out-card .product-notes {
+    margin-top: 8px;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    border-left: 3px solid #dc3545;
+}
+
+.stock-out-card .product-notes i {
+    margin-right: 6px;
+    color: #dc3545;
 }
 
 .product-info {
@@ -318,6 +504,114 @@
     transform: scale(1.1);
 }
 
+/* Products Grid */
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    width: 100%;
+}
+
+/* Product Card - Grid Layout (for Stock In, etc.) */
+.product-card {
+    background: var(--card-bg);
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 2px 8px var(--shadow-light);
+    border: 1px solid var(--border-light);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.product-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--shadow);
+    border-color: var(--border-color);
+}
+
+.product-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.product-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    flex: 1;
+    line-height: 1.3;
+}
+
+.product-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.product-badge i {
+    font-size: 11px;
+}
+
+.product-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.detail-value {
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: 600;
+    text-align: right;
+    word-break: break-word;
+}
+
+.product-notes {
+    margin-top: 12px;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    border-left: 3px solid #dc3545;
+}
+
+.product-notes i {
+    margin-right: 6px;
+    color: #dc3545;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .products-controls {
@@ -326,6 +620,21 @@
     .product-meta-row {
         flex-direction: column;
         align-items: flex-start;
+    }
+    .products-grid {
+        grid-template-columns: 1fr;
+    }
+    .product-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .detail-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    .detail-value {
+        text-align: left;
     }
 }
 

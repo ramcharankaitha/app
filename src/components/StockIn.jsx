@@ -4,8 +4,13 @@ import ConfirmDialog from './ConfirmDialog';
 
 const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
+    category: '',
     itemCode: '',
-    quantity: '',
+    productName: '',
+    skuCode: '',
+    modelNumber: '',
+    quantity: '', // Current stock in store (display only)
+    stockInQuantity: '', // New quantity to add
     notes: ''
   });
   const [productInfo, setProductInfo] = useState(null);
@@ -46,8 +51,24 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
     // Reset product info if item code changes
     if (name === 'itemCode') {
       setProductInfo(null);
+      setFormData(prev => ({
+        ...prev,
+        category: '',
+        productName: '',
+        skuCode: '',
+        modelNumber: '',
+        quantity: '',
+        stockInQuantity: ''
+      }));
       setError('');
       setSuccessMessage('');
+    }
+  };
+
+  // Auto-fetch product when item code is entered and loses focus
+  const handleItemCodeBlur = async () => {
+    if (formData.itemCode && formData.itemCode.trim() && !productInfo) {
+      await fetchProductByItemCode();
     }
   };
 
@@ -74,15 +95,28 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
       
       if (response.success && response.product) {
         const product = response.product;
-        setProductInfo({
+        const productData = {
           id: product.id,
           productName: product.product_name || product.productName || '',
           itemCode: product.item_code || product.itemCode || '',
           skuCode: product.sku_code || product.skuCode || '',
           currentQuantity: product.current_quantity || 0,
-          category: product.category || ''
-        });
-        setSuccessMessage('Product found! Enter quantity to add stock.');
+          category: product.category || '',
+          modelNumber: product.model_number || product.modelNumber || ''
+        };
+        setProductInfo(productData);
+        
+        // Auto-populate form fields
+        setFormData(prev => ({
+          ...prev,
+          category: productData.category || '',
+          productName: productData.productName,
+          skuCode: productData.skuCode || '',
+          modelNumber: productData.modelNumber || '',
+          quantity: productData.currentQuantity.toString()
+        }));
+        
+        setSuccessMessage('Product found! Enter stock in quantity.');
         setTimeout(() => setSuccessMessage(''), 3000);
       } else {
         setError('Product not found with this item code');
@@ -107,8 +141,8 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
       return;
     }
 
-    if (!formData.quantity || parseFloat(formData.quantity) <= 0) {
-      setError('Please enter a valid quantity (greater than 0)');
+    if (!formData.stockInQuantity || parseFloat(formData.stockInQuantity) <= 0) {
+      setError('Please enter a valid stock in quantity (greater than 0)');
       return;
     }
 
@@ -117,9 +151,9 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
       return;
     }
 
-    const quantity = parseInt(formData.quantity);
+    const quantity = parseInt(formData.stockInQuantity);
     if (isNaN(quantity) || quantity <= 0) {
-      setError('Quantity must be a positive number');
+      setError('Stock in quantity must be a positive number');
       return;
     }
 
@@ -143,20 +177,22 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
           );
           
           if (response.success) {
-            setSuccessMessage(`Stock added successfully! New quantity: ${response.product.newQuantity}`);
+            const newQuantity = response.product.newQuantity;
+            setSuccessMessage(`Stock added successfully! New quantity: ${newQuantity}`);
             
             // Update product info
             setProductInfo(prev => ({
               ...prev,
-              currentQuantity: response.product.newQuantity
+              currentQuantity: newQuantity
             }));
             
-            // Reset form
-            setFormData({
-              itemCode: formData.itemCode, // Keep item code
-              quantity: '',
+            // Update form data with new quantity and reset stock in quantity
+            setFormData(prev => ({
+              ...prev,
+              quantity: newQuantity.toString(),
+              stockInQuantity: '',
               notes: ''
-            });
+            }));
             
             setTimeout(() => {
               setSuccessMessage('');
@@ -202,9 +238,27 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
         <form onSubmit={handleSubmit} className="add-user-form">
           {/* Stock In Details Section */}
           <div className="form-section">
-            <h3 className="section-title">Add Stock</h3>
+            <h3 className="section-title">Stock In</h3>
             <div className="form-grid">
-              {/* Item Code */}
+              {/* 1. Category */}
+              <div className="form-group">
+                <label htmlFor="category">Category</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-tags input-icon"></i>
+                  <input
+                    type="text"
+                    id="category"
+                    name="category"
+                    className="form-input"
+                    placeholder="Category"
+                    value={formData.category}
+                    readOnly
+                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                  />
+                </div>
+              </div>
+
+              {/* 2. Item Code */}
               <div className="form-group">
                 <label htmlFor="itemCode">Item Code *</label>
                 <div className="input-wrapper" style={{ position: 'relative' }}>
@@ -214,10 +268,11 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     id="itemCode"
                     name="itemCode"
                     className="form-input"
-                    placeholder="Enter item code and press Enter"
+                    placeholder="Enter item code"
                     value={formData.itemCode}
                     onChange={handleInputChange}
                     onKeyPress={handleItemCodeKeyPress}
+                    onBlur={handleItemCodeBlur}
                     required
                     autoFocus
                   />
@@ -252,65 +307,103 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 </button>
               </div>
 
-              {/* Product Info Display */}
-              {productInfo && (
-                <div className="form-group full-width" style={{
-                  background: '#f8f9fa',
-                  padding: '16px',
-                  borderRadius: '8px',
-                  border: '1px solid #dee2e6'
-                }}>
-                  <h4 style={{ margin: '0 0 12px 0', color: '#495057' }}>Product Information</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-                    <div>
-                      <strong>Product Name:</strong> {productInfo.productName}
-                    </div>
-                    <div>
-                      <strong>Item Code:</strong> {productInfo.itemCode}
-                    </div>
-                    <div>
-                      <strong>SKU Code:</strong> {productInfo.skuCode || 'N/A'}
-                    </div>
-                    <div>
-                      <strong>Category:</strong> {productInfo.category || 'N/A'}
-                    </div>
-                    <div style={{ 
-                      gridColumn: '1 / -1',
-                      padding: '12px',
-                      background: productInfo.currentQuantity <= 0 ? '#fff3cd' : '#d1ecf1',
-                      borderRadius: '6px',
-                      border: `2px solid ${productInfo.currentQuantity <= 0 ? '#ffc107' : '#0dcaf0'}`
-                    }}>
-                      <strong style={{ fontSize: '16px', color: '#495057' }}>
-                        Current Stock: <span style={{ 
-                          color: productInfo.currentQuantity <= 0 ? '#dc3545' : '#28a745',
-                          fontSize: '18px'
-                        }}>{productInfo.currentQuantity}</span>
-                      </strong>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Quantity */}
+              {/* 3. Product Name */}
               <div className="form-group">
-                <label htmlFor="quantity">Quantity to Add *</label>
+                <label htmlFor="productName">Product Name</label>
                 <div className="input-wrapper">
-                  <i className="fas fa-plus-circle input-icon"></i>
+                  <i className="fas fa-box input-icon"></i>
+                  <input
+                    type="text"
+                    id="productName"
+                    name="productName"
+                    className="form-input"
+                    placeholder="Product Name"
+                    value={formData.productName}
+                    readOnly
+                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                  />
+                </div>
+              </div>
+
+              {/* 4. SKU Code */}
+              <div className="form-group">
+                <label htmlFor="skuCode">SKU Code</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-boxes input-icon"></i>
+                  <input
+                    type="text"
+                    id="skuCode"
+                    name="skuCode"
+                    className="form-input"
+                    placeholder="SKU Code"
+                    value={formData.skuCode}
+                    readOnly
+                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                  />
+                </div>
+              </div>
+
+              {/* 5. Model Number */}
+              <div className="form-group">
+                <label htmlFor="modelNumber">Model Number</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-tag input-icon"></i>
+                  <input
+                    type="text"
+                    id="modelNumber"
+                    name="modelNumber"
+                    className="form-input"
+                    placeholder="Model Number"
+                    value={formData.modelNumber}
+                    readOnly
+                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                  />
+                </div>
+              </div>
+
+              {/* 6. Quantity (Current Stock in Store) */}
+              <div className="form-group">
+                <label htmlFor="quantity">Quantity (Current Stock in Store)</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-warehouse input-icon"></i>
                   <input
                     type="number"
                     id="quantity"
                     name="quantity"
                     className="form-input"
-                    placeholder="Enter quantity"
+                    placeholder="Current Stock"
                     value={formData.quantity}
+                    readOnly
+                    style={{ 
+                      background: formData.quantity && parseInt(formData.quantity) <= 0 ? '#fff3cd' : '#f8f9fa', 
+                      cursor: 'not-allowed',
+                      fontWeight: 'bold',
+                      color: formData.quantity && parseInt(formData.quantity) <= 0 ? '#dc3545' : '#495057'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* 7. Stock In Quantity */}
+              <div className="form-group">
+                <label htmlFor="stockInQuantity">Stock In Quantity *</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-plus-circle input-icon"></i>
+                  <input
+                    type="number"
+                    id="stockInQuantity"
+                    name="stockInQuantity"
+                    className="form-input"
+                    placeholder="Enter quantity to add"
+                    value={formData.stockInQuantity}
                     onChange={handleInputChange}
                     min="1"
                     step="1"
                     required
+                    disabled={!productInfo}
                   />
                 </div>
-                {productInfo && formData.quantity && !isNaN(parseInt(formData.quantity)) && (
+                {productInfo && formData.stockInQuantity && !isNaN(parseInt(formData.stockInQuantity)) && (
                   <div style={{ 
                     marginTop: '8px', 
                     padding: '8px', 
@@ -320,7 +413,7 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     color: '#155724'
                   }}>
                     <i className="fas fa-info-circle" style={{ marginRight: '6px' }}></i>
-                    New stock will be: <strong>{productInfo.currentQuantity + parseInt(formData.quantity)}</strong>
+                    New stock will be: <strong>{productInfo.currentQuantity + parseInt(formData.stockInQuantity)}</strong>
                   </div>
                 )}
               </div>
@@ -375,7 +468,7 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
             <button
               type="submit"
               className="btn-primary"
-              disabled={isLoading || !productInfo}
+              disabled={isLoading || !productInfo || !formData.stockInQuantity}
             >
               {isLoading ? (
                 <>

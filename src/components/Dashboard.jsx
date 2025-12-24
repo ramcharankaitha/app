@@ -4,7 +4,7 @@ import { profileAPI, exportAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import SupervisorAttendanceView from './SupervisorAttendanceView';
 import UnifiedAttendanceView from './UnifiedAttendanceView';
-import SalesReportView from './SalesReportView';
+import ReportsView from './ReportsView';
 import BestSalesPerson from './BestSalesPerson';
 import { downloadCSV } from '../utils/fileDownload';
 
@@ -20,7 +20,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
   const [isExportingSales, setIsExportingSales] = useState(false);
   const [showSupervisorAttendance, setShowSupervisorAttendance] = useState(false);
   const [showUnifiedAttendance, setShowUnifiedAttendance] = useState(false);
-  const [showSalesReport, setShowSalesReport] = useState(false);
+  const [showReports, setShowReports] = useState(false);
   const menuRef = useRef(null);
   const { profile, avatarUrl, initials } = useProfile();
 
@@ -174,7 +174,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
       e.preventDefault();
       e.stopPropagation();
     }
-    setShowSalesReport(true);
+    setShowReports(true);
   };
 
   // Close dropdown when clicking outside
@@ -249,7 +249,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
       setActiveNav('masterMenu');
     } else if (currentPage === 'masterMenu') {
       setActiveNav('masterMenu');
-    } else if (currentPage === 'transactionMenu' || currentPage === 'stockIn' || currentPage === 'stockOut' || currentPage === 'createSupplier') {
+    } else if (currentPage === 'transactionMenu' || currentPage === 'stockIn' || currentPage === 'stockInMaster' || currentPage === 'stockOut' || currentPage === 'stockOutMaster' || currentPage === 'createSupplier') {
       setActiveNav('transactionMenu');
     } else if (currentPage === 'settings') {
       setActiveNav('settings');
@@ -363,8 +363,8 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
 
   const transactionSections = [
     { title: 'Dispatch Department', desc: 'Manage dispatch workflows', icon: 'fa-shipping-fast', target: 'dispatch' },
-    { title: 'Stock In', desc: 'Record stock entries', icon: 'fa-box-open', target: 'stockIn' },
-    { title: 'Stock Out', desc: 'Record stock exits', icon: 'fa-box', target: 'stockOut' },
+    { title: 'Stock In', desc: 'Record stock entries', icon: 'fa-box-open', target: 'stockInMaster' },
+    { title: 'Stock Out', desc: 'Record stock exits', icon: 'fa-box', target: 'stockOutMaster' },
     { title: 'Create Supplier', desc: 'Record products from supplier', icon: 'fa-truck', target: 'createSupplier' },
   ];
 
@@ -512,7 +512,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
               <i className="fas fa-calendar-alt"></i>
             </div>
           </div>
-          <div className="stat-card" onClick={() => setShowSalesReport(true)} style={{ cursor: 'pointer' }}>
+          <div className="stat-card" onClick={() => setShowReports(true)} style={{ cursor: 'pointer' }}>
             <div className="stat-content">
               <h3 className="stat-title">Sales Report</h3>
               <p className="stat-value">View & Export</p>
@@ -769,8 +769,8 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
       {showSupervisorAttendance && (
         <SupervisorAttendanceView onClose={() => setShowSupervisorAttendance(false)} />
       )}
-      {showSalesReport && (
-        <SalesReportView onClose={() => setShowSalesReport(false)} />
+      {showReports && (
+        <ReportsView onClose={() => setShowReports(false)} />
       )}
     </div>
   );

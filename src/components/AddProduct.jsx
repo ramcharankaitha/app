@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { productsAPI } from '../services/api';
+import React, { useState, useEffect } from 'react';
+import { productsAPI, categoriesAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 
 const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
@@ -25,6 +25,22 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
+  const [categories, setCategories] = useState([]);
+
+  // Fetch categories on component mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await categoriesAPI.getAll();
+        if (response && response.success) {
+          setCategories(response.categories || []);
+        }
+      } catch (err) {
+        console.error('Error fetching categories:', err);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const handleBack = () => {
     if (onNavigate) {
@@ -248,11 +264,14 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           required
                         >
                           <option value="">Select category</option>
-                          <option value="Category 1">Category 1</option>
-                          <option value="Category 2">Category 2</option>
-                          <option value="Category 3">Category 3</option>
-                          <option value="Category 4">Category 4</option>
-                          <option value="Category 5">Category 5</option>
+                          {categories.map((cat) => {
+                            const categoryLabel = `${cat.main}${cat.sub ? ' - ' + cat.sub : ''}${cat.common ? ' - ' + cat.common : ''}`;
+                            return (
+                              <option key={cat.id} value={categoryLabel}>
+                                {categoryLabel}
+                              </option>
+                            );
+                          })}
                         </select>
                         <i className="fas fa-chevron-down dropdown-icon"></i>
                       </div>

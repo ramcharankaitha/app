@@ -210,6 +210,36 @@ export const exportAPI = {
     const queryString = params.toString();
     return apiCall(`/export/best-sales-person${queryString ? '?' + queryString : ''}`);
   },
+  getStockIn: async (startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const queryString = params.toString();
+    return apiCall(`/export/stock-in${queryString ? '?' + queryString : ''}`);
+  },
+  getStockOut: async (startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const queryString = params.toString();
+    return apiCall(`/export/stock-out${queryString ? '?' + queryString : ''}`);
+  },
+  getStockDetails: async () => {
+    return apiCall('/export/stock-details');
+  },
+  getLowStock: async (threshold) => {
+    const params = new URLSearchParams();
+    if (threshold) params.append('threshold', threshold);
+    const queryString = params.toString();
+    return apiCall(`/export/low-stock${queryString ? '?' + queryString : ''}`);
+  },
+  getStockPerformance: async (startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const queryString = params.toString();
+    return apiCall(`/export/stock-performance${queryString ? '?' + queryString : ''}`);
+  },
 };
 
 export const profileAPI = {
@@ -411,6 +441,32 @@ export const stockAPI = {
   },
 };
 
+export const categoriesAPI = {
+  getAll: async () => {
+    return apiCall('/categories');
+  },
+  getById: async (id) => {
+    return apiCall(`/categories/${id}`);
+  },
+  create: async (categoryData) => {
+    return apiCall('/categories', {
+      method: 'POST',
+      body: JSON.stringify(categoryData),
+    });
+  },
+  update: async (id, categoryData) => {
+    return apiCall(`/categories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(categoryData),
+    });
+  },
+  delete: async (id) => {
+    return apiCall(`/categories/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
 export default {
   authAPI,
   usersAPI,
@@ -426,5 +482,6 @@ export default {
   dispatchAPI,
   transportAPI,
   stockAPI,
+  categoriesAPI,
 };
 

@@ -3,8 +3,8 @@ import React from 'react';
 const TransactionMenu = ({ onNavigate, onBack }) => {
   const sections = [
     { title: 'Dispatch Department', desc: 'Manage dispatch workflows', target: 'dispatch', icon: 'fa-shipping-fast' },
-    { title: 'Stock In', desc: 'Record stock entries', target: 'stockIn', icon: 'fa-box-open' },
-    { title: 'Stock Out', desc: 'Record stock exits', target: 'stockOut', icon: 'fa-box' },
+    { title: 'Stock In', desc: 'Record stock entries', target: 'stockInMaster', icon: 'fa-box-open' },
+    { title: 'Stock Out', desc: 'Record stock exits', target: 'stockOutMaster', icon: 'fa-box' },
   ];
 
   const handleOpen = (target) => {

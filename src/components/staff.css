@@ -10,15 +10,31 @@
 .staff-header {
     display: flex;
     align-items: center;
-    padding: 15px 20px;
+    justify-content: space-between;
+    padding: 20px 24px;
     background: var(--card-bg);
     box-shadow: 0 2px 8px var(--shadow-light);
+    flex-shrink: 0;
+    gap: 16px;
+}
+
+.staff-header .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.staff-header .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     flex-shrink: 0;
 }
 
 .staff-header .back-btn {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background: #dc3545;
     border: none;
@@ -27,8 +43,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 12px;
     transition: all 0.3s ease;
+    flex-shrink: 0;
 }
 
 .staff-header .back-btn:hover {
@@ -38,6 +54,20 @@
 
 .staff-header .header-content {
     flex: 1;
+}
+
+.staff-header .staff-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.2;
+}
+
+.staff-header .staff-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 4px 0 0 0;
 }
 
 .staff-header .page-title {
@@ -52,6 +82,28 @@
     font-size: 12px;
     color: var(--text-secondary);
     margin: 2px 0 0 0;
+}
+
+.staff-header .add-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: #dc3545;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.staff-header .add-btn:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
 }
 
 /* Staff Content */
