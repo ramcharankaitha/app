@@ -14,7 +14,7 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
 
   const handleBack = () => {
     if (onNavigate) {
-      onNavigate('dashboard');
+      onNavigate('masterMenu');
     } else if (onBack) {
       onBack();
     }
@@ -31,6 +31,12 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
   const handleManagers = () => {
     if (onNavigate) {
       onNavigate('users');
+    }
+  };
+
+  const handleStaff = () => {
+    if (onNavigate) {
+      onNavigate('staff');
     }
   };
 
@@ -152,7 +158,7 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
           </div>
         )}
         {userRole !== 'staff' && (
-          <div className="nav-item" onClick={handleBack}>
+          <div className="nav-item" onClick={handleStaff}>
             <div className="nav-icon">
               <i className="fas fa-user-tie"></i>
             </div>
@@ -164,6 +170,12 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
             <i className="fas fa-th-large"></i>
           </div>
           <span>Master Menu</span>
+        </div>
+        <div className="nav-item" onClick={() => onNavigate && onNavigate('transactionMenu')}>
+          <div className="nav-icon">
+            <i className="fas fa-exchange-alt"></i>
+          </div>
+          <span>Transaction</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">

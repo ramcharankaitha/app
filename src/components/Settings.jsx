@@ -30,7 +30,7 @@ const Settings = ({ onBack, onNavigate, onLogout, userRole = 'admin' }) => {
   const handleManagers = () => onNavigate && onNavigate('users');
   const handleStaff = () => onNavigate && onNavigate('staff');
   const handleCustomers = () => onNavigate && onNavigate('customers');
-  const handleMasterMenu = () => onNavigate && onNavigate('masterMenu');
+  const handleMasterMenu = () => onNavigate && onNavigate('dashboard');
   const handleSettings = () => onNavigate && onNavigate('settings');
 
   const displayName = profile.full_name || (userRole === 'supervisor' ? 'Supervisor Account' : userRole === 'staff' ? 'Staff Account' : 'Admin Root');
@@ -244,17 +244,17 @@ const Settings = ({ onBack, onNavigate, onLogout, userRole = 'admin' }) => {
             <span>Staff</span>
           </div>
         )}
-        <div className="nav-item" onClick={handleCustomers}>
-          <div className="nav-icon">
-            <i className="fas fa-user-friends"></i>
-          </div>
-          <span>Customers</span>
-        </div>
         <div className="nav-item" onClick={handleMasterMenu}>
           <div className="nav-icon">
             <i className="fas fa-th-large"></i>
           </div>
           <span>Master Menu</span>
+        </div>
+        <div className="nav-item" onClick={() => onNavigate && onNavigate('transactionMenu')}>
+          <div className="nav-icon">
+            <i className="fas fa-exchange-alt"></i>
+          </div>
+          <span>Transaction</span>
         </div>
         <div className="nav-item active" onClick={handleSettings}>
           <div className="nav-icon">

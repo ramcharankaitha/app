@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { stockAPI } from '../services/api';
 import './products.css';
 
 const StockOutMaster = ({ onBack, onAddStockOut, onNavigate, userRole = 'admin' }) => {
+  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
@@ -14,7 +16,7 @@ const StockOutMaster = ({ onBack, onAddStockOut, onNavigate, userRole = 'admin' 
 
   const handleBack = () => {
     if (onNavigate) {
-      onNavigate('dashboard');
+      onNavigate('transactionMenu');
     } else if (onBack) {
       onBack();
     }
@@ -34,20 +36,91 @@ const StockOutMaster = ({ onBack, onAddStockOut, onNavigate, userRole = 'admin' 
     try {
       setError('');
       const response = await stockAPI.getTransactions(null, null, 'STOCK_OUT', 1000, 0);
-      if (response.success) {
-        setTransactions(response.transactions || []);
-        setFilteredTransactions(response.transactions || []);
+      
+      if (response) {
+        // Handle both response.success and direct response
+        const transactionsList = response.transactions || response.data?.transactions || [];
+        
+        // Always set transactions, even if empty array
+        setTransactions(transactionsList);
+        setFilteredTransactions(transactionsList);
+        setError(''); // Clear any previous errors
+      } else {
+        console.error('❌ No response received from API');
+        setError('No response from server. Please try again.');
       }
     } catch (err) {
-      console.error('Error fetching stock out transactions:', err);
-      setError('Failed to load stock out transactions. Please try again.');
+      console.error('❌ Error fetching stock out transactions:', err);
+      console.error('❌ Error details:', {
+        message: err.message,
+        stack: err.stack,
+        response: err.response
+      });
+      setError(`Failed to load stock out transactions: ${err.message || 'Please check server console for details'}`);
+      setTransactions([]);
+      setFilteredTransactions([]);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Fetch transactions on mount and when location changes (navigation)
   useEffect(() => {
     fetchTransactions();
+  }, [location.pathname]);
+  
+  // Also fetch when component becomes visible (user navigates back)
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchTransactions();
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
+
+  // Listen for stock out completion event
+  useEffect(() => {
+    const handleStockOutCompleted = () => {
+      // Delay to ensure backend has committed the transaction
+      setTimeout(() => {
+        fetchTransactions();
+      }, 2000);
+    };
+
+    window.addEventListener('stockOutCompleted', handleStockOutCompleted);
+
+    return () => {
+      window.removeEventListener('stockOutCompleted', handleStockOutCompleted);
+    };
+  }, []);
+
+  // Also refresh periodically when component is visible
+  useEffect(() => {
+    const refreshInterval = setInterval(() => {
+      if (!document.hidden) {
+        fetchTransactions();
+      }
+    }, 10000); // Refresh every 10 seconds (reduced frequency)
+
+    // Also refresh on visibility change and focus
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchTransactions();
+      }
+    };
+
+    const handleFocus = () => {
+      fetchTransactions();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(refreshInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   // Filter transactions based on search query
@@ -99,23 +172,33 @@ const StockOutMaster = ({ onBack, onAddStockOut, onNavigate, userRole = 'admin' 
           </div>
           <span>Home</span>
         </div>
-        <div className="nav-item" onClick={() => onNavigate && onNavigate('transactionMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-exchange-alt"></i>
+        {userRole === 'admin' && (
+          <div className="nav-item" onClick={() => onNavigate && onNavigate('users')}>
+            <div className="nav-icon">
+              <i className="fas fa-users"></i>
+            </div>
+            <span>Supervisors</span>
           </div>
-          <span>Transaction</span>
-        </div>
-        <div className="nav-item active">
-          <div className="nav-icon">
-            <i className="fas fa-box"></i>
+        )}
+        {userRole !== 'staff' && (
+          <div className="nav-item" onClick={() => onNavigate && onNavigate('staff')}>
+            <div className="nav-icon">
+              <i className="fas fa-user-tie"></i>
+            </div>
+            <span>Staff</span>
           </div>
-          <span>Stock Out</span>
-        </div>
+        )}
         <div className="nav-item" onClick={() => onNavigate && onNavigate('masterMenu')}>
           <div className="nav-icon">
             <i className="fas fa-th-large"></i>
           </div>
           <span>Master Menu</span>
+        </div>
+        <div className="nav-item active" onClick={() => onNavigate && onNavigate('transactionMenu')}>
+          <div className="nav-icon">
+            <i className="fas fa-exchange-alt"></i>
+          </div>
+          <span>Transaction</span>
         </div>
         <div className="nav-item" onClick={() => onNavigate && onNavigate('settings')}>
           <div className="nav-icon">
@@ -139,7 +222,16 @@ const StockOutMaster = ({ onBack, onAddStockOut, onNavigate, userRole = 'admin' 
                 <p className="staff-subtitle">View and manage all stock out transactions</p>
               </div>
             </div>
-            <div className="header-right">
+            <div className="header-right" style={{ display: 'flex', gap: '12px' }}>
+              <button 
+                className="add-btn" 
+                onClick={fetchTransactions}
+                style={{ background: '#28a745' }}
+                title="Refresh transactions"
+              >
+                <i className="fas fa-sync-alt"></i>
+                <span>Refresh</span>
+              </button>
               <button className="add-btn" onClick={handleAddStockOut}>
                 <i className="fas fa-plus"></i>
                 <span>Add Stock Out</span>

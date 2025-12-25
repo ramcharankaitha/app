@@ -19,6 +19,80 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get unique main categories
+router.get('/main', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT DISTINCT main FROM categories ORDER BY main ASC'
+    );
+
+    res.json({
+      success: true,
+      mainCategories: result.rows.map(row => row.main)
+    });
+  } catch (error) {
+    console.error('Get main categories error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get sub categories for a specific main category
+router.get('/sub/:main', async (req, res) => {
+  try {
+    const { main } = req.params;
+    const result = await pool.query(
+      'SELECT DISTINCT sub FROM categories WHERE main = $1 ORDER BY sub ASC',
+      [main]
+    );
+
+    res.json({
+      success: true,
+      subCategories: result.rows.map(row => row.sub)
+    });
+  } catch (error) {
+    console.error('Get sub categories error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get common categories for a specific main category
+router.get('/common/:main', async (req, res) => {
+  try {
+    const { main } = req.params;
+    const result = await pool.query(
+      'SELECT DISTINCT common FROM categories WHERE main = $1 ORDER BY common ASC',
+      [main]
+    );
+
+    res.json({
+      success: true,
+      commonCategories: result.rows.map(row => row.common)
+    });
+  } catch (error) {
+    console.error('Get common categories error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get common categories for a specific main and sub category
+router.get('/common/:main/:sub', async (req, res) => {
+  try {
+    const { main, sub } = req.params;
+    const result = await pool.query(
+      'SELECT DISTINCT common FROM categories WHERE main = $1 AND sub = $2 ORDER BY common ASC',
+      [main, sub]
+    );
+
+    res.json({
+      success: true,
+      commonCategories: result.rows.map(row => row.common)
+    });
+  } catch (error) {
+    console.error('Get common categories error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get a single category by ID
 router.get('/:id', async (req, res) => {
   try {

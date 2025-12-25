@@ -4,8 +4,8 @@ import ConfirmDialog from './ConfirmDialog';
 
 const AddUser = ({ onBack, onCancel, onNavigate }) => {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    supervisorName: '',
+    phone: '',
     storeAllocated: '',
     email: '',
     address: '',
@@ -87,14 +87,20 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
     setSuccessMessage('');
 
     try {
+      // Split supervisor name into first and last name for backend compatibility
+      const nameParts = formData.supervisorName.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
       const response = await usersAPI.create({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
+        firstName: firstName,
+        lastName: lastName,
         email: formData.email,
         username: formData.username,
         password: formData.password,
         storeAllocated: formData.storeAllocated,
-        address: formData.address
+        address: formData.address,
+        phone: formData.phone
       });
 
       if (response.success) {
@@ -145,17 +151,17 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
           </div>
           <span>Staff</span>
         </div>
-        <div className="nav-item" onClick={handleCustomers}>
-          <div className="nav-icon">
-            <i className="fas fa-user-friends"></i>
-          </div>
-          <span>Customers</span>
-        </div>
         <div className="nav-item" onClick={() => onNavigate && onNavigate('masterMenu')}>
           <div className="nav-icon">
             <i className="fas fa-th-large"></i>
           </div>
           <span>Master Menu</span>
+        </div>
+        <div className="nav-item" onClick={() => onNavigate && onNavigate('transactionMenu')}>
+          <div className="nav-icon">
+            <i className="fas fa-exchange-alt"></i>
+          </div>
+          <span>Transaction</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">
@@ -198,31 +204,34 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
                   <h3 className="section-title">Supervisor details</h3>
                   <div className="form-grid">
                     <div className="form-group">
-                      <label htmlFor="firstName">First name</label>
+                      <label htmlFor="supervisorName">Supervisor name</label>
                       <input
                         type="text"
-                        id="firstName"
-                        name="firstName"
+                        id="supervisorName"
+                        name="supervisorName"
                         className="form-input"
-                        placeholder="Enter first name."
-                        value={formData.firstName}
+                        placeholder="Enter supervisor name"
+                        value={formData.supervisorName}
                         onChange={handleInputChange}
                         required
                       />
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="lastName">Last name</label>
-                      <input
-                        type="text"
-                        id="lastName"
-                        name="lastName"
-                        className="form-input"
-                        placeholder="Enter last name."
-                        value={formData.lastName}
-                        onChange={handleInputChange}
-                        required
-                      />
+                      <label htmlFor="phone">Phone number</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-phone input-icon"></i>
+                        <input
+                          type="tel"
+                          id="phone"
+                          name="phone"
+                          className="form-input"
+                          placeholder="Enter phone number"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
                     </div>
 
                     <div className="form-group">

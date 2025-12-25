@@ -5,6 +5,10 @@ const TransactionMenu = ({ onNavigate, onBack }) => {
     { title: 'Dispatch Department', desc: 'Manage dispatch workflows', target: 'dispatch', icon: 'fa-shipping-fast' },
     { title: 'Stock In', desc: 'Record stock entries', target: 'stockInMaster', icon: 'fa-box-open' },
     { title: 'Stock Out', desc: 'Record stock exits', target: 'stockOutMaster', icon: 'fa-box' },
+    { title: 'Products', desc: 'Manage product pricing', target: 'transactionProducts', icon: 'fa-tags' },
+    { title: 'Services', desc: 'Manage service transactions', target: 'services', icon: 'fa-concierge-bell' },
+    { title: 'Sales Record', desc: 'View and manage sales records', target: 'salesRecord', icon: 'fa-chart-line' },
+    { title: 'Purchase Bill Alert', desc: 'Monitor purchase bill alerts', target: 'purchaseBillAlert', icon: 'fa-bell' },
   ];
 
   const handleOpen = (target) => {

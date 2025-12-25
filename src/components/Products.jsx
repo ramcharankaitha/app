@@ -198,7 +198,7 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
 
   const handleBack = () => {
     if (onNavigate) {
-      onNavigate('dashboard');
+      onNavigate('masterMenu');
     } else if (onBack) {
       onBack();
     }
@@ -290,6 +290,14 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
           </div>
           <span>Home</span>
         </div>
+        {userRole === 'admin' && (
+          <div className="nav-item" onClick={() => onNavigate && onNavigate('users')}>
+            <div className="nav-icon">
+              <i className="fas fa-users"></i>
+            </div>
+            <span>Supervisors</span>
+          </div>
+        )}
         {userRole !== 'staff' && (
           <div className="nav-item" onClick={handleStaff}>
             <div className="nav-icon">
@@ -298,17 +306,17 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
             <span>Staff</span>
           </div>
         )}
-        <div className="nav-item" onClick={handleCustomers}>
-          <div className="nav-icon">
-            <i className="fas fa-user-friends"></i>
-          </div>
-          <span>Customers</span>
-        </div>
         <div className="nav-item active" onClick={() => onNavigate && onNavigate('masterMenu')}>
           <div className="nav-icon">
             <i className="fas fa-th-large"></i>
           </div>
           <span>Master Menu</span>
+        </div>
+        <div className="nav-item" onClick={() => onNavigate && onNavigate('transactionMenu')}>
+          <div className="nav-icon">
+            <i className="fas fa-exchange-alt"></i>
+          </div>
+          <span>Transaction</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">
@@ -378,7 +386,7 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
                     background: '#fff',
                     borderRadius: '8px',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                    zIndex: 1000,
+                    zIndex: 10000,
                     minWidth: '180px',
                     padding: '8px 0',
                     maxHeight: '300px',
@@ -491,7 +499,7 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
                       </div>
                     </div>
                   </div>
-                  <div style={{ position: 'relative' }} ref={menuRef}>
+                  <div style={{ position: 'absolute', top: '50%', right: '12px', transform: 'translateY(-50%)', zIndex: 1 }} ref={menuRef}>
                     <button 
                       className="product-options"
                       onClick={(e) => handleOptionsClick(e, p.id)}
@@ -501,12 +509,12 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
                     {showOptionsMenu === p.id && (
                       <div style={{
                         position: 'absolute',
-                        top: '30px',
+                        top: 'calc(100% + 16px)',
                         right: '0',
                         background: '#fff',
                         borderRadius: '8px',
                         boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                        zIndex: 1000,
+                        zIndex: 10000,
                         minWidth: '150px',
                         padding: '8px 0'
                       }}>

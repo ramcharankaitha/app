@@ -12,7 +12,7 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
 
   const handleBack = () => {
     if (onNavigate) {
-      onNavigate('dashboard');
+      onNavigate('masterMenu');
     } else if (onBack) {
       onBack();
     }
@@ -147,6 +147,14 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
           </div>
           <span>Home</span>
         </div>
+        {userRole === 'admin' && (
+          <div className="nav-item" onClick={handleManagers}>
+            <div className="nav-icon">
+              <i className="fas fa-users"></i>
+            </div>
+            <span>Supervisors</span>
+          </div>
+        )}
         {userRole !== 'staff' && (
           <div className="nav-item" onClick={handleStaff}>
             <div className="nav-icon">
@@ -155,17 +163,17 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
             <span>Staff</span>
           </div>
         )}
-        <div className="nav-item" onClick={handleCustomers}>
-          <div className="nav-icon">
-            <i className="fas fa-user-friends"></i>
-          </div>
-          <span>Customers</span>
-        </div>
         <div className="nav-item active" onClick={() => onNavigate && onNavigate('masterMenu')}>
           <div className="nav-icon">
             <i className="fas fa-th-large"></i>
           </div>
           <span>Master Menu</span>
+        </div>
+        <div className="nav-item" onClick={() => onNavigate && onNavigate('transactionMenu')}>
+          <div className="nav-icon">
+            <i className="fas fa-exchange-alt"></i>
+          </div>
+          <span>Transaction</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">

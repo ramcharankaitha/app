@@ -13,7 +13,8 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
     state: '',
     pincode: '',
     username: '',
-    password: ''
+    password: '',
+    isHandler: false
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -43,7 +44,7 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
 
   const handleMasterMenu = () => {
     if (onNavigate) {
-      onNavigate('masterMenu');
+      onNavigate('dashboard');
     }
   };
 
@@ -74,10 +75,10 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
@@ -94,7 +95,8 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
         username: formData.username,
         password: formData.password,
         storeAllocated: formData.storeAllocated,
-        address: formData.address
+        address: formData.address,
+        isHandler: formData.isHandler
       });
 
       if (response.success) {
@@ -144,17 +146,17 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
           </div>
           <span>Staff</span>
         </div>
-        <div className="nav-item" onClick={handleCustomers}>
-          <div className="nav-icon">
-            <i className="fas fa-user-friends"></i>
-          </div>
-          <span>Customers</span>
-        </div>
         <div className="nav-item" onClick={handleMasterMenu}>
           <div className="nav-icon">
             <i className="fas fa-th-large"></i>
           </div>
           <span>Master Menu</span>
+        </div>
+        <div className="nav-item" onClick={() => onNavigate && onNavigate('transactionMenu')}>
+          <div className="nav-icon">
+            <i className="fas fa-exchange-alt"></i>
+          </div>
+          <span>Transaction</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">
@@ -197,13 +199,13 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                   <h3 className="section-title">Staff details</h3>
                   <div className="form-grid">
                     <div className="form-group">
-                      <label htmlFor="fullName">Full name</label>
+                      <label htmlFor="fullName">Staff name</label>
                       <input
                         type="text"
                         id="fullName"
                         name="fullName"
                         className="form-input"
-                        placeholder="Enter full name."
+                        placeholder="Enter staff name"
                         value={formData.fullName}
                         onChange={handleInputChange}
                         required
@@ -222,7 +224,7 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                           onChange={handleInputChange}
                           required
                         >
-                          <option value="">Select Floor.</option>
+                          <option value="">Select Floor</option>
                           <option value="1">Floor 1</option>
                           <option value="2">Floor 2</option>
                           <option value="3">Floor 3</option>
@@ -264,6 +266,46 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                           onChange={handleInputChange}
                           required
                         />
+                      </div>
+                    </div>
+
+                    <div className="form-group full-width">
+                      <label htmlFor="isHandler" style={{ display: 'block', marginBottom: '12px', fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                        Can you be the handler?
+                      </label>
+                      <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                          <input
+                            type="radio"
+                            name="isHandler"
+                            value="yes"
+                            checked={formData.isHandler === true}
+                            onChange={(e) => setFormData(prev => ({ ...prev, isHandler: true }))}
+                            style={{
+                              width: '18px',
+                              height: '18px',
+                              cursor: 'pointer',
+                              accentColor: '#dc3545'
+                            }}
+                          />
+                          <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-primary)' }}>Yes</span>
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                          <input
+                            type="radio"
+                            name="isHandler"
+                            value="no"
+                            checked={formData.isHandler === false}
+                            onChange={(e) => setFormData(prev => ({ ...prev, isHandler: false }))}
+                            style={{
+                              width: '18px',
+                              height: '18px',
+                              cursor: 'pointer',
+                              accentColor: '#dc3545'
+                            }}
+                          />
+                          <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-primary)' }}>No</span>
+                        </label>
                       </div>
                     </div>
                   </div>

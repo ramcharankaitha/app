@@ -27,7 +27,7 @@ const CreateSupplierTransaction = ({ onBack, onCancel, onNavigate, userRole = 'a
 
   const handleBack = () => {
     if (onNavigate) {
-      onNavigate('dashboard');
+      onNavigate('transactionMenu');
     } else if (onBack) {
       onBack();
     }
@@ -35,7 +35,7 @@ const CreateSupplierTransaction = ({ onBack, onCancel, onNavigate, userRole = 'a
 
   const handleCancel = () => {
     if (onNavigate) {
-      onNavigate('dashboard');
+      onNavigate('transactionMenu');
     } else if (onCancel) {
       onCancel();
     }
@@ -287,11 +287,33 @@ const CreateSupplierTransaction = ({ onBack, onCancel, onNavigate, userRole = 'a
     <div className="dashboard-container">
       {/* Left Sidebar Navigation */}
       <nav className="sidebar-nav">
-        <div className="nav-item" onClick={() => onNavigate && onNavigate('dashboard')}>
+        <div className="nav-item" onClick={handleBack}>
           <div className="nav-icon">
             <i className="fas fa-home"></i>
           </div>
           <span>Home</span>
+        </div>
+        {userRole === 'admin' && (
+          <div className="nav-item" onClick={() => onNavigate && onNavigate('users')}>
+            <div className="nav-icon">
+              <i className="fas fa-users"></i>
+            </div>
+            <span>Supervisors</span>
+          </div>
+        )}
+        {userRole !== 'staff' && (
+          <div className="nav-item" onClick={() => onNavigate && onNavigate('staff')}>
+            <div className="nav-icon">
+              <i className="fas fa-user-tie"></i>
+            </div>
+            <span>Staff</span>
+          </div>
+        )}
+        <div className="nav-item" onClick={() => onNavigate && onNavigate('masterMenu')}>
+          <div className="nav-icon">
+            <i className="fas fa-th-large"></i>
+          </div>
+          <span>Master Menu</span>
         </div>
         <div className="nav-item active" onClick={() => onNavigate && onNavigate('transactionMenu')}>
           <div className="nav-icon">
@@ -365,27 +387,8 @@ const CreateSupplierTransaction = ({ onBack, onCancel, onNavigate, userRole = 'a
 
                 {/* Products Section */}
                 <div className="form-section">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                  <div style={{ marginBottom: '20px' }}>
                     <h3 className="section-title">Products</h3>
-                    <button 
-                      type="button" 
-                      onClick={addProductItem}
-                      style={{
-                        background: '#4caf50',
-                        color: 'white',
-                        border: 'none',
-                        padding: '8px 16px',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                      }}
-                    >
-                      <i className="fas fa-plus"></i> Add Product
-                    </button>
                   </div>
 
                   {productItems.map((item, index) => (
@@ -507,6 +510,27 @@ const CreateSupplierTransaction = ({ onBack, onCancel, onNavigate, userRole = 'a
                       </div>
                     </div>
                   ))}
+
+                  <button 
+                    type="button" 
+                    onClick={addProductItem}
+                    style={{
+                      background: '#4caf50',
+                      color: 'white',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      marginTop: '20px'
+                    }}
+                  >
+                    <i className="fas fa-plus"></i> Add Product
+                  </button>
                 </div>
 
                 {/* Warning Message */}

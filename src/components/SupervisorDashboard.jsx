@@ -113,7 +113,7 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
       setActiveNav('masterMenu');
     } else if (currentPage === 'masterMenu') {
       setActiveNav('masterMenu');
-    } else if (currentPage === 'transactionMenu' || currentPage === 'stockIn' || currentPage === 'stockOut' || currentPage === 'createSupplier') {
+    } else if (currentPage === 'transactionMenu' || currentPage === 'stockIn' || currentPage === 'stockOut' || currentPage === 'createSupplier' || currentPage === 'transactionProducts' || currentPage === 'addProductPricing') {
       setActiveNav('transactionMenu');
     } else if (currentPage === 'settings') {
       setActiveNav('settings');
@@ -371,6 +371,9 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
                 { title: 'Stock In', desc: 'Record stock entries', icon: 'fa-box-open', target: 'stockInMaster' },
                 { title: 'Stock Out', desc: 'Record stock exits', icon: 'fa-box', target: 'stockOutMaster' },
                 { title: 'Create Supplier', desc: 'Record products from supplier', icon: 'fa-truck', target: 'createSupplier' },
+                { title: 'Products', desc: 'Manage product pricing', icon: 'fa-tags', target: 'transactionProducts' },
+                { title: 'Services', desc: 'Manage service transactions', icon: 'fa-concierge-bell', target: 'services' },
+                { title: 'Sales Record', desc: 'View and manage sales records', icon: 'fa-chart-line', target: 'salesRecord' },
               ].map((item) => (
                 <div
                   key={item.title}

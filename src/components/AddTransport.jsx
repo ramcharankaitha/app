@@ -7,7 +7,11 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     name: '',
     travelsName: '',
     service: '',
-    vehicleNumber: ''
+    vehicleNumber: '',
+    address: '',
+    city: '',
+    state: '',
+    pincode: ''
   });
   const [addresses, setAddresses] = useState([
     { id: 1, address: '', city: '', state: '', pincode: '' }
@@ -80,16 +84,34 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   };
 
   const addAddress = () => {
-    const newId = addresses.length > 0
-      ? Math.max(...addresses.map(addr => addr.id)) + 1
-      : 1;
-    setAddresses(prev => [...prev, { id: newId, address: '', city: '', state: '', pincode: '' }]);
+    // At least city is required (backend validation)
+    if (formData.city && formData.city.trim() !== '') {
+      const newId = addresses.length > 0
+        ? Math.max(...addresses.map(addr => addr.id)) + 1
+        : 1;
+      setAddresses(prev => [...prev, { 
+        id: newId, 
+        address: formData.address.trim() || '', 
+        city: formData.city.trim(), 
+        state: formData.state.trim() || '', 
+        pincode: formData.pincode.trim() || '' 
+      }]);
+      // Clear address fields after adding
+      setFormData(prev => ({ 
+        ...prev, 
+        address: '', 
+        city: '', 
+        state: '', 
+        pincode: '' 
+      }));
+      setError(''); // Clear any previous errors
+    } else {
+      setError('City is required for each address.');
+    }
   };
 
   const removeAddress = (id) => {
-    if (addresses.length > 1) {
-      setAddresses(prev => prev.filter(addr => addr.id !== id));
-    }
+    setAddresses(prev => prev.filter(addr => addr.id !== id));
   };
 
   const submitTransport = async () => {
@@ -98,9 +120,9 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     setSuccessMessage('');
 
     try {
-      // Filter out empty addresses
+      // Filter out empty addresses - at least city is required
       const validAddresses = addresses.filter(addr => 
-        addr.address.trim() !== '' || addr.city.trim() !== '' || addr.state.trim() !== '' || addr.pincode.trim() !== ''
+        addr.city && addr.city.trim() !== ''
       );
 
       if (validAddresses.length === 0) {
@@ -165,17 +187,17 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
           </div>
           <span>Staff</span>
         </div>
-        <div className="nav-item" onClick={handleCustomers}>
-          <div className="nav-icon">
-            <i className="fas fa-user-friends"></i>
-          </div>
-          <span>Customers</span>
-        </div>
         <div className="nav-item active" onClick={() => onNavigate && onNavigate('masterMenu')}>
           <div className="nav-icon">
             <i className="fas fa-th-large"></i>
           </div>
           <span>Master Menu</span>
+        </div>
+        <div className="nav-item" onClick={() => onNavigate && onNavigate('transactionMenu')}>
+          <div className="nav-icon">
+            <i className="fas fa-exchange-alt"></i>
+          </div>
+          <span>Transaction</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">
@@ -224,7 +246,7 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="travelsName">Travels Name</label>
+                      <label htmlFor="travelsName">Transport Name</label>
                       <div className="input-wrapper">
                         <i className="fas fa-building input-icon"></i>
                         <input
@@ -232,140 +254,12 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           id="travelsName"
                           name="travelsName"
                           className="form-input"
-                          placeholder="Enter travels name."
+                          placeholder="Enter transport name"
                           value={formData.travelsName}
                           onChange={handleInputChange}
                           required
                         />
                       </div>
-                    </div>
-
-                    {/* Multiple Addresses Section */}
-                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <label>Addresses</label>
-                        <button
-                          type="button"
-                          onClick={addAddress}
-                          style={{
-                            padding: '8px 16px',
-                            background: '#28a745',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontSize: '13px',
-                            fontWeight: '600',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px'
-                          }}
-                        >
-                          <i className="fas fa-plus"></i>
-                          <span>Add Address</span>
-                        </button>
-                      </div>
-                      {addresses.map((addr, index) => (
-                        <div key={addr.id} style={{
-                          marginBottom: '20px',
-                          padding: '16px',
-                          border: '2px solid #f0f0f0',
-                          borderRadius: '8px',
-                          position: 'relative'
-                        }}>
-                          {addresses.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removeAddress(addr.id)}
-                              style={{
-                                position: 'absolute',
-                                top: '10px',
-                                right: '10px',
-                                background: '#dc3545',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: '50%',
-                                width: '28px',
-                                height: '28px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '14px'
-                              }}
-                              title="Remove this address"
-                            >
-                              <i className="fas fa-times"></i>
-                            </button>
-                          )}
-                          <div style={{ marginBottom: '12px', fontWeight: '600', color: '#333' }}>
-                            Address {index + 1}
-                          </div>
-                          <div className="form-grid">
-                            <div className="form-group full-width">
-                              <label htmlFor={`address-${addr.id}`}>Street Address</label>
-                              <div className="input-wrapper">
-                                <i className="fas fa-map-marker-alt input-icon"></i>
-                                <textarea
-                                  id={`address-${addr.id}`}
-                                  className="form-input textarea-input"
-                                  placeholder="Enter street address, area"
-                                  rows="2"
-                                  value={addr.address}
-                                  onChange={(e) => handleAddressChange(addr.id, 'address', e.target.value)}
-                                ></textarea>
-                              </div>
-                            </div>
-
-                            <div className="form-group">
-                              <label htmlFor={`city-${addr.id}`}>City</label>
-                              <div className="input-wrapper">
-                                <i className="fas fa-city input-icon"></i>
-                                <input
-                                  type="text"
-                                  id={`city-${addr.id}`}
-                                  className="form-input"
-                                  placeholder="Enter city."
-                                  value={addr.city}
-                                  onChange={(e) => handleAddressChange(addr.id, 'city', e.target.value)}
-                                  required={index === 0}
-                                />
-                              </div>
-                            </div>
-
-                            <div className="form-group">
-                              <label htmlFor={`state-${addr.id}`}>State</label>
-                              <div className="input-wrapper">
-                                <i className="fas fa-map input-icon"></i>
-                                <input
-                                  type="text"
-                                  id={`state-${addr.id}`}
-                                  className="form-input"
-                                  placeholder="Enter state."
-                                  value={addr.state}
-                                  onChange={(e) => handleAddressChange(addr.id, 'state', e.target.value)}
-                                />
-                              </div>
-                            </div>
-
-                            <div className="form-group">
-                              <label htmlFor={`pincode-${addr.id}`}>Pincode</label>
-                              <div className="input-wrapper">
-                                <i className="fas fa-mail-bulk input-icon"></i>
-                                <input
-                                  type="text"
-                                  id={`pincode-${addr.id}`}
-                                  className="form-input"
-                                  placeholder="Enter pincode."
-                                  value={addr.pincode}
-                                  onChange={(e) => handleAddressChange(addr.id, 'pincode', e.target.value)}
-                                  maxLength="10"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
                     </div>
 
                     <div className="form-group">
@@ -377,7 +271,7 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           id="service"
                           name="service"
                           className="form-input"
-                          placeholder="Enter service."
+                          placeholder="Enter service"
                           value={formData.service}
                           onChange={handleInputChange}
                           required
@@ -399,6 +293,174 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           onChange={handleInputChange}
                         />
                       </div>
+                    </div>
+
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                      <label style={{ display: 'block', marginBottom: '16px', fontWeight: '600', color: '#333' }}>
+                        Address Details
+                      </label>
+                      
+                      <div className="form-grid">
+                        <div className="form-group full-width">
+                          <label htmlFor="address">Street Address</label>
+                          <div className="input-wrapper">
+                            <i className="fas fa-map-marker-alt input-icon"></i>
+                            <textarea
+                              id="address"
+                              name="address"
+                              className="form-input textarea-input"
+                              placeholder="Enter street address, area"
+                              rows="2"
+                              value={formData.address || ''}
+                              onChange={handleInputChange}
+                            ></textarea>
+                          </div>
+                        </div>
+
+                        <div className="form-group">
+                          <label htmlFor="city">City <span style={{ color: '#dc3545' }}>*</span></label>
+                          <div className="input-wrapper">
+                            <i className="fas fa-city input-icon"></i>
+                            <input
+                              type="text"
+                              id="city"
+                              name="city"
+                              className="form-input"
+                              placeholder="Enter city"
+                              value={formData.city || ''}
+                              onChange={handleInputChange}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="form-group">
+                          <label htmlFor="state">State</label>
+                          <div className="input-wrapper">
+                            <i className="fas fa-map input-icon"></i>
+                            <input
+                              type="text"
+                              id="state"
+                              name="state"
+                              className="form-input"
+                              placeholder="Enter state"
+                              value={formData.state || ''}
+                              onChange={handleInputChange}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="form-group">
+                          <label htmlFor="pincode">Pincode</label>
+                          <div className="input-wrapper">
+                            <i className="fas fa-mail-bulk input-icon"></i>
+                            <input
+                              type="text"
+                              id="pincode"
+                              name="pincode"
+                              className="form-input"
+                              placeholder="Enter pincode"
+                              value={formData.pincode || ''}
+                              onChange={handleInputChange}
+                              maxLength="10"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={addAddress}
+                        style={{
+                          marginTop: '12px',
+                          padding: '8px 16px',
+                          background: '#28a745',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}
+                      >
+                        <i className="fas fa-plus"></i>
+                        <span>Add Address</span>
+                      </button>
+                      
+                      {/* Display Added Addresses */}
+                      {addresses.length > 0 && addresses.some(addr => addr.city && addr.city.trim() !== '') && (
+                        <div style={{ marginTop: '20px' }}>
+                          <label style={{ display: 'block', marginBottom: '12px', fontWeight: '600', color: '#333' }}>
+                            Added Addresses ({addresses.filter(addr => addr.city && addr.city.trim() !== '').length})
+                          </label>
+                          {addresses
+                            .filter(addr => addr.city && addr.city.trim() !== '')
+                            .map((addr, index) => (
+                              <div
+                                key={addr.id}
+                                style={{
+                                  marginBottom: '16px',
+                                  padding: '16px',
+                                  background: '#f8f9fa',
+                                  border: '2px solid #e0e0e0',
+                                  borderRadius: '8px',
+                                  position: 'relative'
+                                }}
+                              >
+                                <div style={{ marginBottom: '12px', fontWeight: '600', color: '#dc3545', fontSize: '14px' }}>
+                                  Address {index + 1}
+                                </div>
+                                {addr.address && addr.address.trim() !== '' && (
+                                  <div style={{ marginBottom: '8px', fontSize: '14px' }}>
+                                    <span style={{ fontWeight: '500', color: '#666' }}>Street Address: </span>
+                                    <span style={{ color: '#333' }}>{addr.address}</span>
+                                  </div>
+                                )}
+                                <div style={{ marginBottom: '8px', fontSize: '14px' }}>
+                                  <span style={{ fontWeight: '500', color: '#666' }}>City: </span>
+                                  <span style={{ color: '#333' }}>{addr.city || 'N/A'}</span>
+                                </div>
+                                {addr.state && addr.state.trim() !== '' && (
+                                  <div style={{ marginBottom: '8px', fontSize: '14px' }}>
+                                    <span style={{ fontWeight: '500', color: '#666' }}>State: </span>
+                                    <span style={{ color: '#333' }}>{addr.state}</span>
+                                  </div>
+                                )}
+                                {addr.pincode && addr.pincode.trim() !== '' && (
+                                  <div style={{ marginBottom: '8px', fontSize: '14px' }}>
+                                    <span style={{ fontWeight: '500', color: '#666' }}>Pincode: </span>
+                                    <span style={{ color: '#333' }}>{addr.pincode}</span>
+                                  </div>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => removeAddress(addr.id)}
+                                  style={{
+                                    position: 'absolute',
+                                    top: '12px',
+                                    right: '12px',
+                                    background: '#dc3545',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: '50%',
+                                    width: '28px',
+                                    height: '28px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '14px'
+                                  }}
+                                  title="Remove this address"
+                                >
+                                  <i className="fas fa-times"></i>
+                                </button>
+                              </div>
+                            ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

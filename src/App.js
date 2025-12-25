@@ -28,6 +28,13 @@ import StockOutMaster from './components/StockOutMaster';
 import CreateSupplierTransaction from './components/CreateSupplierTransaction';
 import CategoryMaster from './components/CategoryMaster';
 import AddCategory from './components/AddCategory';
+import TransactionProducts from './components/TransactionProducts';
+import AddProductPricing from './components/AddProductPricing';
+import Services from './components/Services';
+import AddService from './components/AddService';
+import SalesRecord from './components/SalesRecord';
+import AddSalesRecord from './components/AddSalesRecord';
+import PurchaseBillAlert from './components/PurchaseBillAlert';
 import Settings from './components/Settings';
 import Profile from './components/Profile';
 import EditProfile from './components/EditProfile';
@@ -517,6 +524,91 @@ const AdminRoutes = () => {
           </ProtectedRoute>
         }
       />
+      
+      <Route
+        path="/transactionProducts"
+        element={
+          <ProtectedRoute>
+            <TransactionProducts
+              onBack={() => handleNavigation(getBackPath('dashboard'))}
+              onAddPricing={() => handleNavigation('addProductPricing')}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/addProductPricing"
+        element={
+          <ProtectedRoute>
+            <AddProductPricing onBack={() => handleNavigation('transactionProducts')} onCancel={() => handleNavigation('transactionProducts')} onNavigate={handleNavigation} userRole={userRole} />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/services"
+        element={
+          <ProtectedRoute>
+            <Services
+              onBack={() => handleNavigation(getBackPath('dashboard'))}
+              onAddService={() => handleNavigation('addService')}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/addService"
+        element={
+          <ProtectedRoute>
+            <AddService onBack={() => handleNavigation('services')} onCancel={() => handleNavigation('services')} onNavigate={handleNavigation} userRole={userRole} />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/salesRecord"
+        element={
+          <ProtectedRoute>
+            <SalesRecord
+              onBack={() => handleNavigation(getBackPath('dashboard'))}
+              onAddSalesRecord={() => handleNavigation('addSalesRecord')}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/addSalesRecord"
+        element={
+          <ProtectedRoute>
+            <AddSalesRecord onBack={() => handleNavigation('salesRecord')} onCancel={() => handleNavigation('salesRecord')} onNavigate={handleNavigation} />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/purchaseBillAlert"
+        element={
+          <ProtectedRoute>
+            <PurchaseBillAlert
+              onBack={() => handleNavigation(getBackPath('dashboard'))}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route path="/transactionMenu" element={<ProtectedRoute><AdminDashboardWrapper /></ProtectedRoute>} />
+      <Route path="/masterMenu" element={<ProtectedRoute><AdminDashboardWrapper /></ProtectedRoute>} />
       
       <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />

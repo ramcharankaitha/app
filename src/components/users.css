@@ -64,6 +64,7 @@
     flex: 1;
     padding: 20px;
     overflow-y: auto;
+    overflow-x: visible;
     padding-bottom: 40px;
 }
 
@@ -214,14 +215,18 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    position: relative;
+    overflow: visible;
 }
 
 .user-card {
+    position: relative;
     background: var(--card-bg);
     border-radius: 14px;
     padding: 16px;
     display: flex;
     align-items: center;
+    overflow: visible;
     gap: 14px;
     box-shadow: 0 2px 8px var(--shadow-light);
     border: 1px solid var(--border-color);
@@ -288,12 +293,22 @@
     color: var(--text-secondary);
     text-align: right;
     flex-shrink: 0;
-    min-width: 180px;
+    min-width: 200px;
+    max-width: 250px;
+    padding-right: 50px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 40px;
 }
 
 .user-options-container {
-    position: relative;
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
     flex-shrink: 0;
+    z-index: 1000;
 }
 
 .user-options {
@@ -313,14 +328,15 @@
 
 .supervisor-menu-dropdown {
     position: absolute;
-    top: calc(100% + 8px);
+    top: calc(100% + 12px);
     right: 0;
     background: var(--card-bg);
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     border: 1px solid var(--border-color);
     min-width: 180px;
-    z-index: 1000;
+    z-index: 10000;
+    margin-top: 4px;
     overflow: hidden;
 }
 

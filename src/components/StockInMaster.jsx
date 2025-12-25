@@ -14,7 +14,7 @@ const StockInMaster = ({ onBack, onAddStockIn, onNavigate, userRole = 'admin' })
 
   const handleBack = () => {
     if (onNavigate) {
-      onNavigate('dashboard');
+      onNavigate('transactionMenu');
     } else if (onBack) {
       onBack();
     }
@@ -99,23 +99,33 @@ const StockInMaster = ({ onBack, onAddStockIn, onNavigate, userRole = 'admin' })
           </div>
           <span>Home</span>
         </div>
-        <div className="nav-item" onClick={() => onNavigate && onNavigate('transactionMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-exchange-alt"></i>
+        {userRole === 'admin' && (
+          <div className="nav-item" onClick={() => onNavigate && onNavigate('users')}>
+            <div className="nav-icon">
+              <i className="fas fa-users"></i>
+            </div>
+            <span>Supervisors</span>
           </div>
-          <span>Transaction</span>
-        </div>
-        <div className="nav-item active">
-          <div className="nav-icon">
-            <i className="fas fa-box-open"></i>
+        )}
+        {userRole !== 'staff' && (
+          <div className="nav-item" onClick={() => onNavigate && onNavigate('staff')}>
+            <div className="nav-icon">
+              <i className="fas fa-user-tie"></i>
+            </div>
+            <span>Staff</span>
           </div>
-          <span>Stock In</span>
-        </div>
+        )}
         <div className="nav-item" onClick={() => onNavigate && onNavigate('masterMenu')}>
           <div className="nav-icon">
             <i className="fas fa-th-large"></i>
           </div>
           <span>Master Menu</span>
+        </div>
+        <div className="nav-item active" onClick={() => onNavigate && onNavigate('transactionMenu')}>
+          <div className="nav-icon">
+            <i className="fas fa-exchange-alt"></i>
+          </div>
+          <span>Transaction</span>
         </div>
         <div className="nav-item" onClick={() => onNavigate && onNavigate('settings')}>
           <div className="nav-icon">

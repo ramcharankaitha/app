@@ -8,10 +8,10 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [showOptionsMenu, setShowOptionsMenu] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
-  const menuRef = useRef(null);
+  const menuRefs = useRef({});
 
   // Fetch categories from database
   const fetchCategories = async () => {
@@ -36,30 +36,30 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
   // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setShowOptionsMenu(null);
+      if (openMenuId && menuRefs.current[openMenuId] && !menuRefs.current[openMenuId].contains(event.target)) {
+        setOpenMenuId(null);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [openMenuId]);
 
-  const handleOptionsClick = (e, categoryId) => {
+  const toggleMenu = (categoryId, e) => {
     e.stopPropagation();
-    setShowOptionsMenu(showOptionsMenu === categoryId ? null : categoryId);
+    setOpenMenuId(openMenuId === categoryId ? null : categoryId);
   };
 
   const handleViewCategory = (category) => {
     setSelectedCategory(category);
     setShowViewModal(true);
-    setShowOptionsMenu(null);
+    setOpenMenuId(null);
   };
 
   const handleDeleteCategory = (category) => {
     setSelectedCategory(category);
     setShowDeleteConfirm(true);
-    setShowOptionsMenu(null);
+    setOpenMenuId(null);
   };
 
   const confirmDelete = async () => {
@@ -84,8 +84,7 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
 
   const handleBack = () => {
     if (onNavigate) {
-      const backPath = userRole === 'admin' ? 'dashboard' : userRole === 'supervisor' ? 'supervisorHome' : 'staffHome';
-      onNavigate(backPath);
+      onNavigate('masterMenu');
     } else if (onBack) {
       onBack();
     }
@@ -137,6 +136,14 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
           </div>
           <span>Home</span>
         </div>
+        {userRole === 'admin' && (
+          <div className="nav-item" onClick={() => onNavigate && onNavigate('users')}>
+            <div className="nav-icon">
+              <i className="fas fa-users"></i>
+            </div>
+            <span>Supervisors</span>
+          </div>
+        )}
         {userRole !== 'staff' && (
           <div className="nav-item" onClick={handleStaff}>
             <div className="nav-icon">
@@ -145,17 +152,17 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
             <span>Staff</span>
           </div>
         )}
-        <div className="nav-item" onClick={handleCustomers}>
-          <div className="nav-icon">
-            <i className="fas fa-user-friends"></i>
-          </div>
-          <span>Customers</span>
-        </div>
         <div className="nav-item active" onClick={() => onNavigate && onNavigate('masterMenu')}>
           <div className="nav-icon">
             <i className="fas fa-th-large"></i>
           </div>
           <span>Master Menu</span>
+        </div>
+        <div className="nav-item" onClick={() => onNavigate && onNavigate('transactionMenu')}>
+          <div className="nav-icon">
+            <i className="fas fa-exchange-alt"></i>
+          </div>
+          <span>Transaction</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">
@@ -251,7 +258,7 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
                 </div>
               ) : (
                 filtered.map((category) => (
-                  <div key={category.id} className="product-card">
+                  <div key={category.id} className="product-card" style={{ position: 'relative' }}>
                     <div className="product-info">
                       <div className="product-main-info">
                         <div>
@@ -266,50 +273,33 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
                         </div>
                       </div>
                     </div>
-                    <div className="product-actions" ref={menuRef}>
+                    <div 
+                      className="product-actions" 
+                      ref={el => menuRefs.current[category.id] = el}
+                      style={{ position: 'absolute', top: '50%', right: '12px', transform: 'translateY(-50%)', zIndex: 1000 }}
+                    >
                       <button
                         className="options-btn"
-                        onClick={(e) => handleOptionsClick(e, category.id)}
+                        onClick={(e) => toggleMenu(category.id, e)}
                       >
                         <i className="fas fa-ellipsis-v"></i>
                       </button>
-                      {showOptionsMenu === category.id && (
+                      {openMenuId === category.id && (
                         <div className="options-menu">
                           <button
                             onClick={() => handleViewCategory(category)}
-                            style={{
-                              width: '100%',
-                              padding: '10px 16px',
-                              border: 'none',
-                              background: 'transparent',
-                              textAlign: 'left',
-                              cursor: 'pointer',
-                              fontSize: '14px',
-                              color: '#333'
-                            }}
-                            onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                            onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                            className="menu-item"
                           >
-                            <i className="fas fa-eye" style={{ marginRight: '8px', color: '#007bff' }}></i>
-                            View Category
+                            <i className="fas fa-eye"></i>
+                            <span>View Category</span>
                           </button>
                           <button
                             onClick={() => handleDeleteCategory(category)}
-                            style={{
-                              width: '100%',
-                              padding: '10px 16px',
-                              border: 'none',
-                              background: 'transparent',
-                              textAlign: 'left',
-                              cursor: 'pointer',
-                              fontSize: '14px',
-                              color: '#dc3545'
-                            }}
-                            onMouseEnter={(e) => e.target.style.background = '#ffe0e0'}
-                            onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                            className="menu-item"
+                            style={{ color: '#dc3545' }}
                           >
-                            <i className="fas fa-trash" style={{ marginRight: '8px' }}></i>
-                            Delete
+                            <i className="fas fa-trash"></i>
+                            <span>Delete</span>
                           </button>
                         </div>
                       )}

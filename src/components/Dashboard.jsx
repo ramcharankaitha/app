@@ -35,14 +35,16 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
       onNavigate('users');
     } else if (navItem === 'staff') {
       onNavigate('staff');
-    } else if (navItem === 'customers') {
-      onNavigate('customers');
     } else if (navItem === 'masterMenu') {
-      // Handle masterMenu as internal state, don't navigate away
-      // Just update the activeNav state, which is already done above
+      // Navigate to masterMenu route
+      if (currentPage !== 'masterMenu') {
+        onNavigate('masterMenu');
+      }
     } else if (navItem === 'transactionMenu') {
-      // Handle transactionMenu as internal state, don't navigate away
-      // Just update the activeNav state, which is already done above
+      // Navigate to transactionMenu route
+      if (currentPage !== 'transactionMenu') {
+        onNavigate('transactionMenu');
+      }
     } else if (navItem === 'home') {
       // Reset to home view
       setActiveNav('home');
@@ -206,52 +208,18 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
   useEffect(() => {
     if (currentPage === 'dashboard') {
       setActiveNav('home');
-    } else if (currentPage === 'users') {
+    } else if (currentPage === 'users' || currentPage === 'addUser') {
       setActiveNav('users');
-    } else if (currentPage === 'products') {
+    } else if (currentPage === 'products' || currentPage === 'addProduct' || currentPage === 'suppliers' || currentPage === 'addSupplier' || currentPage === 'transport' || currentPage === 'addTransport' || currentPage === 'chitPlans' || currentPage === 'addChitCustomer' || currentPage === 'categoryMaster' || currentPage === 'addCategory' || currentPage === 'masterMenu') {
       setActiveNav('masterMenu');
-    } else if (currentPage === 'staff') {
+    } else if (currentPage === 'staff' || currentPage === 'addStaff') {
       setActiveNav('staff');
-    } else if (currentPage === 'customers') {
-      setActiveNav('customers');
-    } else if (currentPage === 'suppliers') {
+    } else if (currentPage === 'customers' || currentPage === 'addCustomer') {
+      // Customers is part of masterMenu, not a separate nav item
       setActiveNav('masterMenu');
-    } else if (currentPage === 'chitPlans') {
-      setActiveNav('masterMenu');
-    } else if (currentPage === 'masterMenu') {
-      setActiveNav('masterMenu');
-    } else if (currentPage === 'settings') {
-      setActiveNav('settings');
-    }
-  }, [currentPage]);
-
-  // Sync activeNav with currentPage
-  useEffect(() => {
-    if (currentPage === 'dashboard') {
-      setActiveNav('home');
-    } else if (currentPage === 'users') {
-      setActiveNav('users');
-    } else if (currentPage === 'products') {
-      setActiveNav('masterMenu');
-    } else if (currentPage === 'staff') {
-      setActiveNav('staff');
-    } else if (currentPage === 'customers') {
-      setActiveNav('customers');
-    } else if (currentPage === 'suppliers') {
-      setActiveNav('masterMenu');
-    } else if (currentPage === 'dispatch') {
+    } else if (currentPage === 'transactionMenu' || currentPage === 'stockIn' || currentPage === 'stockInMaster' || currentPage === 'stockOut' || currentPage === 'stockOutMaster' || currentPage === 'createSupplier' || currentPage === 'services' || currentPage === 'addService' || currentPage === 'salesRecord' || currentPage === 'addSalesRecord' || currentPage === 'purchaseBillAlert' || currentPage === 'transactionProducts' || currentPage === 'addProductPricing' || currentPage === 'dispatch' || currentPage === 'addDispatch') {
       setActiveNav('transactionMenu');
-    } else if (currentPage === 'transport') {
-      setActiveNav('masterMenu');
-    } else if (currentPage === 'chitPlans') {
-      setActiveNav('masterMenu');
-    } else if (currentPage === 'categoryMaster') {
-      setActiveNav('masterMenu');
-    } else if (currentPage === 'masterMenu') {
-      setActiveNav('masterMenu');
-    } else if (currentPage === 'transactionMenu' || currentPage === 'stockIn' || currentPage === 'stockInMaster' || currentPage === 'stockOut' || currentPage === 'stockOutMaster' || currentPage === 'createSupplier') {
-      setActiveNav('transactionMenu');
-    } else if (currentPage === 'settings') {
+    } else if (currentPage === 'settings' || currentPage === 'profile' || currentPage === 'editProfile') {
       setActiveNav('settings');
     }
   }, [currentPage]);
@@ -366,6 +334,9 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     { title: 'Stock In', desc: 'Record stock entries', icon: 'fa-box-open', target: 'stockInMaster' },
     { title: 'Stock Out', desc: 'Record stock exits', icon: 'fa-box', target: 'stockOutMaster' },
     { title: 'Create Supplier', desc: 'Record products from supplier', icon: 'fa-truck', target: 'createSupplier' },
+    { title: 'Products', desc: 'Manage product pricing', icon: 'fa-tags', target: 'transactionProducts' },
+    { title: 'Services', desc: 'Manage service transactions', icon: 'fa-concierge-bell', target: 'services' },
+    { title: 'Sales Record', desc: 'View and manage sales records', icon: 'fa-chart-line', target: 'salesRecord' },
   ];
 
   const renderContent = () => {
@@ -429,48 +400,14 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
 
     return (
       <>
-        {/* Active Scope, Sales Report and Search */}
+        {/* Report and Search */}
         <div className="controls-section">
-          <div className="scope-button" onClick={() => setScopeMenuOpen((prev) => !prev)}>
-            <i className="fas fa-minus"></i>
-            <span>Active Scope</span>
-            <span className="scope-value">{activeScope}</span>
-            <i className="fas fa-chevron-down"></i>
-            {scopeMenuOpen && (
-              <div className="scope-dropdown">
-                <div
-                  className="scope-option"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleScopeSelect('all');
-                  }}
-                >
-                  <div className="option-title">All stores • Global scope</div>
-                  <div className="option-desc">See data across all stores</div>
-                </div>
-                <div
-                  className="scope-option"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleScopeSelect('selected');
-                  }}
-                >
-                  <div className="option-title">Selected stores</div>
-                  <div className="option-desc">
-                    {parseSelectedStores().length > 0
-                      ? `${parseSelectedStores().length} store(s) selected`
-                      : 'No stores selected yet'}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
           <button 
             type="button"
             className="sales-report-button" 
             onClick={handleSalesReport}
           >
-            <i className="fas fa-chart-line"></i> Sales Report
+            <i className="fas fa-chart-line"></i> Report
           </button>
           <div className="search-bar">
             <i className="fas fa-search"></i>
@@ -514,7 +451,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
           </div>
           <div className="stat-card" onClick={() => setShowReports(true)} style={{ cursor: 'pointer' }}>
             <div className="stat-content">
-              <h3 className="stat-title">Sales Report</h3>
+              <h3 className="stat-title">Report</h3>
               <p className="stat-value">View & Export</p>
               <p className="stat-subtitle">View sales data and export to CSV</p>
             </div>

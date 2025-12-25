@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { productsAPI, categoriesAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 
@@ -9,38 +9,107 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     skuCode: '',
     modelNumber: '',
     minQuantity: '',
-    currentQuantity: '',
+    openingQuantity: '',
     supplierName: '',
     category: '',
-    mrp: '',
-    discount: '',
-    sellRate: '',
-    salesRate: '',
-    nlc: '',
-    disc: '',
-    points: '',
     image: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
-  const [categories, setCategories] = useState([]);
+  const [mainCategories, setMainCategories] = useState([]);
+  const [subCategories, setSubCategories] = useState([]);
+  const [commonCategories, setCommonCategories] = useState([]);
+  const [selectedMainCategory, setSelectedMainCategory] = useState('');
+  const [selectedSubCategory, setSelectedSubCategory] = useState('');
+  const [selectedCommonCategory, setSelectedCommonCategory] = useState('');
+  
+  // Search/filter states for dropdowns
+  const [mainSearchTerm, setMainSearchTerm] = useState('');
+  const [subSearchTerm, setSubSearchTerm] = useState('');
+  const [commonSearchTerm, setCommonSearchTerm] = useState('');
+  const [showMainDropdown, setShowMainDropdown] = useState(false);
+  const [showSubDropdown, setShowSubDropdown] = useState(false);
+  const [showCommonDropdown, setShowCommonDropdown] = useState(false);
+  
+  // Refs for click outside detection
+  const mainDropdownRef = useRef(null);
+  const subDropdownRef = useRef(null);
+  const commonDropdownRef = useRef(null);
 
-  // Fetch categories on component mount
+  // Fetch main categories on component mount
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchMainCategories = async () => {
       try {
-        const response = await categoriesAPI.getAll();
+        const response = await categoriesAPI.getMainCategories();
         if (response && response.success) {
-          setCategories(response.categories || []);
+          setMainCategories(response.mainCategories || []);
         }
       } catch (err) {
-        console.error('Error fetching categories:', err);
+        console.error('Error fetching main categories:', err);
       }
     };
-    fetchCategories();
+    fetchMainCategories();
   }, []);
+
+  // Fetch sub categories when main category is selected
+  useEffect(() => {
+    const fetchSubCategories = async () => {
+      if (!selectedMainCategory) {
+        setSubCategories([]);
+        setCommonCategories([]);
+        setSelectedSubCategory('');
+        setSelectedCommonCategory('');
+        return;
+      }
+
+      try {
+        const subResponse = await categoriesAPI.getSubCategories(selectedMainCategory);
+        if (subResponse && subResponse.success) {
+          setSubCategories(subResponse.subCategories || []);
+        }
+        // Clear sub and common selections when main changes
+        setSelectedSubCategory('');
+        setSelectedCommonCategory('');
+        setCommonCategories([]);
+        setSubSearchTerm('');
+        setCommonSearchTerm('');
+        setShowSubDropdown(false);
+        setShowCommonDropdown(false);
+      } catch (err) {
+        console.error('Error fetching sub categories:', err);
+      }
+    };
+
+    fetchSubCategories();
+  }, [selectedMainCategory]);
+
+  // Fetch common categories when both main and sub categories are selected
+  useEffect(() => {
+    const fetchCommonCategories = async () => {
+      if (!selectedMainCategory || !selectedSubCategory) {
+        setCommonCategories([]);
+        setSelectedCommonCategory('');
+        return;
+      }
+
+      try {
+        const commonResponse = await categoriesAPI.getCommonCategories(selectedMainCategory, selectedSubCategory);
+        if (commonResponse && commonResponse.success) {
+          setCommonCategories(commonResponse.commonCategories || []);
+        }
+        // Clear common selection when sub changes
+        setSelectedCommonCategory('');
+        setCommonSearchTerm('');
+        setShowCommonDropdown(false);
+      } catch (err) {
+        console.error('Error fetching common categories:', err);
+      }
+    };
+
+    fetchCommonCategories();
+  }, [selectedMainCategory, selectedSubCategory]);
 
   const handleBack = () => {
     if (onNavigate) {
@@ -102,39 +171,75 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     }));
   };
 
-  const calculateSellRate = () => {
-    const mrp = parseFloat(formData.mrp);
-    const discount = parseFloat(formData.discount) || 0;
-    
-    if (mrp && mrp > 0) {
-      // Calculate: Sell Rate = MRP - (MRP * discount / 100)
-      const discountAmount = (mrp * discount) / 100;
-      const sellRate = mrp - discountAmount;
-      
-      setFormData(prev => ({
-        ...prev,
-        sellRate: sellRate.toFixed(2)
-      }));
-    }
+  // Filter categories based on search term
+  const filteredMainCategories = mainCategories.filter(cat =>
+    cat.toLowerCase().includes(mainSearchTerm.toLowerCase())
+  );
+  
+  const filteredSubCategories = subCategories.filter(cat =>
+    cat.toLowerCase().includes(subSearchTerm.toLowerCase())
+  );
+  
+  const filteredCommonCategories = commonCategories.filter(cat =>
+    cat.toLowerCase().includes(commonSearchTerm.toLowerCase())
+  );
+
+  // Handle main category selection
+  const handleMainSelect = (main) => {
+    setSelectedMainCategory(main);
+    setMainSearchTerm(main);
+    setShowMainDropdown(false);
+    // Sub and common will be cleared by useEffect
   };
 
-  const handlePricingKeyPress = (e, fieldName) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (fieldName === 'mrp' || fieldName === 'discount') {
-        // If MRP or discount is entered, calculate sell rate
-        if (formData.mrp && formData.discount) {
-          calculateSellRate();
-        } else if (fieldName === 'mrp' && formData.mrp) {
-          // If only MRP is entered, set sell rate = MRP (no discount)
-          setFormData(prev => ({
-            ...prev,
-            sellRate: parseFloat(prev.mrp).toFixed(2)
-          }));
-        }
-      }
-    }
+  // Handle sub category selection
+  const handleSubSelect = (sub) => {
+    setSelectedSubCategory(sub);
+    setSubSearchTerm(sub);
+    setShowSubDropdown(false);
+    // Common will be cleared by useEffect
   };
+
+  // Handle common category selection
+  const handleCommonSelect = (common) => {
+    setSelectedCommonCategory(common);
+    setCommonSearchTerm(common);
+    setShowCommonDropdown(false);
+  };
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (mainDropdownRef.current && !mainDropdownRef.current.contains(event.target)) {
+        setShowMainDropdown(false);
+      }
+      if (subDropdownRef.current && !subDropdownRef.current.contains(event.target)) {
+        setShowSubDropdown(false);
+      }
+      if (commonDropdownRef.current && !commonDropdownRef.current.contains(event.target)) {
+        setShowCommonDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Update category string whenever main, sub, or common changes
+  useEffect(() => {
+    let categoryString = selectedMainCategory || '';
+    if (selectedSubCategory) {
+      categoryString += ' - ' + selectedSubCategory;
+    }
+    if (selectedCommonCategory) {
+      categoryString += ' - ' + selectedCommonCategory;
+    }
+    setFormData(prev => ({
+      ...prev,
+      category: categoryString
+    }));
+  }, [selectedMainCategory, selectedSubCategory, selectedCommonCategory]);
+
 
   const submitProduct = async () => {
     setIsLoading(true);
@@ -148,16 +253,9 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
         skuCode: formData.skuCode,
         modelNumber: formData.modelNumber,
         minimumQuantity: parseInt(formData.minQuantity) || 0,
-        currentQuantity: parseInt(formData.currentQuantity) || 0,
+        currentQuantity: parseInt(formData.openingQuantity) || 0,
         supplierName: formData.supplierName,
-        category: formData.category,
-        mrp: formData.mrp ? parseFloat(formData.mrp) : null,
-        discount: formData.discount ? parseFloat(formData.discount) : 0,
-        sellRate: formData.sellRate ? parseFloat(formData.sellRate) : null,
-        salesRate: formData.salesRate ? parseFloat(formData.salesRate) : null,
-        nlc: formData.nlc ? parseFloat(formData.nlc) : null,
-        disc: formData.disc ? parseFloat(formData.disc) : 0,
-        points: formData.points ? parseInt(formData.points) : 0
+        category: formData.category
       });
 
       if (response.success) {
@@ -209,17 +307,17 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
           </div>
           <span>Staff</span>
         </div>
-        <div className="nav-item" onClick={handleCustomers}>
-          <div className="nav-icon">
-            <i className="fas fa-user-friends"></i>
-          </div>
-          <span>Customers</span>
-        </div>
         <div className="nav-item active" onClick={handleProducts}>
           <div className="nav-icon">
             <i className="fas fa-th-large"></i>
           </div>
           <span>Master Menu</span>
+        </div>
+        <div className="nav-item" onClick={() => onNavigate && onNavigate('transactionMenu')}>
+          <div className="nav-icon">
+            <i className="fas fa-exchange-alt"></i>
+          </div>
+          <span>Transaction</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">
@@ -250,31 +348,206 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                 <div className="form-section">
                   <h3 className="section-title">Product details</h3>
                   <div className="form-grid">
-                    {/* 1. Category - First */}
-                    <div className="form-group">
-                      <label htmlFor="category">Category</label>
+                    {/* Category Selection - All three in first row */}
+                    {/* 1. Main Category */}
+                    <div className="form-group" ref={mainDropdownRef} style={{ position: 'relative', zIndex: 1000 }}>
+                      <label htmlFor="mainCategory">Main Category</label>
                       <div className="input-wrapper">
                         <i className="fas fa-th-large input-icon"></i>
-                        <select
-                          id="category"
-                          name="category"
+                        <input
+                          type="text"
+                          id="mainCategory"
+                          name="mainCategory"
                           className="form-input"
-                          value={formData.category}
-                          onChange={handleInputChange}
+                          placeholder="Type to search main category..."
+                          value={mainSearchTerm}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setMainSearchTerm(value);
+                            setShowMainDropdown(true);
+                            // If user is typing something different, clear selection
+                            if (value !== selectedMainCategory) {
+                              setSelectedMainCategory('');
+                            }
+                          }}
+                          onFocus={() => {
+                            if (mainCategories.length > 0) {
+                              setShowMainDropdown(true);
+                            }
+                          }}
                           required
-                        >
-                          <option value="">Select category</option>
-                          {categories.map((cat) => {
-                            const categoryLabel = `${cat.main}${cat.sub ? ' - ' + cat.sub : ''}${cat.common ? ' - ' + cat.common : ''}`;
-                            return (
-                              <option key={cat.id} value={categoryLabel}>
-                                {categoryLabel}
-                              </option>
-                            );
-                          })}
-                        </select>
+                          autoComplete="off"
+                        />
                         <i className="fas fa-chevron-down dropdown-icon"></i>
                       </div>
+                      {showMainDropdown && filteredMainCategories.length > 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          background: '#fff',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                          zIndex: 10000,
+                          maxHeight: '200px',
+                          overflowY: 'auto',
+                          marginTop: '4px'
+                        }}>
+                          {filteredMainCategories.map((main, index) => (
+                            <div
+                              key={index}
+                              onClick={() => handleMainSelect(main)}
+                              style={{
+                                padding: '12px 16px',
+                                cursor: 'pointer',
+                                borderBottom: index < filteredMainCategories.length - 1 ? '1px solid #f0f0f0' : 'none',
+                                background: selectedMainCategory === main ? '#f0f7ff' : '#fff',
+                                color: selectedMainCategory === main ? '#007bff' : '#333'
+                              }}
+                              onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
+                              onMouseLeave={(e) => e.target.style.background = selectedMainCategory === main ? '#f0f7ff' : '#fff'}
+                            >
+                              {main}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 2. Sub Category */}
+                    <div className="form-group" ref={subDropdownRef} style={{ position: 'relative', zIndex: 1000 }}>
+                      <label htmlFor="subCategory">Sub Category</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-th-large input-icon"></i>
+                        <input
+                          type="text"
+                          id="subCategory"
+                          name="subCategory"
+                          className="form-input"
+                          placeholder={selectedMainCategory ? "Type to search sub category..." : "Select main category first"}
+                          value={subSearchTerm}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setSubSearchTerm(value);
+                            setShowSubDropdown(true);
+                            // If user is typing something different, clear selection
+                            if (value !== selectedSubCategory) {
+                              setSelectedSubCategory('');
+                            }
+                          }}
+                          onFocus={() => {
+                            if (subCategories.length > 0) {
+                              setShowSubDropdown(true);
+                            }
+                          }}
+                          disabled={!selectedMainCategory}
+                          autoComplete="off"
+                        />
+                        <i className="fas fa-chevron-down dropdown-icon"></i>
+                      </div>
+                      {showSubDropdown && selectedMainCategory && filteredSubCategories.length > 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          background: '#fff',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                          zIndex: 10000,
+                          maxHeight: '200px',
+                          overflowY: 'auto',
+                          marginTop: '4px'
+                        }}>
+                          {filteredSubCategories.map((sub, index) => (
+                            <div
+                              key={index}
+                              onClick={() => handleSubSelect(sub)}
+                              style={{
+                                padding: '12px 16px',
+                                cursor: 'pointer',
+                                borderBottom: index < filteredSubCategories.length - 1 ? '1px solid #f0f0f0' : 'none',
+                                background: selectedSubCategory === sub ? '#f0f7ff' : '#fff',
+                                color: selectedSubCategory === sub ? '#007bff' : '#333'
+                              }}
+                              onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
+                              onMouseLeave={(e) => e.target.style.background = selectedSubCategory === sub ? '#f0f7ff' : '#fff'}
+                            >
+                              {sub}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 3. Common Category */}
+                    <div className="form-group" ref={commonDropdownRef} style={{ position: 'relative', zIndex: 1000 }}>
+                      <label htmlFor="commonCategory">Common Category</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-th-large input-icon"></i>
+                        <input
+                          type="text"
+                          id="commonCategory"
+                          name="commonCategory"
+                          className="form-input"
+                          placeholder={selectedSubCategory ? "Type to search common category..." : "Select sub category first"}
+                          value={commonSearchTerm}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setCommonSearchTerm(value);
+                            setShowCommonDropdown(true);
+                            // If user is typing something different, clear selection
+                            if (value !== selectedCommonCategory) {
+                              setSelectedCommonCategory('');
+                            }
+                          }}
+                          onFocus={() => {
+                            if (commonCategories.length > 0) {
+                              setShowCommonDropdown(true);
+                            }
+                          }}
+                          disabled={!selectedSubCategory}
+                          autoComplete="off"
+                        />
+                        <i className="fas fa-chevron-down dropdown-icon"></i>
+                      </div>
+                      {showCommonDropdown && selectedSubCategory && filteredCommonCategories.length > 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          background: '#fff',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                          zIndex: 10000,
+                          maxHeight: '200px',
+                          overflowY: 'auto',
+                          marginTop: '4px'
+                        }}>
+                          {filteredCommonCategories.map((common, index) => (
+                            <div
+                              key={index}
+                              onClick={() => handleCommonSelect(common)}
+                              style={{
+                                padding: '12px 16px',
+                                cursor: 'pointer',
+                                borderBottom: index < filteredCommonCategories.length - 1 ? '1px solid #f0f0f0' : 'none',
+                                background: selectedCommonCategory === common ? '#f0f7ff' : '#fff',
+                                color: selectedCommonCategory === common ? '#007bff' : '#333'
+                              }}
+                              onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
+                              onMouseLeave={(e) => e.target.style.background = selectedCommonCategory === common ? '#f0f7ff' : '#fff'}
+                            >
+                              {common}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* 2. Item Code */}
@@ -348,18 +621,18 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       </div>
                     </div>
 
-                    {/* 6. Current Quantity */}
+                    {/* 6. Opening Quantity */}
                     <div className="form-group">
-                      <label htmlFor="currentQuantity">Current Quantity</label>
+                      <label htmlFor="openingQuantity">Opening Quantity</label>
                       <div className="input-wrapper">
                         <i className="fas fa-cubes input-icon"></i>
                         <input
                           type="number"
-                          id="currentQuantity"
-                          name="currentQuantity"
+                          id="openingQuantity"
+                          name="openingQuantity"
                           className="form-input"
                           placeholder="e.g., 100 units"
-                          value={formData.currentQuantity}
+                          value={formData.openingQuantity}
                           onChange={handleInputChange}
                           min="0"
                         />
@@ -385,138 +658,6 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                   </div>
                 </div>
 
-                {/* Pricing Details Section */}
-                <div className="form-section">
-                  <h3 className="section-title">Pricing details</h3>
-                  <div className="form-grid">
-                    <div className="form-group">
-                      <label htmlFor="mrp">MRP</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-rupee-sign input-icon"></i>
-                        <input
-                          type="number"
-                          id="mrp"
-                          name="mrp"
-                          className="form-input"
-                          placeholder="Enter MRP and press Enter"
-                          value={formData.mrp}
-                          onChange={handleInputChange}
-                          onKeyPress={(e) => handlePricingKeyPress(e, 'mrp')}
-                          min="0"
-                          step="0.01"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="discount">Discount (%)</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-percent input-icon"></i>
-                        <input
-                          type="number"
-                          id="discount"
-                          name="discount"
-                          className="form-input"
-                          placeholder="Enter discount % and press Enter"
-                          value={formData.discount}
-                          onChange={handleInputChange}
-                          onKeyPress={(e) => handlePricingKeyPress(e, 'discount')}
-                          min="0"
-                          step="0.01"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="sellRate">Sell rate <span style={{ fontSize: '11px', color: '#666', fontWeight: 'normal' }}>(Auto-calculated)</span></label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-tag input-icon"></i>
-                        <input
-                          type="number"
-                          id="sellRate"
-                          name="sellRate"
-                          className="form-input"
-                          placeholder="Auto-calculated from MRP & discount"
-                          value={formData.sellRate}
-                          onChange={handleInputChange}
-                          min="0"
-                          step="0.01"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="salesRate">Sales Rate</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-rupee-sign input-icon"></i>
-                        <input
-                          type="number"
-                          id="salesRate"
-                          name="salesRate"
-                          className="form-input"
-                          placeholder="Enter sales rate"
-                          value={formData.salesRate}
-                          onChange={handleInputChange}
-                          min="0"
-                          step="0.01"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="nlc">NLC</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-dollar-sign input-icon"></i>
-                        <input
-                          type="number"
-                          id="nlc"
-                          name="nlc"
-                          className="form-input"
-                          placeholder="Enter NLC"
-                          value={formData.nlc}
-                          onChange={handleInputChange}
-                          min="0"
-                          step="0.01"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="disc">DISC</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-percent input-icon"></i>
-                        <input
-                          type="number"
-                          id="disc"
-                          name="disc"
-                          className="form-input"
-                          placeholder="Enter DISC"
-                          value={formData.disc}
-                          onChange={handleInputChange}
-                          min="0"
-                          step="0.01"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="points">Points</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-star input-icon"></i>
-                        <input
-                          type="number"
-                          id="points"
-                          name="points"
-                          className="form-input"
-                          placeholder="Enter points"
-                          value={formData.points}
-                          onChange={handleInputChange}
-                          min="0"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
 
                 {/* Image Upload Section */}
                 <div className="form-section">

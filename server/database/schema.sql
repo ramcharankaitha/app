@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS staff (
     state VARCHAR(100),
     pincode VARCHAR(20),
     phone VARCHAR(20),
+    is_handler BOOLEAN DEFAULT FALSE,
     role VARCHAR(50) DEFAULT 'Staff',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -98,6 +99,42 @@ BEGIN
         WHERE table_name = 'admin_profile' AND column_name = 'selected_stores'
     ) THEN
         ALTER TABLE admin_profile ADD COLUMN selected_stores TEXT;
+    END IF;
+END $$;
+
+-- Add is_handler column to staff table if it doesn't exist (for existing databases)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'staff' AND column_name = 'is_handler'
+    ) THEN
+        ALTER TABLE staff ADD COLUMN is_handler BOOLEAN DEFAULT FALSE;
+    END IF;
+END $$;
+
+-- Add payment_mode, customer_name, and customer_phone columns to stock_transactions if they don't exist (for existing databases)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'stock_transactions' AND column_name = 'payment_mode'
+    ) THEN
+        ALTER TABLE stock_transactions ADD COLUMN payment_mode VARCHAR(50);
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'stock_transactions' AND column_name = 'customer_name'
+    ) THEN
+        ALTER TABLE stock_transactions ADD COLUMN customer_name VARCHAR(200);
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'stock_transactions' AND column_name = 'customer_phone'
+    ) THEN
+        ALTER TABLE stock_transactions ADD COLUMN customer_phone VARCHAR(20);
     END IF;
 END $$;
 
@@ -530,6 +567,9 @@ CREATE TABLE IF NOT EXISTS stock_transactions (
     new_quantity INTEGER NOT NULL,
     reference_type VARCHAR(50), -- 'CUSTOMER', 'SUPPLIER', 'DISPATCH', 'MANUAL', etc.
     reference_id INTEGER, -- ID of the related record (customer_id, supplier_id, dispatch_id, etc.)
+    payment_mode VARCHAR(50), -- Payment mode for customer transactions
+    customer_name VARCHAR(200), -- Customer name for stock out transactions
+    customer_phone VARCHAR(20), -- Customer phone for stock out transactions
     notes TEXT,
     created_by VARCHAR(100), -- username or user identifier
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -563,4 +603,58 @@ CREATE TABLE IF NOT EXISTS categories (
 CREATE INDEX IF NOT EXISTS idx_categories_main ON categories(main);
 CREATE INDEX IF NOT EXISTS idx_categories_sub ON categories(sub);
 CREATE INDEX IF NOT EXISTS idx_categories_common ON categories(common);
+
+-- Services Table
+CREATE TABLE IF NOT EXISTS services (
+    id SERIAL PRIMARY KEY,
+    customer_name VARCHAR(255) NOT NULL,
+    warranty BOOLEAN DEFAULT FALSE,
+    unwarranty BOOLEAN DEFAULT FALSE,
+    item_code VARCHAR(100),
+    brand_name VARCHAR(255),
+    product_name VARCHAR(255),
+    serial_number VARCHAR(255),
+    service_date DATE NOT NULL,
+    handler_id INTEGER,
+    handler_name VARCHAR(255),
+    handler_phone VARCHAR(20),
+    created_by VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Sales Records Table
+CREATE TABLE IF NOT EXISTS sales_records (
+    id SERIAL PRIMARY KEY,
+    customer_name VARCHAR(255) NOT NULL,
+    customer_contact VARCHAR(20) NOT NULL,
+    handler_id INTEGER,
+    handler_name VARCHAR(255),
+    handler_mobile VARCHAR(20),
+    date_of_duration DATE NOT NULL,
+    supplier_name VARCHAR(255),
+    supplier_number VARCHAR(20),
+    products JSONB NOT NULL, -- Array of product objects
+    total_amount DECIMAL(10, 2),
+    created_by VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Sales Records Table
+CREATE TABLE IF NOT EXISTS sales_records (
+    id SERIAL PRIMARY KEY,
+    customer_name VARCHAR(255) NOT NULL,
+    customer_contact VARCHAR(20) NOT NULL,
+    handler_id INTEGER,
+    handler_name VARCHAR(255),
+    handler_mobile VARCHAR(20),
+    date_of_duration DATE NOT NULL,
+    supplier_name VARCHAR(255),
+    supplier_number VARCHAR(20),
+    product_details JSONB, -- Array of product items: [{itemCode, productName, quantity, mrp, sellRate, discount, etc.}]
+    created_by VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 

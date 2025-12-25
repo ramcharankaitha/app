@@ -97,6 +97,12 @@ export const staffAPI = {
       body: JSON.stringify(staffData),
     });
   },
+  update: async (id, staffData) => {
+    return apiCall(`/staff/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(staffData),
+    });
+  },
 };
 
 export const productsAPI = {
@@ -420,10 +426,21 @@ export const stockAPI = {
       body: JSON.stringify({ itemCode, quantity, notes, createdBy }),
     });
   },
-  stockOut: async (itemCode, quantity, notes, createdBy) => {
+  stockOut: async (itemCode, quantity, notes, createdBy, customerName, customerPhone, paymentMode, mrp, sellRate, discount) => {
     return apiCall('/stock/out', {
       method: 'POST',
-      body: JSON.stringify({ itemCode, quantity, notes, createdBy }),
+      body: JSON.stringify({ 
+        itemCode, 
+        quantity, 
+        notes, 
+        createdBy,
+        customerName,
+        customerPhone,
+        paymentMode,
+        mrp,
+        sellRate,
+        discount
+      }),
     });
   },
   getTransactions: async (itemCode, productId, type, limit, offset) => {
@@ -431,13 +448,44 @@ export const stockAPI = {
     if (itemCode) params.append('itemCode', itemCode);
     if (productId) params.append('productId', productId);
     if (type) params.append('type', type);
-    if (limit) params.append('limit', limit);
-    if (offset) params.append('offset', offset);
-    return apiCall(`/stock/transactions?${params.toString()}`);
+    if (limit !== null && limit !== undefined) params.append('limit', limit);
+    if (offset !== null && offset !== undefined) params.append('offset', offset);
+    const queryString = params.toString();
+    return apiCall(`/stock/transactions${queryString ? '?' + queryString : ''}`);
   },
   getCurrentStock: async (itemCode) => {
     const params = itemCode ? `?itemCode=${encodeURIComponent(itemCode)}` : '';
     return apiCall(`/stock/current${params}`);
+  },
+};
+
+export const servicesAPI = {
+  getAll: async () => {
+    return apiCall('/services');
+  },
+  getById: async (id) => {
+    return apiCall(`/services/${id}`);
+  },
+  create: async (serviceData) => {
+    return apiCall('/services', {
+      method: 'POST',
+      body: JSON.stringify(serviceData),
+    });
+  },
+};
+
+export const salesRecordsAPI = {
+  getAll: async () => {
+    return apiCall('/sales-records');
+  },
+  getById: async (id) => {
+    return apiCall(`/sales-records/${id}`);
+  },
+  create: async (salesRecordData) => {
+    return apiCall('/sales-records', {
+      method: 'POST',
+      body: JSON.stringify(salesRecordData),
+    });
   },
 };
 
@@ -447,6 +495,18 @@ export const categoriesAPI = {
   },
   getById: async (id) => {
     return apiCall(`/categories/${id}`);
+  },
+  getMainCategories: async () => {
+    return apiCall('/categories/main');
+  },
+  getSubCategories: async (main) => {
+    return apiCall(`/categories/sub/${encodeURIComponent(main)}`);
+  },
+  getCommonCategories: async (main, sub = null) => {
+    if (sub) {
+      return apiCall(`/categories/common/${encodeURIComponent(main)}/${encodeURIComponent(sub)}`);
+    }
+    return apiCall(`/categories/common/${encodeURIComponent(main)}`);
   },
   create: async (categoryData) => {
     return apiCall('/categories', {

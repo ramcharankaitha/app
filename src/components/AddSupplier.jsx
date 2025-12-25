@@ -10,11 +10,7 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     city: '',
     state: '',
     pincode: '',
-    email: '',
-    chequeNumber: '',
-    amount: '',
-    chequeDate: '',
-    paidDate: ''
+    email: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -106,11 +102,7 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
         city: formData.city,
         state: formData.state,
         pincode: formData.pincode,
-        email: formData.email,
-        chequeNumber: formData.chequeNumber,
-        amount: formData.amount,
-        chequeDate: formData.chequeDate,
-        paidDate: formData.paidDate
+        email: formData.email
       });
 
       if (response.success) {
@@ -161,17 +153,17 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
           </div>
           <span>Staff</span>
         </div>
-        <div className="nav-item" onClick={handleCustomers}>
-          <div className="nav-icon">
-            <i className="fas fa-user-friends"></i>
-          </div>
-          <span>Customers</span>
-        </div>
         <div className="nav-item active" onClick={() => onNavigate && onNavigate('masterMenu')}>
           <div className="nav-icon">
             <i className="fas fa-th-large"></i>
           </div>
           <span>Master Menu</span>
+        </div>
+        <div className="nav-item" onClick={() => onNavigate && onNavigate('transactionMenu')}>
+          <div className="nav-icon">
+            <i className="fas fa-exchange-alt"></i>
+          </div>
+          <span>Transaction</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">
@@ -318,76 +310,6 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           value={formData.pincode}
                           onChange={handleInputChange}
                           maxLength="10"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Payment Mode Section */}
-                <div className="form-section">
-                  <h3 className="section-title">Payment Mode</h3>
-                  <div className="form-grid">
-                    <div className="form-group">
-                      <label htmlFor="chequeNumber">Cheque Number</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-file-invoice-dollar input-icon"></i>
-                        <input
-                          type="text"
-                          id="chequeNumber"
-                          name="chequeNumber"
-                          className="form-input"
-                          placeholder="Enter cheque number"
-                          value={formData.chequeNumber}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="amount">Amount</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-rupee-sign input-icon"></i>
-                        <input
-                          type="number"
-                          id="amount"
-                          name="amount"
-                          className="form-input"
-                          placeholder="Enter amount"
-                          value={formData.amount}
-                          onChange={handleInputChange}
-                          min="0"
-                          step="0.01"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="chequeDate">Cheque Date</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-calendar input-icon"></i>
-                        <input
-                          type="date"
-                          id="chequeDate"
-                          name="chequeDate"
-                          className="form-input"
-                          value={formData.chequeDate}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="paidDate">Paid Date</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-calendar-check input-icon"></i>
-                        <input
-                          type="date"
-                          id="paidDate"
-                          name="paidDate"
-                          className="form-input"
-                          value={formData.paidDate}
-                          onChange={handleInputChange}
                         />
                       </div>
                     </div>

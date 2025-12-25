@@ -144,17 +144,17 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
           </div>
           <span>Staff</span>
         </div>
-        <div className="nav-item" onClick={handleCustomers}>
-          <div className="nav-icon">
-            <i className="fas fa-user-friends"></i>
-          </div>
-          <span>Customers</span>
-        </div>
         <div className="nav-item" onClick={() => onNavigate && onNavigate('masterMenu')}>
           <div className="nav-icon">
             <i className="fas fa-th-large"></i>
           </div>
           <span>Master Menu</span>
+        </div>
+        <div className="nav-item" onClick={() => onNavigate && onNavigate('transactionMenu')}>
+          <div className="nav-icon">
+            <i className="fas fa-exchange-alt"></i>
+          </div>
+          <span>Transaction</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">
@@ -198,7 +198,7 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
           <p>View supervisors, their roles, and working stores. Filter quickly.</p>
         </div>
 
-        {/* Search and Filter */}
+        {/* Search */}
         <div className="users-controls">
           <div className="users-search-bar">
             <i className="fas fa-search"></i>
@@ -209,11 +209,6 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <button className="store-filter-btn">
-            <i className="fas fa-store"></i>
-            <span>{selectedStore}</span>
-            <i className="fas fa-chevron-down"></i>
-          </button>
         </div>
 
         {/* Results Count */}

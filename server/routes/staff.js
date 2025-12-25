@@ -6,7 +6,7 @@ const { pool } = require('../config/database');
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, full_name, email, role, store_allocated, created_at FROM staff ORDER BY created_at DESC'
+      'SELECT id, full_name, email, role, store_allocated, phone, is_handler, created_at FROM staff ORDER BY created_at DESC'
     );
     res.json({ success: true, staff: result.rows });
   } catch (error) {
@@ -52,7 +52,7 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { fullName, email, username, password, storeAllocated, address, city, state, pincode } = req.body;
+    const { fullName, email, username, password, storeAllocated, address, city, state, pincode, isHandler } = req.body;
 
     if (!fullName || !email || !username || !password) {
       return res.status(400).json({ error: 'Required fields are missing' });
@@ -66,10 +66,10 @@ router.post('/', async (req, res) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO staff (full_name, email, username, password_hash, store_allocated, address, city, state, pincode, role)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-       RETURNING id, full_name, email, username, role, store_allocated`,
-      [fullName, email, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, 'Staff']
+      `INSERT INTO staff (full_name, email, username, password_hash, store_allocated, address, city, state, pincode, is_handler, role)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       RETURNING id, full_name, email, username, role, store_allocated, is_handler`,
+      [fullName, email, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff']
     );
     
     console.log('Staff created successfully:', result.rows[0].username);
@@ -84,6 +84,63 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Email or username already exists' });
     }
     console.error('Create staff error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update staff (must be before /:id route)
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { fullName, email, username, phone, storeAllocated, address, city, state, pincode, isHandler } = req.body;
+
+    // Check if staff exists
+    const staffCheck = await pool.query('SELECT id FROM staff WHERE id = $1', [id]);
+    if (staffCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Staff not found' });
+    }
+
+    // Update all provided fields
+    const result = await pool.query(
+      `UPDATE staff 
+       SET full_name = COALESCE($1, full_name),
+           email = COALESCE($2, email),
+           username = COALESCE($3, username),
+           phone = COALESCE($4, phone),
+           store_allocated = COALESCE($5, store_allocated),
+           address = COALESCE($6, address),
+           city = COALESCE($7, city),
+           state = COALESCE($8, state),
+           pincode = COALESCE($9, pincode),
+           is_handler = COALESCE($10, is_handler),
+           updated_at = CURRENT_TIMESTAMP 
+       WHERE id = $11 
+       RETURNING id, full_name, email, username, role, store_allocated, phone, address, city, state, pincode, is_handler`,
+      [
+        fullName || null,
+        email || null,
+        username || null,
+        phone || null,
+        storeAllocated || null,
+        address || null,
+        city || null,
+        state || null,
+        pincode || null,
+        isHandler !== undefined ? isHandler : null,
+        id
+      ]
+    );
+
+    res.json({
+      success: true,
+      staff: result.rows[0],
+      message: 'Staff updated successfully'
+    });
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(400).json({ error: 'Email or username already exists' });
+    }
+    console.error('Update staff error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -3,11 +3,12 @@ import { staffAPI } from '../services/api';
 
 const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStore, setSelectedStore] = useState('All Stores');
   const [staff, setStaff] = useState([]);
   const [error, setError] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
   const [viewStaffModal, setViewStaffModal] = useState(null);
+  const [editStaffModal, setEditStaffModal] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
   const menuRefs = useRef({});
 
   // Fetch staff from database
@@ -85,14 +86,13 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
     }
   };
 
-  // Filter staff based on search and store
+  // Filter staff based on search
   const filteredStaff = staff.filter(member => {
     const matchesSearch = member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          member.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          member.store.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          member.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStore = selectedStore === 'All Stores' || member.store === selectedStore;
-    return matchesSearch && matchesStore;
+    return matchesSearch;
   });
 
   // Handle menu toggle
@@ -128,6 +128,84 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
     }
   };
 
+  // Handle edit staff
+  const handleEditStaff = async (member) => {
+    setOpenMenuId(null);
+    try {
+      const response = await staffAPI.getById(member.id);
+      if (response.success) {
+        setEditStaffModal(response);
+      } else {
+        setError('Failed to fetch staff details');
+      }
+    } catch (err) {
+      console.error('Error fetching staff details:', err);
+      setError('Failed to fetch staff details');
+    }
+  };
+
+  // Handle save staff details
+  const handleSaveStaffDetails = async () => {
+    if (!editStaffModal || !editStaffModal.staff) return;
+    
+    setIsSaving(true);
+    setError('');
+    
+    try {
+      const response = await staffAPI.update(editStaffModal.staff.id, {
+        fullName: editStaffModal.staff.full_name,
+        email: editStaffModal.staff.email,
+        username: editStaffModal.staff.username,
+        phone: editStaffModal.staff.phone,
+        storeAllocated: editStaffModal.staff.store_allocated,
+        address: editStaffModal.staff.address,
+        city: editStaffModal.staff.city,
+        state: editStaffModal.staff.state,
+        pincode: editStaffModal.staff.pincode,
+        isHandler: editStaffModal.staff.is_handler
+      });
+      
+      if (response.success) {
+        // Refresh staff list
+        await fetchStaff();
+        setEditStaffModal(null);
+        setError('');
+        
+        // Dispatch custom event to notify other components (like AddService) to refresh handlers
+        window.dispatchEvent(new CustomEvent('staffUpdated'));
+      } else {
+        setError('Failed to update staff');
+      }
+    } catch (err) {
+      console.error('Error updating staff:', err);
+      setError(err.message || 'Failed to update staff');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle input change in edit modal
+  const handleEditInputChange = (field, value) => {
+    if (editStaffModal && editStaffModal.staff) {
+      setEditStaffModal({
+        ...editStaffModal,
+        staff: {
+          ...editStaffModal.staff,
+          [field]: value
+        }
+      });
+    }
+  };
+
+  // Handle handler status change
+  const handleHandlerStatusChange = (value) => {
+    handleEditInputChange('is_handler', value === 'yes');
+  };
+
+  const closeEditModal = () => {
+    setEditStaffModal(null);
+  };
+
   const closeViewModal = () => {
     setViewStaffModal(null);
   };
@@ -156,17 +234,17 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
           </div>
           <span>Staff</span>
         </div>
-        <div className="nav-item" onClick={handleCustomers}>
-          <div className="nav-icon">
-            <i className="fas fa-user-friends"></i>
-          </div>
-          <span>Customers</span>
-        </div>
         <div className="nav-item" onClick={() => onNavigate && onNavigate('masterMenu')}>
           <div className="nav-icon">
             <i className="fas fa-th-large"></i>
           </div>
           <span>Master Menu</span>
+        </div>
+        <div className="nav-item" onClick={() => onNavigate && onNavigate('transactionMenu')}>
+          <div className="nav-icon">
+            <i className="fas fa-exchange-alt"></i>
+          </div>
+          <span>Transaction</span>
         </div>
         <div className="nav-item" onClick={handleSettings}>
           <div className="nav-icon">
@@ -221,11 +299,6 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <button className="store-filter-btn">
-            <i className="fas fa-store"></i>
-            <span>{selectedStore}</span>
-            <i className="fas fa-chevron-down"></i>
-          </button>
         </div>
 
         {/* Results Count */}
@@ -284,6 +357,10 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
                       <i className="fas fa-eye"></i>
                       <span>View Staff Details</span>
                     </div>
+                    <div className="menu-item" onClick={() => handleEditStaff(member)}>
+                      <i className="fas fa-edit"></i>
+                      <span>Edit Staff</span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -294,6 +371,243 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
       </main>
       </div>
       </div>
+
+      {/* Edit Staff Modal */}
+      {editStaffModal && editStaffModal.staff && (
+        <div className="modal-overlay" onClick={closeEditModal}>
+          <div className="customer-details-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Edit Staff Details</h2>
+              <button className="modal-close-btn" onClick={closeEditModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="modal-content">
+              {error && (
+                <div style={{ 
+                  padding: '12px', 
+                  background: '#ffe0e0', 
+                  color: '#dc3545', 
+                  borderRadius: '8px', 
+                  marginBottom: '20px' 
+                }}>
+                  <i className="fas fa-exclamation-circle"></i> {error}
+                </div>
+              )}
+              <div className="customer-detail-section">
+                <div className="detail-avatar">
+                  <span>{editStaffModal.staff.full_name 
+                    ? editStaffModal.staff.full_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+                    : 'ST'}</span>
+                </div>
+                <div className="detail-info">
+                  <div className="detail-row">
+                    <span className="detail-label">Full Name:</span>
+                    <input
+                      type="text"
+                      value={editStaffModal.staff.full_name || ''}
+                      onChange={(e) => handleEditInputChange('full_name', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Email:</span>
+                    <input
+                      type="email"
+                      value={editStaffModal.staff.email || ''}
+                      onChange={(e) => handleEditInputChange('email', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Username:</span>
+                    <input
+                      type="text"
+                      value={editStaffModal.staff.username || ''}
+                      onChange={(e) => handleEditInputChange('username', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Role:</span>
+                    <span className="detail-value">{editStaffModal.staff.role || 'Staff'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Phone:</span>
+                    <input
+                      type="tel"
+                      value={editStaffModal.staff.phone || ''}
+                      onChange={(e) => handleEditInputChange('phone', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Store Allocated:</span>
+                    <input
+                      type="text"
+                      value={editStaffModal.staff.store_allocated || ''}
+                      onChange={(e) => handleEditInputChange('store_allocated', e.target.value)}
+                      placeholder="Not Assigned"
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Address:</span>
+                    <textarea
+                      value={editStaffModal.staff.address || ''}
+                      onChange={(e) => handleEditInputChange('address', e.target.value)}
+                      rows="2"
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px',
+                        resize: 'vertical'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">City:</span>
+                    <input
+                      type="text"
+                      value={editStaffModal.staff.city || ''}
+                      onChange={(e) => handleEditInputChange('city', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">State:</span>
+                    <input
+                      type="text"
+                      value={editStaffModal.staff.state || ''}
+                      onChange={(e) => handleEditInputChange('state', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Pincode:</span>
+                    <input
+                      type="text"
+                      value={editStaffModal.staff.pincode || ''}
+                      onChange={(e) => handleEditInputChange('pincode', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  
+                  {/* Editable Handler Status */}
+                  <div className="detail-row" style={{ marginTop: '20px', paddingTop: '20px', borderTop: '2px solid #e9ecef' }}>
+                    <span className="detail-label">Can you be the handler? *</span>
+                    <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                        <input
+                          type="radio"
+                          name="isHandler"
+                          value="yes"
+                          checked={editStaffModal.staff.is_handler === true}
+                          onChange={() => handleHandlerStatusChange('yes')}
+                          style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                        />
+                        <span>Yes</span>
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                        <input
+                          type="radio"
+                          name="isHandler"
+                          value="no"
+                          checked={editStaffModal.staff.is_handler === false}
+                          onChange={() => handleHandlerStatusChange('no')}
+                          style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                        />
+                        <span>No</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button 
+                className="modal-close-button" 
+                onClick={closeEditModal}
+                style={{ background: '#6c757d', color: '#fff' }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="modal-close-button" 
+                onClick={handleSaveStaffDetails}
+                disabled={isSaving}
+                style={{ 
+                  background: '#dc3545', 
+                  color: '#fff',
+                  opacity: isSaving ? 0.6 : 1,
+                  cursor: isSaving ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* View Staff Details Modal */}
       {viewStaffModal && viewStaffModal.staff && (
