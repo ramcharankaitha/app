@@ -5,21 +5,25 @@ import ConfirmDialog from './ConfirmDialog';
 const CreateSupplierTransaction = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
     supplierName: '',
-    phone: ''
+    phone: '',
+    email: ''
   });
-  const [productItems, setProductItems] = useState([
-    { 
-      id: 1, 
-      itemCode: '', 
-      productName: '',
-      skuCode: '',
-      category: '',
-      quantity: '', 
-      mrp: '', 
-      sellRate: '', 
-      isFetching: false
-    }
-  ]);
+  
+  // Current product being entered (single form)
+  const [currentProduct, setCurrentProduct] = useState({
+    itemCode: '',
+    productName: '',
+    skuCode: '',
+    category: '',
+    quantity: '',
+    mrp: '',
+    sellRate: '',
+    isFetching: false,
+    productInfo: null
+  });
+  
+  // Added products (displayed as cards)
+  const [addedProducts, setAddedProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -49,141 +53,159 @@ const CreateSupplierTransaction = ({ onBack, onCancel, onNavigate, userRole = 'a
     }));
   };
 
-  const handleProductItemChange = (id, field, value) => {
-    setProductItems(prev => 
-      prev.map(item => 
-        item.id === id ? { ...item, [field]: value } : item
-      )
-    );
-    
-    // Reset product details if item code changes
-    if (field === 'itemCode') {
-      setProductItems(prev => 
-        prev.map(item => 
-          item.id === id ? { 
-            ...item, 
-            productName: '',
-            skuCode: '',
-            category: '',
-            mrp: '', 
-            sellRate: '' 
-          } : item
-        )
-      );
-    }
+  const handleProductChange = (field, value) => {
+    setCurrentProduct(prev => {
+      const updated = { ...prev, [field]: value };
+      
+      // Reset product info if item code changes
+      if (field === 'itemCode') {
+        updated.productInfo = null;
+        updated.productName = '';
+        updated.skuCode = '';
+        updated.category = '';
+        updated.mrp = '';
+        updated.sellRate = '';
+      }
+      
+      return updated;
+    });
   };
 
-  const handleItemCodeKeyPress = async (e, itemId) => {
+  const handleItemCodeKeyPress = async (e) => {
     if (e.key === 'Enter' || e.keyCode === 13) {
       e.preventDefault();
-      e.stopPropagation();
-      const item = productItems.find(p => p.id === itemId);
-      const itemCode = item?.itemCode?.trim();
-      if (itemCode) {
-        await fetchProductByItemCode(itemCode, itemId);
-      } else {
-        setError('Please enter an item code');
-      }
+      await fetchProductByItemCode();
     }
   };
 
-  const fetchProductByItemCode = async (itemCode, itemId) => {
-    if (!itemCode || !itemCode.trim()) {
-      setError('Please enter a valid item code');
+  const fetchProductByItemCode = async () => {
+    if (!currentProduct.itemCode?.trim()) {
+      setError('Please enter an item code');
       return;
     }
     
-    setProductItems(prev => 
-      prev.map(item => 
-        item.id === itemId ? { ...item, isFetching: true } : item
-      )
-    );
+    setCurrentProduct(prev => ({ ...prev, isFetching: true }));
     setError('');
     setSuccessMessage('');
     
     try {
-      const response = await productsAPI.getByItemCode(itemCode.trim());
+      const response = await productsAPI.getByItemCode(currentProduct.itemCode.trim());
       
       if (response.success && response.product) {
         const product = response.product;
-        const productName = product.product_name || product.productName || '';
-        const skuCode = product.sku_code || product.skuCode || '';
-        const category = product.category || '';
-        const mrp = product.mrp || '';
-        const sellRate = product.sell_rate || product.sellRate || '';
+        const productData = {
+          id: product.id,
+          productName: product.product_name || product.productName || '',
+          itemCode: product.item_code || product.itemCode || '',
+          skuCode: product.sku_code || product.skuCode || '',
+          category: product.category || '',
+          mrp: product.mrp || 0,
+          sellRate: product.sell_rate || product.sellRate || 0
+        };
         
-        setProductItems(prev => 
-          prev.map(item => 
-            item.id === itemId ? { 
-              ...item, 
-              productName: productName,
-              skuCode: skuCode,
-              category: category,
-              mrp: mrp ? String(mrp) : '',
-              sellRate: sellRate ? String(sellRate) : '',
-              isFetching: false
-            } : item
-          )
-        );
+        setCurrentProduct(prev => ({
+          ...prev,
+          productInfo: productData,
+          productName: productData.productName,
+          skuCode: productData.skuCode,
+          category: productData.category,
+          mrp: productData.mrp ? String(productData.mrp) : '',
+          sellRate: productData.sellRate ? String(productData.sellRate) : '',
+          isFetching: false
+        }));
         
-        setSuccessMessage(`Product details fetched successfully!`);
+        setSuccessMessage('Product details fetched successfully!');
         setTimeout(() => setSuccessMessage(''), 3000);
       } else {
         setError('Product not found with this item code');
-        setProductItems(prev => 
-          prev.map(item => 
-            item.id === itemId ? { 
-              ...item, 
-              productName: '',
-              skuCode: '',
-              category: '',
-              mrp: '', 
-              sellRate: '',
-              isFetching: false
-            } : item
-          )
-        );
+        setCurrentProduct(prev => ({ 
+          ...prev, 
+          productInfo: null,
+          productName: '',
+          skuCode: '',
+          category: '',
+          mrp: '',
+          sellRate: '',
+          isFetching: false 
+        }));
       }
     } catch (err) {
       console.error('Fetch product error:', err);
       setError(err.message || 'Product not found with this item code. Please check the item code and try again.');
-      setProductItems(prev => 
-        prev.map(item => 
-          item.id === itemId ? { 
-            ...item, 
-            productName: '',
-            skuCode: '',
-            category: '',
-            mrp: '', 
-            sellRate: '',
-            isFetching: false
-          } : item
-        )
-      );
+      setCurrentProduct(prev => ({ 
+        ...prev, 
+        productInfo: null,
+        productName: '',
+        skuCode: '',
+        category: '',
+        mrp: '',
+        sellRate: '',
+        isFetching: false 
+      }));
     }
   };
 
-  const addProductItem = () => {
-    const newId = productItems.length > 0 
-      ? Math.max(...productItems.map(item => item.id)) + 1 
+  const addProduct = () => {
+    // Validate that product info exists and required fields are entered
+    if (!currentProduct.productInfo) {
+      setError('Please fetch product details first');
+      return;
+    }
+    
+    if (!currentProduct.quantity || parseInt(currentProduct.quantity) <= 0) {
+      setError('Please enter a valid quantity');
+      return;
+    }
+    
+    if (!currentProduct.mrp || parseFloat(currentProduct.mrp) <= 0) {
+      setError('Please enter a valid MRP');
+      return;
+    }
+    
+    if (!currentProduct.sellRate || parseFloat(currentProduct.sellRate) <= 0) {
+      setError('Please enter a valid selling rate');
+      return;
+    }
+    
+    // Check if this product (item code) is already added
+    const isDuplicate = addedProducts.some(p => 
+      p.itemCode && p.itemCode.trim() === currentProduct.itemCode.trim()
+    );
+    
+    if (isDuplicate) {
+      setError('This product is already added. Please remove it first if you want to change the details.');
+      return;
+    }
+    
+    const newId = addedProducts.length > 0 
+      ? Math.max(...addedProducts.map(p => p.id)) + 1 
       : 1;
-    setProductItems(prev => [...prev, { 
-      id: newId, 
-      itemCode: '', 
+    
+    setAddedProducts(prev => [...prev, {
+      id: newId,
+      ...currentProduct,
+      quantity: parseInt(currentProduct.quantity),
+      mrp: parseFloat(currentProduct.mrp),
+      sellRate: parseFloat(currentProduct.sellRate)
+    }]);
+    
+    // Clear current product form
+    setCurrentProduct({
+      itemCode: '',
       productName: '',
       skuCode: '',
       category: '',
-      quantity: '', 
-      mrp: '', 
-      sellRate: '', 
-      isFetching: false
-    }]);
+      quantity: '',
+      mrp: '',
+      sellRate: '',
+      isFetching: false,
+      productInfo: null
+    });
+    setError('');
   };
 
-  const removeProductItem = (id) => {
-    if (productItems.length > 1) {
-      setProductItems(prev => prev.filter(item => item.id !== id));
-    }
+  const removeProduct = (productId) => {
+    setAddedProducts(prev => prev.filter(p => p.id !== productId));
   };
 
   const submitSupplierTransaction = async () => {
@@ -197,48 +219,40 @@ const CreateSupplierTransaction = ({ onBack, onCancel, onNavigate, userRole = 'a
       return;
     }
 
-    // Filter out empty product items
-    const validItems = productItems.filter(item => item.itemCode.trim() !== '');
-    
-    if (validItems.length === 0) {
+    if (addedProducts.length === 0) {
       setError('Please add at least one product.');
       setIsLoading(false);
       return;
     }
 
-    // Validate required fields for each item
-    for (const item of validItems) {
-      if (!item.quantity || parseFloat(item.quantity) <= 0) {
-        setError(`Please enter a valid quantity for product ${item.itemCode || item.productName || 'item'}`);
-        setIsLoading(false);
-        return;
-      }
-      if (!item.mrp || parseFloat(item.mrp) <= 0) {
-        setError(`Please enter a valid MRP for product ${item.itemCode || item.productName || 'item'}`);
-        setIsLoading(false);
-        return;
-      }
-      if (!item.sellRate || parseFloat(item.sellRate) <= 0) {
-        setError(`Please enter a valid selling rate for product ${item.itemCode || item.productName || 'item'}`);
-        setIsLoading(false);
-        return;
-      }
-    }
-
     try {
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       
+      // Get user identifier
+      const userDataStr = localStorage.getItem('userData');
+      let createdBy = 'system';
+      if (userDataStr) {
+        try {
+          const userData = JSON.parse(userDataStr);
+          createdBy = userData.username || userData.email || userData.full_name || 'system';
+        } catch (e) {
+          console.error('Error parsing userData:', e);
+        }
+      }
+
       const transactionData = {
         supplierName: formData.supplierName.trim(),
         phone: formData.phone.trim() || null,
-        products: validItems.map(item => ({
+        email: formData.email.trim() || null,
+        createdBy: createdBy,
+        products: addedProducts.map(item => ({
           itemCode: item.itemCode.trim(),
           productName: item.productName,
           skuCode: item.skuCode,
           category: item.category,
-          quantity: parseFloat(item.quantity),
-          mrp: parseFloat(item.mrp),
-          sellRate: parseFloat(item.sellRate)
+          quantity: item.quantity,
+          mrp: item.mrp,
+          sellRate: item.sellRate
         }))
       };
 
@@ -345,198 +359,308 @@ const CreateSupplierTransaction = ({ onBack, onCancel, onNavigate, userRole = 'a
 
           {/* Main Content */}
           <main className="add-user-content">
-            <form onSubmit={handleSubmit} className="add-user-form">
-                {/* Supplier Details Section */}
-                <div className="form-section">
-                  <h3 className="section-title">Supplier details</h3>
-                  <div className="form-grid">
-                    <div className="form-group">
-                      <label htmlFor="supplierName">Supplier Name</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-building input-icon"></i>
-                        <input
-                          type="text"
-                          id="supplierName"
-                          name="supplierName"
-                          className="form-input"
-                          placeholder="Enter supplier name."
-                          value={formData.supplierName}
-                          onChange={handleInputChange}
-                          required
-                        />
-                      </div>
+            <form onSubmit={handleSubmit} className="add-user-form add-supplier-transaction-form">
+              {/* All fields in 3-column grid without section titles */}
+              <div className="form-section">
+                <div className="form-grid three-col">
+                  {/* Row 1: Name, Phone Number, Email */}
+                  <div className="form-group">
+                    <label htmlFor="supplierName">Name *</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-building input-icon"></i>
+                      <input
+                        type="text"
+                        id="supplierName"
+                        name="supplierName"
+                        className="form-input"
+                        placeholder="Enter supplier name"
+                        value={formData.supplierName}
+                        onChange={handleInputChange}
+                        required
+                      />
                     </div>
+                  </div>
 
-                    <div className="form-group">
-                      <label htmlFor="phone">Phone Number</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-phone input-icon"></i>
-                        <input
-                          type="tel"
-                          id="phone"
-                          name="phone"
-                          className="form-input"
-                          placeholder="Enter phone number."
-                          value={formData.phone}
-                          onChange={handleInputChange}
-                        />
-                      </div>
+                  <div className="form-group">
+                    <label htmlFor="phone">Phone Number</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-phone input-icon"></i>
+                      <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        className="form-input"
+                        placeholder="Enter phone number"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                      />
                     </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="email">Email</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-envelope input-icon"></i>
+                      <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        className="form-input"
+                        placeholder="Enter email address"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Row 2: Item Code, Product Name, Quantity */}
+                  <div className="form-group">
+                    <label htmlFor="itemCode">Item Code *</label>
+                    <div className="input-wrapper" style={{ position: 'relative' }}>
+                      <i className="fas fa-barcode input-icon"></i>
+                      <input
+                        type="text"
+                        id="itemCode"
+                        className="form-input"
+                        placeholder="Enter item code"
+                        value={currentProduct.itemCode}
+                        onChange={(e) => handleProductChange('itemCode', e.target.value)}
+                        onKeyPress={handleItemCodeKeyPress}
+                        required
+                        style={{ paddingRight: currentProduct.isFetching ? '40px' : '80px' }}
+                      />
+                      {currentProduct.isFetching ? (
+                        <div style={{ 
+                          position: 'absolute', 
+                          right: '10px', 
+                          top: '50%', 
+                          transform: 'translateY(-50%)',
+                          color: '#999'
+                        }}>
+                          <i className="fas fa-spinner fa-spin"></i>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={fetchProductByItemCode}
+                          style={{
+                            position: 'absolute',
+                            right: '8px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            padding: '6px 12px',
+                            background: '#dc3545',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: '500',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          <i className="fas fa-search"></i>
+                          Fetch
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="productName">Product Name</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-box input-icon"></i>
+                      <input
+                        type="text"
+                        id="productName"
+                        className="form-input"
+                        placeholder="Product Name"
+                        value={currentProduct.productName}
+                        readOnly
+                        style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="quantity">Quantity *</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-cube input-icon"></i>
+                      <input
+                        type="number"
+                        id="quantity"
+                        className="form-input"
+                        placeholder="Enter quantity"
+                        value={currentProduct.quantity}
+                        onChange={(e) => handleProductChange('quantity', e.target.value)}
+                        min="1"
+                        step="1"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Row 3: MRP, Selling Rate */}
+                  <div className="form-group">
+                    <label htmlFor="mrp">MRP *</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-rupee-sign input-icon"></i>
+                      <input
+                        type="number"
+                        id="mrp"
+                        className="form-input"
+                        placeholder="Enter MRP"
+                        value={currentProduct.mrp}
+                        onChange={(e) => handleProductChange('mrp', e.target.value)}
+                        min="0"
+                        step="0.01"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="sellRate">Selling Rate *</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-tag input-icon"></i>
+                      <input
+                        type="number"
+                        id="sellRate"
+                        className="form-input"
+                        placeholder="Enter selling rate"
+                        value={currentProduct.sellRate}
+                        onChange={(e) => handleProductChange('sellRate', e.target.value)}
+                        min="0"
+                        step="0.01"
+                        required
+                      />
+                    </div>
+                    {/* Add Product button below Selling Rate */}
+                    <button
+                      type="button"
+                      onClick={addProduct}
+                      disabled={!currentProduct.productInfo || !currentProduct.quantity || !currentProduct.mrp || !currentProduct.sellRate}
+                      style={{
+                        marginTop: '8px',
+                        padding: '6px 12px',
+                        background: (currentProduct.productInfo && currentProduct.quantity && currentProduct.mrp && currentProduct.sellRate) ? '#28a745' : '#ccc',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: (currentProduct.productInfo && currentProduct.quantity && currentProduct.mrp && currentProduct.sellRate) ? 'pointer' : 'not-allowed',
+                        fontSize: '12px',
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <i className="fas fa-plus"></i>
+                      Add Product
+                    </button>
                   </div>
                 </div>
+              </div>
 
-                {/* Products Section */}
-                <div className="form-section">
-                  <div style={{ marginBottom: '20px' }}>
-                    <h3 className="section-title">Products</h3>
-                  </div>
-
-                  {productItems.map((item, index) => (
-                    <div key={item.id} style={{ 
-                      border: '1px solid #e0e0e0', 
-                      borderRadius: '8px', 
-                      padding: '20px', 
-                      marginBottom: '20px',
-                      background: '#fafafa'
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                        <h4 style={{ margin: 0, color: '#333', fontSize: '16px' }}>Product {index + 1}</h4>
-                        {productItems.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeProductItem(item.id)}
-                            style={{
-                              background: '#dc3545',
-                              color: 'white',
-                              border: 'none',
-                              padding: '6px 12px',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '12px'
-                            }}
-                          >
-                            <i className="fas fa-trash"></i> Remove
-                          </button>
+              {/* Display Added Products - Horizontal cards like dispatch department */}
+              {addedProducts.length > 0 && (
+                <div style={{ 
+                  marginTop: '16px',
+                  marginBottom: '20px',
+                  clear: 'both'
+                }}>
+                  <label style={{ 
+                    display: 'block', 
+                    marginBottom: '8px', 
+                    fontWeight: '600', 
+                    color: '#333', 
+                    fontSize: '12px' 
+                  }}>
+                    Added Products ({addedProducts.length})
+                  </label>
+                  <div style={{ 
+                    display: 'flex',
+                    flexDirection: 'row',
+                    gap: '8px',
+                    overflowX: 'auto',
+                    overflowY: 'hidden',
+                    width: '100%'
+                  }}>
+                    {addedProducts.map((product, index) => (
+                      <div
+                        key={product.id}
+                        style={{
+                          padding: '8px',
+                          background: '#f8f9fa',
+                          border: '2px solid #e0e0e0',
+                          borderRadius: '6px',
+                          position: 'relative',
+                          minWidth: '200px',
+                          maxWidth: '200px',
+                          flexShrink: 0,
+                          boxSizing: 'border-box'
+                        }}
+                      >
+                        <div style={{ marginBottom: '6px', fontWeight: '600', color: '#dc3545', fontSize: '11px' }}>
+                          Product {index + 1}
+                        </div>
+                        {product.itemCode && (
+                          <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
+                            <span style={{ fontWeight: '500', color: '#666' }}>Item Code: </span>
+                            <span style={{ color: '#333' }}>{product.itemCode}</span>
+                          </div>
                         )}
+                        {product.productName && (
+                          <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
+                            <span style={{ fontWeight: '500', color: '#666' }}>Product: </span>
+                            <span style={{ color: '#333' }}>{product.productName}</span>
+                          </div>
+                        )}
+                        <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
+                          <span style={{ fontWeight: '500', color: '#666' }}>Qty: </span>
+                          <span style={{ color: '#333', fontWeight: '600' }}>{product.quantity}</span>
+                        </div>
+                        <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
+                          <span style={{ fontWeight: '500', color: '#666' }}>MRP: </span>
+                          <span style={{ color: '#333', fontWeight: '600' }}>₹{product.mrp}</span>
+                        </div>
+                        <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
+                          <span style={{ fontWeight: '500', color: '#666' }}>Sell Rate: </span>
+                          <span style={{ color: '#333', fontWeight: '600' }}>₹{product.sellRate}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeProduct(product.id)}
+                          style={{
+                            position: 'absolute',
+                            top: '6px',
+                            right: '6px',
+                            background: '#dc3545',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '20px',
+                            height: '20px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '10px',
+                            padding: 0
+                          }}
+                          title="Remove this product"
+                        >
+                          <i className="fas fa-times"></i>
+                        </button>
                       </div>
-
-                      <div className="form-grid">
-                        <div className="form-group">
-                          <label htmlFor={`itemCode-${item.id}`}>Item Code</label>
-                          <div className="input-wrapper">
-                            <i className="fas fa-barcode input-icon"></i>
-                            <input
-                              type="text"
-                              id={`itemCode-${item.id}`}
-                              className="form-input"
-                              placeholder="Enter item code and press Enter"
-                              value={item.itemCode}
-                              onChange={(e) => handleProductItemChange(item.id, 'itemCode', e.target.value)}
-                              onKeyPress={(e) => handleItemCodeKeyPress(e, item.id)}
-                              disabled={item.isFetching}
-                            />
-                            {item.isFetching && (
-                              <i className="fas fa-spinner fa-spin" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }}></i>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="form-group">
-                          <label htmlFor={`productName-${item.id}`}>Product Name</label>
-                          <input
-                            type="text"
-                            id={`productName-${item.id}`}
-                            className="form-input"
-                            placeholder="Product name"
-                            value={item.productName}
-                            readOnly
-                            style={{ background: '#f5f5f5' }}
-                          />
-                        </div>
-
-                        <div className="form-group">
-                          <label htmlFor={`quantity-${item.id}`}>Quantity</label>
-                          <div className="input-wrapper">
-                            <i className="fas fa-cube input-icon"></i>
-                            <input
-                              type="number"
-                              id={`quantity-${item.id}`}
-                              className="form-input"
-                              placeholder="Enter quantity"
-                              value={item.quantity}
-                              onChange={(e) => handleProductItemChange(item.id, 'quantity', e.target.value)}
-                              min="1"
-                              step="1"
-                              required
-                            />
-                          </div>
-                        </div>
-
-                        <div className="form-group">
-                          <label htmlFor={`mrp-${item.id}`}>MRP</label>
-                          <div className="input-wrapper">
-                            <i className="fas fa-rupee-sign input-icon"></i>
-                            <input
-                              type="number"
-                              id={`mrp-${item.id}`}
-                              className="form-input"
-                              placeholder="Enter MRP"
-                              value={item.mrp}
-                              onChange={(e) => handleProductItemChange(item.id, 'mrp', e.target.value)}
-                              min="0"
-                              step="0.01"
-                              required
-                            />
-                          </div>
-                        </div>
-
-                        <div className="form-group">
-                          <label htmlFor={`sellRate-${item.id}`}>Selling Rate</label>
-                          <div className="input-wrapper">
-                            <i className="fas fa-tag input-icon"></i>
-                            <input
-                              type="number"
-                              id={`sellRate-${item.id}`}
-                              className="form-input"
-                              placeholder="Enter selling rate"
-                              value={item.sellRate}
-                              onChange={(e) => handleProductItemChange(item.id, 'sellRate', e.target.value)}
-                              min="0"
-                              step="0.01"
-                              required
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  <button 
-                    type="button" 
-                    onClick={addProductItem}
-                    style={{
-                      background: '#4caf50',
-                      color: 'white',
-                      border: 'none',
-                      padding: '8px 16px',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      fontWeight: '500',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      marginTop: '20px'
-                    }}
-                  >
-                    <i className="fas fa-plus"></i> Add Product
-                  </button>
+                    ))}
+                  </div>
                 </div>
+              )}
 
-                {/* Warning Message */}
-                <p className="form-warning">
-                  Make sure all supplier and product details are correct before saving.
-                </p>
 
                 {/* Error Message */}
                 {error && (

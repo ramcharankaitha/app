@@ -208,12 +208,12 @@ const AddChitCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =
           {/* Main Content */}
           <main className="add-user-content">
             <form onSubmit={handleSubmit} className="add-user-form">
-                {/* Customer Details Section */}
+                {/* All fields in 3-column grid without section titles */}
                 <div className="form-section">
-                  <h3 className="section-title">Customer details</h3>
-                  <div className="form-grid">
+                  <div className="form-grid three-col">
+                    {/* Row 1: Name, Phone Number, Email */}
                     <div className="form-group">
-                      <label htmlFor="customerName">Customer Name</label>
+                      <label htmlFor="customerName">Name</label>
                       <div className="input-wrapper">
                         <i className="fas fa-user input-icon"></i>
                         <input
@@ -221,7 +221,7 @@ const AddChitCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =
                           id="customerName"
                           name="customerName"
                           className="form-input"
-                          placeholder="Enter customer name."
+                          placeholder="Enter customer name"
                           value={formData.customerName}
                           onChange={handleInputChange}
                           required
@@ -230,7 +230,7 @@ const AddChitCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="phone">Phone Number</label>
+                      <label htmlFor="phone">Phone number</label>
                       <div className="input-wrapper">
                         <i className="fas fa-phone input-icon"></i>
                         <input
@@ -238,7 +238,7 @@ const AddChitCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =
                           id="phone"
                           name="phone"
                           className="form-input"
-                          placeholder="Enter phone number."
+                          placeholder="Enter phone number"
                           value={formData.phone}
                           onChange={handleInputChange}
                         />
@@ -260,86 +260,21 @@ const AddChitCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =
                         />
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Chit Plan Selection */}
-                <div className="form-section">
-                  <h3 className="section-title">Chit Plan Selection</h3>
-                  
-                  <div className="form-group">
-                    <label htmlFor="chitPlanId">Chit Plan</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-file-invoice-dollar input-icon"></i>
-                      <select
-                        id="chitPlanId"
-                        name="chitPlanId"
-                        className="form-input"
-                        value={formData.chitPlanId}
-                        onChange={handleInputChange}
-                        required
-                      >
-                        <option value="">Select a chit plan</option>
-                        {plans.map(plan => (
-                          <option key={plan.id} value={plan.id}>
-                            {plan.plan_name} - ₹{parseFloat(plan.plan_amount).toLocaleString('en-IN')}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    {selectedPlan && (
-                      <div style={{ 
-                        marginTop: '8px', 
-                        padding: '8px 12px', 
-                        background: '#f8f9fa', 
-                        borderRadius: '6px',
-                        fontSize: '13px',
-                        color: '#666'
-                      }}>
-                        <strong>Selected Plan:</strong> {selectedPlan.plan_name} - ₹{parseFloat(selectedPlan.plan_amount).toLocaleString('en-IN')}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="paymentMode">Payment Mode</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-credit-card input-icon"></i>
-                      <select
-                        id="paymentMode"
-                        name="paymentMode"
-                        className="form-input"
-                        value={formData.paymentMode}
-                        onChange={handleInputChange}
-                      >
-                        <option value="">Select payment mode</option>
-                        <option value="Cash">Cash</option>
-                        <option value="UPI">UPI</option>
-                        <option value="Card">Card</option>
-                        <option value="Bank Transfer">Bank Transfer</option>
-                        <option value="Cheque">Cheque</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Address Section */}
-                <div className="form-section">
-                  <h3 className="section-title">Address</h3>
-                  <div className="form-grid">
-                    <div className="form-group full-width">
-                      <label htmlFor="address">Street Address</label>
+                    {/* Row 2: Street, City, State */}
+                    <div className="form-group">
+                      <label htmlFor="address">Street</label>
                       <div className="input-wrapper">
                         <i className="fas fa-map-marker-alt input-icon"></i>
-                        <textarea
+                        <input
+                          type="text"
                           id="address"
                           name="address"
-                          className="form-input textarea-input"
-                          placeholder="Enter street address, area"
-                          rows="2"
+                          className="form-input"
+                          placeholder="Enter street address"
                           value={formData.address}
                           onChange={handleInputChange}
-                        ></textarea>
+                        />
                       </div>
                     </div>
 
@@ -375,6 +310,7 @@ const AddChitCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =
                       </div>
                     </div>
 
+                    {/* Row 3: Pincode, Chit Plan, Payment Mode */}
                     <div className="form-group">
                       <label htmlFor="pincode">Pincode</label>
                       <div className="input-wrapper">
@@ -391,25 +327,63 @@ const AddChitCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =
                         />
                       </div>
                     </div>
+
+                    <div className="form-group">
+                      <label htmlFor="chitPlanId">Chit Plan</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-file-invoice-dollar input-icon"></i>
+                        <select
+                          id="chitPlanId"
+                          name="chitPlanId"
+                          className="form-input"
+                          value={formData.chitPlanId}
+                          onChange={handleInputChange}
+                          required
+                        >
+                          <option value="">Select a chit plan</option>
+                          {plans.map(plan => (
+                            <option key={plan.id} value={plan.id}>
+                              {plan.plan_name} - ₹{parseFloat(plan.plan_amount).toLocaleString('en-IN')}
+                            </option>
+                          ))}
+                        </select>
+                        <i className="fas fa-chevron-down dropdown-icon"></i>
+                      </div>
+                      {selectedPlan && (
+                        <div style={{ 
+                          marginTop: '4px', 
+                          fontSize: '11px', 
+                          color: '#666',
+                          fontStyle: 'italic'
+                        }}>
+                          {selectedPlan.plan_name} - ₹{parseFloat(selectedPlan.plan_amount).toLocaleString('en-IN')}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="paymentMode">Payment Mode</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-credit-card input-icon"></i>
+                        <select
+                          id="paymentMode"
+                          name="paymentMode"
+                          className="form-input"
+                          value={formData.paymentMode}
+                          onChange={handleInputChange}
+                        >
+                          <option value="">Select payment mode</option>
+                          <option value="Cash">Cash</option>
+                          <option value="UPI">UPI</option>
+                          <option value="Card">Card</option>
+                          <option value="Bank Transfer">Bank Transfer</option>
+                          <option value="Cheque">Cheque</option>
+                        </select>
+                        <i className="fas fa-chevron-down dropdown-icon"></i>
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                {/* Info Message */}
-                <div style={{ 
-                  padding: '12px', 
-                  background: '#e7f3ff', 
-                  color: '#0066cc', 
-                  borderRadius: '8px', 
-                  marginBottom: '20px',
-                  fontSize: '13px'
-                }}>
-                  <i className="fas fa-info-circle"></i> Enrollment date will be automatically set to today's date.
-                </div>
-
-                {/* Warning Message */}
-                <p className="form-warning">
-                  Make sure all customer details are correct before saving.
-                </p>
 
                 {/* Error Message */}
                 {error && (

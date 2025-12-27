@@ -14,21 +14,20 @@ const AddSalesRecord = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =>
     supplierName: '',
     supplierNumber: ''
   });
-  const [productItems, setProductItems] = useState([
-    { 
-      id: 1, 
-      itemCode: '', 
-      productName: '',
-      skuCode: '',
-      category: '',
-      quantity: '',
-      mrp: '',
-      sellRate: '',
-      discount: '',
-      productInfo: null,
-      isFetching: false
-    }
-  ]);
+  // Current product being entered (single form)
+  const [currentProduct, setCurrentProduct] = useState({
+    itemCode: '',
+    category: '',
+    productName: '',
+    quantity: '',
+    mrp: '',
+    sellRate: '',
+    isFetching: false,
+    productInfo: null
+  });
+  
+  // Added products (displayed as cards)
+  const [addedProducts, setAddedProducts] = useState([]);
   const [handlers, setHandlers] = useState([]);
   const [allCustomers, setAllCustomers] = useState([]);
   const [allSuppliers, setAllSuppliers] = useState([]);
@@ -178,6 +177,12 @@ const AddSalesRecord = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =>
     }
   };
 
+  const handleManagers = () => {
+    if (onNavigate) {
+      onNavigate('users');
+    }
+  };
+
   const handleStaff = () => {
     if (onNavigate) {
       onNavigate('staff');
@@ -273,100 +278,128 @@ const AddSalesRecord = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =>
     }
   };
 
-  // Handle product item changes
-  const handleItemChange = (itemId, field, value) => {
-    setProductItems(prev => prev.map(item => 
-      item.id === itemId ? { ...item, [field]: value } : item
-    ));
+  // Handle current product input changes
+  const handleCurrentProductChange = (e) => {
+    const { name, value } = e.target;
+    setCurrentProduct(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   // Fetch product by item code
-  const fetchProductByItemCode = async (itemId) => {
-    const item = productItems.find(p => p.id === itemId);
-    if (!item || !item.itemCode?.trim()) {
+  const fetchProductByItemCode = async () => {
+    if (!currentProduct.itemCode?.trim()) {
       setError('Please enter an item code');
       return;
     }
     
-    setProductItems(prev => prev.map(p => 
-      p.id === itemId ? { ...p, isFetching: true } : p
-    ));
+    setCurrentProduct(prev => ({ ...prev, isFetching: true }));
     setError('');
     
     try {
-      const response = await productsAPI.getByItemCode(item.itemCode.trim());
+      const response = await productsAPI.getByItemCode(currentProduct.itemCode.trim());
       
       if (response.success && response.product) {
         const product = response.product;
-        const productData = {
-          id: product.id,
-          productName: product.product_name || product.productName || '',
-          itemCode: product.item_code || product.itemCode || '',
-          skuCode: product.sku_code || product.skuCode || '',
+        setCurrentProduct(prev => ({
+          ...prev,
+          productInfo: {
+            id: product.id,
+            productName: product.product_name || product.productName || '',
+            itemCode: product.item_code || product.itemCode || '',
+            category: product.category || '',
+            mrp: product.mrp || 0,
+            sellRate: product.sell_rate || product.sellRate || 0
+          },
           category: product.category || '',
-          mrp: product.mrp || 0,
-          sellRate: product.sell_rate || product.sellRate || 0,
-          discount: product.discount || 0
-        };
-        
-        setProductItems(prev => prev.map(p => 
-          p.id === itemId ? {
-            ...p,
-            productInfo: productData,
-            productName: productData.productName,
-            skuCode: productData.skuCode,
-            category: productData.category,
-            mrp: productData.mrp.toString(),
-            sellRate: productData.sellRate.toString(),
-            discount: productData.discount.toString(),
-            isFetching: false
-          } : p
-        ));
+          productName: product.product_name || product.productName || '',
+          mrp: (product.mrp || 0).toString(),
+          sellRate: (product.sell_rate || product.sellRate || 0).toString(),
+          isFetching: false
+        }));
       } else {
         setError('Product not found with this item code');
-        setProductItems(prev => prev.map(p => 
-          p.id === itemId ? { ...p, productInfo: null, isFetching: false } : p
-        ));
+        setCurrentProduct(prev => ({ 
+          ...prev, 
+          productInfo: null, 
+          category: '',
+          productName: '',
+          mrp: '',
+          sellRate: '',
+          isFetching: false 
+        }));
       }
     } catch (err) {
       console.error('Fetch product error:', err);
       setError(err.message || 'Product not found. Please check the item code and try again.');
-      setProductItems(prev => prev.map(p => 
-        p.id === itemId ? { ...p, productInfo: null, isFetching: false } : p
-      ));
+      setCurrentProduct(prev => ({ 
+        ...prev, 
+        productInfo: null, 
+        category: '',
+        productName: '',
+        mrp: '',
+        sellRate: '',
+        isFetching: false 
+      }));
     }
   };
 
-  const handleItemCodeKeyPress = async (e, itemId) => {
+  const handleItemCodeKeyPress = async (e) => {
     if (e.key === 'Enter' || e.keyCode === 13) {
       e.preventDefault();
-      await fetchProductByItemCode(itemId);
+      await fetchProductByItemCode();
     }
   };
 
-  const addProductItem = () => {
-    const newId = productItems.length > 0 
-      ? Math.max(...productItems.map(item => item.id)) + 1 
+  // Add product to the list
+  const addProduct = () => {
+    if (!currentProduct.productInfo || !currentProduct.quantity || parseFloat(currentProduct.quantity) <= 0) {
+      setError('Please fetch product and enter a valid quantity');
+      return;
+    }
+
+    // Check for duplicate item codes
+    const isDuplicate = addedProducts.some(p => 
+      p.itemCode && p.itemCode.trim() === currentProduct.itemCode.trim()
+    );
+    
+    if (isDuplicate) {
+      setError('This product is already added. Please remove it first if you want to change the details.');
+      return;
+    }
+
+    const newId = addedProducts.length > 0 
+      ? Math.max(...addedProducts.map(p => p.id)) + 1 
       : 1;
-    setProductItems(prev => [...prev, { 
-      id: newId, 
-      itemCode: '', 
-      productName: '',
-      skuCode: '',
+    
+    setAddedProducts(prev => [...prev, {
+      id: newId,
+      itemCode: currentProduct.itemCode.trim(),
+      category: currentProduct.category,
+      productName: currentProduct.productName,
+      quantity: parseFloat(currentProduct.quantity),
+      mrp: parseFloat(currentProduct.mrp),
+      sellRate: parseFloat(currentProduct.sellRate),
+      productInfo: currentProduct.productInfo
+    }]);
+    
+    // Clear current product form
+    setCurrentProduct({
+      itemCode: '',
       category: '',
+      productName: '',
       quantity: '',
       mrp: '',
       sellRate: '',
-      discount: '',
-      productInfo: null,
-      isFetching: false
-    }]);
+      isFetching: false,
+      productInfo: null
+    });
+    setError('');
   };
 
-  const removeProductItem = (id) => {
-    if (productItems.length > 1) {
-      setProductItems(prev => prev.filter(item => item.id !== id));
-    }
+  const removeProduct = (productId) => {
+    setAddedProducts(prev => prev.filter(p => p.id !== productId));
   };
 
   const submitSalesRecord = async () => {
@@ -394,33 +427,21 @@ const AddSalesRecord = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =>
         return;
       }
 
-      const validItems = productItems.filter(item => item.itemCode.trim() !== '' && item.productInfo && item.quantity);
-      
-      if (validItems.length === 0) {
-        setError('Please add at least one product with quantity');
+      if (addedProducts.length === 0) {
+        setError('Please add at least one product');
         setIsLoading(false);
         return;
       }
 
-      // Validate all items have quantity
-      for (const item of validItems) {
-        if (!item.quantity || parseFloat(item.quantity) <= 0) {
-          setError(`Please enter a valid quantity for item ${item.itemCode}`);
-          setIsLoading(false);
-          return;
-        }
-      }
-
       // Prepare products array
-      const products = validItems.map(item => ({
+      const products = addedProducts.map(item => ({
         itemCode: item.itemCode.trim(),
         productName: item.productName,
-        skuCode: item.skuCode,
         category: item.category,
-        quantity: parseFloat(item.quantity) || 0,
-        mrp: parseFloat(item.mrp) || 0,
-        sellRate: parseFloat(item.sellRate) || 0,
-        discount: parseFloat(item.discount) || 0
+        quantity: item.quantity || 0,
+        mrp: item.mrp || 0,
+        sellRate: item.sellRate || 0,
+        discount: 0
       }));
 
       // Calculate total amount
@@ -483,6 +504,14 @@ const AddSalesRecord = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =>
           </div>
           <span>Home</span>
         </div>
+        {userRole === 'admin' && (
+          <div className="nav-item" onClick={handleManagers}>
+            <div className="nav-icon">
+              <i className="fas fa-users"></i>
+            </div>
+            <span>Supervisors</span>
+          </div>
+        )}
         {userRole !== 'staff' && (
           <div className="nav-item" onClick={handleStaff}>
             <div className="nav-icon">
@@ -528,535 +557,474 @@ const AddSalesRecord = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =>
           {/* Main Content */}
           <main className="add-user-content">
             <form onSubmit={handleSubmit} className="add-user-form">
-              {/* Customer Details Section */}
-              <div className="form-section">
-                <h3 className="section-title">Customer details</h3>
-                <div className="form-grid">
-                  <div className="form-group" ref={customerDropdownRef} style={{ position: 'relative', zIndex: 1000 }}>
-                    <label htmlFor="customerName">Customer Name *</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-user input-icon"></i>
-                      <input
-                        type="text"
-                        id="customerName"
-                        name="customerName"
-                        className="form-input"
-                        placeholder="Type customer name to search..."
-                        value={formData.customerName}
-                        onChange={handleInputChange}
-                        onFocus={() => {
-                          if (formData.customerName.trim().length > 0 && filteredCustomers.length > 0) {
-                            setShowCustomerDropdown(true);
-                          }
-                        }}
-                        required
-                        autoComplete="off"
-                      />
-                      <i className="fas fa-chevron-down dropdown-icon"></i>
-                    </div>
-                    {showCustomerDropdown && filteredCustomers.length > 0 && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        right: 0,
-                        background: '#fff',
-                        border: '1px solid #e0e0e0',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                        zIndex: 10000,
-                        maxHeight: '300px',
-                        overflowY: 'auto',
-                        marginTop: '4px'
-                      }}>
-                        {filteredCustomers.map((customer) => (
-                          <div
-                            key={customer.id}
-                            onClick={() => handleCustomerSelect(customer)}
-                            style={{
-                              padding: '12px 16px',
-                              cursor: 'pointer',
-                              borderBottom: '1px solid #f0f0f0',
-                              transition: 'background 0.2s'
-                            }}
-                            onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                            onMouseLeave={(e) => e.target.style.background = '#fff'}
-                          >
-                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#333' }}>
-                              {customer.name}
-                            </div>
-                            <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                              {customer.phone}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+              <div className="form-grid three-col">
+                {/* Row 1: Customer Name, Number, Supplier Name */}
+                <div className="form-group" ref={customerDropdownRef} style={{ position: 'relative', zIndex: 1000 }}>
+                  <label htmlFor="customerName">Customer Name *</label>
+                  <div className="input-wrapper">
+                    <i className="fas fa-user input-icon"></i>
+                    <input
+                      type="text"
+                      id="customerName"
+                      name="customerName"
+                      className="form-input"
+                      placeholder="Type customer name to search..."
+                      value={formData.customerName}
+                      onChange={handleInputChange}
+                      onFocus={() => {
+                        if (formData.customerName.trim().length > 0 && filteredCustomers.length > 0) {
+                          setShowCustomerDropdown(true);
+                        }
+                      }}
+                      required
+                      autoComplete="off"
+                    />
+                    <i className="fas fa-chevron-down dropdown-icon"></i>
                   </div>
-
-                  <div className="form-group">
-                    <label htmlFor="customerContact">Customer Contact Number *</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-phone input-icon"></i>
-                      <input
-                        type="tel"
-                        id="customerContact"
-                        name="customerContact"
-                        className="form-input"
-                        placeholder="Contact number (auto-filled)"
-                        value={formData.customerContact}
-                        readOnly
-                        style={{ background: '#f5f5f5' }}
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Handler Details Section */}
-              <div className="form-section">
-                <h3 className="section-title">Handler details</h3>
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label htmlFor="handlerId">Handler Name *</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-user-tie input-icon"></i>
-                      <select
-                        id="handlerId"
-                        name="handlerId"
-                        className="form-input"
-                        value={formData.handlerId}
-                        onChange={handleHandlerChange}
-                        required
-                        style={{ paddingLeft: '40px', appearance: 'auto', cursor: 'pointer' }}
-                      >
-                        <option value="">Select handler</option>
-                        {handlers.map((handler) => (
-                          <option key={handler.id} value={handler.id}>
-                            {handler.name}
-                          </option>
-                        ))}
-                      </select>
-                      <i className="fas fa-chevron-down dropdown-icon"></i>
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="handlerMobile">Handler Mobile Number</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-phone input-icon"></i>
-                      <input
-                        type="tel"
-                        id="handlerMobile"
-                        name="handlerMobile"
-                        className="form-input"
-                        placeholder="Phone number"
-                        value={formData.handlerMobile}
-                        readOnly
-                        style={{ background: '#f5f5f5' }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Date and Supplier Section */}
-              <div className="form-section">
-                <h3 className="section-title">Date and supplier details</h3>
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label htmlFor="dateOfDuration">Date of Duration *</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-calendar input-icon"></i>
-                      <input
-                        type="date"
-                        id="dateOfDuration"
-                        name="dateOfDuration"
-                        className="form-input"
-                        value={formData.dateOfDuration}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-group" ref={supplierDropdownRef} style={{ position: 'relative', zIndex: 1000 }}>
-                    <label htmlFor="supplierName">Supplier Name</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-truck input-icon"></i>
-                      <input
-                        type="text"
-                        id="supplierName"
-                        name="supplierName"
-                        className="form-input"
-                        placeholder="Type supplier name to search..."
-                        value={formData.supplierName}
-                        onChange={handleInputChange}
-                        onFocus={() => {
-                          if (allSuppliers.length > 0) {
-                            setShowSupplierDropdown(true);
-                          }
-                        }}
-                        onClick={() => {
-                          if (allSuppliers.length > 0) {
-                            setShowSupplierDropdown(true);
-                          }
-                        }}
-                        autoComplete="off"
-                      />
-                      <i className="fas fa-chevron-down dropdown-icon"></i>
-                    </div>
-                    {showSupplierDropdown && filteredSuppliers.length > 0 && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        right: 0,
-                        background: '#fff',
-                        border: '1px solid #e0e0e0',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                        zIndex: 10000,
-                        maxHeight: '300px',
-                        overflowY: 'auto',
-                        marginTop: '4px'
-                      }}>
-                        {filteredSuppliers.map((supplier) => (
-                          <div
-                            key={supplier.id}
-                            onClick={() => handleSupplierSelect(supplier)}
-                            style={{
-                              padding: '12px 16px',
-                              cursor: 'pointer',
-                              borderBottom: '1px solid #f0f0f0',
-                              transition: 'background 0.2s'
-                            }}
-                            onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                            onMouseLeave={(e) => e.target.style.background = '#fff'}
-                          >
-                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#333' }}>
-                              {supplier.supplier_name || 'N/A'}
-                            </div>
-                            {supplier.phone && (
-                              <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                                {supplier.phone}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="supplierNumber">Supplier Number</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-phone input-icon"></i>
-                      <input
-                        type="tel"
-                        id="supplierNumber"
-                        name="supplierNumber"
-                        className="form-input"
-                        placeholder="Supplier number (auto-filled)"
-                        value={formData.supplierNumber}
-                        readOnly
-                        style={{ background: '#f5f5f5' }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Product Details Section */}
-              <div className="form-section">
-                <h3 className="section-title">Product details</h3>
-
-                {productItems.map((item, index) => (
-                  <div key={item.id} style={{
-                    border: '1px solid #e9ecef',
-                    borderRadius: '8px',
-                    padding: '20px',
-                    marginBottom: '20px',
-                    background: '#fff'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                      <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#333' }}>
-                        Item {index + 1}
-                      </h4>
-                      {productItems.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeProductItem(item.id)}
+                  {showCustomerDropdown && filteredCustomers.length > 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      background: '#fff',
+                      border: '1px solid #e0e0e0',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      zIndex: 10000,
+                      maxHeight: '300px',
+                      overflowY: 'auto',
+                      marginTop: '4px'
+                    }}>
+                      {filteredCustomers.map((customer) => (
+                        <div
+                          key={customer.id}
+                          onClick={() => handleCustomerSelect(customer)}
                           style={{
-                            background: 'transparent',
-                            border: '1px solid #dc3545',
-                            color: '#dc3545',
-                            borderRadius: '6px',
-                            padding: '4px 12px',
+                            padding: '12px 16px',
                             cursor: 'pointer',
-                            fontSize: '12px',
-                            fontWeight: '500'
+                            borderBottom: '1px solid #f0f0f0',
+                            transition: 'background 0.2s'
                           }}
+                          onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
+                          onMouseLeave={(e) => e.target.style.background = '#fff'}
                         >
-                          <i className="fas fa-trash"></i> Remove
-                        </button>
-                      )}
+                          <div style={{ fontWeight: '600', fontSize: '14px', color: '#333' }}>
+                            {customer.name}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                            {customer.phone}
+                          </div>
+                        </div>
+                      ))}
                     </div>
+                  )}
+                </div>
 
-                    <div className="form-grid">
-                      {/* Item Code */}
-                      <div className="form-group">
-                        <label htmlFor={`itemCode-${item.id}`}>Item Code *</label>
-                        <div className="input-wrapper" style={{ position: 'relative' }}>
-                          <i className="fas fa-barcode input-icon"></i>
-                          <input
-                            type="text"
-                            id={`itemCode-${item.id}`}
-                            className="form-input"
-                            placeholder="Enter item code"
-                            value={item.itemCode}
-                            onChange={(e) => handleItemChange(item.id, 'itemCode', e.target.value)}
-                            onKeyPress={(e) => handleItemCodeKeyPress(e, item.id)}
-                            required
-                            style={{ paddingRight: '120px' }}
-                          />
-                          {item.isFetching ? (
-                            <div style={{ 
-                              position: 'absolute', 
-                              right: '10px', 
-                              top: '50%', 
-                              transform: 'translateY(-50%)',
-                              color: '#999'
-                            }}>
-                              <i className="fas fa-spinner fa-spin"></i>
+                <div className="form-group">
+                  <label htmlFor="customerContact">Number *</label>
+                  <div className="input-wrapper">
+                    <i className="fas fa-phone input-icon"></i>
+                    <input
+                      type="tel"
+                      id="customerContact"
+                      name="customerContact"
+                      className="form-input"
+                      placeholder="Contact number (auto-filled)"
+                      value={formData.customerContact}
+                      readOnly
+                      style={{ background: '#f5f5f5' }}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" ref={supplierDropdownRef} style={{ position: 'relative', zIndex: 1000 }}>
+                  <label htmlFor="supplierName">Supplier Name</label>
+                  <div className="input-wrapper">
+                    <i className="fas fa-truck input-icon"></i>
+                    <input
+                      type="text"
+                      id="supplierName"
+                      name="supplierName"
+                      className="form-input"
+                      placeholder="Type supplier name to search..."
+                      value={formData.supplierName}
+                      onChange={handleInputChange}
+                      onFocus={() => {
+                        if (allSuppliers.length > 0) {
+                          setShowSupplierDropdown(true);
+                        }
+                      }}
+                      onClick={() => {
+                        if (allSuppliers.length > 0) {
+                          setShowSupplierDropdown(true);
+                        }
+                      }}
+                      autoComplete="off"
+                    />
+                    <i className="fas fa-chevron-down dropdown-icon"></i>
+                  </div>
+                  {showSupplierDropdown && filteredSuppliers.length > 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      background: '#fff',
+                      border: '1px solid #e0e0e0',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      zIndex: 10000,
+                      maxHeight: '300px',
+                      overflowY: 'auto',
+                      marginTop: '4px'
+                    }}>
+                      {filteredSuppliers.map((supplier) => (
+                        <div
+                          key={supplier.id}
+                          onClick={() => handleSupplierSelect(supplier)}
+                          style={{
+                            padding: '12px 16px',
+                            cursor: 'pointer',
+                            borderBottom: '1px solid #f0f0f0',
+                            transition: 'background 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
+                          onMouseLeave={(e) => e.target.style.background = '#fff'}
+                        >
+                          <div style={{ fontWeight: '600', fontSize: '14px', color: '#333' }}>
+                            {supplier.supplier_name || 'N/A'}
+                          </div>
+                          {supplier.phone && (
+                            <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                              {supplier.phone}
                             </div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => fetchProductByItemCode(item.id)}
-                              style={{
-                                position: 'absolute',
-                                right: '8px',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                padding: '6px 12px',
-                                background: '#dc3545',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                fontSize: '12px',
-                                fontWeight: '500',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px'
-                              }}
-                            >
-                              <i className="fas fa-search"></i>
-                              Fetch Product
-                            </button>
                           )}
                         </div>
-                      </div>
-
-                      {/* Product Name */}
-                      <div className="form-group">
-                        <label htmlFor={`productName-${item.id}`}>Product Name</label>
-                        <div className="input-wrapper">
-                          <i className="fas fa-box input-icon"></i>
-                          <input
-                            type="text"
-                            id={`productName-${item.id}`}
-                            className="form-input"
-                            placeholder="Product Name"
-                            value={item.productName}
-                            readOnly
-                            style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Category */}
-                      <div className="form-group">
-                        <label htmlFor={`category-${item.id}`}>Category</label>
-                        <div className="input-wrapper">
-                          <i className="fas fa-tags input-icon"></i>
-                          <input
-                            type="text"
-                            id={`category-${item.id}`}
-                            className="form-input"
-                            placeholder="Category"
-                            value={item.category}
-                            readOnly
-                            style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Quantity */}
-                      <div className="form-group">
-                        <label htmlFor={`quantity-${item.id}`}>Quantity *</label>
-                        <div className="input-wrapper">
-                          <i className="fas fa-shopping-cart input-icon"></i>
-                          <input
-                            type="number"
-                            id={`quantity-${item.id}`}
-                            className="form-input"
-                            placeholder="Enter quantity"
-                            value={item.quantity}
-                            onChange={(e) => handleItemChange(item.id, 'quantity', e.target.value)}
-                            min="1"
-                            step="1"
-                            required
-                            disabled={!item.productInfo}
-                          />
-                        </div>
-                      </div>
-
-                      {/* MRP */}
-                      <div className="form-group">
-                        <label htmlFor={`mrp-${item.id}`}>MRP</label>
-                        <div className="input-wrapper">
-                          <i className="fas fa-rupee-sign input-icon"></i>
-                          <input
-                            type="number"
-                            id={`mrp-${item.id}`}
-                            className="form-input"
-                            placeholder="MRP"
-                            value={item.mrp}
-                            readOnly
-                            style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Sell Rate */}
-                      <div className="form-group">
-                        <label htmlFor={`sellRate-${item.id}`}>Sell Rate</label>
-                        <div className="input-wrapper">
-                          <i className="fas fa-rupee-sign input-icon"></i>
-                          <input
-                            type="number"
-                            id={`sellRate-${item.id}`}
-                            className="form-input"
-                            placeholder="Sell Rate"
-                            value={item.sellRate}
-                            readOnly
-                            style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
-                          />
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  </div>
-                ))}
+                  )}
+                </div>
 
-                {/* Add Item Button - Below all product items */}
-                <div style={{ marginTop: '16px' }}>
+                {/* Row 2: Handler Name, Handler Phone Number, Date of Duration */}
+                <div className="form-group">
+                  <label htmlFor="handlerId">Handler Name *</label>
+                  <div className="input-wrapper">
+                    <i className="fas fa-user-tie input-icon"></i>
+                    <select
+                      id="handlerId"
+                      name="handlerId"
+                      className="form-input"
+                      value={formData.handlerId}
+                      onChange={handleHandlerChange}
+                      required
+                      style={{ paddingLeft: '40px', appearance: 'auto', cursor: 'pointer' }}
+                    >
+                      <option value="">Select handler</option>
+                      {handlers.map((handler) => (
+                        <option key={handler.id} value={handler.id}>
+                          {handler.name}
+                        </option>
+                      ))}
+                    </select>
+                    <i className="fas fa-chevron-down dropdown-icon"></i>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="handlerMobile">Handler Phone Number</label>
+                  <div className="input-wrapper">
+                    <i className="fas fa-phone input-icon"></i>
+                    <input
+                      type="tel"
+                      id="handlerMobile"
+                      name="handlerMobile"
+                      className="form-input"
+                      placeholder="Phone number"
+                      value={formData.handlerMobile}
+                      readOnly
+                      style={{ background: '#f5f5f5' }}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="dateOfDuration">Date of Duration *</label>
+                  <div className="input-wrapper">
+                    <i className="fas fa-calendar input-icon"></i>
+                    <input
+                      type="date"
+                      id="dateOfDuration"
+                      name="dateOfDuration"
+                      className="form-input"
+                      value={formData.dateOfDuration}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Row 3: Item Code, Category, Product Name */}
+                <div className="form-group">
+                  <label htmlFor="itemCode">Item Code *</label>
+                  <div className="input-wrapper" style={{ position: 'relative' }}>
+                    <i className="fas fa-barcode input-icon"></i>
+                    <input
+                      type="text"
+                      id="itemCode"
+                      name="itemCode"
+                      className="form-input"
+                      placeholder="Enter item code"
+                      value={currentProduct.itemCode}
+                      onChange={handleCurrentProductChange}
+                      onKeyPress={handleItemCodeKeyPress}
+                      style={{ paddingRight: '100px' }}
+                    />
+                    {currentProduct.isFetching ? (
+                      <div style={{ 
+                        position: 'absolute', 
+                        right: '10px', 
+                        top: '50%', 
+                        transform: 'translateY(-50%)',
+                        color: '#999'
+                      }}>
+                        <i className="fas fa-spinner fa-spin"></i>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={fetchProductByItemCode}
+                        style={{
+                          position: 'absolute',
+                          right: '8px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          padding: '6px 12px',
+                          background: '#dc3545',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '11px',
+                          fontWeight: '500',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <i className="fas fa-search"></i>
+                        Fetch
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="category">Category</label>
+                  <div className="input-wrapper">
+                    <i className="fas fa-tags input-icon"></i>
+                    <input
+                      type="text"
+                      id="category"
+                      name="category"
+                      className="form-input"
+                      placeholder="Category (auto-filled)"
+                      value={currentProduct.category}
+                      readOnly
+                      style={{ background: '#f5f5f5' }}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="productName">Product Name</label>
+                  <div className="input-wrapper">
+                    <i className="fas fa-box input-icon"></i>
+                    <input
+                      type="text"
+                      id="productName"
+                      name="productName"
+                      className="form-input"
+                      placeholder="Product name (auto-filled)"
+                      value={currentProduct.productName}
+                      readOnly
+                      style={{ background: '#f5f5f5' }}
+                    />
+                  </div>
+                </div>
+
+                {/* Row 4: Quantity, MRP, Sell Rate */}
+                <div className="form-group">
+                  <label htmlFor="quantity">Quantity *</label>
+                  <div className="input-wrapper">
+                    <i className="fas fa-shopping-cart input-icon"></i>
+                    <input
+                      type="number"
+                      id="quantity"
+                      name="quantity"
+                      className="form-input"
+                      placeholder="Enter quantity"
+                      value={currentProduct.quantity}
+                      onChange={handleCurrentProductChange}
+                      min="1"
+                      step="1"
+                      disabled={!currentProduct.productInfo}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="mrp">MRP</label>
+                  <div className="input-wrapper">
+                    <i className="fas fa-rupee-sign input-icon"></i>
+                    <input
+                      type="number"
+                      id="mrp"
+                      name="mrp"
+                      className="form-input"
+                      placeholder="MRP (auto-filled)"
+                      value={currentProduct.mrp}
+                      readOnly
+                      style={{ background: '#f5f5f5' }}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="sellRate">Sell Rate</label>
+                  <div className="input-wrapper">
+                    <i className="fas fa-rupee-sign input-icon"></i>
+                    <input
+                      type="number"
+                      id="sellRate"
+                      name="sellRate"
+                      className="form-input"
+                      placeholder="Sell rate (auto-filled)"
+                      value={currentProduct.sellRate}
+                      readOnly
+                      style={{ background: '#f5f5f5' }}
+                    />
+                  </div>
+                </div>
+
+                {/* Add Product Button and Added Products Display */}
+                <div className="form-group">
+                  <label>&nbsp;</label>
                   <button
                     type="button"
-                    onClick={addProductItem}
+                    onClick={addProduct}
+                    disabled={!currentProduct.productInfo || !currentProduct.quantity || parseFloat(currentProduct.quantity) <= 0}
                     style={{
-                      background: '#dc3545',
+                      width: '100%',
+                      padding: '8px 16px',
+                      background: (currentProduct.productInfo && currentProduct.quantity && parseFloat(currentProduct.quantity) > 0) ? '#28a745' : '#ccc',
                       color: '#fff',
                       border: 'none',
-                      borderRadius: '8px',
-                      padding: '8px 16px',
-                      cursor: 'pointer',
-                      fontSize: '14px',
+                      borderRadius: '6px',
+                      cursor: (currentProduct.productInfo && currentProduct.quantity && parseFloat(currentProduct.quantity) > 0) ? 'pointer' : 'not-allowed',
+                      fontSize: '12px',
                       fontWeight: '600',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '8px'
+                      justifyContent: 'center',
+                      gap: '6px',
+                      marginTop: '4px'
                     }}
                   >
                     <i className="fas fa-plus"></i>
-                    Add Item
+                    <span>Add Item</span>
                   </button>
                 </div>
+
+                {/* Display Added Products - Side by side with Add Item button */}
+                {addedProducts.length > 0 && (
+                  <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                    <label style={{ 
+                      display: 'block', 
+                      marginBottom: '8px', 
+                      fontWeight: '600', 
+                      color: '#333', 
+                      fontSize: '12px' 
+                    }}>
+                      Added Products ({addedProducts.length})
+                    </label>
+                    <div style={{ 
+                      display: 'flex',
+                      flexDirection: 'row',
+                      gap: '8px',
+                      overflowX: 'auto',
+                      overflowY: 'hidden',
+                      width: '100%'
+                    }}>
+                      {addedProducts.map((product, index) => (
+                        <div
+                          key={product.id}
+                          style={{
+                            padding: '8px',
+                            background: '#f8f9fa',
+                            border: '2px solid #e0e0e0',
+                            borderRadius: '6px',
+                            position: 'relative',
+                            minWidth: '200px',
+                            maxWidth: '200px',
+                            flexShrink: 0,
+                            boxSizing: 'border-box'
+                          }}
+                        >
+                          <div style={{ marginBottom: '6px', fontWeight: '600', color: '#dc3545', fontSize: '11px' }}>
+                            Product {index + 1}
+                          </div>
+                          <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
+                            <span style={{ fontWeight: '500', color: '#666' }}>Item Code: </span>
+                            <span style={{ color: '#333' }}>{product.itemCode}</span>
+                          </div>
+                          <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
+                            <span style={{ fontWeight: '500', color: '#666' }}>Product: </span>
+                            <span style={{ color: '#333' }}>{product.productName || 'N/A'}</span>
+                          </div>
+                          <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
+                            <span style={{ fontWeight: '500', color: '#666' }}>Category: </span>
+                            <span style={{ color: '#333' }}>{product.category || 'N/A'}</span>
+                          </div>
+                          <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
+                            <span style={{ fontWeight: '500', color: '#666' }}>Qty: </span>
+                            <span style={{ color: '#333' }}>{product.quantity}</span>
+                          </div>
+                          <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
+                            <span style={{ fontWeight: '500', color: '#666' }}>Rate: </span>
+                            <span style={{ color: '#333' }}>₹{product.sellRate.toFixed(2)}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeProduct(product.id)}
+                            style={{
+                              position: 'absolute',
+                              top: '6px',
+                              right: '6px',
+                              background: '#dc3545',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '50%',
+                              width: '18px',
+                              height: '18px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '9px'
+                            }}
+                            title="Remove this product"
+                          >
+                            <i className="fas fa-times"></i>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Pricing Summary */}
-              {productItems.some(item => item.itemCode.trim() !== '' && item.productInfo && item.quantity) && (
-                <div className="form-section" style={{ 
-                  background: '#f8f9fa', 
-                  borderRadius: '8px', 
-                  padding: '20px',
-                  marginTop: '20px',
-                  marginBottom: '20px'
-                }}>
-                  <h3 className="section-title" style={{ marginBottom: '16px' }}>Pricing Summary</h3>
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ 
-                      width: '100%', 
-                      borderCollapse: 'collapse',
-                      background: '#fff',
-                      borderRadius: '8px',
-                      overflow: 'hidden'
-                    }}>
-                      <thead>
-                        <tr style={{ background: '#dc3545', color: '#fff' }}>
-                          <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', fontWeight: '600' }}>#</th>
-                          <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', fontWeight: '600' }}>Item Code</th>
-                          <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', fontWeight: '600' }}>Product</th>
-                          <th style={{ padding: '12px', textAlign: 'right', fontSize: '13px', fontWeight: '600' }}>Qty</th>
-                          <th style={{ padding: '12px', textAlign: 'right', fontSize: '13px', fontWeight: '600' }}>Rate</th>
-                          <th style={{ padding: '12px', textAlign: 'right', fontSize: '13px', fontWeight: '600' }}>Total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {productItems
-                          .filter(item => item.itemCode.trim() !== '' && item.productInfo && item.quantity)
-                          .map((item, index) => {
-                            const quantity = parseFloat(item.quantity) || 0;
-                            const sellRate = parseFloat(item.sellRate) || 0;
-                            const itemTotal = sellRate * quantity;
-                            
-                            return (
-                              <tr key={item.id} style={{ borderBottom: '1px solid #e9ecef' }}>
-                                <td style={{ padding: '12px', fontSize: '13px', color: '#333' }}>{index + 1}</td>
-                                <td style={{ padding: '12px', fontSize: '13px', color: '#333' }}>{item.itemCode}</td>
-                                <td style={{ padding: '12px', fontSize: '13px', color: '#333' }}>{item.productName || 'N/A'}</td>
-                                <td style={{ padding: '12px', fontSize: '13px', color: '#333', textAlign: 'right' }}>{quantity}</td>
-                                <td style={{ padding: '12px', fontSize: '13px', color: '#333', textAlign: 'right' }}>₹{sellRate.toFixed(2)}</td>
-                                <td style={{ padding: '12px', fontSize: '13px', color: '#333', textAlign: 'right', fontWeight: '600' }}>₹{itemTotal.toFixed(2)}</td>
-                              </tr>
-                            );
-                          })}
-                      </tbody>
-                      <tfoot>
-                        {(() => {
-                          const grandTotal = productItems
-                            .filter(item => item.itemCode.trim() !== '' && item.productInfo && item.quantity)
-                            .reduce((total, item) => {
-                              const quantity = parseFloat(item.quantity) || 0;
-                              const sellRate = parseFloat(item.sellRate) || 0;
-                              return total + (sellRate * quantity);
-                            }, 0);
-                          
-                          return (
-                            <>
-                              <tr style={{ background: '#f8f9fa', borderTop: '2px solid #e9ecef' }}>
-                                <td colSpan="5" style={{ padding: '12px', fontSize: '14px', fontWeight: '700', color: '#333', textAlign: 'right' }}>
-                                  Grand Total:
-                                </td>
-                                <td style={{ padding: '12px', fontSize: '16px', fontWeight: '700', color: '#28a745', textAlign: 'right' }}>
-                                  ₹{grandTotal.toFixed(2)}
-                                </td>
-                              </tr>
-                            </>
-                          );
-                        })()}
-                      </tfoot>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {/* Warning Message */}
-              <p className="form-warning">
-                Make sure all sales record details are correct before saving.
-              </p>
 
               {/* Error Message */}
               {error && (

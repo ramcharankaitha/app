@@ -34,10 +34,10 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
   };
 
   const handleBack = () => {
-    if (onNavigate) {
-      onNavigate('dashboard');
-    } else if (onBack) {
+    if (onBack) {
       onBack();
+    } else if (onNavigate) {
+      onNavigate('stockInMaster');
     }
   };
 
@@ -235,30 +235,11 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
 
       {/* Main Content */}
       <main className="add-user-content">
-        <form onSubmit={handleSubmit} className="add-user-form">
-          {/* Stock In Details Section */}
+        <form onSubmit={handleSubmit} className="add-user-form add-stock-in-form">
+          {/* All fields in 3-column grid without section titles */}
           <div className="form-section">
-            <h3 className="section-title">Stock In</h3>
-            <div className="form-grid">
-              {/* 1. Category */}
-              <div className="form-group">
-                <label htmlFor="category">Category</label>
-                <div className="input-wrapper">
-                  <i className="fas fa-tags input-icon"></i>
-                  <input
-                    type="text"
-                    id="category"
-                    name="category"
-                    className="form-input"
-                    placeholder="Category"
-                    value={formData.category}
-                    readOnly
-                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
-                  />
-                </div>
-              </div>
-
-              {/* 2. Item Code */}
+            <div className="form-grid three-col">
+              {/* Row 1: Item Code, Category, Product Name */}
               <div className="form-group">
                 <label htmlFor="itemCode">Item Code *</label>
                 <div className="input-wrapper" style={{ position: 'relative' }}>
@@ -288,26 +269,25 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     </div>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={fetchProductByItemCode}
-                  style={{
-                    marginTop: '8px',
-                    padding: '6px 12px',
-                    background: '#007bff',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '12px'
-                  }}
-                >
-                  <i className="fas fa-search" style={{ marginRight: '4px' }}></i>
-                  Fetch Product
-                </button>
               </div>
 
-              {/* 3. Product Name */}
+              <div className="form-group">
+                <label htmlFor="category">Category</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-tags input-icon"></i>
+                  <input
+                    type="text"
+                    id="category"
+                    name="category"
+                    className="form-input"
+                    placeholder="Category"
+                    value={formData.category}
+                    readOnly
+                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                  />
+                </div>
+              </div>
+
               <div className="form-group">
                 <label htmlFor="productName">Product Name</label>
                 <div className="input-wrapper">
@@ -325,9 +305,9 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 </div>
               </div>
 
-              {/* 4. SKU Code */}
+              {/* Row 2: SKV Code, Model Number, Quantity in the Store */}
               <div className="form-group">
-                <label htmlFor="skuCode">SKU Code</label>
+                <label htmlFor="skuCode">SKV Code</label>
                 <div className="input-wrapper">
                   <i className="fas fa-boxes input-icon"></i>
                   <input
@@ -335,7 +315,7 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     id="skuCode"
                     name="skuCode"
                     className="form-input"
-                    placeholder="SKU Code"
+                    placeholder="SKV Code"
                     value={formData.skuCode}
                     readOnly
                     style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
@@ -343,7 +323,6 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 </div>
               </div>
 
-              {/* 5. Model Number */}
               <div className="form-group">
                 <label htmlFor="modelNumber">Model Number</label>
                 <div className="input-wrapper">
@@ -361,9 +340,8 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 </div>
               </div>
 
-              {/* 6. Quantity (Current Stock in Store) */}
               <div className="form-group">
-                <label htmlFor="quantity">Quantity (Current Stock in Store)</label>
+                <label htmlFor="quantity">Quantity in the Store</label>
                 <div className="input-wrapper">
                   <i className="fas fa-warehouse input-icon"></i>
                   <input
@@ -382,9 +360,32 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     }}
                   />
                 </div>
+                {/* Fetch Product button below Quantity in the Store */}
+                <button
+                  type="button"
+                  onClick={fetchProductByItemCode}
+                  style={{
+                    marginTop: '8px',
+                    padding: '6px 12px',
+                    background: '#007bff',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <i className="fas fa-search"></i>
+                  Fetch Product
+                </button>
               </div>
 
-              {/* 7. Stock In Quantity */}
+              {/* Row 3: Stock In Quantity - Same row as Fetch Product button (below SKV Code) */}
               <div className="form-group">
                 <label htmlFor="stockInQuantity">Stock In Quantity *</label>
                 <div className="input-wrapper">
@@ -403,36 +404,6 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     disabled={!productInfo}
                   />
                 </div>
-                {productInfo && formData.stockInQuantity && !isNaN(parseInt(formData.stockInQuantity)) && (
-                  <div style={{ 
-                    marginTop: '8px', 
-                    padding: '8px', 
-                    background: '#d4edda', 
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                    color: '#155724'
-                  }}>
-                    <i className="fas fa-info-circle" style={{ marginRight: '6px' }}></i>
-                    New stock will be: <strong>{productInfo.currentQuantity + parseInt(formData.stockInQuantity)}</strong>
-                  </div>
-                )}
-              </div>
-
-              {/* Notes */}
-              <div className="form-group full-width">
-                <label htmlFor="notes">Notes (Optional)</label>
-                <div className="input-wrapper">
-                  <i className="fas fa-sticky-note input-icon"></i>
-                  <textarea
-                    id="notes"
-                    name="notes"
-                    className="form-input textarea-input"
-                    placeholder="Add any notes about this stock entry..."
-                    rows="3"
-                    value={formData.notes}
-                    onChange={handleInputChange}
-                  ></textarea>
-                </div>
               </div>
             </div>
           </div>
@@ -450,25 +421,25 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
             </div>
           )}
 
-          {/* Warning Message */}
-          <p className="form-warning">
-            Make sure all details are correct before adding stock.
-          </p>
-
-          {/* Submit Button */}
-          <div className="form-actions">
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={handleBack}
-              disabled={isLoading}
-            >
-              Cancel
-            </button>
+          {/* Stock In Button - Centered below in the middle */}
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center',
+            marginTop: '20px'
+          }}>
             <button
               type="submit"
               className="btn-primary"
               disabled={isLoading || !productInfo || !formData.stockInQuantity}
+              style={{
+                width: '200px',
+                maxWidth: '200px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
             >
               {isLoading ? (
                 <>
@@ -476,7 +447,7 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 </>
               ) : (
                 <>
-                  <i className="fas fa-plus"></i> Add Stock
+                  <i className="fas fa-plus"></i> Stock In
                 </>
               )}
             </button>

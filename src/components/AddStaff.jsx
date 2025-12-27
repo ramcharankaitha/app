@@ -194,10 +194,10 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
             </div>
 
             <form onSubmit={handleSubmit} className="add-user-form">
-                {/* Staff Details Section */}
+                {/* All fields in 3-column grid without section titles */}
                 <div className="form-section">
-                  <h3 className="section-title">Staff details</h3>
-                  <div className="form-grid">
+                  <div className="form-grid three-col">
+                    {/* Row 1: Name, Phone Number, Email */}
                     <div className="form-group">
                       <label htmlFor="fullName">Staff name</label>
                       <input
@@ -213,25 +213,19 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="storeAllocated">Floor allocated</label>
+                      <label htmlFor="phoneNumber">Phone number</label>
                       <div className="input-wrapper">
-                        <i className="fas fa-store input-icon"></i>
-                        <select
-                          id="storeAllocated"
-                          name="storeAllocated"
+                        <i className="fas fa-phone input-icon"></i>
+                        <input
+                          type="tel"
+                          id="phoneNumber"
+                          name="phoneNumber"
                           className="form-input"
-                          value={formData.storeAllocated}
+                          placeholder="Enter phone number"
+                          value={formData.phoneNumber}
                           onChange={handleInputChange}
                           required
-                        >
-                          <option value="">Select Floor</option>
-                          <option value="1">Floor 1</option>
-                          <option value="2">Floor 2</option>
-                          <option value="3">Floor 3</option>
-                          <option value="4">Floor 4</option>
-                          <option value="5">Floor 5</option>
-                        </select>
-                        <i className="fas fa-chevron-down dropdown-icon"></i>
+                        />
                       </div>
                     </div>
 
@@ -252,83 +246,21 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                       </div>
                     </div>
 
+                    {/* Row 2: Street, City, State */}
                     <div className="form-group">
-                      <label htmlFor="phoneNumber">Phone number</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-phone input-icon"></i>
-                        <input
-                          type="tel"
-                          id="phoneNumber"
-                          name="phoneNumber"
-                          className="form-input"
-                          placeholder="Enter phone number"
-                          value={formData.phoneNumber}
-                          onChange={handleInputChange}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group full-width">
-                      <label htmlFor="isHandler" style={{ display: 'block', marginBottom: '12px', fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>
-                        Can you be the handler?
-                      </label>
-                      <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                          <input
-                            type="radio"
-                            name="isHandler"
-                            value="yes"
-                            checked={formData.isHandler === true}
-                            onChange={(e) => setFormData(prev => ({ ...prev, isHandler: true }))}
-                            style={{
-                              width: '18px',
-                              height: '18px',
-                              cursor: 'pointer',
-                              accentColor: '#dc3545'
-                            }}
-                          />
-                          <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-primary)' }}>Yes</span>
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                          <input
-                            type="radio"
-                            name="isHandler"
-                            value="no"
-                            checked={formData.isHandler === false}
-                            onChange={(e) => setFormData(prev => ({ ...prev, isHandler: false }))}
-                            style={{
-                              width: '18px',
-                              height: '18px',
-                              cursor: 'pointer',
-                              accentColor: '#dc3545'
-                            }}
-                          />
-                          <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-primary)' }}>No</span>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Address Section */}
-                <div className="form-section">
-                  <h3 className="section-title">Address</h3>
-                  <div className="form-grid">
-                    <div className="form-group full-width">
-                      <label htmlFor="address">Street Address</label>
+                      <label htmlFor="address">Street</label>
                       <div className="input-wrapper">
                         <i className="fas fa-map-marker-alt input-icon"></i>
-                        <textarea
+                        <input
+                          type="text"
                           id="address"
                           name="address"
-                          className="form-input textarea-input"
-                          placeholder="Enter street address, area"
-                          rows="2"
+                          className="form-input"
+                          placeholder="Enter street address"
                           value={formData.address}
                           onChange={handleInputChange}
                           required
-                        ></textarea>
+                        />
                       </div>
                     </div>
 
@@ -366,6 +298,7 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                       </div>
                     </div>
 
+                    {/* Row 3: Pincode, Can you be the handler, Floor allocated */}
                     <div className="form-group">
                       <label htmlFor="pincode">Pincode</label>
                       <div className="input-wrapper">
@@ -383,36 +316,96 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                         />
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Staff Details Section (Login Credentials) */}
-                <div className="form-section">
-                  <h3 className="section-title">Staff details</h3>
-                  <div className="form-grid two-col">
                     <div className="form-group">
-                      <label htmlFor="username">username</label>
-                      <input
-                        type="text"
-                        id="username"
-                        name="username"
-                        className="form-input"
-                        placeholder="Enter username."
-                        value={formData.username}
-                        onChange={handleInputChange}
-                        required
-                      />
+                      <label htmlFor="isHandler">Can you be the handler?</label>
+                      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '4px' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                          <input
+                            type="radio"
+                            name="isHandler"
+                            value="yes"
+                            checked={formData.isHandler === true}
+                            onChange={(e) => setFormData(prev => ({ ...prev, isHandler: true }))}
+                            style={{
+                              width: '16px',
+                              height: '16px',
+                              cursor: 'pointer',
+                              accentColor: '#dc3545'
+                            }}
+                          />
+                          <span style={{ fontSize: '12px', fontWeight: '500', color: 'var(--text-primary)' }}>Yes</span>
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                          <input
+                            type="radio"
+                            name="isHandler"
+                            value="no"
+                            checked={formData.isHandler === false}
+                            onChange={(e) => setFormData(prev => ({ ...prev, isHandler: false }))}
+                            style={{
+                              width: '16px',
+                              height: '16px',
+                              cursor: 'pointer',
+                              accentColor: '#dc3545'
+                            }}
+                          />
+                          <span style={{ fontSize: '12px', fontWeight: '500', color: 'var(--text-primary)' }}>No</span>
+                        </label>
+                      </div>
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="password">password</label>
+                      <label htmlFor="storeAllocated">Floor allocated</label>
                       <div className="input-wrapper">
+                        <i className="fas fa-store input-icon"></i>
+                        <select
+                          id="storeAllocated"
+                          name="storeAllocated"
+                          className="form-input"
+                          value={formData.storeAllocated}
+                          onChange={handleInputChange}
+                          required
+                        >
+                          <option value="">Select Floor</option>
+                          <option value="1">Floor 1</option>
+                          <option value="2">Floor 2</option>
+                          <option value="3">Floor 3</option>
+                          <option value="4">Floor 4</option>
+                          <option value="5">Floor 5</option>
+                        </select>
+                        <i className="fas fa-chevron-down dropdown-icon"></i>
+                      </div>
+                    </div>
+
+                    {/* Row 5: Username and Password (2 columns) */}
+                    <div className="form-group">
+                      <label htmlFor="username">Username</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-user input-icon"></i>
+                        <input
+                          type="text"
+                          id="username"
+                          name="username"
+                          className="form-input"
+                          placeholder="Enter username"
+                          value={formData.username}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="password">Password</label>
+                      <div className="input-wrapper password-wrapper">
+                        <i className="fas fa-lock input-icon"></i>
                         <input
                           type={showPassword ? 'text' : 'password'}
                           id="password"
                           name="password"
                           className="form-input"
-                          placeholder="Enter password."
+                          placeholder="Enter password"
                           value={formData.password}
                           onChange={handleInputChange}
                           required
@@ -428,11 +421,6 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                     </div>
                   </div>
                 </div>
-
-                {/* Warning Message */}
-                <p className="form-warning">
-                  Make sure email and store allocation are correct before saving.
-                </p>
 
                 {/* Error Message */}
                 {error && (

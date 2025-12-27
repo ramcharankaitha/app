@@ -321,11 +321,11 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="add-user-form">
-                {/* Customer Details Section */}
+            <form onSubmit={handleSubmit} className="add-user-form add-customer-form">
+                {/* All fields in 3-column grid without section titles */}
                 <div className="form-section">
-                  <h3 className="section-title">Customer details</h3>
-                  <div className="form-grid">
+                  <div className="form-grid three-col">
+                    {/* Row 1: Name, Phone Number, Email, WhatsApp */}
                     <div className="form-group">
                       <label htmlFor="fullName">Name</label>
                       <input
@@ -333,7 +333,7 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                         id="fullName"
                         name="fullName"
                         className="form-input"
-                        placeholder="Enter full name."
+                        placeholder="Enter full name"
                         value={formData.fullName}
                         onChange={handleInputChange}
                         required
@@ -341,7 +341,7 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="phone">Contact number</label>
+                      <label htmlFor="phone">Phone number</label>
                       <div className="input-wrapper">
                         <i className="fas fa-phone input-icon"></i>
                         <input
@@ -349,7 +349,7 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           id="phone"
                           name="phone"
                           className="form-input"
-                          placeholder="Enter contact number."
+                          placeholder="Enter phone number"
                           value={formData.phone}
                           onChange={handleInputChange}
                           required
@@ -399,83 +399,77 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       )}
                     </div>
 
-                    <div className="form-group" style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                      <div style={{ flex: 1 }}>
-                        <label htmlFor="email">Email</label>
-                        <div className="input-wrapper">
-                          <i className="fas fa-envelope input-icon"></i>
-                          <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            className="form-input"
-                            placeholder="customer@example.com"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            required
-                          />
-                        </div>
-                        {isCheckingTokens && formData.email && !formData.phone && (
-                          <div style={{ marginTop: '4px', fontSize: '11px', color: '#666', fontStyle: 'italic' }}>
-                            <i className="fas fa-spinner fa-spin" style={{ marginRight: '4px' }}></i>
-                            Checking for tokens...
-                          </div>
-                        )}
-                        {!isCheckingTokens && customerTokens > 0 && formData.email && !formData.phone && (
-                          <div style={{ 
-                            marginTop: '4px', 
-                            fontSize: '12px', 
-                            color: '#28a745', 
-                            fontWeight: '600',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px'
-                          }}>
-                            <i className="fas fa-gift"></i>
-                            Returning customer! You have {customerTokens} token(s) available.
-                          </div>
-                        )}
+                    <div className="form-group">
+                      <label htmlFor="email">Email</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-envelope input-icon"></i>
+                        <input
+                          type="email"
+                          id="email"
+                          name="email"
+                          className="form-input"
+                          placeholder="customer@example.com"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          required
+                        />
                       </div>
-                      <div style={{ flex: '0 0 150px' }}>
-                        <label htmlFor="whatsapp">WhatsApp</label>
-                        <div className="input-wrapper">
-                          <i className="fab fa-whatsapp input-icon"></i>
-                          <select
-                            id="whatsapp"
-                            name="whatsapp"
-                            className="form-input"
-                            value={formData.whatsapp}
-                            onChange={handleInputChange}
-                          >
-                            <option value="">Select</option>
-                            <option value="Yes">Yes</option>
-                            <option value="No">No</option>
-                          </select>
-                          <i className="fas fa-chevron-down dropdown-icon"></i>
+                      {isCheckingTokens && formData.email && !formData.phone && (
+                        <div style={{ marginTop: '4px', fontSize: '11px', color: '#666', fontStyle: 'italic' }}>
+                          <i className="fas fa-spinner fa-spin" style={{ marginRight: '4px' }}></i>
+                          Checking for tokens...
                         </div>
+                      )}
+                      {!isCheckingTokens && customerTokens > 0 && formData.email && !formData.phone && (
+                        <div style={{ 
+                          marginTop: '4px', 
+                          fontSize: '12px', 
+                          color: '#28a745', 
+                          fontWeight: '600',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}>
+                          <i className="fas fa-gift"></i>
+                          Returning customer! You have {customerTokens} token(s) available.
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="whatsapp">WhatsApp</label>
+                      <div className="input-wrapper">
+                        <i className="fab fa-whatsapp input-icon"></i>
+                        <select
+                          id="whatsapp"
+                          name="whatsapp"
+                          className="form-input"
+                          value={formData.whatsapp}
+                          onChange={handleInputChange}
+                        >
+                          <option value="">Select</option>
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                        </select>
+                        <i className="fas fa-chevron-down dropdown-icon"></i>
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Address Section */}
-                <div className="form-section">
-                  <h3 className="section-title">Address</h3>
-                  <div className="form-grid">
-                    <div className="form-group full-width">
-                      <label htmlFor="address">Street Address</label>
+                    {/* Row 2: Street, City, State */}
+                    <div className="form-group">
+                      <label htmlFor="address">Street</label>
                       <div className="input-wrapper">
                         <i className="fas fa-map-marker-alt input-icon"></i>
-                        <textarea
+                        <input
+                          type="text"
                           id="address"
                           name="address"
-                          className="form-input textarea-input"
-                          placeholder="Enter street address, area"
-                          rows="2"
+                          className="form-input"
+                          placeholder="Enter street address"
                           value={formData.address}
                           onChange={handleInputChange}
                           required
-                        ></textarea>
+                        />
                       </div>
                     </div>
 
@@ -513,6 +507,7 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       </div>
                     </div>
 
+                    {/* Row 3: Pincode (alone) */}
                     <div className="form-group">
                       <label htmlFor="pincode">Pincode</label>
                       <div className="input-wrapper">
@@ -536,10 +531,6 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
 
                 {/* Products and payment details are handled in Stock Out (Transaction Menu) only */}
 
-                {/* Warning Message */}
-                <p className="form-warning">
-                  Make sure all customer details are correct before saving.
-                </p>
 
                 {/* Error Message */}
                 {error && (

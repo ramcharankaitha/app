@@ -321,13 +321,13 @@ const AddProductPricing = ({ onBack, onCancel, onNavigate, userRole = 'admin' })
 
           {/* Main Content */}
           <main className="add-user-content">
-            <form onSubmit={handleSubmit} className="add-user-form">
-              {/* Item Code Search Section */}
+            <form onSubmit={handleSubmit} className="add-user-form add-product-pricing-form">
+              {/* All fields in 3-column grid without section titles */}
               <div className="form-section">
-                <h3 className="section-title">Search Product</h3>
-                <div className="form-grid">
+                <div className="form-grid three-col">
+                  {/* Row 1: Item Code, Category, Product Name */}
                   <div className="form-group" ref={itemCodeDropdownRef} style={{ position: 'relative', zIndex: 1000 }}>
-                    <label htmlFor="itemCode">Item Code</label>
+                    <label htmlFor="itemCode">Item Code *</label>
                     <div className="input-wrapper">
                       <i className="fas fa-barcode input-icon"></i>
                       <input
@@ -346,9 +346,10 @@ const AddProductPricing = ({ onBack, onCancel, onNavigate, userRole = 'admin' })
                         }}
                         required
                         autoComplete="off"
+                        style={{ paddingRight: isSearching ? '40px' : '18px' }}
                       />
                       {isSearching && (
-                        <i className="fas fa-spinner fa-spin" style={{ position: 'absolute', right: '40px', color: '#999' }}></i>
+                        <i className="fas fa-spinner fa-spin" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#999' }}></i>
                       )}
                     </div>
                     {showItemCodeDropdown && filteredProducts.length > 0 && (
@@ -393,150 +394,159 @@ const AddProductPricing = ({ onBack, onCancel, onNavigate, userRole = 'admin' })
                         ))}
                       </div>
                     )}
-                    {product && (
-                      <div style={{ marginTop: '8px', padding: '12px', background: '#d4edda', borderRadius: '6px', color: '#155724' }}>
-                        <i className="fas fa-check-circle" style={{ marginRight: '8px' }}></i>
-                        <strong>{product.product_name}</strong> (SKU: {product.sku_code})
-                      </div>
-                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="category">Category</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-tags input-icon"></i>
+                      <input
+                        type="text"
+                        id="category"
+                        className="form-input"
+                        placeholder="Category"
+                        value={product?.category || ''}
+                        readOnly
+                        style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="productName">Product Name</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-box input-icon"></i>
+                      <input
+                        type="text"
+                        id="productName"
+                        className="form-input"
+                        placeholder="Product Name"
+                        value={product?.product_name || ''}
+                        readOnly
+                        style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Row 2: MRP, Discount, Sell Rate */}
+                  <div className="form-group">
+                    <label htmlFor="mrp">MRP</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-rupee-sign input-icon"></i>
+                      <input
+                        type="number"
+                        id="mrp"
+                        name="mrp"
+                        className="form-input"
+                        placeholder="Enter MRP"
+                        value={formData.mrp}
+                        onChange={handleInputChange}
+                        onKeyPress={(e) => handlePricingKeyPress(e, 'mrp')}
+                        min="0"
+                        step="0.01"
+                        disabled={!product}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="discount">Discount (%)</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-percent input-icon"></i>
+                      <input
+                        type="number"
+                        id="discount"
+                        name="discount"
+                        className="form-input"
+                        placeholder="Enter discount %"
+                        value={formData.discount}
+                        onChange={handleInputChange}
+                        onKeyPress={(e) => handlePricingKeyPress(e, 'discount')}
+                        min="0"
+                        step="0.01"
+                        disabled={!product}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="sellRate">Sell Rate</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-tag input-icon"></i>
+                      <input
+                        type="number"
+                        id="sellRate"
+                        name="sellRate"
+                        className="form-input"
+                        placeholder="Auto-calculated"
+                        value={formData.sellRate}
+                        onChange={handleInputChange}
+                        min="0"
+                        step="0.01"
+                        disabled={!product}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Row 3: Sales Rate, NLC, DISC */}
+                  <div className="form-group">
+                    <label htmlFor="salesRate">Sales Rate</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-rupee-sign input-icon"></i>
+                      <input
+                        type="number"
+                        id="salesRate"
+                        name="salesRate"
+                        className="form-input"
+                        placeholder="Enter sales rate"
+                        value={formData.salesRate}
+                        onChange={handleInputChange}
+                        min="0"
+                        step="0.01"
+                        disabled={!product}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="nlc">NLC</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-dollar-sign input-icon"></i>
+                      <input
+                        type="number"
+                        id="nlc"
+                        name="nlc"
+                        className="form-input"
+                        placeholder="Enter NLC"
+                        value={formData.nlc}
+                        onChange={handleInputChange}
+                        min="0"
+                        step="0.01"
+                        disabled={!product}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="disc">DISC</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-percent input-icon"></i>
+                      <input
+                        type="number"
+                        id="disc"
+                        name="disc"
+                        className="form-input"
+                        placeholder="Enter DISC"
+                        value={formData.disc}
+                        onChange={handleInputChange}
+                        min="0"
+                        step="0.01"
+                        disabled={!product}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-
-              {/* Pricing Details Section */}
-              {product && (
-                <div className="form-section">
-                  <h3 className="section-title">Pricing details</h3>
-                  <div className="form-grid">
-                    <div className="form-group">
-                      <label htmlFor="mrp">MRP</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-rupee-sign input-icon"></i>
-                        <input
-                          type="number"
-                          id="mrp"
-                          name="mrp"
-                          className="form-input"
-                          placeholder="Enter MRP and press Enter"
-                          value={formData.mrp}
-                          onChange={handleInputChange}
-                          onKeyPress={(e) => handlePricingKeyPress(e, 'mrp')}
-                          min="0"
-                          step="0.01"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="discount">Discount (%)</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-percent input-icon"></i>
-                        <input
-                          type="number"
-                          id="discount"
-                          name="discount"
-                          className="form-input"
-                          placeholder="Enter discount % and press Enter"
-                          value={formData.discount}
-                          onChange={handleInputChange}
-                          onKeyPress={(e) => handlePricingKeyPress(e, 'discount')}
-                          min="0"
-                          step="0.01"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="sellRate">Sell rate <span style={{ fontSize: '11px', color: '#666', fontWeight: 'normal' }}>(Auto-calculated)</span></label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-tag input-icon"></i>
-                        <input
-                          type="number"
-                          id="sellRate"
-                          name="sellRate"
-                          className="form-input"
-                          placeholder="Auto-calculated from MRP & discount"
-                          value={formData.sellRate}
-                          onChange={handleInputChange}
-                          min="0"
-                          step="0.01"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="salesRate">Sales Rate</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-rupee-sign input-icon"></i>
-                        <input
-                          type="number"
-                          id="salesRate"
-                          name="salesRate"
-                          className="form-input"
-                          placeholder="Enter sales rate"
-                          value={formData.salesRate}
-                          onChange={handleInputChange}
-                          min="0"
-                          step="0.01"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="nlc">NLC</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-dollar-sign input-icon"></i>
-                        <input
-                          type="number"
-                          id="nlc"
-                          name="nlc"
-                          className="form-input"
-                          placeholder="Enter NLC"
-                          value={formData.nlc}
-                          onChange={handleInputChange}
-                          min="0"
-                          step="0.01"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="disc">DISC</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-percent input-icon"></i>
-                        <input
-                          type="number"
-                          id="disc"
-                          name="disc"
-                          className="form-input"
-                          placeholder="Enter DISC"
-                          value={formData.disc}
-                          onChange={handleInputChange}
-                          min="0"
-                          step="0.01"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="points">Points</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-star input-icon"></i>
-                        <input
-                          type="number"
-                          id="points"
-                          name="points"
-                          className="form-input"
-                          placeholder="Enter points"
-                          value={formData.points}
-                          onChange={handleInputChange}
-                          min="0"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Error Message */}
               {error && (

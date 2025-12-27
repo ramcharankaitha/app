@@ -190,12 +190,12 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
           {/* Main Content */}
           <main className="add-user-content">
             <form onSubmit={handleSubmit} className="add-user-form">
-                {/* Supplier Details Section */}
+                {/* All fields in 3-column grid without section titles */}
                 <div className="form-section">
-                  <h3 className="section-title">Supplier details</h3>
-                  <div className="form-grid">
+                  <div className="form-grid three-col">
+                    {/* Row 1: Name, Phone Number, Email */}
                     <div className="form-group">
-                      <label htmlFor="supplierName">Supplier Name</label>
+                      <label htmlFor="supplierName">Name</label>
                       <div className="input-wrapper">
                         <i className="fas fa-building input-icon"></i>
                         <input
@@ -203,7 +203,7 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           id="supplierName"
                           name="supplierName"
                           className="form-input"
-                          placeholder="Enter supplier name."
+                          placeholder="Enter supplier name"
                           value={formData.supplierName}
                           onChange={handleInputChange}
                           required
@@ -212,7 +212,7 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="phone">Phone Number</label>
+                      <label htmlFor="phone">Phone number</label>
                       <div className="input-wrapper">
                         <i className="fas fa-phone input-icon"></i>
                         <input
@@ -220,7 +220,7 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           id="phone"
                           name="phone"
                           className="form-input"
-                          placeholder="Enter phone number."
+                          placeholder="Enter phone number"
                           value={formData.phone}
                           onChange={handleInputChange}
                         />
@@ -242,26 +242,21 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                         />
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Address Section */}
-                <div className="form-section">
-                  <h3 className="section-title">Address</h3>
-                  <div className="form-grid">
-                    <div className="form-group full-width">
-                      <label htmlFor="address">Street Address</label>
+                    {/* Row 2: Street, City, State */}
+                    <div className="form-group">
+                      <label htmlFor="address">Street</label>
                       <div className="input-wrapper">
                         <i className="fas fa-map-marker-alt input-icon"></i>
-                        <textarea
+                        <input
+                          type="text"
                           id="address"
                           name="address"
-                          className="form-input textarea-input"
-                          placeholder="Enter street address, area"
-                          rows="2"
+                          className="form-input"
+                          placeholder="Enter street address"
                           value={formData.address}
                           onChange={handleInputChange}
-                        ></textarea>
+                        />
                       </div>
                     </div>
 
@@ -297,6 +292,7 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       </div>
                     </div>
 
+                    {/* Row 3: Pincode (alone) */}
                     <div className="form-group">
                       <label htmlFor="pincode">Pincode</label>
                       <div className="input-wrapper">
@@ -316,10 +312,6 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                   </div>
                 </div>
 
-                {/* Warning Message */}
-                <p className="form-warning">
-                  Make sure all supplier details are correct before saving.
-                </p>
 
                 {/* Error Message */}
                 {error && (

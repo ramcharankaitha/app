@@ -6,7 +6,7 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
   const [formData, setFormData] = useState({
     supervisorName: '',
     phone: '',
-    storeAllocated: '',
+    storeAllocated: 'mart', // Default value
     email: '',
     address: '',
     city: '',
@@ -199,10 +199,10 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
             </div>
 
             <form onSubmit={handleSubmit} className="add-user-form">
-                {/* User Details Section */}
+                {/* All fields in 3-column grid without section titles */}
                 <div className="form-section">
-                  <h3 className="section-title">Supervisor details</h3>
-                  <div className="form-grid">
+                  <div className="form-grid three-col">
+                    {/* Row 1: Name, Phone Number, Email Address */}
                     <div className="form-group">
                       <label htmlFor="supervisorName">Supervisor name</label>
                       <input
@@ -235,7 +235,7 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="email">Email</label>
+                      <label htmlFor="email">Email address</label>
                       <div className="input-wrapper">
                         <i className="fas fa-envelope input-icon"></i>
                         <input
@@ -251,46 +251,21 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
                       </div>
                     </div>
 
+                    {/* Row 2: Street, City, State */}
                     <div className="form-group">
-                      <label htmlFor="storeAllocated">Store</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-store input-icon"></i>
-                        <select
-                          id="storeAllocated"
-                          name="storeAllocated"
-                          className="form-input"
-                          value={formData.storeAllocated}
-                          onChange={handleInputChange}
-                          required
-                        >
-                          <option value="">Select store.</option>
-                          <option value="mart">Mart</option>
-                          <option value="global">Global</option>
-                        </select>
-                        <i className="fas fa-chevron-down dropdown-icon"></i>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Address Section */}
-                <div className="form-section">
-                  <h3 className="section-title">Address</h3>
-                  <div className="form-grid">
-                    <div className="form-group full-width">
-                      <label htmlFor="address">Street Address</label>
+                      <label htmlFor="address">Street</label>
                       <div className="input-wrapper">
                         <i className="fas fa-map-marker-alt input-icon"></i>
-                        <textarea
+                        <input
+                          type="text"
                           id="address"
                           name="address"
-                          className="form-input textarea-input"
-                          placeholder="Enter street address, area"
-                          rows="2"
+                          className="form-input"
+                          placeholder="Enter street address"
                           value={formData.address}
                           onChange={handleInputChange}
                           required
-                        ></textarea>
+                        />
                       </div>
                     </div>
 
@@ -328,6 +303,7 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
                       </div>
                     </div>
 
+                    {/* Row 3: Pincode (alone) */}
                     <div className="form-group">
                       <label htmlFor="pincode">Pincode</label>
                       <div className="input-wrapper">
@@ -345,36 +321,35 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
                         />
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Supervisor Details Section (Login Credentials) */}
-                <div className="form-section">
-                  <h3 className="section-title">Login Credentials</h3>
-                  <div className="form-grid two-col">
+                    {/* Row 4: Username and Password (2 columns) */}
                     <div className="form-group">
-                      <label htmlFor="username">username</label>
-                      <input
-                        type="text"
-                        id="username"
-                        name="username"
-                        className="form-input"
-                        placeholder="Enter username."
-                        value={formData.username}
-                        onChange={handleInputChange}
-                        required
-                      />
+                      <label htmlFor="username">Username</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-user input-icon"></i>
+                        <input
+                          type="text"
+                          id="username"
+                          name="username"
+                          className="form-input"
+                          placeholder="Enter username"
+                          value={formData.username}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="password">password</label>
-                      <div className="input-wrapper">
+                      <label htmlFor="password">Password</label>
+                      <div className="input-wrapper password-wrapper">
+                        <i className="fas fa-lock input-icon"></i>
                         <input
                           type={showPassword ? 'text' : 'password'}
                           id="password"
                           name="password"
                           className="form-input"
-                          placeholder="Enter password."
+                          placeholder="Enter password"
                           value={formData.password}
                           onChange={handleInputChange}
                           required
@@ -388,13 +363,17 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
                         </button>
                       </div>
                     </div>
+
+                    {/* Store field - hidden but required for submission */}
+                    <input
+                      type="hidden"
+                      id="storeAllocated"
+                      name="storeAllocated"
+                      value={formData.storeAllocated || 'mart'}
+                      onChange={handleInputChange}
+                    />
                   </div>
                 </div>
-
-                {/* Warning Message */}
-                <p className="form-warning">
-                  Make sure email and store allocation are correct before saving.
-                </p>
 
                 {/* Error Message */}
                 {error && (

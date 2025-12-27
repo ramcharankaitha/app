@@ -326,6 +326,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     { title: 'Products', desc: 'Catalog and pricing', icon: 'fa-box', target: 'products' },
     { title: 'Supply Master', desc: 'Suppliers and logistics', icon: 'fa-truck', target: 'suppliers' },
     { title: 'Customers', desc: 'Customer management & details', icon: 'fa-user-friends', target: 'customers' },
+    { title: 'Chit Plan Master', desc: 'Create and manage chit plans', icon: 'fa-file-invoice-dollar', target: 'chitPlanMaster' },
     { title: 'Chit Plans', desc: 'Chit plan setup & customers', icon: 'fa-file-invoice-dollar', target: 'chitPlans' },
   ];
 
@@ -335,7 +336,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     { title: 'Stock Out', desc: 'Record stock exits', icon: 'fa-box', target: 'stockOutMaster' },
     { title: 'Create Supplier', desc: 'Record products from supplier', icon: 'fa-truck', target: 'createSupplier' },
     { title: 'Products', desc: 'Manage product pricing', icon: 'fa-tags', target: 'transactionProducts' },
-    { title: 'Services', desc: 'Manage service transactions', icon: 'fa-concierge-bell', target: 'services' },
+    { title: 'Services', desc: 'Manage service transactions', icon: 'fa-cog', target: 'services' },
     { title: 'Sales Record', desc: 'View and manage sales records', icon: 'fa-chart-line', target: 'salesRecord' },
   ];
 

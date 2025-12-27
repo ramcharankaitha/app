@@ -344,10 +344,9 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
           {/* Main Content */}
           <main className="add-user-content">
             <form onSubmit={handleSubmit} className="add-user-form">
-                {/* Product Details Section */} 
+                {/* Product Fields - No section title */}
                 <div className="form-section">
-                  <h3 className="section-title">Product details</h3>
-                  <div className="form-grid">
+                  <div className="form-grid three-col">
                     {/* Category Selection - All three in first row */}
                     {/* 1. Main Category */}
                     <div className="form-group" ref={mainDropdownRef} style={{ position: 'relative', zIndex: 1000 }}>
@@ -658,10 +657,15 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                   </div>
                 </div>
 
-
-                {/* Image Upload Section */}
-                <div className="form-section">
-                  <h3 className="section-title">Product image (optional)</h3>
+                {/* Image Upload Section - Below all form fields, outside the grid */}
+                <div style={{ 
+                  marginTop: '16px', 
+                  marginBottom: '12px',
+                  width: '100%',
+                  clear: 'both',
+                  position: 'relative',
+                  zIndex: 1
+                }}>
                   <div className="upload-placeholder">
                     <i className="fas fa-plus"></i>
                     <span>Tap to upload image</span>

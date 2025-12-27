@@ -326,6 +326,9 @@ export const suppliersAPI = {
       method: 'DELETE',
     });
   },
+  getTransactions: async () => {
+    return apiCall('/suppliers/transactions');
+  },
 };
 
 export const chitPlansAPI = {
@@ -334,6 +337,23 @@ export const chitPlansAPI = {
   },
   getPlanById: async (id) => {
     return apiCall(`/chit-plans/plans/${id}`);
+  },
+  createPlan: async (planData) => {
+    return apiCall('/chit-plans/plans', {
+      method: 'POST',
+      body: JSON.stringify(planData),
+    });
+  },
+  updatePlan: async (id, planData) => {
+    return apiCall(`/chit-plans/plans/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(planData),
+    });
+  },
+  deletePlan: async (id) => {
+    return apiCall(`/chit-plans/plans/${id}`, {
+      method: 'DELETE',
+    });
   },
   getCustomers: async () => {
     return apiCall('/chit-plans/customers');

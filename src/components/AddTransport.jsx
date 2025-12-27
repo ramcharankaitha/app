@@ -5,6 +5,8 @@ import ConfirmDialog from './ConfirmDialog';
 const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
     name: '',
+    phoneNumber: '',
+    email: '',
     travelsName: '',
     service: '',
     vehicleNumber: '',
@@ -223,11 +225,11 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
 
           {/* Main Content */}
           <main className="add-user-content">
-            <form onSubmit={handleSubmit} className="add-user-form">
-                {/* Transport Details Section */}
+            <form onSubmit={handleSubmit} className="add-user-form add-transport-form">
+                {/* All fields in 3-column grid without section titles */}
                 <div className="form-section">
-                  <h3 className="section-title">Transport details</h3>
-                  <div className="form-grid">
+                  <div className="form-grid three-col">
+                    {/* Row 1: Name, Phone Number, Email */}
                     <div className="form-group">
                       <label htmlFor="name">Name</label>
                       <div className="input-wrapper">
@@ -237,7 +239,7 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           id="name"
                           name="name"
                           className="form-input"
-                          placeholder="Enter name."
+                          placeholder="Enter name"
                           value={formData.name}
                           onChange={handleInputChange}
                           required
@@ -245,6 +247,41 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       </div>
                     </div>
 
+                    <div className="form-group">
+                      <label htmlFor="phoneNumber">Phone number</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-phone input-icon"></i>
+                        <input
+                          type="tel"
+                          id="phoneNumber"
+                          name="phoneNumber"
+                          className="form-input"
+                          placeholder="Enter phone number"
+                          value={formData.phoneNumber}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="email">Email</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-envelope input-icon"></i>
+                        <input
+                          type="email"
+                          id="email"
+                          name="email"
+                          className="form-input"
+                          placeholder="Enter email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Row 2: Transport Name, Service, Vehicle Number */}
                     <div className="form-group">
                       <label htmlFor="travelsName">Transport Name</label>
                       <div className="input-wrapper">
@@ -288,148 +325,165 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           id="vehicleNumber"
                           name="vehicleNumber"
                           className="form-input"
-                          placeholder="Enter vehicle number (optional)"
+                          placeholder="Enter vehicle number"
                           value={formData.vehicleNumber}
                           onChange={handleInputChange}
                         />
                       </div>
                     </div>
 
-                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                      <label style={{ display: 'block', marginBottom: '16px', fontWeight: '600', color: '#333' }}>
-                        Address Details
-                      </label>
-                      
-                      <div className="form-grid">
-                        <div className="form-group full-width">
-                          <label htmlFor="address">Street Address</label>
-                          <div className="input-wrapper">
-                            <i className="fas fa-map-marker-alt input-icon"></i>
-                            <textarea
-                              id="address"
-                              name="address"
-                              className="form-input textarea-input"
-                              placeholder="Enter street address, area"
-                              rows="2"
-                              value={formData.address || ''}
-                              onChange={handleInputChange}
-                            ></textarea>
-                          </div>
-                        </div>
-
-                        <div className="form-group">
-                          <label htmlFor="city">City <span style={{ color: '#dc3545' }}>*</span></label>
-                          <div className="input-wrapper">
-                            <i className="fas fa-city input-icon"></i>
-                            <input
-                              type="text"
-                              id="city"
-                              name="city"
-                              className="form-input"
-                              placeholder="Enter city"
-                              value={formData.city || ''}
-                              onChange={handleInputChange}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="form-group">
-                          <label htmlFor="state">State</label>
-                          <div className="input-wrapper">
-                            <i className="fas fa-map input-icon"></i>
-                            <input
-                              type="text"
-                              id="state"
-                              name="state"
-                              className="form-input"
-                              placeholder="Enter state"
-                              value={formData.state || ''}
-                              onChange={handleInputChange}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="form-group">
-                          <label htmlFor="pincode">Pincode</label>
-                          <div className="input-wrapper">
-                            <i className="fas fa-mail-bulk input-icon"></i>
-                            <input
-                              type="text"
-                              id="pincode"
-                              name="pincode"
-                              className="form-input"
-                              placeholder="Enter pincode"
-                              value={formData.pincode || ''}
-                              onChange={handleInputChange}
-                              maxLength="10"
-                            />
-                          </div>
-                        </div>
+                    {/* Row 3: Street, City, State */}
+                    <div className="form-group">
+                      <label htmlFor="address">Street</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-map-marker-alt input-icon"></i>
+                        <input
+                          type="text"
+                          id="address"
+                          name="address"
+                          className="form-input"
+                          placeholder="Enter street address"
+                          value={formData.address || ''}
+                          onChange={handleInputChange}
+                        />
                       </div>
+                    </div>
 
+                    <div className="form-group">
+                      <label htmlFor="city">City <span style={{ color: '#dc3545' }}>*</span></label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-city input-icon"></i>
+                        <input
+                          type="text"
+                          id="city"
+                          name="city"
+                          className="form-input"
+                          placeholder="Enter city"
+                          value={formData.city || ''}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="state">State</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-map input-icon"></i>
+                        <input
+                          type="text"
+                          id="state"
+                          name="state"
+                          className="form-input"
+                          placeholder="Enter state"
+                          value={formData.state || ''}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Row 4: Pincode and Add Address button */}
+                    <div className="form-group">
+                      <label htmlFor="pincode">Pincode</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-mail-bulk input-icon"></i>
+                        <input
+                          type="text"
+                          id="pincode"
+                          name="pincode"
+                          className="form-input"
+                          placeholder="Enter pincode"
+                          value={formData.pincode || ''}
+                          onChange={handleInputChange}
+                          maxLength="10"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label>&nbsp;</label>
                       <button
                         type="button"
                         onClick={addAddress}
                         style={{
-                          marginTop: '12px',
+                          width: '100%',
                           padding: '8px 16px',
                           background: '#28a745',
                           color: '#fff',
                           border: 'none',
-                          borderRadius: '8px',
+                          borderRadius: '6px',
                           cursor: 'pointer',
-                          fontSize: '13px',
+                          fontSize: '12px',
                           fontWeight: '600',
-                          display: 'inline-flex',
+                          display: 'flex',
                           alignItems: 'center',
-                          gap: '6px'
+                          justifyContent: 'center',
+                          gap: '6px',
+                          marginTop: '4px'
                         }}
                       >
                         <i className="fas fa-plus"></i>
                         <span>Add Address</span>
                       </button>
-                      
-                      {/* Display Added Addresses */}
-                      {addresses.length > 0 && addresses.some(addr => addr.city && addr.city.trim() !== '') && (
-                        <div style={{ marginTop: '20px' }}>
-                          <label style={{ display: 'block', marginBottom: '12px', fontWeight: '600', color: '#333' }}>
-                            Added Addresses ({addresses.filter(addr => addr.city && addr.city.trim() !== '').length})
-                          </label>
+                    </div>
+
+                    {/* Display Added Addresses - Side by side with Add Address button in same row */}
+                    {addresses.length > 0 && addresses.some(addr => addr.city && addr.city.trim() !== '') && (
+                      <div className="form-group" style={{ gridColumn: 'span 1' }}>
+                        <label style={{ 
+                          display: 'block', 
+                          marginBottom: '8px', 
+                          fontWeight: '600', 
+                          color: '#333', 
+                          fontSize: '12px' 
+                        }}>
+                          Added ({addresses.filter(addr => addr.city && addr.city.trim() !== '').length})
+                        </label>
+                        <div style={{ 
+                          display: 'flex',
+                          flexDirection: 'row',
+                          gap: '8px',
+                          overflowX: 'auto',
+                          overflowY: 'hidden',
+                          width: '100%'
+                        }}>
                           {addresses
                             .filter(addr => addr.city && addr.city.trim() !== '')
                             .map((addr, index) => (
                               <div
                                 key={addr.id}
                                 style={{
-                                  marginBottom: '16px',
-                                  padding: '16px',
+                                  padding: '8px',
                                   background: '#f8f9fa',
                                   border: '2px solid #e0e0e0',
-                                  borderRadius: '8px',
-                                  position: 'relative'
+                                  borderRadius: '6px',
+                                  position: 'relative',
+                                  minWidth: '200px',
+                                  maxWidth: '200px',
+                                  flexShrink: 0,
+                                  boxSizing: 'border-box'
                                 }}
                               >
-                                <div style={{ marginBottom: '12px', fontWeight: '600', color: '#dc3545', fontSize: '14px' }}>
+                                <div style={{ marginBottom: '6px', fontWeight: '600', color: '#dc3545', fontSize: '11px' }}>
                                   Address {index + 1}
                                 </div>
                                 {addr.address && addr.address.trim() !== '' && (
-                                  <div style={{ marginBottom: '8px', fontSize: '14px' }}>
-                                    <span style={{ fontWeight: '500', color: '#666' }}>Street Address: </span>
+                                  <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
+                                    <span style={{ fontWeight: '500', color: '#666' }}>Street: </span>
                                     <span style={{ color: '#333' }}>{addr.address}</span>
                                   </div>
                                 )}
-                                <div style={{ marginBottom: '8px', fontSize: '14px' }}>
+                                <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
                                   <span style={{ fontWeight: '500', color: '#666' }}>City: </span>
                                   <span style={{ color: '#333' }}>{addr.city || 'N/A'}</span>
                                 </div>
                                 {addr.state && addr.state.trim() !== '' && (
-                                  <div style={{ marginBottom: '8px', fontSize: '14px' }}>
+                                  <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
                                     <span style={{ fontWeight: '500', color: '#666' }}>State: </span>
                                     <span style={{ color: '#333' }}>{addr.state}</span>
                                   </div>
                                 )}
                                 {addr.pincode && addr.pincode.trim() !== '' && (
-                                  <div style={{ marginBottom: '8px', fontSize: '14px' }}>
+                                  <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
                                     <span style={{ fontWeight: '500', color: '#666' }}>Pincode: </span>
                                     <span style={{ color: '#333' }}>{addr.pincode}</span>
                                   </div>
@@ -439,19 +493,19 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                                   onClick={() => removeAddress(addr.id)}
                                   style={{
                                     position: 'absolute',
-                                    top: '12px',
-                                    right: '12px',
+                                    top: '6px',
+                                    right: '6px',
                                     background: '#dc3545',
                                     color: '#fff',
                                     border: 'none',
                                     borderRadius: '50%',
-                                    width: '28px',
-                                    height: '28px',
+                                    width: '18px',
+                                    height: '18px',
                                     cursor: 'pointer',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    fontSize: '14px'
+                                    fontSize: '9px'
                                   }}
                                   title="Remove this address"
                                 >
@@ -460,15 +514,11 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                               </div>
                             ))}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Warning Message */}
-                <p className="form-warning">
-                  Make sure all transport details are correct before saving.
-                </p>
 
                 {/* Error Message */}
                 {error && (

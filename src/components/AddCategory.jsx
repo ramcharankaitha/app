@@ -176,9 +176,8 @@ const AddCategory = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
           {/* Main Content */}
           <main className="add-user-content">
             <form onSubmit={handleSubmit} className="add-user-form">
-                {/* Category Details Section */} 
+                {/* Category Fields - No section title */}
                 <div className="form-section">
-                  <h3 className="section-title">Category details</h3>
                   <div className="form-grid">
                     <div className="form-group">
                       <label htmlFor="main">Main Category</label>

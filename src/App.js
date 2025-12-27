@@ -21,11 +21,14 @@ import TransportMaster from './components/TransportMaster';
 import AddTransport from './components/AddTransport';
 import ChitPlans from './components/ChitPlans';
 import AddChitCustomer from './components/AddChitCustomer';
+import ChitPlanMaster from './components/ChitPlanMaster';
+import AddChitPlan from './components/AddChitPlan';
 import StockIn from './components/StockIn';
 import StockInMaster from './components/StockInMaster';
 import StockOut from './components/StockOut';
 import StockOutMaster from './components/StockOutMaster';
 import CreateSupplierTransaction from './components/CreateSupplierTransaction';
+import SupplierTransactionMaster from './components/SupplierTransactionMaster';
 import CategoryMaster from './components/CategoryMaster';
 import AddCategory from './components/AddCategory';
 import TransactionProducts from './components/TransactionProducts';
@@ -435,6 +438,29 @@ const AdminRoutes = () => {
       />
       
       <Route
+        path="/chitPlanMaster"
+        element={
+          <ProtectedRoute>
+            <ChitPlanMaster
+              onBack={() => handleNavigation(getBackPath('dashboard'))}
+              onAddChitPlan={() => handleNavigation('addChitPlan')}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/addChitPlan"
+        element={
+          <ProtectedRoute>
+            <AddChitPlan onBack={() => handleNavigation('chitPlanMaster')} onCancel={() => handleNavigation('chitPlanMaster')} onNavigate={handleNavigation} userRole={userRole} />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
         path="/stockInMaster"
         element={
           <ProtectedRoute>
@@ -489,12 +515,26 @@ const AdminRoutes = () => {
       />
       
       <Route
+        path="/supplierTransactionMaster"
+        element={
+          <ProtectedRoute>
+            <SupplierTransactionMaster
+              onBack={() => handleNavigation('transactionMenu')}
+              onAddTransaction={() => handleNavigation('createSupplier')}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
         path="/createSupplier"
         element={
           <ProtectedRoute>
             <CreateSupplierTransaction
-              onBack={() => handleNavigation(getBackPath('dashboard'))}
-              onCancel={() => handleNavigation(getBackPath('dashboard'))}
+              onBack={() => handleNavigation('supplierTransactionMaster')}
+              onCancel={() => handleNavigation('supplierTransactionMaster')}
               onNavigate={handleNavigation}
               userRole={userRole}
             />
@@ -589,7 +629,7 @@ const AdminRoutes = () => {
         path="/addSalesRecord"
         element={
           <ProtectedRoute>
-            <AddSalesRecord onBack={() => handleNavigation('salesRecord')} onCancel={() => handleNavigation('salesRecord')} onNavigate={handleNavigation} />
+            <AddSalesRecord onBack={() => handleNavigation('salesRecord')} onCancel={() => handleNavigation('salesRecord')} onNavigate={handleNavigation} userRole={userRole} />
           </ProtectedRoute>
         }
       />

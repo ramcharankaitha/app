@@ -103,13 +103,13 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
       setActiveNav('transactionMenu');
     } else if (currentPage === 'transport') {
       setActiveNav('masterMenu');
-    } else if (currentPage === 'chitPlans') {
+    } else if (currentPage === 'chitPlans' || currentPage === 'addChitCustomer' || currentPage === 'chitPlanMaster' || currentPage === 'addChitPlan') {
       setActiveNav('masterMenu');
     } else if (currentPage === 'categoryMaster') {
       setActiveNav('masterMenu');
     } else if (currentPage === 'masterMenu') {
       setActiveNav('masterMenu');
-    } else if (currentPage === 'transactionMenu' || currentPage === 'stockIn' || currentPage === 'stockOut' || currentPage === 'createSupplier' || currentPage === 'transactionProducts' || currentPage === 'addProductPricing') {
+    } else if (currentPage === 'transactionMenu' || currentPage === 'stockIn' || currentPage === 'stockOut' || currentPage === 'createSupplier' || currentPage === 'supplierTransactionMaster' || currentPage === 'transactionProducts' || currentPage === 'addProductPricing') {
       setActiveNav('transactionMenu');
     } else if (currentPage === 'settings') {
       setActiveNav('settings');
@@ -364,6 +364,7 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
                 { title: 'Products', desc: 'Catalog and pricing', icon: 'fa-box', target: 'products' },
                 { title: 'Supply Master', desc: 'Suppliers and logistics', icon: 'fa-truck', target: 'suppliers' },
                 { title: 'Customers', desc: 'Customer management & details', icon: 'fa-user-friends', target: 'customers' },
+                { title: 'Chit Plan Master', desc: 'Create and manage chit plans', icon: 'fa-file-invoice-dollar', target: 'chitPlanMaster' },
                 { title: 'Chit Plans', desc: 'Chit plan setup & customers', icon: 'fa-file-invoice-dollar', target: 'chitPlans' },
               ].map((item) => (
                 <div
@@ -394,9 +395,9 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
                 { title: 'Dispatch Department', desc: 'Manage dispatch workflows', icon: 'fa-shipping-fast', target: 'dispatch' },
                 { title: 'Stock In', desc: 'Record stock entries', icon: 'fa-box-open', target: 'stockInMaster' },
                 { title: 'Stock Out', desc: 'Record stock exits', icon: 'fa-box', target: 'stockOutMaster' },
-                { title: 'Create Supplier', desc: 'Record products from supplier', icon: 'fa-truck', target: 'createSupplier' },
+                { title: 'Supplier Transaction', desc: 'Record products from supplier', icon: 'fa-truck', target: 'supplierTransactionMaster' },
                 { title: 'Products', desc: 'Manage product pricing', icon: 'fa-tags', target: 'transactionProducts' },
-                { title: 'Services', desc: 'Manage service transactions', icon: 'fa-concierge-bell', target: 'services' },
+                { title: 'Services', desc: 'Manage service transactions', icon: 'fa-cog', target: 'services' },
                 { title: 'Sales Record', desc: 'View and manage sales records', icon: 'fa-chart-line', target: 'salesRecord' },
               ].map((item) => (
                 <div

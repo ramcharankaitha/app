@@ -122,6 +122,24 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// Get supplier transactions
+router.get('/transactions', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT st.*, s.supplier_name, s.phone as supplier_phone, s.email as supplier_email
+       FROM stock_transactions st
+       LEFT JOIN suppliers s ON s.id = st.reference_id
+       WHERE st.transaction_type = 'SUPPLIER'
+       ORDER BY st.created_at DESC
+       LIMIT 1000`
+    );
+    res.json({ success: true, transactions: result.rows });
+  } catch (error) {
+    console.error('Get supplier transactions error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Create supplier transaction (record products received from supplier)
 router.post('/transaction', async (req, res) => {
   try {
@@ -173,6 +191,9 @@ router.post('/transaction', async (req, res) => {
         }
       }
 
+      // Get user identifier for created_by
+      const createdBy = req.body.createdBy || 'system';
+
       // Process each product
       for (const product of products) {
         // Find product by item code
@@ -181,15 +202,20 @@ router.post('/transaction', async (req, res) => {
           [product.itemCode.trim()]
         );
 
+        let productId;
+        let previousQuantity = 0;
+        let newQuantity = 0;
+
         if (productResult.rows.length === 0) {
           // Create new product if it doesn't exist
-          await pool.query(
+          const newProduct = await pool.query(
             `INSERT INTO products (
               product_name, item_code, sku_code, category, 
               current_quantity, mrp, sell_rate, supplier_name, 
               minimum_quantity, status
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            RETURNING id, current_quantity`,
             [
               product.productName || 'Unknown Product',
               product.itemCode.trim(),
@@ -203,10 +229,15 @@ router.post('/transaction', async (req, res) => {
               'STOCK'
             ]
           );
+          productId = newProduct.rows[0].id;
+          previousQuantity = 0;
+          newQuantity = parseFloat(product.quantity) || 0;
         } else {
           // Update existing product
           const existingProduct = productResult.rows[0];
-          const newQuantity = (existingProduct.current_quantity || 0) + parseFloat(product.quantity);
+          productId = existingProduct.id;
+          previousQuantity = existingProduct.current_quantity || 0;
+          newQuantity = previousQuantity + parseFloat(product.quantity);
           
           await pool.query(
             `UPDATE products 
@@ -225,6 +256,28 @@ router.post('/transaction', async (req, res) => {
             ]
           );
         }
+
+        // Create stock transaction record
+        await pool.query(
+          `INSERT INTO stock_transactions (
+            product_id, item_code, product_name, transaction_type,
+            quantity, previous_quantity, new_quantity,
+            reference_type, reference_id, created_by
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+          [
+            productId,
+            product.itemCode.trim(),
+            product.productName || 'Unknown Product',
+            'SUPPLIER',
+            parseFloat(product.quantity) || 0,
+            previousQuantity,
+            newQuantity,
+            'SUPPLIER',
+            supplierId,
+            createdBy
+          ]
+        );
       }
 
       // Commit transaction
