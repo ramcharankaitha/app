@@ -375,24 +375,24 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                           <option value="5">Floor 5</option>
                         </select>
                         <i className="fas fa-chevron-down dropdown-icon"></i>
-                      </div>
-                    </div>
+                  </div>
+                </div>
 
                     {/* Row 5: Username and Password (2 columns) */}
                     <div className="form-group">
                       <label htmlFor="username">Username</label>
                       <div className="input-wrapper">
                         <i className="fas fa-user input-icon"></i>
-                        <input
-                          type="text"
-                          id="username"
-                          name="username"
-                          className="form-input"
+                      <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        className="form-input"
                           placeholder="Enter username"
-                          value={formData.username}
-                          onChange={handleInputChange}
-                          required
-                        />
+                        value={formData.username}
+                        onChange={handleInputChange}
+                        required
+                      />
                       </div>
                     </div>
 

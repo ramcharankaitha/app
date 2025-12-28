@@ -721,7 +721,7 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
                   {(!viewStaffModal.sales || viewStaffModal.sales.length === 0) && (
                     <div className="detail-row" style={{ marginTop: '20px', paddingTop: '20px', borderTop: '2px solid #e9ecef' }}>
                       <span className="detail-label" style={{ fontSize: '16px', fontWeight: '700', color: '#000' }}>Sales Summary</span>
-                      <span className="detail-value" style={{ color: '#666' }}>No sales recorded</span>
+                      <span className="detail-value" style={{ color: '#666' }}>No sales orders</span>
                     </div>
                   )}
                 </div>

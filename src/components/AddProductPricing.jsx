@@ -409,7 +409,7 @@ const AddProductPricing = ({ onBack, onCancel, onNavigate, userRole = 'admin' })
                         readOnly
                         style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
                       />
-                    </div>
+                      </div>
                   </div>
 
                   <div className="form-group">
@@ -425,122 +425,122 @@ const AddProductPricing = ({ onBack, onCancel, onNavigate, userRole = 'admin' })
                         readOnly
                         style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
                       />
-                    </div>
-                  </div>
+                </div>
+              </div>
 
                   {/* Row 2: MRP, Discount, Sell Rate */}
-                  <div className="form-group">
-                    <label htmlFor="mrp">MRP</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-rupee-sign input-icon"></i>
-                      <input
-                        type="number"
-                        id="mrp"
-                        name="mrp"
-                        className="form-input"
+                    <div className="form-group">
+                      <label htmlFor="mrp">MRP</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-rupee-sign input-icon"></i>
+                        <input
+                          type="number"
+                          id="mrp"
+                          name="mrp"
+                          className="form-input"
                         placeholder="Enter MRP"
-                        value={formData.mrp}
-                        onChange={handleInputChange}
-                        onKeyPress={(e) => handlePricingKeyPress(e, 'mrp')}
-                        min="0"
-                        step="0.01"
+                          value={formData.mrp}
+                          onChange={handleInputChange}
+                          onKeyPress={(e) => handlePricingKeyPress(e, 'mrp')}
+                          min="0"
+                          step="0.01"
                         disabled={!product}
-                      />
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="form-group">
-                    <label htmlFor="discount">Discount (%)</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-percent input-icon"></i>
-                      <input
-                        type="number"
-                        id="discount"
-                        name="discount"
-                        className="form-input"
+                    <div className="form-group">
+                      <label htmlFor="discount">Discount (%)</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-percent input-icon"></i>
+                        <input
+                          type="number"
+                          id="discount"
+                          name="discount"
+                          className="form-input"
                         placeholder="Enter discount %"
-                        value={formData.discount}
-                        onChange={handleInputChange}
-                        onKeyPress={(e) => handlePricingKeyPress(e, 'discount')}
-                        min="0"
-                        step="0.01"
+                          value={formData.discount}
+                          onChange={handleInputChange}
+                          onKeyPress={(e) => handlePricingKeyPress(e, 'discount')}
+                          min="0"
+                          step="0.01"
                         disabled={!product}
-                      />
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="form-group">
+                    <div className="form-group">
                     <label htmlFor="sellRate">Sell Rate</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-tag input-icon"></i>
-                      <input
-                        type="number"
-                        id="sellRate"
-                        name="sellRate"
-                        className="form-input"
+                      <div className="input-wrapper">
+                        <i className="fas fa-tag input-icon"></i>
+                        <input
+                          type="number"
+                          id="sellRate"
+                          name="sellRate"
+                          className="form-input"
                         placeholder="Auto-calculated"
-                        value={formData.sellRate}
-                        onChange={handleInputChange}
-                        min="0"
-                        step="0.01"
+                          value={formData.sellRate}
+                          onChange={handleInputChange}
+                          min="0"
+                          step="0.01"
                         disabled={!product}
-                      />
+                        />
+                      </div>
                     </div>
-                  </div>
 
                   {/* Row 3: Sales Rate, NLC, DISC */}
-                  <div className="form-group">
-                    <label htmlFor="salesRate">Sales Rate</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-rupee-sign input-icon"></i>
-                      <input
-                        type="number"
-                        id="salesRate"
-                        name="salesRate"
-                        className="form-input"
-                        placeholder="Enter sales rate"
-                        value={formData.salesRate}
-                        onChange={handleInputChange}
-                        min="0"
-                        step="0.01"
+                    <div className="form-group">
+                      <label htmlFor="salesRate">Sales Rate</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-rupee-sign input-icon"></i>
+                        <input
+                          type="number"
+                          id="salesRate"
+                          name="salesRate"
+                          className="form-input"
+                          placeholder="Enter sales rate"
+                          value={formData.salesRate}
+                          onChange={handleInputChange}
+                          min="0"
+                          step="0.01"
                         disabled={!product}
-                      />
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="form-group">
-                    <label htmlFor="nlc">NLC</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-dollar-sign input-icon"></i>
-                      <input
-                        type="number"
-                        id="nlc"
-                        name="nlc"
-                        className="form-input"
-                        placeholder="Enter NLC"
-                        value={formData.nlc}
-                        onChange={handleInputChange}
-                        min="0"
-                        step="0.01"
+                    <div className="form-group">
+                      <label htmlFor="nlc">NLC</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-dollar-sign input-icon"></i>
+                        <input
+                          type="number"
+                          id="nlc"
+                          name="nlc"
+                          className="form-input"
+                          placeholder="Enter NLC"
+                          value={formData.nlc}
+                          onChange={handleInputChange}
+                          min="0"
+                          step="0.01"
                         disabled={!product}
-                      />
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="form-group">
-                    <label htmlFor="disc">DISC</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-percent input-icon"></i>
-                      <input
-                        type="number"
-                        id="disc"
-                        name="disc"
-                        className="form-input"
-                        placeholder="Enter DISC"
-                        value={formData.disc}
-                        onChange={handleInputChange}
-                        min="0"
-                        step="0.01"
+                    <div className="form-group">
+                      <label htmlFor="disc">DISC</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-percent input-icon"></i>
+                        <input
+                          type="number"
+                          id="disc"
+                          name="disc"
+                          className="form-input"
+                          placeholder="Enter DISC"
+                          value={formData.disc}
+                          onChange={handleInputChange}
+                          min="0"
+                          step="0.01"
                         disabled={!product}
                       />
                     </div>

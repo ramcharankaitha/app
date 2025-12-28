@@ -20,18 +20,18 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
   const [customerDetails, setCustomerDetails] = useState(null);
   // Current product being entered (single form)
   const [currentProduct, setCurrentProduct] = useState({
-    itemCode: '',
-    productName: '',
-    skuCode: '',
-    category: '',
-    modelNumber: '',
-    quantity: '', // Current stock
-    stockOutQuantity: '', // Quantity to remove
-    mrp: '',
-    sellRate: '',
-    discount: '',
-    productInfo: null,
-    isFetching: false
+      itemCode: '', 
+      productName: '',
+      skuCode: '',
+      category: '',
+      modelNumber: '',
+      quantity: '', // Current stock
+      stockOutQuantity: '', // Quantity to remove
+      mrp: '',
+      sellRate: '',
+      discount: '',
+      productInfo: null,
+      isFetching: false
   });
   
   // Added products (displayed as cards)
@@ -195,21 +195,21 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
   const handleProductChange = (field, value) => {
     setCurrentProduct(prev => {
       const updated = { ...prev, [field]: value };
-      
-      // Reset product info if item code changes
-      if (field === 'itemCode') {
-        updated.productInfo = null;
-        updated.productName = '';
-        updated.skuCode = '';
-        updated.category = '';
-        updated.modelNumber = '';
-        updated.quantity = '';
-        updated.mrp = '';
-        updated.sellRate = '';
-        updated.discount = '';
-      }
-      
-      return updated;
+        
+        // Reset product info if item code changes
+        if (field === 'itemCode') {
+          updated.productInfo = null;
+          updated.productName = '';
+          updated.skuCode = '';
+          updated.category = '';
+          updated.modelNumber = '';
+          updated.quantity = '';
+          updated.mrp = '';
+          updated.sellRate = '';
+          updated.discount = '';
+        }
+        
+        return updated;
     });
   };
 
@@ -242,16 +242,16 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
         
         setCurrentProduct(prev => ({
           ...prev,
-          productInfo: productData,
-          productName: productData.productName,
-          skuCode: productData.skuCode,
-          category: productData.category,
-          modelNumber: productData.modelNumber,
-          quantity: productData.currentQuantity.toString(),
-          mrp: productData.mrp.toString(),
-          sellRate: productData.sellRate.toString(),
-          discount: productData.discount.toString(),
-          isFetching: false
+            productInfo: productData,
+            productName: productData.productName,
+            skuCode: productData.skuCode,
+            category: productData.category,
+            modelNumber: productData.modelNumber,
+            quantity: productData.currentQuantity.toString(),
+            mrp: productData.mrp.toString(),
+            sellRate: productData.sellRate.toString(),
+            discount: productData.discount.toString(),
+            isFetching: false
         }));
         
         if (product.current_quantity <= 0) {
@@ -326,14 +326,14 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
     
     // Add product to the list
     setAddedProducts(prev => [...prev, {
-      id: newId,
+      id: newId, 
       ...currentProduct,
       stockOutQuantity: stockOutQty
     }]);
     
     // Clear current product form
     setCurrentProduct({
-      itemCode: '',
+      itemCode: '', 
       productName: '',
       skuCode: '',
       category: '',
@@ -596,7 +596,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     {customerError}
                   </div>
                 )}
-              </div>
+          </div>
 
               <div className="form-group">
                 <label htmlFor="customerEmail">Email</label>
@@ -613,134 +613,135 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     readOnly
                     style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
                   />
+            </div>
                 </div>
-              </div>
 
               {/* Row 2: Item Code, Category, Product Name */}
-              <div className="form-group">
+                  <div className="form-group">
                 <label htmlFor="itemCode">Item Code *</label>
-                <div className="input-wrapper" style={{ position: 'relative' }}>
-                  <i className="fas fa-barcode input-icon"></i>
-                  <input
-                    type="text"
+                    <div className="input-wrapper" style={{ position: 'relative' }}>
+                      <i className="fas fa-barcode input-icon"></i>
+                      <input
+                        type="text"
                     id="itemCode"
-                    className="form-input"
-                    placeholder="Enter item code"
+                        className="form-input"
+                        placeholder="Enter item code"
                     value={currentProduct.itemCode}
                     onChange={(e) => handleProductChange('itemCode', e.target.value)}
                     onKeyPress={handleItemCodeKeyPress}
-                    required
+                        required
                     disabled={!customerVerified}
-                    style={{ paddingRight: currentProduct.isFetching ? '40px' : '120px' }}
-                  />
+                    style={{ paddingRight: currentProduct.isFetching ? '40px' : '50px' }}
+                      />
                   {currentProduct.isFetching ? (
-                    <div style={{ 
-                      position: 'absolute', 
-                      right: '10px', 
-                      top: '50%', 
-                      transform: 'translateY(-50%)',
-                      color: '#999'
-                    }}>
-                      <i className="fas fa-spinner fa-spin"></i>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
+                        <div style={{ 
+                          position: 'absolute', 
+                          right: '10px', 
+                          top: '50%', 
+                          transform: 'translateY(-50%)',
+                          color: '#999'
+                        }}>
+                          <i className="fas fa-spinner fa-spin"></i>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
                       onClick={fetchProductByItemCode}
                       disabled={!customerVerified}
-                      style={{
-                        position: 'absolute',
-                        right: '8px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        padding: '6px 12px',
+                          style={{
+                            position: 'absolute',
+                            right: '8px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            padding: '6px 8px',
+                            width: '32px',
+                            height: '32px',
                         background: customerVerified ? '#dc3545' : '#ccc',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '6px',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '6px',
                         cursor: customerVerified ? 'pointer' : 'not-allowed',
-                        fontSize: '12px',
-                        fontWeight: '500',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}
-                    >
-                      <i className="fas fa-search"></i>
-                      Fetch
-                    </button>
-                  )}
-                </div>
-              </div>
+                            fontSize: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                          title="Fetch Product"
+                        >
+                          <i className="fas fa-search"></i>
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
-              <div className="form-group">
+                  <div className="form-group">
                 <label htmlFor="category">Category</label>
-                <div className="input-wrapper">
-                  <i className="fas fa-tags input-icon"></i>
-                  <input
-                    type="text"
+                    <div className="input-wrapper">
+                      <i className="fas fa-tags input-icon"></i>
+                      <input
+                        type="text"
                     id="category"
-                    className="form-input"
-                    placeholder="Category"
+                        className="form-input"
+                        placeholder="Category"
                     value={currentProduct.category}
-                    readOnly
-                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
-                  />
-                </div>
-              </div>
+                        readOnly
+                        style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                      />
+                    </div>
+                  </div>
 
-              <div className="form-group">
+                  <div className="form-group">
                 <label htmlFor="productName">Product Name</label>
-                <div className="input-wrapper">
-                  <i className="fas fa-box input-icon"></i>
-                  <input
-                    type="text"
+                    <div className="input-wrapper">
+                      <i className="fas fa-box input-icon"></i>
+                      <input
+                        type="text"
                     id="productName"
-                    className="form-input"
-                    placeholder="Product Name"
+                        className="form-input"
+                        placeholder="Product Name"
                     value={currentProduct.productName}
-                    readOnly
-                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
-                  />
-                </div>
-              </div>
+                        readOnly
+                        style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                      />
+                    </div>
+                  </div>
 
               {/* Row 3: SKV Code, Current Stock, Stock Out Quantity */}
-              <div className="form-group">
+                  <div className="form-group">
                 <label htmlFor="skuCode">SKV Code</label>
-                <div className="input-wrapper">
-                  <i className="fas fa-boxes input-icon"></i>
-                  <input
-                    type="text"
+                    <div className="input-wrapper">
+                      <i className="fas fa-boxes input-icon"></i>
+                      <input
+                        type="text"
                     id="skuCode"
-                    className="form-input"
+                        className="form-input"
                     placeholder="SKV Code"
                     value={currentProduct.skuCode}
-                    readOnly
-                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
-                  />
-                </div>
-              </div>
+                        readOnly
+                        style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                      />
+                    </div>
+                  </div>
 
-              <div className="form-group">
+                  <div className="form-group">
                 <label htmlFor="quantity">Current Stock</label>
-                <div className="input-wrapper">
-                  <i className="fas fa-warehouse input-icon"></i>
-                  <input
-                    type="number"
+                    <div className="input-wrapper">
+                      <i className="fas fa-warehouse input-icon"></i>
+                      <input
+                        type="number"
                     id="quantity"
-                    className="form-input"
-                    placeholder="Current Stock"
+                        className="form-input"
+                        placeholder="Current Stock"
                     value={currentProduct.quantity}
-                    readOnly
-                    style={{ 
+                        readOnly
+                        style={{ 
                       background: currentProduct.quantity && parseInt(currentProduct.quantity) <= 0 ? '#fff3cd' : '#f8f9fa', 
-                      cursor: 'not-allowed',
-                      fontWeight: 'bold',
+                          cursor: 'not-allowed',
+                          fontWeight: 'bold',
                       color: currentProduct.quantity && parseInt(currentProduct.quantity) <= 0 ? '#dc3545' : '#495057'
-                    }}
-                  />
-                </div>
+                        }}
+                      />
+                    </div>
                 {/* Add Product button below Current Stock */}
                 <button
                   type="button"
@@ -766,56 +767,56 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                   <i className="fas fa-plus"></i>
                   Add Product
                 </button>
-              </div>
+                  </div>
 
-              <div className="form-group">
+                  <div className="form-group">
                 <label htmlFor="stockOutQuantity">Stock Out Quantity *</label>
-                <div className="input-wrapper">
-                  <i className="fas fa-minus-circle input-icon"></i>
-                  <input
-                    type="number"
+                    <div className="input-wrapper">
+                      <i className="fas fa-minus-circle input-icon"></i>
+                      <input
+                        type="number"
                     id="stockOutQuantity"
-                    className="form-input"
-                    placeholder="Enter quantity to remove"
+                        className="form-input"
+                        placeholder="Enter quantity to remove"
                     value={currentProduct.stockOutQuantity}
                     onChange={(e) => handleProductChange('stockOutQuantity', e.target.value)}
-                    min="1"
+                        min="1"
                     max={currentProduct.productInfo ? currentProduct.productInfo.currentQuantity : undefined}
-                    step="1"
-                    required
+                        step="1"
+                        required
                     disabled={!currentProduct.productInfo || !customerVerified}
-                  />
-                </div>
+                      />
+                    </div>
                 {/* Payment Mode - Right side of Add Product button */}
                 <label htmlFor="paymentMode" style={{ marginTop: '12px' }}>Payment Mode *</label>
-                <div className="input-wrapper">
-                  <i className="fas fa-credit-card input-icon"></i>
-                  <select
-                    id="paymentMode"
-                    name="paymentMode"
-                    className="form-input"
-                    value={formData.paymentMode}
-                    onChange={handleInputChange}
-                    required
+                  <div className="input-wrapper">
+                    <i className="fas fa-credit-card input-icon"></i>
+                    <select
+                      id="paymentMode"
+                      name="paymentMode"
+                      className="form-input"
+                      value={formData.paymentMode}
+                      onChange={handleInputChange}
+                      required
                     disabled={!customerVerified}
                     style={{ 
                       background: !customerVerified ? '#f8f9fa' : '#fff',
                       cursor: !customerVerified ? 'not-allowed' : 'pointer'
                     }}
-                  >
-                    <option value="">Select payment mode</option>
-                    <option value="Cash">Cash</option>
-                    <option value="Card">Card</option>
-                    <option value="UPI">UPI</option>
-                    <option value="Net Banking">Net Banking</option>
-                    <option value="Wallet">Wallet</option>
-                    <option value="Credit">Credit</option>
-                  </select>
-                  <i className="fas fa-chevron-down dropdown-icon"></i>
+                    >
+                      <option value="">Select payment mode</option>
+                      <option value="Cash">Cash</option>
+                      <option value="Card">Card</option>
+                      <option value="UPI">UPI</option>
+                      <option value="Net Banking">Net Banking</option>
+                      <option value="Wallet">Wallet</option>
+                      <option value="Credit">Credit</option>
+                    </select>
+                    <i className="fas fa-chevron-down dropdown-icon"></i>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
           {/* Display Added Products - Horizontal cards like transport addresses */}
           {addedProducts.length > 0 && (
@@ -858,18 +859,18 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                   >
                     <div style={{ marginBottom: '6px', fontWeight: '600', color: '#dc3545', fontSize: '11px' }}>
                       Product {index + 1}
-                    </div>
+              </div>
                     {product.itemCode && (
                       <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
                         <span style={{ fontWeight: '500', color: '#666' }}>Item Code: </span>
                         <span style={{ color: '#333' }}>{product.itemCode}</span>
-                      </div>
+            </div>
                     )}
                     {product.productName && (
                       <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
                         <span style={{ fontWeight: '500', color: '#666' }}>Product: </span>
                         <span style={{ color: '#333' }}>{product.productName}</span>
-                      </div>
+          </div>
                     )}
                     {product.skuCode && (
                       <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>

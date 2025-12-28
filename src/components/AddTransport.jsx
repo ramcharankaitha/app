@@ -335,69 +335,69 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                     {/* Row 3: Street, City, State */}
                     <div className="form-group">
                       <label htmlFor="address">Street</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-map-marker-alt input-icon"></i>
+                          <div className="input-wrapper">
+                            <i className="fas fa-map-marker-alt input-icon"></i>
                         <input
                           type="text"
-                          id="address"
-                          name="address"
+                              id="address"
+                              name="address"
                           className="form-input"
                           placeholder="Enter street address"
-                          value={formData.address || ''}
-                          onChange={handleInputChange}
+                              value={formData.address || ''}
+                              onChange={handleInputChange}
                         />
-                      </div>
-                    </div>
+                          </div>
+                        </div>
 
-                    <div className="form-group">
-                      <label htmlFor="city">City <span style={{ color: '#dc3545' }}>*</span></label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-city input-icon"></i>
-                        <input
-                          type="text"
-                          id="city"
-                          name="city"
-                          className="form-input"
-                          placeholder="Enter city"
-                          value={formData.city || ''}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    </div>
+                        <div className="form-group">
+                          <label htmlFor="city">City <span style={{ color: '#dc3545' }}>*</span></label>
+                          <div className="input-wrapper">
+                            <i className="fas fa-city input-icon"></i>
+                            <input
+                              type="text"
+                              id="city"
+                              name="city"
+                              className="form-input"
+                              placeholder="Enter city"
+                              value={formData.city || ''}
+                              onChange={handleInputChange}
+                            />
+                          </div>
+                        </div>
 
-                    <div className="form-group">
-                      <label htmlFor="state">State</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-map input-icon"></i>
-                        <input
-                          type="text"
-                          id="state"
-                          name="state"
-                          className="form-input"
-                          placeholder="Enter state"
-                          value={formData.state || ''}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    </div>
+                        <div className="form-group">
+                          <label htmlFor="state">State</label>
+                          <div className="input-wrapper">
+                            <i className="fas fa-map input-icon"></i>
+                            <input
+                              type="text"
+                              id="state"
+                              name="state"
+                              className="form-input"
+                              placeholder="Enter state"
+                              value={formData.state || ''}
+                              onChange={handleInputChange}
+                            />
+                          </div>
+                        </div>
 
                     {/* Row 4: Pincode and Add Address button */}
-                    <div className="form-group">
-                      <label htmlFor="pincode">Pincode</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-mail-bulk input-icon"></i>
-                        <input
-                          type="text"
-                          id="pincode"
-                          name="pincode"
-                          className="form-input"
-                          placeholder="Enter pincode"
-                          value={formData.pincode || ''}
-                          onChange={handleInputChange}
-                          maxLength="10"
-                        />
+                        <div className="form-group">
+                          <label htmlFor="pincode">Pincode</label>
+                          <div className="input-wrapper">
+                            <i className="fas fa-mail-bulk input-icon"></i>
+                            <input
+                              type="text"
+                              id="pincode"
+                              name="pincode"
+                              className="form-input"
+                              placeholder="Enter pincode"
+                              value={formData.pincode || ''}
+                              onChange={handleInputChange}
+                              maxLength="10"
+                            />
+                        </div>
                       </div>
-                    </div>
 
                     <div className="form-group">
                       <label>&nbsp;</label>
@@ -425,9 +425,9 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                         <span>Add Address</span>
                       </button>
                     </div>
-
+                      
                     {/* Display Added Addresses - Side by side with Add Address button in same row */}
-                    {addresses.length > 0 && addresses.some(addr => addr.city && addr.city.trim() !== '') && (
+                      {addresses.length > 0 && addresses.some(addr => addr.city && addr.city.trim() !== '') && (
                       <div className="form-group" style={{ gridColumn: 'span 1' }}>
                         <label style={{ 
                           display: 'block', 
@@ -437,7 +437,7 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           fontSize: '12px' 
                         }}>
                           Added ({addresses.filter(addr => addr.city && addr.city.trim() !== '').length})
-                        </label>
+                          </label>
                         <div style={{ 
                           display: 'flex',
                           flexDirection: 'row',
@@ -514,8 +514,8 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                               </div>
                             ))}
                         </div>
-                      </div>
-                    )}
+                        </div>
+                      )}
                   </div>
                 </div>
 

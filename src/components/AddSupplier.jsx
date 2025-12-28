@@ -240,8 +240,8 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           value={formData.email}
                           onChange={handleInputChange}
                         />
-                      </div>
-                    </div>
+                  </div>
+                </div>
 
                     {/* Row 2: Street, City, State */}
                     <div className="form-group">

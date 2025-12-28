@@ -206,16 +206,14 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
         setFormData(prev => ({
           ...prev,
           handlerId: handlerId,
-          handlerName: selectedHandler.name,
-          handlerPhone: selectedHandler.phone || ''
+          handlerName: selectedHandler.name
         }));
       }
     } else {
       setFormData(prev => ({
         ...prev,
         handlerId: '',
-        handlerName: '',
-        handlerPhone: ''
+        handlerName: ''
       }));
     }
   };
@@ -240,7 +238,7 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
         serviceDate: formData.serviceDate,
         handlerId: formData.handlerId ? parseInt(formData.handlerId) : null,
         handlerName: formData.handlerName,
-        handlerPhone: formData.handlerPhone,
+        handlerPhone: null,
         createdBy: createdBy
       });
 
@@ -336,29 +334,29 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
           <main className="add-user-content">
             <form onSubmit={handleSubmit} className="add-user-form">
               <div className="form-grid three-col">
-                {/* Row 1: Name, Phone, Email */}
-                <div className="form-group">
+                {/* Row 1: Name, Phone, Email, Warranty Status */}
+                  <div className="form-group">
                   <label htmlFor="customerName">Name *</label>
-                  <div className="input-wrapper">
-                    <i className="fas fa-user input-icon"></i>
-                    <input
-                      type="text"
-                      id="customerName"
-                      name="customerName"
-                      className="form-input"
-                      placeholder="Enter customer name"
-                      value={formData.customerName}
-                      onChange={handleInputChange}
-                      required
-                    />
+                    <div className="input-wrapper">
+                      <i className="fas fa-user input-icon"></i>
+                      <input
+                        type="text"
+                        id="customerName"
+                        name="customerName"
+                        className="form-input"
+                        placeholder="Enter customer name"
+                        value={formData.customerName}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div className="form-group">
+                  <div className="form-group">
                   <label htmlFor="customerPhone">Phone Number</label>
                   <div className="input-wrapper">
                     <i className="fas fa-phone input-icon"></i>
-                    <input
+                        <input
                       type="tel"
                       id="customerPhone"
                       name="customerPhone"
@@ -366,7 +364,7 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       placeholder="Enter phone number"
                       value={formData.customerPhone}
                       onChange={handleInputChange}
-                    />
+                        />
                   </div>
                 </div>
 
@@ -374,7 +372,7 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                   <label htmlFor="customerEmail">Email</label>
                   <div className="input-wrapper">
                     <i className="fas fa-envelope input-icon"></i>
-                    <input
+                        <input
                       type="email"
                       id="customerEmail"
                       name="customerEmail"
@@ -383,156 +381,8 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       value={formData.customerEmail}
                       onChange={handleInputChange}
                     />
-                  </div>
                 </div>
-
-                {/* Row 2: Item Code, Category, Product Name */}
-                <div className="form-group">
-                  <label htmlFor="itemCode">Item Code *</label>
-                  <div className="input-wrapper">
-                    <i className="fas fa-barcode input-icon"></i>
-                    <input
-                      type="text"
-                      id="itemCode"
-                      name="itemCode"
-                      className="form-input"
-                      placeholder="Enter item code"
-                      value={formData.itemCode}
-                      onChange={handleItemCodeChange}
-                      required
-                      disabled={isFetchingProduct}
-                    />
-                    {isFetchingProduct && (
-                      <i className="fas fa-spinner fa-spin" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }}></i>
-                    )}
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="category">Category</label>
-                  <div className="input-wrapper">
-                    <i className="fas fa-tags input-icon"></i>
-                    <input
-                      type="text"
-                      id="category"
-                      name="category"
-                      className="form-input"
-                      placeholder="Category (auto-filled)"
-                      value={formData.category}
-                      readOnly
-                      style={{ background: '#f5f5f5' }}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="productName">Product Name</label>
-                  <div className="input-wrapper">
-                    <i className="fas fa-box input-icon"></i>
-                    <input
-                      type="text"
-                      id="productName"
-                      name="productName"
-                      className="form-input"
-                      placeholder="Product name (auto-filled)"
-                      value={formData.productName}
-                      readOnly
-                      style={{ background: '#f5f5f5' }}
-                    />
-                  </div>
-                </div>
-
-                {/* Row 3: Brand Name, Serial Number, Service Date */}
-                <div className="form-group">
-                  <label htmlFor="brandName">Brand Name</label>
-                  <div className="input-wrapper">
-                    <i className="fas fa-tag input-icon"></i>
-                    <input
-                      type="text"
-                      id="brandName"
-                      name="brandName"
-                      className="form-input"
-                      placeholder="Brand name"
-                      value={formData.brandName}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="serialNumber">Serial Number</label>
-                  <div className="input-wrapper">
-                    <i className="fas fa-hashtag input-icon"></i>
-                    <input
-                      type="text"
-                      id="serialNumber"
-                      name="serialNumber"
-                      className="form-input"
-                      placeholder="Serial number"
-                      value={formData.serialNumber}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="serviceDate">Service Date *</label>
-                  <div className="input-wrapper">
-                    <i className="fas fa-calendar input-icon"></i>
-                    <input
-                      type="date"
-                      id="serviceDate"
-                      name="serviceDate"
-                      className="form-input"
-                      value={formData.serviceDate}
-                      onChange={handleInputChange}
-                      min={minServiceDate}
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Row 4: Handler Name, Phone Number, Warranty Status */}
-                <div className="form-group">
-                  <label htmlFor="handlerName">Handler Name *</label>
-                  <div className="input-wrapper">
-                    <i className="fas fa-user-tie input-icon"></i>
-                    <select
-                      id="handlerName"
-                      name="handlerName"
-                      className="form-input"
-                      value={formData.handlerId}
-                      onChange={handleHandlerChange}
-                      required
-                      style={{ paddingLeft: '40px', appearance: 'auto', cursor: 'pointer' }}
-                    >
-                      <option value="">Select handler</option>
-                      {handlers.map((handler) => (
-                        <option key={handler.id} value={handler.id}>
-                          {handler.name}
-                        </option>
-                      ))}
-                    </select>
-                    <i className="fas fa-chevron-down dropdown-icon"></i>
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="handlerPhone">Phone Number</label>
-                  <div className="input-wrapper">
-                    <i className="fas fa-phone input-icon"></i>
-                    <input
-                      type="tel"
-                      id="handlerPhone"
-                      name="handlerPhone"
-                      className="form-input"
-                      placeholder="Phone number"
-                      value={formData.handlerPhone}
-                      readOnly
-                      style={{ background: '#f5f5f5' }}
-                    />
-                  </div>
-                </div>
+              </div>
 
                 <div className="form-group">
                   <label htmlFor="warrantyStatus">Warranty Status</label>
@@ -553,6 +403,137 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                     <i className="fas fa-chevron-down dropdown-icon"></i>
                   </div>
                 </div>
+
+                {/* Row 2: Item Code, Category, Product Name */}
+                  <div className="form-group">
+                    <label htmlFor="itemCode">Item Code *</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-barcode input-icon"></i>
+                      <input
+                        type="text"
+                        id="itemCode"
+                        name="itemCode"
+                        className="form-input"
+                        placeholder="Enter item code"
+                        value={formData.itemCode}
+                        onChange={handleItemCodeChange}
+                        required
+                        disabled={isFetchingProduct}
+                      />
+                      {isFetchingProduct && (
+                        <i className="fas fa-spinner fa-spin" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }}></i>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                  <label htmlFor="category">Category</label>
+                    <div className="input-wrapper">
+                    <i className="fas fa-tags input-icon"></i>
+                      <input
+                        type="text"
+                      id="category"
+                      name="category"
+                        className="form-input"
+                      placeholder="Category (auto-filled)"
+                      value={formData.category}
+                      readOnly
+                      style={{ background: '#f5f5f5' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="productName">Product Name</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-box input-icon"></i>
+                      <input
+                        type="text"
+                        id="productName"
+                        name="productName"
+                        className="form-input"
+                      placeholder="Product name (auto-filled)"
+                        value={formData.productName}
+                        readOnly
+                        style={{ background: '#f5f5f5' }}
+                      />
+                    </div>
+                  </div>
+
+                {/* Row 3: Brand Name, Serial Number, Service Date */}
+                <div className="form-group">
+                  <label htmlFor="brandName">Brand Name</label>
+                  <div className="input-wrapper">
+                    <i className="fas fa-tag input-icon"></i>
+                    <input
+                      type="text"
+                      id="brandName"
+                      name="brandName"
+                      className="form-input"
+                      placeholder="Brand name"
+                      value={formData.brandName}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+
+                  <div className="form-group">
+                    <label htmlFor="serialNumber">Serial Number</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-hashtag input-icon"></i>
+                      <input
+                        type="text"
+                        id="serialNumber"
+                        name="serialNumber"
+                        className="form-input"
+                      placeholder="Serial number"
+                        value={formData.serialNumber}
+                        onChange={handleInputChange}
+                      />
+                </div>
+              </div>
+
+                  <div className="form-group">
+                    <label htmlFor="serviceDate">Service Date *</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-calendar input-icon"></i>
+                      <input
+                        type="date"
+                        id="serviceDate"
+                        name="serviceDate"
+                        className="form-input"
+                        value={formData.serviceDate}
+                        onChange={handleInputChange}
+                        min={minServiceDate}
+                        required
+                      />
+                </div>
+              </div>
+
+                {/* Row 4: Handler Name */}
+                  <div className="form-group">
+                    <label htmlFor="handlerName">Handler Name *</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-user-tie input-icon"></i>
+                      <select
+                        id="handlerName"
+                        name="handlerName"
+                        className="form-input"
+                        value={formData.handlerId}
+                        onChange={handleHandlerChange}
+                        required
+                        style={{ paddingLeft: '40px', appearance: 'auto', cursor: 'pointer' }}
+                      >
+                        <option value="">Select handler</option>
+                        {handlers.map((handler) => (
+                          <option key={handler.id} value={handler.id}>
+                            {handler.name}
+                          </option>
+                        ))}
+                      </select>
+                      <i className="fas fa-chevron-down dropdown-icon"></i>
+                    </div>
+                  </div>
               </div>
 
 

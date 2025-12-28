@@ -398,7 +398,7 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
                 { title: 'Supplier Transaction', desc: 'Record products from supplier', icon: 'fa-truck', target: 'supplierTransactionMaster' },
                 { title: 'Products', desc: 'Manage product pricing', icon: 'fa-tags', target: 'transactionProducts' },
                 { title: 'Services', desc: 'Manage service transactions', icon: 'fa-cog', target: 'services' },
-                { title: 'Sales Record', desc: 'View and manage sales records', icon: 'fa-chart-line', target: 'salesRecord' },
+                { title: 'Sales Order', desc: 'View and manage sales orders', icon: 'fa-chart-line', target: 'salesOrder' },
               ].map((item) => (
                 <div
                   key={item.title}

@@ -494,17 +494,17 @@ export const servicesAPI = {
   },
 };
 
-export const salesRecordsAPI = {
+export const salesOrdersAPI = {
   getAll: async () => {
-    return apiCall('/sales-records');
+    return apiCall('/sales-orders');
   },
   getById: async (id) => {
-    return apiCall(`/sales-records/${id}`);
+    return apiCall(`/sales-orders/${id}`);
   },
-  create: async (salesRecordData) => {
-    return apiCall('/sales-records', {
+  create: async (salesOrderData) => {
+    return apiCall('/sales-orders', {
       method: 'POST',
-      body: JSON.stringify(salesRecordData),
+      body: JSON.stringify(salesOrderData),
     });
   },
 };
@@ -547,6 +547,27 @@ export const categoriesAPI = {
   },
 };
 
+export const smsAPI = {
+  send: async (phoneNumber, message) => {
+    return apiCall('/sms/send', {
+      method: 'POST',
+      body: JSON.stringify({ phoneNumber, message }),
+    });
+  },
+  sendCustom: async (phoneNumber, message) => {
+    return apiCall('/sms/custom', {
+      method: 'POST',
+      body: JSON.stringify({ phoneNumber, message }),
+    });
+  },
+  sendTemplate: async (template, phoneNumber, variables = {}) => {
+    return apiCall('/sms/template', {
+      method: 'POST',
+      body: JSON.stringify({ template, phoneNumber, variables }),
+    });
+  },
+};
+
 export default {
   authAPI,
   usersAPI,
@@ -563,5 +584,6 @@ export default {
   transportAPI,
   stockAPI,
   categoriesAPI,
+  smsAPI,
 };
 

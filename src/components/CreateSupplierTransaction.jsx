@@ -11,13 +11,13 @@ const CreateSupplierTransaction = ({ onBack, onCancel, onNavigate, userRole = 'a
   
   // Current product being entered (single form)
   const [currentProduct, setCurrentProduct] = useState({
-    itemCode: '',
-    productName: '',
-    skuCode: '',
-    category: '',
-    quantity: '',
-    mrp: '',
-    sellRate: '',
+      itemCode: '', 
+      productName: '',
+      skuCode: '',
+      category: '',
+      quantity: '', 
+      mrp: '', 
+      sellRate: '', 
     isFetching: false,
     productInfo: null
   });
@@ -56,9 +56,9 @@ const CreateSupplierTransaction = ({ onBack, onCancel, onNavigate, userRole = 'a
   const handleProductChange = (field, value) => {
     setCurrentProduct(prev => {
       const updated = { ...prev, [field]: value };
-      
+    
       // Reset product info if item code changes
-      if (field === 'itemCode') {
+    if (field === 'itemCode') {
         updated.productInfo = null;
         updated.productName = '';
         updated.skuCode = '';
@@ -111,7 +111,7 @@ const CreateSupplierTransaction = ({ onBack, onCancel, onNavigate, userRole = 'a
           category: productData.category,
           mrp: productData.mrp ? String(productData.mrp) : '',
           sellRate: productData.sellRate ? String(productData.sellRate) : '',
-          isFetching: false
+              isFetching: false
         }));
         
         setSuccessMessage('Product details fetched successfully!');
@@ -121,12 +121,12 @@ const CreateSupplierTransaction = ({ onBack, onCancel, onNavigate, userRole = 'a
         setCurrentProduct(prev => ({ 
           ...prev, 
           productInfo: null,
-          productName: '',
-          skuCode: '',
-          category: '',
-          mrp: '',
-          sellRate: '',
-          isFetching: false 
+              productName: '',
+              skuCode: '',
+              category: '',
+              mrp: '', 
+              sellRate: '',
+              isFetching: false
         }));
       }
     } catch (err) {
@@ -135,12 +135,12 @@ const CreateSupplierTransaction = ({ onBack, onCancel, onNavigate, userRole = 'a
       setCurrentProduct(prev => ({ 
         ...prev, 
         productInfo: null,
-        productName: '',
-        skuCode: '',
-        category: '',
-        mrp: '',
-        sellRate: '',
-        isFetching: false 
+            productName: '',
+            skuCode: '',
+            category: '',
+            mrp: '', 
+            sellRate: '',
+            isFetching: false
       }));
     }
   };
@@ -182,7 +182,7 @@ const CreateSupplierTransaction = ({ onBack, onCancel, onNavigate, userRole = 'a
       : 1;
     
     setAddedProducts(prev => [...prev, {
-      id: newId,
+      id: newId, 
       ...currentProduct,
       quantity: parseInt(currentProduct.quantity),
       mrp: parseFloat(currentProduct.mrp),
@@ -191,13 +191,13 @@ const CreateSupplierTransaction = ({ onBack, onCancel, onNavigate, userRole = 'a
     
     // Clear current product form
     setCurrentProduct({
-      itemCode: '',
+      itemCode: '', 
       productName: '',
       skuCode: '',
       category: '',
-      quantity: '',
-      mrp: '',
-      sellRate: '',
+      quantity: '', 
+      mrp: '', 
+      sellRate: '', 
       isFetching: false,
       productInfo: null
     });
@@ -239,7 +239,7 @@ const CreateSupplierTransaction = ({ onBack, onCancel, onNavigate, userRole = 'a
           console.error('Error parsing userData:', e);
         }
       }
-
+      
       const transactionData = {
         supplierName: formData.supplierName.trim(),
         phone: formData.phone.trim() || null,
@@ -361,39 +361,39 @@ const CreateSupplierTransaction = ({ onBack, onCancel, onNavigate, userRole = 'a
           <main className="add-user-content">
             <form onSubmit={handleSubmit} className="add-user-form add-supplier-transaction-form">
               {/* All fields in 3-column grid without section titles */}
-              <div className="form-section">
+                <div className="form-section">
                 <div className="form-grid three-col">
                   {/* Row 1: Name, Phone Number, Email */}
-                  <div className="form-group">
+                    <div className="form-group">
                     <label htmlFor="supplierName">Name *</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-building input-icon"></i>
-                      <input
-                        type="text"
-                        id="supplierName"
-                        name="supplierName"
-                        className="form-input"
+                      <div className="input-wrapper">
+                        <i className="fas fa-building input-icon"></i>
+                        <input
+                          type="text"
+                          id="supplierName"
+                          name="supplierName"
+                          className="form-input"
                         placeholder="Enter supplier name"
-                        value={formData.supplierName}
-                        onChange={handleInputChange}
-                        required
-                      />
+                          value={formData.supplierName}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="form-group">
-                    <label htmlFor="phone">Phone Number</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-phone input-icon"></i>
-                      <input
-                        type="tel"
-                        id="phone"
-                        name="phone"
-                        className="form-input"
+                    <div className="form-group">
+                      <label htmlFor="phone">Phone Number</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-phone input-icon"></i>
+                        <input
+                          type="tel"
+                          id="phone"
+                          name="phone"
+                          className="form-input"
                         placeholder="Enter phone number"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                      />
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                        />
                     </div>
                   </div>
 
@@ -410,7 +410,7 @@ const CreateSupplierTransaction = ({ onBack, onCancel, onNavigate, userRole = 'a
                         value={formData.email}
                         onChange={handleInputChange}
                       />
-                    </div>
+                </div>
                   </div>
 
                   {/* Row 2: Item Code, Product Name, Quantity */}
@@ -440,103 +440,103 @@ const CreateSupplierTransaction = ({ onBack, onCancel, onNavigate, userRole = 'a
                           <i className="fas fa-spinner fa-spin"></i>
                         </div>
                       ) : (
-                        <button
-                          type="button"
+                          <button
+                            type="button"
                           onClick={fetchProductByItemCode}
-                          style={{
+                            style={{
                             position: 'absolute',
                             right: '8px',
                             top: '50%',
                             transform: 'translateY(-50%)',
                             padding: '6px 12px',
-                            background: '#dc3545',
+                              background: '#dc3545',
                             color: '#fff',
-                            border: 'none',
+                              border: 'none',
                             borderRadius: '6px',
-                            cursor: 'pointer',
+                              cursor: 'pointer',
                             fontSize: '12px',
                             fontWeight: '500',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '4px'
-                          }}
-                        >
+                            }}
+                          >
                           <i className="fas fa-search"></i>
                           Fetch
-                        </button>
-                      )}
+                          </button>
+                        )}
                     </div>
-                  </div>
+                      </div>
 
-                  <div className="form-group">
+                        <div className="form-group">
                     <label htmlFor="productName">Product Name</label>
-                    <div className="input-wrapper">
+                          <div className="input-wrapper">
                       <i className="fas fa-box input-icon"></i>
-                      <input
-                        type="text"
+                            <input
+                              type="text"
                         id="productName"
-                        className="form-input"
+                              className="form-input"
                         placeholder="Product Name"
                         value={currentProduct.productName}
                         readOnly
                         style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
                       />
-                    </div>
-                  </div>
+                          </div>
+                        </div>
 
-                  <div className="form-group">
+                        <div className="form-group">
                     <label htmlFor="quantity">Quantity *</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-cube input-icon"></i>
-                      <input
-                        type="number"
+                          <div className="input-wrapper">
+                            <i className="fas fa-cube input-icon"></i>
+                            <input
+                              type="number"
                         id="quantity"
-                        className="form-input"
-                        placeholder="Enter quantity"
+                              className="form-input"
+                              placeholder="Enter quantity"
                         value={currentProduct.quantity}
                         onChange={(e) => handleProductChange('quantity', e.target.value)}
-                        min="1"
-                        step="1"
-                        required
-                      />
-                    </div>
-                  </div>
+                              min="1"
+                              step="1"
+                              required
+                            />
+                          </div>
+                        </div>
 
                   {/* Row 3: MRP, Selling Rate */}
-                  <div className="form-group">
+                        <div className="form-group">
                     <label htmlFor="mrp">MRP *</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-rupee-sign input-icon"></i>
-                      <input
-                        type="number"
+                          <div className="input-wrapper">
+                            <i className="fas fa-rupee-sign input-icon"></i>
+                            <input
+                              type="number"
                         id="mrp"
-                        className="form-input"
-                        placeholder="Enter MRP"
+                              className="form-input"
+                              placeholder="Enter MRP"
                         value={currentProduct.mrp}
                         onChange={(e) => handleProductChange('mrp', e.target.value)}
-                        min="0"
-                        step="0.01"
-                        required
-                      />
-                    </div>
-                  </div>
+                              min="0"
+                              step="0.01"
+                              required
+                            />
+                          </div>
+                        </div>
 
-                  <div className="form-group">
+                        <div className="form-group">
                     <label htmlFor="sellRate">Selling Rate *</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-tag input-icon"></i>
-                      <input
-                        type="number"
+                          <div className="input-wrapper">
+                            <i className="fas fa-tag input-icon"></i>
+                            <input
+                              type="number"
                         id="sellRate"
-                        className="form-input"
-                        placeholder="Enter selling rate"
+                              className="form-input"
+                              placeholder="Enter selling rate"
                         value={currentProduct.sellRate}
                         onChange={(e) => handleProductChange('sellRate', e.target.value)}
-                        min="0"
-                        step="0.01"
-                        required
-                      />
-                    </div>
+                              min="0"
+                              step="0.01"
+                              required
+                            />
+                          </div>
                     {/* Add Product button below Selling Rate */}
                     <button
                       type="button"
@@ -626,35 +626,35 @@ const CreateSupplierTransaction = ({ onBack, onCancel, onNavigate, userRole = 'a
                         <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
                           <span style={{ fontWeight: '500', color: '#666' }}>MRP: </span>
                           <span style={{ color: '#333', fontWeight: '600' }}>₹{product.mrp}</span>
-                        </div>
+                      </div>
                         <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
                           <span style={{ fontWeight: '500', color: '#666' }}>Sell Rate: </span>
                           <span style={{ color: '#333', fontWeight: '600' }}>₹{product.sellRate}</span>
-                        </div>
-                        <button
-                          type="button"
+                    </div>
+                  <button 
+                    type="button" 
                           onClick={() => removeProduct(product.id)}
-                          style={{
+                    style={{
                             position: 'absolute',
                             top: '6px',
                             right: '6px',
                             background: '#dc3545',
                             color: '#fff',
-                            border: 'none',
+                      border: 'none',
                             borderRadius: '50%',
                             width: '20px',
                             height: '20px',
-                            cursor: 'pointer',
+                      cursor: 'pointer',
                             display: 'flex',
-                            alignItems: 'center',
+                      alignItems: 'center',
                             justifyContent: 'center',
                             fontSize: '10px',
                             padding: 0
-                          }}
+                    }}
                           title="Remove this product"
-                        >
+                  >
                           <i className="fas fa-times"></i>
-                        </button>
+                  </button>
                       </div>
                     ))}
                   </div>

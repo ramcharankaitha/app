@@ -262,7 +262,7 @@ const AddChitCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =
                     </div>
 
                     {/* Row 2: Street, City, State */}
-                    <div className="form-group">
+                  <div className="form-group">
                       <label htmlFor="address">Street</label>
                       <div className="input-wrapper">
                         <i className="fas fa-map-marker-alt input-icon"></i>

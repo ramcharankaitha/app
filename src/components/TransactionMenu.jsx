@@ -8,7 +8,7 @@ const TransactionMenu = ({ onNavigate, onBack }) => {
     { title: 'Supplier Transaction', desc: 'Record products from supplier', target: 'supplierTransactionMaster', icon: 'fa-truck' },
     { title: 'Products', desc: 'Manage product pricing', target: 'transactionProducts', icon: 'fa-tags' },
     { title: 'Services', desc: 'Manage service transactions', target: 'services', icon: 'fa-cog' },
-    { title: 'Sales Record', desc: 'View and manage sales records', target: 'salesRecord', icon: 'fa-chart-line' },
+    { title: 'Sales Order', desc: 'View and manage sales orders', target: 'salesOrder', icon: 'fa-chart-line' },
     { title: 'Purchase Bill Alert', desc: 'Monitor purchase bill alerts', target: 'purchaseBillAlert', icon: 'fa-bell' },
   ];
 

@@ -256,8 +256,9 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     onBlur={handleItemCodeBlur}
                     required
                     autoFocus
+                    style={{ paddingRight: isFetchingProduct ? '40px' : '50px' }}
                   />
-                  {isFetchingProduct && (
+                  {isFetchingProduct ? (
                     <div style={{ 
                       position: 'absolute', 
                       right: '10px', 
@@ -267,6 +268,32 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     }}>
                       <i className="fas fa-spinner fa-spin"></i>
                     </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={fetchProductByItemCode}
+                      style={{
+                        position: 'absolute',
+                        right: '8px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        padding: '6px 8px',
+                        width: '32px',
+                        height: '32px',
+                        background: '#dc3545',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                      title="Fetch Product"
+                    >
+                      <i className="fas fa-search"></i>
+                    </button>
                   )}
                 </div>
               </div>
@@ -360,29 +387,6 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     }}
                   />
                 </div>
-                {/* Fetch Product button below Quantity in the Store */}
-                <button
-                  type="button"
-                  onClick={fetchProductByItemCode}
-                  style={{
-                    marginTop: '8px',
-                    padding: '6px 12px',
-                    background: '#007bff',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  <i className="fas fa-search"></i>
-                  Fetch Product
-                </button>
               </div>
 
               {/* Row 3: Stock In Quantity - Same row as Fetch Product button (below SKV Code) */}

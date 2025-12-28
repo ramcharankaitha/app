@@ -20,8 +20,6 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
     category: '',
     productName: '',
     quantity: '',
-    mrp: '',
-    sellRate: '',
     isFetching: false,
     productInfo: null
   });
@@ -308,14 +306,10 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
             id: product.id,
             productName: product.product_name || product.productName || '',
             itemCode: product.item_code || product.itemCode || '',
-            category: product.category || '',
-            mrp: product.mrp || 0,
-            sellRate: product.sell_rate || product.sellRate || 0
+            category: product.category || ''
           },
           category: product.category || '',
           productName: product.product_name || product.productName || '',
-          mrp: (product.mrp || 0).toString(),
-          sellRate: (product.sell_rate || product.sellRate || 0).toString(),
           isFetching: false
         }));
       } else {
@@ -325,8 +319,6 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
           productInfo: null, 
           category: '',
           productName: '',
-          mrp: '',
-          sellRate: '',
           isFetching: false 
         }));
       }
@@ -338,8 +330,6 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
         productInfo: null, 
         category: '',
         productName: '',
-        mrp: '',
-        sellRate: '',
         isFetching: false 
       }));
     }
@@ -379,8 +369,6 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
       category: currentProduct.category,
       productName: currentProduct.productName,
       quantity: parseFloat(currentProduct.quantity),
-      mrp: parseFloat(currentProduct.mrp),
-      sellRate: parseFloat(currentProduct.sellRate),
       productInfo: currentProduct.productInfo
     }]);
     
@@ -390,8 +378,6 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
       category: '',
       productName: '',
       quantity: '',
-      mrp: '',
-      sellRate: '',
       isFetching: false,
       productInfo: null
     });
@@ -438,16 +424,11 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
         itemCode: item.itemCode.trim(),
         productName: item.productName,
         category: item.category,
-        quantity: item.quantity || 0,
-        mrp: item.mrp || 0,
-        sellRate: item.sellRate || 0,
-        discount: 0
+        quantity: item.quantity || 0
       }));
 
-      // Calculate total amount
-      const totalAmount = products.reduce((total, product) => {
-        return total + (product.sellRate * product.quantity);
-      }, 0);
+      // Calculate total amount (set to 0 since pricing fields are removed)
+      const totalAmount = 0;
 
       const userData = JSON.parse(localStorage.getItem('userData') || '{}');
       const createdBy = userData.username || userData.email || 'system';
@@ -854,7 +835,7 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                   </div>
                 </div>
 
-                {/* Row 4: Quantity, MRP, Sell Rate */}
+                {/* Row 4: Quantity */}
                 <div className="form-group">
                   <label htmlFor="quantity">Quantity *</label>
                   <div className="input-wrapper">
@@ -870,40 +851,6 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                       min="1"
                       step="1"
                       disabled={!currentProduct.productInfo}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="mrp">MRP</label>
-                  <div className="input-wrapper">
-                    <i className="fas fa-rupee-sign input-icon"></i>
-                    <input
-                      type="number"
-                      id="mrp"
-                      name="mrp"
-                      className="form-input"
-                      placeholder="MRP (auto-filled)"
-                      value={currentProduct.mrp}
-                      readOnly
-                      style={{ background: '#f5f5f5' }}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="sellRate">Sell Rate</label>
-                  <div className="input-wrapper">
-                    <i className="fas fa-rupee-sign input-icon"></i>
-                    <input
-                      type="number"
-                      id="sellRate"
-                      name="sellRate"
-                      className="form-input"
-                      placeholder="Sell rate (auto-filled)"
-                      value={currentProduct.sellRate}
-                      readOnly
-                      style={{ background: '#f5f5f5' }}
                     />
                   </div>
                 </div>
@@ -990,10 +937,6 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                           <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
                             <span style={{ fontWeight: '500', color: '#666' }}>Qty: </span>
                             <span style={{ color: '#333' }}>{product.quantity}</span>
-                          </div>
-                          <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
-                            <span style={{ fontWeight: '500', color: '#666' }}>Rate: </span>
-                            <span style={{ color: '#333' }}>₹{product.sellRate.toFixed(2)}</span>
                           </div>
                           <button
                             type="button"

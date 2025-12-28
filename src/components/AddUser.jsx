@@ -319,24 +319,24 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
                           required
                           maxLength="10"
                         />
-                      </div>
-                    </div>
+                  </div>
+                </div>
 
                     {/* Row 4: Username and Password (2 columns) */}
                     <div className="form-group">
                       <label htmlFor="username">Username</label>
                       <div className="input-wrapper">
                         <i className="fas fa-user input-icon"></i>
-                        <input
-                          type="text"
-                          id="username"
-                          name="username"
-                          className="form-input"
+                      <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        className="form-input"
                           placeholder="Enter username"
-                          value={formData.username}
-                          onChange={handleInputChange}
-                          required
-                        />
+                        value={formData.username}
+                        onChange={handleInputChange}
+                        required
+                      />
                       </div>
                     </div>
 

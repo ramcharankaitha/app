@@ -35,8 +35,8 @@ import TransactionProducts from './components/TransactionProducts';
 import AddProductPricing from './components/AddProductPricing';
 import Services from './components/Services';
 import AddService from './components/AddService';
-import SalesRecord from './components/SalesRecord';
-import AddSalesRecord from './components/AddSalesRecord';
+import SalesOrder from './components/SalesOrder';
+import AddSalesOrder from './components/AddSalesOrder';
 import PurchaseBillAlert from './components/PurchaseBillAlert';
 import Settings from './components/Settings';
 import Profile from './components/Profile';
@@ -612,12 +612,12 @@ const AdminRoutes = () => {
       />
       
       <Route
-        path="/salesRecord"
+        path="/salesOrder"
         element={
           <ProtectedRoute>
-            <SalesRecord
+            <SalesOrder
               onBack={() => handleNavigation(getBackPath('dashboard'))}
-              onAddSalesRecord={() => handleNavigation('addSalesRecord')}
+              onAddSalesOrder={() => handleNavigation('addSalesOrder')}
               onNavigate={handleNavigation}
               userRole={userRole}
             />
@@ -626,10 +626,10 @@ const AdminRoutes = () => {
       />
       
       <Route
-        path="/addSalesRecord"
+        path="/addSalesOrder"
         element={
           <ProtectedRoute>
-            <AddSalesRecord onBack={() => handleNavigation('salesRecord')} onCancel={() => handleNavigation('salesRecord')} onNavigate={handleNavigation} userRole={userRole} />
+            <AddSalesOrder onBack={() => handleNavigation('salesOrder')} onCancel={() => handleNavigation('salesOrder')} onNavigate={handleNavigation} userRole={userRole} />
           </ProtectedRoute>
         }
       />

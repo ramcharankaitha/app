@@ -1,27 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { salesRecordsAPI } from '../services/api';
+import { salesOrdersAPI } from '../services/api';
 import './staff.css';
 
-const SalesRecord = ({ onBack, onAddSalesRecord, onNavigate, userRole = 'admin' }) => {
+const SalesOrder = ({ onBack, onAddSalesOrder, onNavigate, userRole = 'admin' }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [salesRecords, setSalesRecords] = useState([]);
+  const [salesOrders, setSalesOrders] = useState([]);
   const [error, setError] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
-  const [viewSalesRecordModal, setViewSalesRecordModal] = useState(null);
+  const [viewSalesOrderModal, setViewSalesOrderModal] = useState(null);
   const menuRefs = useRef({});
 
-  // Fetch sales records from database
-  const fetchSalesRecords = async () => {
+  // Fetch sales orders from database
+  const fetchSalesOrders = async () => {
     try {
       setError('');
-      const response = await salesRecordsAPI.getAll();
+      const response = await salesOrdersAPI.getAll();
       if (response.success) {
-        const formattedRecords = response.salesRecords.map(record => ({
+        const formattedRecords = response.salesOrders.map(record => ({
           id: record.id,
           name: record.customer_name,
           initials: record.customer_name 
             ? record.customer_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
-            : 'SR',
+            : 'SO',
           customerContact: record.customer_contact,
           handlerName: record.handler_name || 'N/A',
           dateOfDuration: record.date_of_duration,
@@ -30,34 +30,34 @@ const SalesRecord = ({ onBack, onAddSalesRecord, onNavigate, userRole = 'admin' 
           products: record.products || [],
           created_at: record.created_at
         }));
-        setSalesRecords(formattedRecords);
+        setSalesOrders(formattedRecords);
       }
     } catch (err) {
-      console.error('Error fetching sales records:', err);
-      setError('Failed to load sales records. Please try again.');
+      console.error('Error fetching sales orders:', err);
+      setError('Failed to load sales orders. Please try again.');
     }
   };
 
   useEffect(() => {
-    fetchSalesRecords();
+    fetchSalesOrders();
     
-    // Listen for sales record creation events
-    const handleSalesRecordCreated = () => {
-      fetchSalesRecords();
+    // Listen for sales order creation events
+    const handleSalesOrderCreated = () => {
+      fetchSalesOrders();
     };
     
     // Refresh when page becomes visible
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        fetchSalesRecords();
+        fetchSalesOrders();
       }
     };
     
-    window.addEventListener('salesRecordCreated', handleSalesRecordCreated);
+    window.addEventListener('salesOrderCreated', handleSalesOrderCreated);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
     return () => {
-      window.removeEventListener('salesRecordCreated', handleSalesRecordCreated);
+      window.removeEventListener('salesOrderCreated', handleSalesOrderCreated);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
@@ -70,11 +70,11 @@ const SalesRecord = ({ onBack, onAddSalesRecord, onNavigate, userRole = 'admin' 
     }
   };
 
-  const handleAddSalesRecord = () => {
-    if (onAddSalesRecord) {
-      onAddSalesRecord();
+  const handleAddSalesOrder = () => {
+    if (onAddSalesOrder) {
+      onAddSalesOrder();
     } else if (onNavigate) {
-      onNavigate('addSalesRecord');
+      onNavigate('addSalesOrder');
     }
   };
 
@@ -102,8 +102,8 @@ const SalesRecord = ({ onBack, onAddSalesRecord, onNavigate, userRole = 'admin' 
     }
   };
 
-  // Filter sales records based on search
-  const filteredSalesRecords = salesRecords.filter(record => {
+  // Filter sales orders based on search
+  const filteredSalesOrders = salesOrders.filter(record => {
     const searchLower = searchQuery.toLowerCase();
     const matchesName = record.name?.toLowerCase().includes(searchLower);
     const matchesContact = record.customerContact?.toLowerCase().includes(searchLower);
@@ -129,14 +129,14 @@ const SalesRecord = ({ onBack, onAddSalesRecord, onNavigate, userRole = 'admin' 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [openMenuId]);
 
-  // Handle view sales record details
-  const handleViewSalesRecordDetails = (record) => {
+  // Handle view sales order details
+  const handleViewSalesOrderDetails = (record) => {
     setOpenMenuId(null);
-    setViewSalesRecordModal(record);
+    setViewSalesOrderModal(record);
   };
 
   const closeViewModal = () => {
-    setViewSalesRecordModal(null);
+    setViewSalesOrderModal(null);
   };
 
   return (
@@ -194,7 +194,7 @@ const SalesRecord = ({ onBack, onAddSalesRecord, onNavigate, userRole = 'admin' 
           <i className="fas fa-arrow-left"></i>
         </button>
         <div className="header-content">
-          <h1 className="page-title">Sales Records</h1>
+          <h1 className="page-title">Sales Orders</h1>
           <p className="page-subtitle">Manage sales transactions</p>
         </div>
       </header>
@@ -205,18 +205,18 @@ const SalesRecord = ({ onBack, onAddSalesRecord, onNavigate, userRole = 'admin' 
         <div className="staff-top-section">
           <div className="tab-indicator">
             <span className="tab-dot"></span>
-            <span className="tab-label">SALES RECORDS</span>
+            <span className="tab-label">SALES ORDERS</span>
           </div>
-          <button className="add-staff-btn" onClick={handleAddSalesRecord}>
+          <button className="add-staff-btn" onClick={handleAddSalesOrder}>
             <i className="fas fa-plus"></i>
-            <span>Create Sales Record</span>
+            <span>Create Sales Order</span>
           </button>
         </div>
 
         {/* Heading */}
         <div className="staff-heading">
-          <h2>Manage Sales Records</h2>
-          <p>View sales records, their details, and transactions. Filter quickly.</p>
+          <h2>Manage Sales Orders</h2>
+          <p>View sales orders, their details, and transactions. Filter quickly.</p>
         </div>
 
         {/* Search */}
@@ -225,7 +225,7 @@ const SalesRecord = ({ onBack, onAddSalesRecord, onNavigate, userRole = 'admin' 
             <i className="fas fa-search"></i>
             <input
               type="text"
-              placeholder="Search sales records..."
+              placeholder="Search sales orders..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -234,7 +234,7 @@ const SalesRecord = ({ onBack, onAddSalesRecord, onNavigate, userRole = 'admin' 
 
         {/* Results Count */}
         <div className="staff-count">
-          {`Showing ${filteredSalesRecords.length} of ${salesRecords.length} sales records`}
+          {`Showing ${filteredSalesOrders.length} of ${salesOrders.length} sales orders`}
         </div>
 
         {/* Error Message */}
@@ -244,21 +244,21 @@ const SalesRecord = ({ onBack, onAddSalesRecord, onNavigate, userRole = 'admin' 
           </div>
         )}
 
-        {/* Sales Records List */}
+        {/* Sales Orders List */}
         <div className="staff-list">
-          {salesRecords.length === 0 ? (
+          {salesOrders.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 40px', color: '#666' }}>
               <i className="fas fa-chart-line" style={{ fontSize: '64px', marginBottom: '20px', opacity: 0.4, color: '#dc3545' }}></i>
-              <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>No Sales Records Available</h3>
-              <p style={{ fontSize: '14px', color: '#666' }}>Start by creating your first sales record.</p>
+              <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>No Sales Orders Available</h3>
+              <p style={{ fontSize: '14px', color: '#666' }}>Start by creating your first sales order.</p>
             </div>
-          ) : filteredSalesRecords.length === 0 ? (
+          ) : filteredSalesOrders.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
               <i className="fas fa-search" style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}></i>
-              <p>No sales records found matching your search</p>
+              <p>No sales orders found matching your search</p>
             </div>
           ) : (
-            filteredSalesRecords.map((record) => (
+            filteredSalesOrders.map((record) => (
             <div key={record.id} className="staff-card">
               <div className="staff-avatar">
                 <span>{record.initials}</span>
@@ -284,9 +284,9 @@ const SalesRecord = ({ onBack, onAddSalesRecord, onNavigate, userRole = 'admin' 
                 </button>
                 {openMenuId === record.id && (
                   <div className="staff-menu-dropdown">
-                    <div className="menu-item" onClick={() => handleViewSalesRecordDetails(record)}>
+                    <div className="menu-item" onClick={() => handleViewSalesOrderDetails(record)}>
                       <i className="fas fa-eye"></i>
-                      <span>View Sales Record Details</span>
+                      <span>View Sales Order Details</span>
                     </div>
                   </div>
                 )}
@@ -299,12 +299,12 @@ const SalesRecord = ({ onBack, onAddSalesRecord, onNavigate, userRole = 'admin' 
       </div>
       </div>
 
-      {/* View Sales Record Details Modal */}
-      {viewSalesRecordModal && (
+      {/* View Sales Order Details Modal */}
+      {viewSalesOrderModal && (
         <div className="modal-overlay" onClick={closeViewModal}>
           <div className="customer-details-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Sales Record Details</h2>
+              <h2>Sales Order Details</h2>
               <button className="modal-close-btn" onClick={closeViewModal}>
                 <i className="fas fa-times"></i>
               </button>
@@ -312,38 +312,38 @@ const SalesRecord = ({ onBack, onAddSalesRecord, onNavigate, userRole = 'admin' 
             <div className="modal-content">
               <div className="customer-detail-section">
                 <div className="detail-avatar">
-                  <span>{viewSalesRecordModal.initials || 'SR'}</span>
+                  <span>{viewSalesOrderModal.initials || 'SO'}</span>
                 </div>
                 <div className="detail-info">
                   <div className="detail-row">
                     <span className="detail-label">Customer Name:</span>
-                    <span className="detail-value">{viewSalesRecordModal.name || 'N/A'}</span>
+                    <span className="detail-value">{viewSalesOrderModal.name || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">Customer Contact:</span>
-                    <span className="detail-value">{viewSalesRecordModal.customerContact || 'N/A'}</span>
+                    <span className="detail-value">{viewSalesOrderModal.customerContact || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">Handler Name:</span>
-                    <span className="detail-value">{viewSalesRecordModal.handlerName || 'N/A'}</span>
+                    <span className="detail-value">{viewSalesOrderModal.handlerName || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">Date of Duration:</span>
-                    <span className="detail-value">{viewSalesRecordModal.dateOfDuration ? new Date(viewSalesRecordModal.dateOfDuration).toLocaleDateString() : 'N/A'}</span>
+                    <span className="detail-value">{viewSalesOrderModal.dateOfDuration ? new Date(viewSalesOrderModal.dateOfDuration).toLocaleDateString() : 'N/A'}</span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">Supplier Name:</span>
-                    <span className="detail-value">{viewSalesRecordModal.supplierName || 'N/A'}</span>
+                    <span className="detail-value">{viewSalesOrderModal.supplierName || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">Total Amount:</span>
-                    <span className="detail-value" style={{ color: '#28a745', fontWeight: '600' }}>₹{viewSalesRecordModal.totalAmount?.toFixed(2) || '0.00'}</span>
+                    <span className="detail-value" style={{ color: '#28a745', fontWeight: '600' }}>₹{viewSalesOrderModal.totalAmount?.toFixed(2) || '0.00'}</span>
                   </div>
-                  {viewSalesRecordModal.products && viewSalesRecordModal.products.length > 0 && (
+                  {viewSalesOrderModal.products && viewSalesOrderModal.products.length > 0 && (
                     <div className="detail-row" style={{ marginTop: '20px', paddingTop: '20px', borderTop: '2px solid #e9ecef' }}>
                       <span className="detail-label" style={{ fontSize: '16px', fontWeight: '700', color: '#000' }}>Products:</span>
                       <div style={{ marginTop: '12px' }}>
-                        {viewSalesRecordModal.products.map((product, index) => (
+                        {viewSalesOrderModal.products.map((product, index) => (
                           <div key={index} style={{ 
                             padding: '12px', 
                             marginBottom: '8px', 
@@ -362,10 +362,10 @@ const SalesRecord = ({ onBack, onAddSalesRecord, onNavigate, userRole = 'admin' 
                       </div>
                     </div>
                   )}
-                  {viewSalesRecordModal.created_at && (
+                  {viewSalesOrderModal.created_at && (
                     <div className="detail-row">
                       <span className="detail-label">Created At:</span>
-                      <span className="detail-value">{new Date(viewSalesRecordModal.created_at).toLocaleString()}</span>
+                      <span className="detail-value">{new Date(viewSalesOrderModal.created_at).toLocaleString()}</span>
                     </div>
                   )}
                 </div>
@@ -383,4 +383,5 @@ const SalesRecord = ({ onBack, onAddSalesRecord, onNavigate, userRole = 'admin' 
   );
 };
 
-export default SalesRecord;
+export default SalesOrder;
+

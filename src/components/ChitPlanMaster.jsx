@@ -11,6 +11,8 @@ const ChitPlanMaster = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' 
   const [openMenuId, setOpenMenuId] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [editPlanModal, setEditPlanModal] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
   const menuRefs = useRef({});
 
   // Fetch chit plans from database
@@ -56,6 +58,21 @@ const ChitPlanMaster = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' 
     setOpenMenuId(null);
   };
 
+  const handleEditPlan = async (plan) => {
+    setOpenMenuId(null);
+    try {
+      const response = await chitPlansAPI.getPlanById(plan.id);
+      if (response && response.success) {
+        setEditPlanModal(response.plan);
+      } else {
+        setError('Failed to fetch chit plan details');
+      }
+    } catch (err) {
+      console.error('Error fetching chit plan details:', err);
+      setError('Failed to fetch chit plan details');
+    }
+  };
+
   const handleDeletePlan = (plan) => {
     setSelectedPlan(plan);
     setShowDeleteConfirm(true);
@@ -80,6 +97,52 @@ const ChitPlanMaster = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' 
       setError(err.message || 'Failed to delete chit plan');
       setShowDeleteConfirm(false);
     }
+  };
+
+  // Handle save chit plan details
+  const handleSavePlanDetails = async () => {
+    if (!editPlanModal) return;
+    
+    setIsSaving(true);
+    setError('');
+    
+    try {
+      const response = await chitPlansAPI.updatePlan(editPlanModal.id, {
+        planName: editPlanModal.plan_name,
+        planAmount: parseFloat(editPlanModal.plan_amount),
+        description: editPlanModal.description || ''
+      });
+      
+      if (response && response.success) {
+        // Refresh plans list
+        await fetchPlans();
+        setEditPlanModal(null);
+        setError('');
+        setSuccessMessage('Chit plan updated successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        setError(response?.error || 'Failed to update chit plan');
+      }
+    } catch (err) {
+      console.error('Error updating chit plan:', err);
+      setError(err.message || 'Failed to update chit plan');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle input change in edit modal
+  const handleEditInputChange = (field, value) => {
+    if (editPlanModal) {
+      setEditPlanModal({
+        ...editPlanModal,
+        [field]: value
+      });
+    }
+  };
+
+  const closeEditModal = () => {
+    setEditPlanModal(null);
   };
 
   const handleBack = () => {
@@ -277,6 +340,10 @@ const ChitPlanMaster = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' 
                             <i className="fas fa-eye"></i>
                             <span>View Details</span>
                           </div>
+                          <div className="menu-item" onClick={() => handleEditPlan(plan)}>
+                            <i className="fas fa-edit"></i>
+                            <span>Edit Plan</span>
+                          </div>
                           <div className="menu-item" onClick={() => handleDeletePlan(plan)}>
                             <i className="fas fa-trash"></i>
                             <span>Delete</span>
@@ -321,6 +388,113 @@ const ChitPlanMaster = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' 
             <div className="modal-footer">
               <button className="modal-close-button" onClick={() => setShowViewModal(false)}>
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Plan Modal */}
+      {editPlanModal && (
+        <div className="modal-overlay" onClick={closeEditModal}>
+          <div className="customer-details-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Edit Chit Plan</h2>
+              <button className="modal-close-btn" onClick={closeEditModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="modal-content">
+              {error && (
+                <div style={{ 
+                  padding: '12px', 
+                  background: '#ffe0e0', 
+                  color: '#dc3545', 
+                  borderRadius: '8px', 
+                  marginBottom: '20px' 
+                }}>
+                  <i className="fas fa-exclamation-circle"></i> {error}
+                </div>
+              )}
+              <div className="customer-detail-section">
+                <div className="detail-avatar">
+                  <span>{editPlanModal.plan_name 
+                    ? editPlanModal.plan_name.substring(0, 2).toUpperCase()
+                    : 'CP'}</span>
+                </div>
+                <div className="detail-info">
+                  <div className="detail-row">
+                    <span className="detail-label">Plan Name:</span>
+                    <input
+                      type="text"
+                      value={editPlanModal.plan_name || ''}
+                      onChange={(e) => handleEditInputChange('plan_name', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Plan Amount:</span>
+                    <input
+                      type="number"
+                      value={editPlanModal.plan_amount || ''}
+                      onChange={(e) => handleEditInputChange('plan_amount', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Description:</span>
+                    <textarea
+                      value={editPlanModal.description || ''}
+                      onChange={(e) => handleEditInputChange('description', e.target.value)}
+                      rows="3"
+                      placeholder="Enter description (optional)"
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px',
+                        resize: 'vertical'
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button 
+                className="modal-close-button" 
+                onClick={closeEditModal}
+                disabled={isSaving}
+              >
+                Cancel
+              </button>
+              <button 
+                className="modal-close-button" 
+                onClick={handleSavePlanDetails}
+                disabled={isSaving}
+                style={{ 
+                  background: '#28a745', 
+                  color: '#fff', 
+                  marginLeft: '8px' 
+                }}
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

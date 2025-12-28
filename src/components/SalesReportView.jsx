@@ -401,7 +401,7 @@ const SalesReportView = ({ onClose }) => {
           ) : filteredSales.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
               <i className="fas fa-chart-line" style={{ fontSize: '48px', marginBottom: '15px', opacity: 0.5 }}></i>
-              <p>No sales records found for the selected date range.</p>
+              <p>No sales orders found for the selected date range.</p>
             </div>
           ) : (
             <div className="attendance-table-container">
