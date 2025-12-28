@@ -10,7 +10,6 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     city: '',
     state: '',
     pincode: '',
-    email: '',
     whatsapp: ''
   });
   const [customerTokens, setCustomerTokens] = useState(0);
@@ -122,9 +121,8 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
       [name]: value
     }));
     
-    // Check for existing customer tokens when phone or email changes
-    if (name === 'phone' || name === 'email') {
-      const phone = name === 'phone' ? value : formData.phone;
+    // Check for existing customer tokens when phone changes
+    if (name === 'phone') {
       // Removed token checking - tokens are handled in Transaction Menu only
     }
 
@@ -230,7 +228,6 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
       // Create basic customer record (no products or payment in Master Menu)
       const customerData = {
         fullName: formData.fullName,
-        email: formData.email,
         phone: formData.phone,
         address: formData.address,
         city: formData.city,
@@ -430,43 +427,6 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                         </div>
                       )}
                     </div>
-
-                    <div className="form-group">
-                        <label htmlFor="email">Email</label>
-                        <div className="input-wrapper">
-                          <i className="fas fa-envelope input-icon"></i>
-                          <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            className="form-input"
-                            placeholder="customer@example.com"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            required
-                          />
-                        </div>
-                        {isCheckingTokens && formData.email && !formData.phone && (
-                          <div style={{ marginTop: '4px', fontSize: '11px', color: '#666', fontStyle: 'italic' }}>
-                            <i className="fas fa-spinner fa-spin" style={{ marginRight: '4px' }}></i>
-                            Checking for tokens...
-                          </div>
-                        )}
-                        {!isCheckingTokens && customerTokens > 0 && formData.email && !formData.phone && (
-                          <div style={{ 
-                            marginTop: '4px', 
-                            fontSize: '12px', 
-                            color: '#28a745', 
-                            fontWeight: '600',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px'
-                          }}>
-                            <i className="fas fa-gift"></i>
-                            Returning customer! You have {customerTokens} token(s) available.
-                          </div>
-                        )}
-                      </div>
 
                     <div className="form-group">
                         <label htmlFor="whatsapp">WhatsApp</label>

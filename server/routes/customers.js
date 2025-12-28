@@ -11,8 +11,8 @@ router.get('/', async (req, res) => {
         CASE 
           WHEN EXISTS (
             SELECT 1 FROM chit_customers cc 
-            WHERE (cc.phone = c.phone OR cc.email = c.email) 
-            AND (c.phone IS NOT NULL OR c.email IS NOT NULL)
+            WHERE cc.phone = c.phone 
+            AND c.phone IS NOT NULL
           ) THEN 'chitplan'
           ELSE 'walkin'
         END as customer_type
@@ -113,7 +113,6 @@ router.get('/products/:identifier', async (req, res) => {
       FROM customers c
       LEFT JOIN products p ON c.item_code = p.item_code
       WHERE (LOWER(c.full_name) = LOWER($1) 
-         OR LOWER(c.email) = LOWER($1)
          OR c.phone = $1)
          AND (c.item_code IS NOT NULL AND c.item_code != '')
       ORDER BY c.created_at DESC`,
@@ -134,7 +133,6 @@ router.get('/products/:identifier', async (req, res) => {
         pincode
       FROM customers
       WHERE LOWER(full_name) = LOWER($1)
-         OR LOWER(email) = LOWER($1)
          OR phone = $1
       LIMIT 1`,
       [identifier]
@@ -194,10 +192,10 @@ router.get('/:id', async (req, res) => {
     // Get customer tokens
     const customer = result.rows[0];
     let tokens = 0;
-    if (customer.phone || customer.email) {
+    if (customer.phone) {
       const tokenResult = await pool.query(
-        'SELECT tokens FROM customer_tokens WHERE (customer_phone = $1 OR customer_email = $2) AND ($1 IS NOT NULL OR $2 IS NOT NULL)',
-        [customer.phone || null, customer.email || null]
+        'SELECT tokens FROM customer_tokens WHERE customer_phone = $1 AND customer_phone IS NOT NULL',
+        [customer.phone]
       );
       if (tokenResult.rows.length > 0) {
         tokens = tokenResult.rows[0].tokens || 0;
@@ -220,11 +218,11 @@ router.post('/', async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    const { fullName, email, phone, address, city, state, pincode, whatsapp, itemCode, quantity, mrp, sellRate, discount, paymentMode, tokensUsed, tokensEarned, totalAmount, createdBy, chitPlanId } = req.body;
+    const { fullName, phone, address, city, state, pincode, whatsapp, itemCode, quantity, mrp, sellRate, discount, paymentMode, tokensUsed, tokensEarned, totalAmount, createdBy, chitPlanId } = req.body;
 
-    if (!fullName || !email) {
+    if (!fullName) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'Full name and email are required' });
+      return res.status(400).json({ error: 'Full name is required' });
     }
 
     // Check if phone number already exists
@@ -285,7 +283,7 @@ router.post('/', async (req, res) => {
        RETURNING *`,
       [
         fullName, 
-        email, 
+        null, // email is no longer required
         phone || null, 
         address || null,
         city || null,
@@ -329,19 +327,19 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // Update customer tokens
-    if (phone || email) {
+    // Update customer tokens (using phone only, email removed)
+    if (phone) {
       // Find or create customer_tokens record
       let tokenResult = await client.query(
-        'SELECT * FROM customer_tokens WHERE (customer_phone = $1 OR customer_email = $2) AND ($1 IS NOT NULL OR $2 IS NOT NULL)',
-        [phone || null, email || null]
+        'SELECT * FROM customer_tokens WHERE customer_phone = $1 AND customer_phone IS NOT NULL',
+        [phone]
       );
 
       if (tokenResult.rows.length === 0) {
         // Create new token record
         await client.query(
           'INSERT INTO customer_tokens (customer_phone, customer_email, tokens, total_purchased, tokens_earned, tokens_redeemed) VALUES ($1, $2, $3, $4, $5, $6)',
-          [phone || null, email || null, tokensToEarn, finalAmount, tokensToEarn, tokensToRedeem]
+          [phone, null, tokensToEarn, finalAmount, tokensToEarn, tokensToRedeem]
         );
       } else {
         // Update existing token record
@@ -354,8 +352,8 @@ router.post('/', async (req, res) => {
                tokens_earned = tokens_earned + $3,
                tokens_redeemed = tokens_redeemed + $4,
                updated_at = CURRENT_TIMESTAMP
-           WHERE (customer_phone = $5 OR customer_email = $6) AND ($5 IS NOT NULL OR $6 IS NOT NULL)`,
-          [newTokens, finalAmount, tokensToEarn, tokensToRedeem, phone || null, email || null]
+           WHERE customer_phone = $5 AND customer_phone IS NOT NULL`,
+          [newTokens, finalAmount, tokensToEarn, tokensToRedeem, phone]
         );
       }
     }
@@ -373,7 +371,7 @@ router.post('/', async (req, res) => {
             city || null,
             state || null,
             pincode || null,
-            email || null,
+            null, // email is no longer required
             parseInt(chitPlanId),
             paymentMode || null
           ]
@@ -415,10 +413,27 @@ router.post('/', async (req, res) => {
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Create customer error:', error);
+    console.error('Error details:', {
+      code: error.code,
+      message: error.message,
+      detail: error.detail,
+      constraint: error.constraint
+    });
+    
     if (error.code === '23505') { // Unique violation
       return res.status(400).json({ error: 'Email already exists' });
     }
-    res.status(500).json({ error: 'Internal server error' });
+    if (error.code === '23502') { // Not null violation
+      return res.status(400).json({ error: `Required field missing: ${error.column || 'unknown'}` });
+    }
+    if (error.code === '23503') { // Foreign key violation
+      return res.status(400).json({ error: 'Invalid reference data' });
+    }
+    
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Please check server logs'
+    });
   } finally {
     client.release();
   }
@@ -427,18 +442,18 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { fullName, email, phone, address, storeId } = req.body;
+    const { fullName, phone, address, storeId } = req.body;
 
-    if (!fullName || !email) {
-      return res.status(400).json({ error: 'Full name and email are required' });
+    if (!fullName) {
+      return res.status(400).json({ error: 'Full name is required' });
     }
 
     const result = await pool.query(
       `UPDATE customers 
-       SET full_name = $1, email = $2, phone = $3, address = $4, store_id = $5, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $6
+       SET full_name = $1, phone = $2, address = $3, store_id = $4, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $5
        RETURNING *`,
-      [fullName, email, phone || null, address || null, storeId || null, id]
+      [fullName, phone || null, address || null, storeId || null, id]
     );
 
     if (result.rows.length === 0) {

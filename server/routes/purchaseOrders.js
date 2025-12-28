@@ -226,10 +226,24 @@ router.post('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Create purchase order error:', error);
+    console.error('Error details:', {
+      code: error.code,
+      message: error.message,
+      detail: error.detail,
+      constraint: error.constraint
+    });
+    
     if (error.code === '23505') {
       return res.status(400).json({ error: 'Order number already exists' });
     }
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    if (error.code === '23502') {
+      return res.status(400).json({ error: `Required field missing: ${error.column || 'unknown'}` });
+    }
+    
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Please check server logs'
+    });
   }
 });
 

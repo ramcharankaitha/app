@@ -87,10 +87,24 @@ router.post('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Create supplier error:', error);
-    if (error.code === '23505') { // Unique violation
+    console.error('Error details:', {
+      code: error.code,
+      message: error.message,
+      detail: error.detail,
+      constraint: error.constraint
+    });
+    
+    if (error.code === '23505') {
       return res.status(400).json({ error: 'Supplier already exists' });
     }
-    res.status(500).json({ error: 'Internal server error' });
+    if (error.code === '23502') {
+      return res.status(400).json({ error: `Required field missing: ${error.column || 'unknown'}` });
+    }
+    
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Please check server logs'
+    });
   }
 });
 

@@ -74,7 +74,16 @@ router.post('/in', async (req, res) => {
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Stock In error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error details:', {
+      code: error.code,
+      message: error.message,
+      detail: error.detail,
+      constraint: error.constraint
+    });
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Please check server logs'
+    });
   } finally {
     client.release();
   }

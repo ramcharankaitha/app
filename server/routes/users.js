@@ -6,7 +6,7 @@ const { pool } = require('../config/database');
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, first_name, last_name, email, role, store_allocated, created_at FROM users ORDER BY created_at DESC'
+      'SELECT id, first_name, last_name, role, store_allocated, created_at FROM users ORDER BY created_at DESC'
     );
     res.json({ success: true, users: result.rows });
   } catch (error) {
@@ -47,10 +47,10 @@ router.post('/', async (req, res) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO users (first_name, last_name, email, username, password_hash, store_allocated, address, city, state, pincode, phone, role)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-       RETURNING id, first_name, last_name, email, username, role, store_allocated`,
-      [firstName, lastName, null, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, phone || null, 'Supervisor']
+      `INSERT INTO users (first_name, last_name, username, password_hash, store_allocated, address, city, state, pincode, phone, role)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       RETURNING id, first_name, last_name, username, role, store_allocated`,
+      [firstName, lastName, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, phone || null, 'Supervisor']
     );
     
     console.log('Supervisor created successfully:', result.rows[0].username);
@@ -61,11 +61,30 @@ router.post('/', async (req, res) => {
       message: 'Supervisor created successfully'
     });
   } catch (error) {
+    console.error('Create user error:', error);
+    console.error('Error details:', {
+      code: error.code,
+      message: error.message,
+      detail: error.detail,
+      constraint: error.constraint,
+      column: error.column
+    });
+    
     if (error.code === '23505') { // Unique violation
       return res.status(400).json({ error: 'Username already exists' });
     }
-    console.error('Create user error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    if (error.code === '23502') { // Not null violation
+      return res.status(400).json({ error: `Required field missing: ${error.column || 'unknown'}. Please check database constraints.` });
+    }
+    if (error.code === '23503') { // Foreign key violation
+      return res.status(400).json({ error: 'Invalid reference data' });
+    }
+    
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Please check server logs',
+      code: process.env.NODE_ENV === 'development' ? error.code : undefined
+    });
   }
 });
 
@@ -92,8 +111,8 @@ router.post('/face-data', async (req, res) => {
 
     if (userResult.rows.length === 0) {
       // Also check if username exists with different case
-      const allUsersResult = await pool.query('SELECT id, username, email FROM users ORDER BY id LIMIT 20');
-      console.log('Available supervisors in database:', allUsersResult.rows.map(r => ({ id: r.id, username: r.username, email: r.email })));
+      const allUsersResult = await pool.query('SELECT id, username FROM users ORDER BY id LIMIT 20');
+      console.log('Available supervisors in database:', allUsersResult.rows.map(r => ({ id: r.id, username: r.username })));
       console.log('Searched username (trimmed):', trimmedUsername);
       console.log('Searched username (original):', username);
       return res.status(404).json({ 
@@ -146,23 +165,22 @@ router.post('/face-data', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { firstName, lastName, email, storeAllocated, address, city, state, pincode, role } = req.body;
+    const { firstName, lastName, storeAllocated, address, city, state, pincode, role } = req.body;
 
     const result = await pool.query(
       `UPDATE users 
        SET first_name = COALESCE($1, first_name),
            last_name = COALESCE($2, last_name),
-           email = COALESCE($3, email),
-           store_allocated = COALESCE($4, store_allocated),
-           address = COALESCE($5, address),
-           city = COALESCE($6, city),
-           state = COALESCE($7, state),
-           pincode = COALESCE($8, pincode),
-           role = COALESCE($9, role),
+           store_allocated = COALESCE($3, store_allocated),
+           address = COALESCE($4, address),
+           city = COALESCE($5, city),
+           state = COALESCE($6, state),
+           pincode = COALESCE($7, pincode),
+           role = COALESCE($8, role),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $10
-       RETURNING id, first_name, last_name, email, role, store_allocated`,
-      [firstName, lastName, email, storeAllocated, address, city, state, pincode, role, id]
+       WHERE id = $9
+       RETURNING id, first_name, last_name, role, store_allocated`,
+      [firstName, lastName, storeAllocated, address, city, state, pincode, role, id]
     );
 
     if (result.rows.length === 0) {

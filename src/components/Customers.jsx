@@ -85,7 +85,6 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
   // Filter customers based on search and store
   const filteredCustomers = customers.filter(customer => {
     const matchesSearch = customer.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         customer.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          customer.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          customer.address?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStore = selectedStore === 'All Stores' || customer.store === selectedStore;
@@ -247,7 +246,7 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
             <i className="fas fa-search"></i>
             <input
               type="text"
-              placeholder="Search name, email, phone..."
+              placeholder="Search name, phone..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -334,15 +333,6 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
                     <div className="premium-info-row">
                       <div className="premium-info-item">
                         <div className="premium-info-icon">
-                          <i className="fas fa-envelope"></i>
-                        </div>
-                        <div className="premium-info-content">
-                          <span className="premium-info-label">Email</span>
-                          <span className="premium-info-value premium-email-value">{customer.email || 'N/A'}</span>
-                        </div>
-                      </div>
-                      <div className="premium-info-item">
-                        <div className="premium-info-icon">
                           <i className="fas fa-phone"></i>
                         </div>
                         <div className="premium-info-content">
@@ -421,8 +411,6 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
                     <span className="detail-value">{viewCustomerModal.full_name || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
-                    <span className="detail-label">Email:</span>
-                    <span className="detail-value">{viewCustomerModal.email || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">Phone:</span>

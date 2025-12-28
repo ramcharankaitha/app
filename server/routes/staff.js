@@ -40,7 +40,7 @@ const uploadAadhar = multer({
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, full_name, email, role, store_allocated, phone, is_handler, created_at FROM staff ORDER BY created_at DESC'
+      'SELECT id, full_name, role, store_allocated, phone, is_handler, created_at FROM staff ORDER BY created_at DESC'
     );
     res.json({ success: true, staff: result.rows });
   } catch (error) {
@@ -102,18 +102,18 @@ router.post('/', async (req, res) => {
     let result;
     try {
       result = await pool.query(
-        `INSERT INTO staff (full_name, email, username, password_hash, store_allocated, address, city, state, pincode, is_handler, role, salary)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-         RETURNING id, full_name, email, username, role, store_allocated, is_handler`,
-        [fullName, null, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff', salary || null]
+        `INSERT INTO staff (full_name, username, password_hash, store_allocated, address, city, state, pincode, is_handler, role, salary)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+         RETURNING id, full_name, username, role, store_allocated, is_handler`,
+        [fullName, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff', salary || null]
       );
     } catch (colError) {
       if (colError.code === '42703') { // undefined_column error
         result = await pool.query(
-          `INSERT INTO staff (full_name, email, username, password_hash, store_allocated, address, city, state, pincode, is_handler, role)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-           RETURNING id, full_name, email, username, role, store_allocated, is_handler`,
-          [fullName, null, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff']
+          `INSERT INTO staff (full_name, username, password_hash, store_allocated, address, city, state, pincode, is_handler, role)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+           RETURNING id, full_name, username, role, store_allocated, is_handler`,
+          [fullName, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff']
         );
       } else {
         throw colError;
@@ -128,11 +128,25 @@ router.post('/', async (req, res) => {
       message: 'Staff created successfully'
     });
   } catch (error) {
+    console.error('Create staff error:', error);
+    console.error('Error details:', {
+      code: error.code,
+      message: error.message,
+      detail: error.detail,
+      constraint: error.constraint
+    });
+    
     if (error.code === '23505') {
       return res.status(400).json({ error: 'Username already exists' });
     }
-    console.error('Create staff error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    if (error.code === '23502') {
+      return res.status(400).json({ error: `Required field missing: ${error.column || 'unknown'}` });
+    }
+    
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Please check server logs'
+    });
   }
 });
 
@@ -156,29 +170,29 @@ router.post('/upload', uploadAadhar.single('aadharCopy'), async (req, res) => {
     let result;
     try {
       result = await pool.query(
-        `INSERT INTO staff (full_name, email, username, password_hash, store_allocated, address, city, state, pincode, is_handler, role, salary, aadhar_file_path)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-         RETURNING id, full_name, email, username, role, store_allocated, is_handler`,
-        [fullName, null, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff', salary || null, aadharFilePath]
+        `INSERT INTO staff (full_name, username, password_hash, store_allocated, address, city, state, pincode, is_handler, role, salary, aadhar_file_path)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+         RETURNING id, full_name, username, role, store_allocated, is_handler`,
+        [fullName, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff', salary || null, aadharFilePath]
       );
     } catch (colError) {
       if (colError.code === '42703') { // undefined_column error
         // Try without salary and aadhar_file_path
         try {
           result = await pool.query(
-            `INSERT INTO staff (full_name, email, username, password_hash, store_allocated, address, city, state, pincode, is_handler, role, salary)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-             RETURNING id, full_name, email, username, role, store_allocated, is_handler`,
-            [fullName, null, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff', salary || null]
+            `INSERT INTO staff (full_name, username, password_hash, store_allocated, address, city, state, pincode, is_handler, role, salary)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+             RETURNING id, full_name, username, role, store_allocated, is_handler`,
+            [fullName, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff', salary || null]
           );
         } catch (colError2) {
           if (colError2.code === '42703') {
             // Fallback to original schema without salary and aadhar
             result = await pool.query(
-              `INSERT INTO staff (full_name, email, username, password_hash, store_allocated, address, city, state, pincode, is_handler, role)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-               RETURNING id, full_name, email, username, role, store_allocated, is_handler`,
-              [fullName, null, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff']
+              `INSERT INTO staff (full_name, username, password_hash, store_allocated, address, city, state, pincode, is_handler, role)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+               RETURNING id, full_name, username, role, store_allocated, is_handler`,
+              [fullName, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff']
             );
           } else {
             throw colError2;
@@ -205,7 +219,7 @@ router.post('/upload', uploadAadhar.single('aadharCopy'), async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { fullName, email, username, phone, storeAllocated, address, city, state, pincode, isHandler } = req.body;
+    const { fullName, username, phone, storeAllocated, address, city, state, pincode, isHandler } = req.body;
 
     // Check if staff exists
     const staffCheck = await pool.query('SELECT id FROM staff WHERE id = $1', [id]);
@@ -217,21 +231,19 @@ router.put('/:id', async (req, res) => {
     const result = await pool.query(
       `UPDATE staff 
        SET full_name = COALESCE($1, full_name),
-           email = COALESCE($2, email),
-           username = COALESCE($3, username),
-           phone = COALESCE($4, phone),
-           store_allocated = COALESCE($5, store_allocated),
-           address = COALESCE($6, address),
-           city = COALESCE($7, city),
-           state = COALESCE($8, state),
-           pincode = COALESCE($9, pincode),
-           is_handler = COALESCE($10, is_handler),
+           username = COALESCE($2, username),
+           phone = COALESCE($3, phone),
+           store_allocated = COALESCE($4, store_allocated),
+           address = COALESCE($5, address),
+           city = COALESCE($6, city),
+           state = COALESCE($7, state),
+           pincode = COALESCE($8, pincode),
+           is_handler = COALESCE($9, is_handler),
            updated_at = CURRENT_TIMESTAMP 
-       WHERE id = $11 
-       RETURNING id, full_name, email, username, role, store_allocated, phone, address, city, state, pincode, is_handler`,
+       WHERE id = $10 
+       RETURNING id, full_name, username, role, store_allocated, phone, address, city, state, pincode, is_handler`,
       [
         fullName || null,
-        email || null,
         username || null,
         phone || null,
         storeAllocated || null,
@@ -251,7 +263,7 @@ router.put('/:id', async (req, res) => {
     });
   } catch (error) {
     if (error.code === '23505') {
-      return res.status(400).json({ error: 'Email or username already exists' });
+      return res.status(400).json({ error: 'Username already exists' });
     }
     console.error('Update staff error:', error);
     res.status(500).json({ error: 'Internal server error' });

@@ -67,7 +67,6 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
             initials: `${user.first_name[0]}${user.last_name[0]}`.toUpperCase(),
             role: user.role || 'Store User/Supervisor',
             store: user.store_allocated || 'Not Assigned',
-            email: user.email
           }));
           setUsers(formattedUsers);
         }
@@ -83,8 +82,7 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          user.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         user.store.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchQuery.toLowerCase());
+                         user.store.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStore = selectedStore === 'All Stores' || user.store === selectedStore;
     return matchesSearch && matchesStore;
   });
@@ -153,7 +151,6 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
       const response = await usersAPI.update(editSupervisorModal.id, {
         firstName: editSupervisorModal.first_name,
         lastName: editSupervisorModal.last_name,
-        email: editSupervisorModal.email,
         username: editSupervisorModal.username,
         storeAllocated: editSupervisorModal.store_allocated
       });
@@ -170,7 +167,6 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
                 initials: `${user.first_name[0]}${user.last_name[0]}`.toUpperCase(),
                 role: user.role || 'Store User/Supervisor',
                 store: user.store_allocated || 'Not Assigned',
-                email: user.email
               }));
               setUsers(formattedUsers);
             }
@@ -234,7 +230,6 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
                     initials: `${user.first_name[0]}${user.last_name[0]}`.toUpperCase(),
                     role: user.role || 'Store User/Supervisor',
                     store: user.store_allocated || 'Not Assigned',
-                    email: user.email
                   }));
                   setUsers(formattedUsers);
                 }
@@ -454,15 +449,6 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
                             <span className="premium-info-value">{user.store || 'Not Assigned'}</span>
                           </div>
                         </div>
-                        <div className="premium-info-item">
-                          <div className="premium-info-icon">
-                            <i className="fas fa-envelope"></i>
-                          </div>
-                          <div className="premium-info-content">
-                            <span className="premium-info-label">Email</span>
-                            <span className="premium-info-value premium-email-value">{user.email || 'N/A'}</span>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -506,8 +492,6 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
                     <span className="detail-value">{`${viewSupervisorModal.first_name || ''} ${viewSupervisorModal.last_name || ''}`.trim() || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
-                    <span className="detail-label">Email:</span>
-                    <span className="detail-value">{viewSupervisorModal.email || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">Username:</span>
@@ -591,22 +575,6 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
                       type="text"
                       value={editSupervisorModal.last_name || ''}
                       onChange={(e) => handleEditInputChange('last_name', e.target.value)}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        width: '100%',
-                        maxWidth: '300px'
-                      }}
-                    />
-                  </div>
-                  <div className="detail-row" style={{ marginBottom: '16px' }}>
-                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Email:</span>
-                    <input
-                      type="email"
-                      value={editSupervisorModal.email || ''}
-                      onChange={(e) => handleEditInputChange('email', e.target.value)}
                       style={{
                         padding: '8px 12px',
                         border: '1px solid #ddd',

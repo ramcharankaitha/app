@@ -23,7 +23,6 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
           initials: member.full_name 
             ? member.full_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
             : 'ST',
-          email: member.email,
           role: member.role || 'Staff',
           floor: member.store_allocated || 'Not Assigned', // store_allocated is used for floor in this system
           created_at: member.created_at
@@ -90,8 +89,7 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
   const filteredStaff = staff.filter(member => {
     const matchesSearch = member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          member.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         member.store.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         member.email.toLowerCase().includes(searchQuery.toLowerCase());
+                         member.store.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
 
@@ -154,7 +152,6 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
     try {
       const response = await staffAPI.update(editStaffModal.staff.id, {
         fullName: editStaffModal.staff.full_name,
-        email: editStaffModal.staff.email,
         username: editStaffModal.staff.username,
         phone: editStaffModal.staff.phone,
         storeAllocated: editStaffModal.staff.store_allocated,
@@ -386,15 +383,6 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
                             <span className="premium-info-value">{member.floor || 'Not Assigned'}</span>
                           </div>
                         </div>
-                        <div className="premium-info-item">
-                          <div className="premium-info-icon">
-                            <i className="fas fa-envelope"></i>
-                          </div>
-                          <div className="premium-info-content">
-                            <span className="premium-info-label">Email</span>
-                            <span className="premium-info-value premium-email-value">{member.email || 'N/A'}</span>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -442,22 +430,6 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
                       type="text"
                       value={editStaffModal.staff.full_name || ''}
                       onChange={(e) => handleEditInputChange('full_name', e.target.value)}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        width: '100%',
-                        maxWidth: '300px'
-                      }}
-                    />
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Email:</span>
-                    <input
-                      type="email"
-                      value={editStaffModal.staff.email || ''}
-                      onChange={(e) => handleEditInputChange('email', e.target.value)}
                       style={{
                         padding: '8px 12px',
                         border: '1px solid #ddd',
