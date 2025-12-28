@@ -6,15 +6,16 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
   const [formData, setFormData] = useState({
     customer: '',
     phone: '',
-    email: '',
     address: '',
     city: '',
     state: '',
     pincode: '',
     transportName: '',
+    transportPhone: '',
     packaging: '',
     llrNumber: ''
   });
+  const [llrFile, setLlrFile] = useState(null);
   const [dispatchItems, setDispatchItems] = useState([]);
   const [matchingTransports, setMatchingTransports] = useState([]);
   const [isLoadingTransports, setIsLoadingTransports] = useState(false);
@@ -82,10 +83,24 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
     if (name === 'transportName' && value === '__custom__') {
       setFormData(prev => ({
         ...prev,
-        [name]: ''
+        [name]: '',
+        transportPhone: '' // Clear transport phone when switching to custom
       }));
       setMatchingTransports([]); // Clear dropdown to show text input
       return;
+    }
+    
+    // Handle transport selection - auto-fill transport phone
+    if (name === 'transportName' && value !== '__custom__' && matchingTransports.length > 0) {
+      const selectedTransport = matchingTransports.find(t => t.travels_name === value);
+      if (selectedTransport) {
+        setFormData(prev => ({
+          ...prev,
+          [name]: value,
+          transportPhone: selectedTransport.phone_number || ''
+        }));
+        return;
+      }
     }
     
     // Handle customer name search
@@ -136,7 +151,6 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
       ...prev,
       customer: customer.full_name,
       phone: customer.phone || '',
-      email: customer.email || '',
       address: customer.address || '',
       city: customer.city || '',
       state: customer.state || '',
@@ -294,21 +308,33 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
       }
 
       // Create a dispatch record for each item
-      const promises = validItems.map(item =>
-        dispatchAPI.create({
+      const promises = validItems.map(item => {
+        const dispatchData = {
           customer: formData.customer,
           name: item.name,
           phone: formData.phone,
-          email: formData.email,
           address: formData.address,
           city: formData.city,
           state: formData.state,
           pincode: formData.pincode,
           transportName: formData.transportName,
+          transportPhone: formData.transportPhone,
           packaging: formData.packaging,
           llrNumber: formData.llrNumber
-        })
-      );
+        };
+        
+        // If file exists, send with FormData, otherwise send as JSON
+        if (llrFile) {
+          const itemFormData = new FormData();
+          Object.keys(dispatchData).forEach(key => {
+            itemFormData.append(key, dispatchData[key]);
+          });
+          itemFormData.append('llrCopy', llrFile);
+          return dispatchAPI.createWithFile(itemFormData);
+        } else {
+          return dispatchAPI.create(dispatchData);
+        }
+      });
 
       const results = await Promise.all(promises);
       const allSuccess = results.every(result => result.success);
@@ -397,11 +423,11 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
 
           {/* Main Content */}
           <main className="add-user-content">
-            <form onSubmit={handleSubmit} className="add-user-form">
+            <form onSubmit={handleSubmit} className="add-user-form add-dispatch-form">
                 {/* All fields in 3-column grid without section titles */}
                 <div className="form-section">
-                  <div className="form-grid three-col">
-                    {/* Row 1: Name (Customer), Phone Number, Email */}
+                  <div className="form-grid four-col">
+                    {/* Row 1: Name, Customer Phone Number, Transport Phone Number, Street */}
                       <div className="form-group" style={{ position: 'relative' }}>
                       <label htmlFor="customer">Name</label>
                         <div className="input-wrapper" ref={customerInputRef}>
@@ -487,7 +513,7 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                       </div>
 
                       <div className="form-group">
-                      <label htmlFor="phone">Phone number</label>
+                      <label htmlFor="phone">Customer Phone Number</label>
                         <div className="input-wrapper">
                         <i className="fas fa-phone input-icon"></i>
                           <input
@@ -504,22 +530,21 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                       </div>
 
                       <div className="form-group">
-                      <label htmlFor="email">Email</label>
+                      <label htmlFor="transportPhone">Transport Phone Number</label>
                         <div className="input-wrapper">
-                        <i className="fas fa-envelope input-icon"></i>
+                        <i className="fas fa-phone input-icon"></i>
                           <input
-                          type="email"
-                          id="email"
-                          name="email"
+                          type="tel"
+                          id="transportPhone"
+                          name="transportPhone"
                             className="form-input"
-                          placeholder="customer@example.com"
-                          value={formData.email}
+                          placeholder="Enter transport phone number"
+                          value={formData.transportPhone}
                             onChange={handleInputChange}
                           />
                   </div>
                 </div>
 
-                    {/* Row 2: Street, City, State */}
                     <div className="form-group">
                       <label htmlFor="address">Street</label>
                       <div className="input-wrapper">
@@ -536,6 +561,7 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                       </div>
                     </div>
 
+                    {/* Row 2: City, State, Pincode, Transport Name */}
                     <div className="form-group">
                       <label htmlFor="city">City</label>
                       <div className="input-wrapper">
@@ -568,7 +594,6 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                       </div>
                     </div>
 
-                    {/* Row 3: Pincode, Transport Name, LLR Number */}
                     <div className="form-group">
                       <label htmlFor="pincode">Pincode</label>
                       <div className="input-wrapper">
@@ -651,9 +676,10 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                         )}
                     </div>
 
+                    {/* Row 3: LLR Number, Packaging, Products to Dispatch */}
                     <div className="form-group">
                       <label htmlFor="llrNumber">LLR Number</label>
-                      <div className="input-wrapper">
+                      <div className="input-wrapper" style={{ position: 'relative' }}>
                         <i className="fas fa-file-alt input-icon"></i>
                         <input
                           type="text"
@@ -663,95 +689,75 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                           placeholder="Enter LLR number"
                           value={formData.llrNumber}
                           onChange={handleInputChange}
+                          style={{ paddingRight: '50px' }}
                         />
-                      </div>
-                    </div>
-
-                    {/* Row 4: Products to Dispatch and Packaging side-by-side */}
-                    <div className="form-group">
-                      <label>Products to Dispatch</label>
-                      {/* Input field to add new product */}
-                      <div className="input-wrapper" style={{ marginBottom: '10px' }}>
-                        <i className="fas fa-box input-icon"></i>
                         <input
-                          type="text"
-                          className="form-input"
-                          placeholder="Enter product name..."
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              const value = e.target.value.trim();
-                              if (value) {
-                                const newId = dispatchItems.length > 0 
-                                  ? Math.max(...dispatchItems.map(item => item.id)) + 1 
-                                  : 1;
-                                setDispatchItems(prev => [...prev, { id: newId, name: value }]);
-                                e.target.value = '';
-                              }
+                          type="file"
+                          id="llrFileUpload"
+                          accept="image/*,.pdf"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              setLlrFile(file);
                             }
                           }}
                         />
+                        <button
+                          type="button"
+                          onClick={() => document.getElementById('llrFileUpload').click()}
+                          style={{
+                            position: 'absolute',
+                            right: '8px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            padding: '6px 8px',
+                            background: '#dc3545',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            width: '32px',
+                            height: '32px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                          title="Upload LLR Copy"
+                        >
+                          <i className="fas fa-upload"></i>
+                        </button>
                       </div>
-                      {/* Display Added Products - Horizontal cards like transport addresses */}
-                      {dispatchItems.length > 0 && dispatchItems.some(item => item.name && item.name.trim() !== '') && (
+                      {llrFile && (
                         <div style={{ 
+                          fontSize: '11px', 
+                          color: '#28a745', 
+                          marginTop: '4px',
                           display: 'flex',
-                          flexDirection: 'row',
-                          gap: '8px',
-                          overflowX: 'auto',
-                          overflowY: 'hidden',
-                          width: '100%',
-                          maxHeight: '150px'
+                          alignItems: 'center',
+                          gap: '4px'
                         }}>
-                          {dispatchItems
-                            .filter(item => item.name && item.name.trim() !== '')
-                            .map((item, index) => (
-                              <div
-                                key={item.id}
-                                style={{
-                                  padding: '8px',
-                                  background: '#f8f9fa',
-                                  border: '2px solid #e0e0e0',
-                                  borderRadius: '6px',
-                                  position: 'relative',
-                                  minWidth: '200px',
-                                  maxWidth: '200px',
-                                  flexShrink: 0,
-                                  boxSizing: 'border-box'
-                                }}
-                              >
-                                <div style={{ marginBottom: '6px', fontWeight: '600', color: '#dc3545', fontSize: '11px' }}>
-                                  Product {index + 1}
-                                </div>
-                                <div style={{ fontSize: '12px', lineHeight: '1.3', color: '#333', wordBreak: 'break-word' }}>
-                                  {item.name}
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => removeDispatchItem(item.id)}
-                                  style={{
-                                    position: 'absolute',
-                                    top: '6px',
-                                    right: '6px',
-                                    background: '#dc3545',
-                                    color: '#fff',
-                                    border: 'none',
-                                    borderRadius: '50%',
-                                    width: '20px',
-                                    height: '20px',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '10px',
-                                    padding: 0
-                                  }}
-                                  title="Remove this product"
-                                >
-                                  <i className="fas fa-times"></i>
-                                </button>
-                              </div>
-                            ))}
+                          <i className="fas fa-check-circle"></i>
+                          {llrFile.name}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLlrFile(null);
+                              document.getElementById('llrFileUpload').value = '';
+                            }}
+                            style={{
+                              marginLeft: '8px',
+                              background: 'transparent',
+                              border: 'none',
+                              color: '#dc3545',
+                              cursor: 'pointer',
+                              fontSize: '12px'
+                            }}
+                            title="Remove file"
+                          >
+                            <i className="fas fa-times"></i>
+                          </button>
                         </div>
                       )}
                     </div>
@@ -770,6 +776,151 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                           onChange={handleInputChange}
                         />
                       </div>
+                    </div>
+
+                    {/* Products to Dispatch - Spans remaining 2 columns in row 3 */}
+                    <div className="form-group" style={{ gridColumn: '3 / -1', marginBottom: '30px' }}>
+                      <label>Products to Dispatch</label>
+                      {/* Input field to add new product */}
+                      <div className="input-wrapper" style={{ marginBottom: '12px' }}>
+                        <i className="fas fa-box input-icon"></i>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="Enter product name and press Enter..."
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const value = e.target.value.trim();
+                              if (value) {
+                                const newId = dispatchItems.length > 0 
+                                  ? Math.max(...dispatchItems.map(item => item.id)) + 1 
+                                  : 1;
+                                setDispatchItems(prev => [...prev, { id: newId, name: value }]);
+                                e.target.value = '';
+                              }
+                            }
+                          }}
+                        />
+                      </div>
+                      {/* Display Added Products - 4 Column Grid */}
+                      {(() => {
+                        const validItems = dispatchItems.filter(item => item.name && item.name.trim() !== '');
+                        return validItems.length > 0 ? (
+                          <div style={{ 
+                            marginTop: '12px',
+                            maxHeight: '140px', // Reduced height to prevent overlap
+                            overflowY: 'auto',
+                            overflowX: 'hidden',
+                            padding: '12px',
+                            border: '1px solid #dee2e6',
+                            borderRadius: '8px',
+                            background: '#fff',
+                            position: 'relative',
+                            zIndex: 1,
+                            marginBottom: '0'
+                          }}>
+                            <div style={{
+                              display: 'grid',
+                              gridTemplateColumns: 'repeat(4, 1fr)',
+                              gap: '12px',
+                              width: '100%',
+                              minHeight: 'min-content'
+                            }}>
+                              {validItems.map((item, index) => (
+                                <div
+                                  key={item.id}
+                                  style={{
+                                    padding: '14px',
+                                    background: '#f8f9fa',
+                                    border: '1px solid #dee2e6',
+                                    borderRadius: '8px',
+                                    position: 'relative',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '10px',
+                                    transition: 'all 0.2s ease',
+                                    minHeight: '100px',
+                                    boxSizing: 'border-box'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = '#e9ecef';
+                                    e.currentTarget.style.borderColor = '#dc3545';
+                                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(220, 53, 69, 0.15)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = '#f8f9fa';
+                                    e.currentTarget.style.borderColor = '#dee2e6';
+                                    e.currentTarget.style.boxShadow = 'none';
+                                  }}
+                                >
+                                  <div style={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'space-between', 
+                                    alignItems: 'flex-start',
+                                    marginBottom: '4px'
+                                  }}>
+                                    <span style={{ 
+                                      fontSize: '11px', 
+                                      fontWeight: '600', 
+                                      color: '#dc3545',
+                                      background: '#fff',
+                                      padding: '4px 10px',
+                                      borderRadius: '4px',
+                                      border: '1px solid #dc3545'
+                                    }}>
+                                      #{index + 1}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => removeDispatchItem(item.id)}
+                                      style={{
+                                        background: '#dc3545',
+                                        color: '#fff',
+                                        border: 'none',
+                                        borderRadius: '50%',
+                                        width: '26px',
+                                        height: '26px',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '11px',
+                                        padding: 0,
+                                        transition: 'all 0.2s ease',
+                                        flexShrink: 0
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.target.style.background = '#c82333';
+                                        e.target.style.transform = 'scale(1.15)';
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.target.style.background = '#dc3545';
+                                        e.target.style.transform = 'scale(1)';
+                                      }}
+                                      title="Remove this product"
+                                    >
+                                      <i className="fas fa-times"></i>
+                                    </button>
+                                  </div>
+                                  <div style={{ 
+                                    fontSize: '13px', 
+                                    fontWeight: '500', 
+                                    color: '#333',
+                                    wordBreak: 'break-word',
+                                    lineHeight: '1.5',
+                                    flex: 1,
+                                    display: 'flex',
+                                    alignItems: 'center'
+                                  }}>
+                                    {item.name}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null;
+                      })()}
                     </div>
                   </div>
                 </div>

@@ -25,7 +25,7 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
             : 'ST',
           email: member.email,
           role: member.role || 'Staff',
-          store: member.store_allocated || 'Not Assigned',
+          floor: member.store_allocated || 'Not Assigned', // store_allocated is used for floor in this system
           created_at: member.created_at
         }));
         setStaff(formattedStaff);
@@ -314,7 +314,7 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
         )}
 
         {/* Staff List */}
-        <div className="staff-list">
+        <div className="staff-list-container" style={{ padding: '0 24px 24px' }}>
           {staff.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 40px', color: '#666' }}>
               <i className="fas fa-user-tie" style={{ fontSize: '64px', marginBottom: '20px', opacity: 0.4, color: '#dc3545' }}></i>
@@ -327,45 +327,80 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
               <p>No staff found matching your search</p>
             </div>
           ) : (
-            filteredStaff.map((member) => (
-            <div key={member.id} className="staff-card">
-              <div className="staff-avatar">
-                <span>{member.initials}</span>
-              </div>
-              <div className="staff-info">
-                <div className="staff-name">{member.name}</div>
-                <div className="staff-role">{member.role}</div>
-                <div className="staff-store-badge">
-                  <i className="fas fa-check-circle"></i>
-                  <span>{member.store}</span>
-                </div>
-              </div>
-              <div className="staff-email">{member.email}</div>
-              <div 
-                className="staff-options-container" 
-                ref={el => menuRefs.current[member.id] = el}
-              >
-                <button 
-                  className="staff-options"
-                  onClick={(e) => toggleMenu(member.id, e)}
-                >
-                  <i className="fas fa-ellipsis-v"></i>
-                </button>
-                {openMenuId === member.id && (
-                  <div className="staff-menu-dropdown">
-                    <div className="menu-item" onClick={() => handleViewStaffDetails(member)}>
-                      <i className="fas fa-eye"></i>
-                      <span>View Staff Details</span>
+            <div className="premium-cards-grid">
+              {filteredStaff.map((member) => {
+                return (
+                  <div
+                    key={member.id}
+                    className="premium-identity-card"
+                  >
+                    {/* Card Header */}
+                    <div className="premium-card-header">
+                      <div className="premium-avatar">
+                        <span>{member.initials || 'ST'}</span>
+                      </div>
+                      <div className="premium-header-content">
+                        <h3 className="premium-worker-name">{member.name || 'N/A'}</h3>
+                        <div 
+                          className="premium-role-badge"
+                          style={{ backgroundColor: '#dc3545' }}
+                        >
+                          Staff
+                        </div>
+                      </div>
+                      {/* Floating Three-Dot Menu */}
+                      <div 
+                        className="premium-card-menu" 
+                        ref={el => menuRefs.current[member.id] = el}
+                      >
+                        <button 
+                          className="premium-menu-trigger"
+                          onClick={(e) => toggleMenu(member.id, e)}
+                        >
+                          <i className="fas fa-ellipsis-v"></i>
+                        </button>
+                        {openMenuId === member.id && (
+                          <div className="premium-menu-dropdown">
+                            <div className="premium-menu-item" onClick={() => handleViewStaffDetails(member)}>
+                              <i className="fas fa-eye"></i>
+                              <span>View</span>
+                            </div>
+                            <div className="premium-menu-item" onClick={() => handleEditStaff(member)}>
+                              <i className="fas fa-edit"></i>
+                              <span>Edit</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="menu-item" onClick={() => handleEditStaff(member)}>
-                      <i className="fas fa-edit"></i>
-                      <span>Edit Staff</span>
+
+                    {/* Card Body - Two Column Layout */}
+                    <div className="premium-card-body">
+                      <div className="premium-info-row">
+                        <div className="premium-info-item">
+                          <div className="premium-info-icon">
+                            <i className="fas fa-layer-group"></i>
+                          </div>
+                          <div className="premium-info-content">
+                            <span className="premium-info-label">Floor</span>
+                            <span className="premium-info-value">{member.floor || 'Not Assigned'}</span>
+                          </div>
+                        </div>
+                        <div className="premium-info-item">
+                          <div className="premium-info-icon">
+                            <i className="fas fa-envelope"></i>
+                          </div>
+                          <div className="premium-info-content">
+                            <span className="premium-info-label">Email</span>
+                            <span className="premium-info-value premium-email-value">{member.email || 'N/A'}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                )}
-              </div>
+                );
+              })}
             </div>
-            ))
           )}
         </div>
       </main>
@@ -470,7 +505,7 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
                     />
                   </div>
                   <div className="detail-row">
-                    <span className="detail-label">Store Allocated:</span>
+                    <span className="detail-label">Floor Allocated:</span>
                     <input
                       type="text"
                       value={editStaffModal.staff.store_allocated || ''}
@@ -648,7 +683,7 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
                     <span className="detail-value">{viewStaffModal.staff.phone || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
-                    <span className="detail-label">Store Allocated:</span>
+                    <span className="detail-label">Floor Allocated:</span>
                     <span className="detail-value">{viewStaffModal.staff.store_allocated || 'Not Assigned'}</span>
                   </div>
                   {viewStaffModal.staff.address && (

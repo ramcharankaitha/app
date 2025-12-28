@@ -6,7 +6,18 @@ const { sendCustomerWelcomeMessage } = require('../services/smsService');
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT * FROM customers ORDER BY created_at DESC'
+      `SELECT 
+        c.*,
+        CASE 
+          WHEN EXISTS (
+            SELECT 1 FROM chit_customers cc 
+            WHERE (cc.phone = c.phone OR cc.email = c.email) 
+            AND (c.phone IS NOT NULL OR c.email IS NOT NULL)
+          ) THEN 'chitplan'
+          ELSE 'walkin'
+        END as customer_type
+      FROM customers c 
+      ORDER BY c.created_at DESC`
     );
     res.json({ success: true, customers: result.rows });
   } catch (error) {
@@ -209,7 +220,7 @@ router.post('/', async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    const { fullName, email, phone, address, city, state, pincode, whatsapp, itemCode, quantity, mrp, sellRate, discount, paymentMode, tokensUsed, tokensEarned, totalAmount, createdBy } = req.body;
+    const { fullName, email, phone, address, city, state, pincode, whatsapp, itemCode, quantity, mrp, sellRate, discount, paymentMode, tokensUsed, tokensEarned, totalAmount, createdBy, chitPlanId } = req.body;
 
     if (!fullName || !email) {
       await client.query('ROLLBACK');
@@ -293,6 +304,31 @@ router.post('/', async (req, res) => {
       ]
     );
 
+    // If chit plan is selected, also create entry in chit_customers table
+    if (req.body.chitPlanId) {
+      try {
+        await client.query(
+          `INSERT INTO chit_customers (customer_name, phone, address, city, state, pincode, email, chit_plan_id, payment_mode, enrollment_date)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_DATE)`,
+          [
+            fullName,
+            phone || null,
+            address || null,
+            city || null,
+            state || null,
+            pincode || null,
+            email || null,
+            parseInt(req.body.chitPlanId),
+            paymentMode || null
+          ]
+        );
+      } catch (chitError) {
+        console.error('Error creating chit customer entry:', chitError);
+        // Don't fail the entire request if chit customer creation fails
+        // The main customer is already created
+      }
+    }
+
     // Update customer tokens
     if (phone || email) {
       // Find or create customer_tokens record
@@ -321,6 +357,31 @@ router.post('/', async (req, res) => {
            WHERE (customer_phone = $5 OR customer_email = $6) AND ($5 IS NOT NULL OR $6 IS NOT NULL)`,
           [newTokens, finalAmount, tokensToEarn, tokensToRedeem, phone || null, email || null]
         );
+      }
+    }
+
+    // If chit plan is selected, also create entry in chit_customers table
+    if (chitPlanId) {
+      try {
+        await client.query(
+          `INSERT INTO chit_customers (customer_name, phone, address, city, state, pincode, email, chit_plan_id, payment_mode, enrollment_date)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_DATE)`,
+          [
+            fullName,
+            phone || null,
+            address || null,
+            city || null,
+            state || null,
+            pincode || null,
+            email || null,
+            parseInt(chitPlanId),
+            paymentMode || null
+          ]
+        );
+      } catch (chitError) {
+        console.error('Error creating chit customer entry:', chitError);
+        // Don't fail the entire request if chit customer creation fails
+        // The main customer is already created
       }
     }
 

@@ -26,7 +26,7 @@ const SalesOrder = ({ onBack, onAddSalesOrder, onNavigate, userRole = 'admin' })
           handlerName: record.handler_name || 'N/A',
           dateOfDuration: record.date_of_duration,
           supplierName: record.supplier_name || 'N/A',
-          totalAmount: record.total_amount || 0,
+          totalAmount: parseFloat(record.total_amount || 0) || 0,
           products: record.products || [],
           created_at: record.created_at
         }));
@@ -245,7 +245,7 @@ const SalesOrder = ({ onBack, onAddSalesOrder, onNavigate, userRole = 'admin' })
         )}
 
         {/* Sales Orders List */}
-        <div className="staff-list">
+        <div className="staff-list-container" style={{ padding: '0 24px 24px' }}>
           {salesOrders.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 40px', color: '#666' }}>
               <i className="fas fa-chart-line" style={{ fontSize: '64px', marginBottom: '20px', opacity: 0.4, color: '#dc3545' }}></i>
@@ -258,41 +258,114 @@ const SalesOrder = ({ onBack, onAddSalesOrder, onNavigate, userRole = 'admin' })
               <p>No sales orders found matching your search</p>
             </div>
           ) : (
-            filteredSalesOrders.map((record) => (
-            <div key={record.id} className="staff-card">
-              <div className="staff-avatar">
-                <span>{record.initials}</span>
-              </div>
-              <div className="staff-info">
-                <div className="staff-name">{record.name}</div>
-                <div className="staff-role">Contact: {record.customerContact}</div>
-                <div className="staff-store-badge">
-                  <i className="fas fa-user-tie"></i>
-                  <span>Handler: {record.handlerName}</span>
-                </div>
-              </div>
-              <div className="staff-email">₹{record.totalAmount?.toFixed(2) || '0.00'}</div>
-              <div 
-                className="staff-options-container" 
-                ref={el => menuRefs.current[record.id] = el}
-              >
-                <button 
-                  className="staff-options"
-                  onClick={(e) => toggleMenu(record.id, e)}
+            <div className="products-grid">
+              {filteredSalesOrders.map((record) => (
+                <div
+                  key={record.id}
+                  className="product-card stock-in-card"
+                  style={{ position: 'relative' }}
                 >
-                  <i className="fas fa-ellipsis-v"></i>
-                </button>
-                {openMenuId === record.id && (
-                  <div className="staff-menu-dropdown">
-                    <div className="menu-item" onClick={() => handleViewSalesOrderDetails(record)}>
-                      <i className="fas fa-eye"></i>
-                      <span>View Sales Order Details</span>
+                  <div className="product-header" style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: '1fr auto',
+                    alignItems: 'center',
+                    width: '100%',
+                    gap: '12px'
+                  }}>
+                    <div className="product-title" style={{ 
+                      fontWeight: '600',
+                      fontSize: '16px',
+                      color: '#333'
+                    }}>
+                      {record.name || 'N/A'}
+                    </div>
+                    <div 
+                      className="staff-options-container" 
+                      ref={el => menuRefs.current[record.id] = el}
+                      style={{ 
+                        position: 'relative'
+                      }}
+                    >
+                      <button 
+                        className="staff-options"
+                        onClick={(e) => toggleMenu(record.id, e)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#dc3545',
+                          fontSize: '16px',
+                          cursor: 'pointer',
+                          padding: '6px 8px',
+                          borderRadius: '4px',
+                          transition: 'all 0.2s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '32px',
+                          height: '32px'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = '#f8f9fa';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'none';
+                        }}
+                      >
+                        <i className="fas fa-ellipsis-v"></i>
+                      </button>
+                      {openMenuId === record.id && (
+                        <div className="staff-menu-dropdown" style={{
+                          position: 'absolute',
+                          top: '100%',
+                          right: 0,
+                          background: '#fff',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                          border: '1px solid #e0e0e0',
+                          minWidth: '180px',
+                          zIndex: 1000,
+                          marginTop: '4px',
+                          overflow: 'hidden'
+                        }}>
+                          <div className="menu-item" onClick={() => handleViewSalesOrderDetails(record)}>
+                            <i className="fas fa-eye"></i>
+                            <span>View Details</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
-                )}
-              </div>
+                  <div className="product-details">
+                    <div className="detail-row">
+                      <span className="detail-label">Contact:</span>
+                      <span className="detail-value">{record.customerContact || 'N/A'}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Handler:</span>
+                      <span className="detail-value">{record.handlerName || 'N/A'}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Total Amount:</span>
+                      <span className="detail-value" style={{ fontWeight: 'bold', color: '#28a745' }}>
+                        ₹{parseFloat(record.totalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Products:</span>
+                      <span className="detail-value">{record.products?.length || 0} items</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Date:</span>
+                      <span className="detail-value">{record.dateOfDuration ? new Date(record.dateOfDuration).toLocaleDateString('en-IN') : 'N/A'}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Created:</span>
+                      <span className="detail-value">{record.created_at ? new Date(record.created_at).toLocaleDateString('en-IN') : 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-            ))
           )}
         </div>
       </main>
@@ -337,7 +410,7 @@ const SalesOrder = ({ onBack, onAddSalesOrder, onNavigate, userRole = 'admin' })
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">Total Amount:</span>
-                    <span className="detail-value" style={{ color: '#28a745', fontWeight: '600' }}>₹{viewSalesOrderModal.totalAmount?.toFixed(2) || '0.00'}</span>
+                    <span className="detail-value" style={{ color: '#28a745', fontWeight: '600' }}>₹{parseFloat(viewSalesOrderModal.totalAmount || 0).toFixed(2)}</span>
                   </div>
                   {viewSalesOrderModal.products && viewSalesOrderModal.products.length > 0 && (
                     <div className="detail-row" style={{ marginTop: '20px', paddingTop: '20px', borderTop: '2px solid #e9ecef' }}>

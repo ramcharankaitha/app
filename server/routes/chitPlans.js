@@ -264,5 +264,187 @@ router.delete('/customers/:id', async (req, res) => {
   }
 });
 
+// Chit Entry Routes
+router.get('/entries', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT 
+        ce.*,
+        cc.customer_name,
+        cc.phone,
+        cp.plan_name,
+        cp.plan_amount
+      FROM chit_entries ce
+      LEFT JOIN chit_customers cc ON ce.customer_id = cc.id
+      LEFT JOIN chit_plans cp ON ce.chit_plan_id = cp.id
+      ORDER BY ce.created_at DESC`
+    );
+    res.json({ success: true, entries: result.rows });
+  } catch (error) {
+    console.error('Get chit entries error:', error);
+    // If table doesn't exist, return empty array
+    if (error.code === '42P01') {
+      res.json({ success: true, entries: [] });
+    } else {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+});
+
+router.get('/entries/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      `SELECT 
+        ce.*,
+        cc.customer_name,
+        cc.phone,
+        cp.plan_name,
+        cp.plan_amount
+      FROM chit_entries ce
+      LEFT JOIN chit_customers cc ON ce.customer_id = cc.id
+      LEFT JOIN chit_plans cp ON ce.chit_plan_id = cp.id
+      WHERE ce.id = $1`,
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Chit entry not found' });
+    }
+
+    res.json({ success: true, entry: result.rows[0] });
+  } catch (error) {
+    console.error('Get chit entry error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/entries', async (req, res) => {
+  try {
+    const { customerId, chitPlanId, paymentMode, notes, createdBy } = req.body;
+
+    if (!customerId || !chitPlanId || !paymentMode) {
+      return res.status(400).json({ error: 'Customer ID, Chit Plan ID, and Payment Mode are required' });
+    }
+
+    let result;
+    try {
+      result = await pool.query(
+        `INSERT INTO chit_entries (customer_id, chit_plan_id, payment_mode, notes, created_by)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING *`,
+        [customerId, chitPlanId, paymentMode, notes || null, createdBy || 'system']
+      );
+    } catch (colError) {
+      if (colError.code === '42P01') {
+        // Table doesn't exist, create it
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS chit_entries (
+            id SERIAL PRIMARY KEY,
+            customer_id INTEGER REFERENCES chit_customers(id),
+            chit_plan_id INTEGER REFERENCES chit_plans(id),
+            payment_mode VARCHAR(50) NOT NULL,
+            notes TEXT,
+            created_by VARCHAR(255),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        // Retry insert
+        result = await pool.query(
+          `INSERT INTO chit_entries (customer_id, chit_plan_id, payment_mode, notes, created_by)
+           VALUES ($1, $2, $3, $4, $5)
+           RETURNING *`,
+          [customerId, chitPlanId, paymentMode, notes || null, createdBy || 'system']
+        );
+      } else {
+        throw colError;
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      entry: result.rows[0],
+      message: 'Chit entry created successfully'
+    });
+  } catch (error) {
+    console.error('Create chit entry error:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+});
+
+router.put('/entries/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { chitPlanId, paymentMode, notes } = req.body;
+
+    if (!paymentMode) {
+      return res.status(400).json({ error: 'Payment Mode is required' });
+    }
+
+    if (!chitPlanId) {
+      return res.status(400).json({ error: 'Chit Plan ID is required' });
+    }
+
+    let result;
+    try {
+      result = await pool.query(
+        `UPDATE chit_entries 
+         SET chit_plan_id = $1,
+             payment_mode = $2, 
+             notes = $3,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = $4
+         RETURNING *`,
+        [chitPlanId, paymentMode, notes || null, id]
+      );
+    } catch (colError) {
+      if (colError.code === '42703') {
+        // updated_at column doesn't exist, try without it
+        try {
+          result = await pool.query(
+            `UPDATE chit_entries 
+             SET chit_plan_id = $1,
+                 payment_mode = $2, 
+                 notes = $3
+             WHERE id = $4
+             RETURNING *`,
+            [chitPlanId, paymentMode, notes || null, id]
+          );
+        } catch (colError2) {
+          if (colError2.code === '42703') {
+            // chit_plan_id column might not exist, try without it
+            result = await pool.query(
+              `UPDATE chit_entries 
+               SET payment_mode = $1, 
+                   notes = $2
+               WHERE id = $3
+               RETURNING *`,
+              [paymentMode, notes || null, id]
+            );
+          } else {
+            throw colError2;
+          }
+        }
+      } else {
+        throw colError;
+      }
+    }
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Chit entry not found' });
+    }
+
+    res.json({
+      success: true,
+      entry: result.rows[0],
+      message: 'Chit entry updated successfully'
+    });
+  } catch (error) {
+    console.error('Update chit entry error:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+});
+
 module.exports = router;
 

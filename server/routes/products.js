@@ -68,30 +68,61 @@ router.get('/item-code/:itemCode', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { productName, itemCode, skuCode, minimumQuantity, currentQuantity, supplierName, category, mrp, discount, sellRate } = req.body;
+    const { productName, itemCode, skuCode, minimumQuantity, maintainingQuantity, currentQuantity, supplierName, category, mrp, discount, sellRate, points } = req.body;
 
     if (!productName || !itemCode || !skuCode) {
       return res.status(400).json({ error: 'Required fields are missing' });
     }
 
-    const result = await pool.query(
-      `INSERT INTO products (product_name, item_code, sku_code, minimum_quantity, current_quantity, status, mrp, discount, sell_rate, supplier_name, category)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-       RETURNING *`,
-      [
-        productName, 
-        itemCode, 
-        skuCode, 
-        minimumQuantity || 0, 
-        currentQuantity || 0, 
-        'STOCK',
-        mrp || null,
-        discount || 0,
-        sellRate || null,
-        supplierName || null,
-        category && category.trim() !== '' ? category.trim() : null
-      ]
-    );
+    // Check if maintaining_quantity column exists, if not, use a query without it
+    let result;
+    try {
+      result = await pool.query(
+        `INSERT INTO products (product_name, item_code, sku_code, minimum_quantity, maintaining_quantity, current_quantity, status, mrp, discount, sell_rate, points, supplier_name, category)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+         RETURNING *`,
+        [
+          productName, 
+          itemCode, 
+          skuCode, 
+          minimumQuantity || 0, 
+          maintainingQuantity || 0,
+          currentQuantity || 0, 
+          'STOCK',
+          mrp || null,
+          discount || 0,
+          sellRate || null,
+          points || 0,
+          supplierName || null,
+          category && category.trim() !== '' ? category.trim() : null
+        ]
+      );
+    } catch (colError) {
+      // If maintaining_quantity column doesn't exist, use query without it
+      if (colError.code === '42703') { // undefined_column error
+        result = await pool.query(
+          `INSERT INTO products (product_name, item_code, sku_code, minimum_quantity, current_quantity, status, mrp, discount, sell_rate, points, supplier_name, category)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+           RETURNING *`,
+          [
+            productName, 
+            itemCode, 
+            skuCode, 
+            minimumQuantity || 0, 
+            currentQuantity || 0, 
+            'STOCK',
+            mrp || null,
+            discount || 0,
+            sellRate || null,
+            points || 0,
+            supplierName || null,
+            category && category.trim() !== '' ? category.trim() : null
+          ]
+        );
+      } else {
+        throw colError;
+      }
+    }
 
     res.status(201).json({
       success: true,

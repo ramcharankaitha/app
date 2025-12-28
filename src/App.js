@@ -23,6 +23,10 @@ import ChitPlans from './components/ChitPlans';
 import AddChitCustomer from './components/AddChitCustomer';
 import ChitPlanMaster from './components/ChitPlanMaster';
 import AddChitPlan from './components/AddChitPlan';
+import ChitEntryMaster from './components/ChitEntryMaster';
+import AddChitEntry from './components/AddChitEntry';
+import PurchaseOrderMaster from './components/PurchaseOrderMaster';
+import AddPurchaseOrder from './components/AddPurchaseOrder';
 import StockIn from './components/StockIn';
 import StockInMaster from './components/StockInMaster';
 import StockOut from './components/StockOut';
@@ -618,6 +622,60 @@ const AdminRoutes = () => {
             <SalesOrder
               onBack={() => handleNavigation(getBackPath('dashboard'))}
               onAddSalesOrder={() => handleNavigation('addSalesOrder')}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/chitEntryMaster"
+        element={
+          <ProtectedRoute>
+            <ChitEntryMaster
+              onBack={() => handleNavigation('transactionMenu')}
+              onAddChitEntry={() => handleNavigation('addChitEntry')}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/addChitEntry"
+        element={
+          <ProtectedRoute>
+            <AddChitEntry
+              onBack={() => handleNavigation('chitEntryMaster')}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/purchaseOrderMaster"
+        element={
+          <ProtectedRoute>
+            <PurchaseOrderMaster
+              onBack={() => handleNavigation('transactionMenu')}
+              onAddPurchaseOrder={() => handleNavigation('addPurchaseOrder')}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/addPurchaseOrder"
+        element={
+          <ProtectedRoute>
+            <AddPurchaseOrder
+              onBack={() => handleNavigation('purchaseOrderMaster')}
               onNavigate={handleNavigation}
               userRole={userRole}
             />

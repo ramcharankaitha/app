@@ -375,6 +375,8 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
                 { title: 'Products', desc: 'Manage product pricing', icon: 'fa-tags', target: 'transactionProducts' },
                 { title: 'Services', desc: 'Manage service transactions', icon: 'fa-cog', target: 'services' },
                 { title: 'Sales Order', desc: 'View and manage sales orders', icon: 'fa-chart-line', target: 'salesOrder' },
+                { title: 'Entry Chit', desc: 'Record chit payments', icon: 'fa-file-invoice-dollar', target: 'chitEntryMaster' },
+                { title: 'Purchase Order', desc: 'Create and manage purchase orders', icon: 'fa-shopping-cart', target: 'purchaseOrderMaster' },
               ].map((item) => (
                 <div
                   key={item.title}

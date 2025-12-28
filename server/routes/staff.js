@@ -1,7 +1,41 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const { pool } = require('../config/database');
+
+// Multer storage configuration for Aadhar files
+const aadharStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../uploads/aadhar');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'aadhar-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const uploadAadhar = multer({
+  storage: aadharStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp|pdf/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+
+    if (extname && mimetype) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image (jpeg, jpg, png, gif, webp) and PDF files are allowed for Aadhar copy.'));
+    }
+  }
+});
 
 router.get('/', async (req, res) => {
   try {
@@ -52,9 +86,9 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { fullName, email, username, password, storeAllocated, address, city, state, pincode, isHandler } = req.body;
+    const { fullName, username, password, storeAllocated, address, city, state, pincode, isHandler, phoneNumber, salary } = req.body;
 
-    if (!fullName || !email || !username || !password) {
+    if (!fullName || !username || !password) {
       return res.status(400).json({ error: 'Required fields are missing' });
     }
 
@@ -65,12 +99,26 @@ router.post('/', async (req, res) => {
       return res.status(500).json({ error: 'Failed to hash password' });
     }
 
-    const result = await pool.query(
-      `INSERT INTO staff (full_name, email, username, password_hash, store_allocated, address, city, state, pincode, is_handler, role)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-       RETURNING id, full_name, email, username, role, store_allocated, is_handler`,
-      [fullName, email, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff']
-    );
+    let result;
+    try {
+      result = await pool.query(
+        `INSERT INTO staff (full_name, email, username, password_hash, store_allocated, address, city, state, pincode, is_handler, role, salary)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+         RETURNING id, full_name, email, username, role, store_allocated, is_handler`,
+        [fullName, null, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff', salary || null]
+      );
+    } catch (colError) {
+      if (colError.code === '42703') { // undefined_column error
+        result = await pool.query(
+          `INSERT INTO staff (full_name, email, username, password_hash, store_allocated, address, city, state, pincode, is_handler, role)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+           RETURNING id, full_name, email, username, role, store_allocated, is_handler`,
+          [fullName, null, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff']
+        );
+      } else {
+        throw colError;
+      }
+    }
     
     console.log('Staff created successfully:', result.rows[0].username);
 
@@ -81,10 +129,75 @@ router.post('/', async (req, res) => {
     });
   } catch (error) {
     if (error.code === '23505') {
-      return res.status(400).json({ error: 'Email or username already exists' });
+      return res.status(400).json({ error: 'Username already exists' });
     }
     console.error('Create staff error:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Route for creating staff with file upload
+router.post('/upload', uploadAadhar.single('aadharCopy'), async (req, res) => {
+  try {
+    const { fullName, username, password, storeAllocated, address, city, state, pincode, isHandler, phoneNumber, salary } = req.body;
+    const aadharFilePath = req.file ? `/uploads/aadhar/${req.file.filename}` : null;
+
+    if (!fullName || !username || !password) {
+      return res.status(400).json({ error: 'Required fields: fullName, username, password' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    
+    if (!passwordHash) {
+      console.error('Password hash creation failed');
+      return res.status(500).json({ error: 'Failed to hash password' });
+    }
+
+    let result;
+    try {
+      result = await pool.query(
+        `INSERT INTO staff (full_name, email, username, password_hash, store_allocated, address, city, state, pincode, is_handler, role, salary, aadhar_file_path)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+         RETURNING id, full_name, email, username, role, store_allocated, is_handler`,
+        [fullName, null, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff', salary || null, aadharFilePath]
+      );
+    } catch (colError) {
+      if (colError.code === '42703') { // undefined_column error
+        // Try without salary and aadhar_file_path
+        try {
+          result = await pool.query(
+            `INSERT INTO staff (full_name, email, username, password_hash, store_allocated, address, city, state, pincode, is_handler, role, salary)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+             RETURNING id, full_name, email, username, role, store_allocated, is_handler`,
+            [fullName, null, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff', salary || null]
+          );
+        } catch (colError2) {
+          if (colError2.code === '42703') {
+            // Fallback to original schema without salary and aadhar
+            result = await pool.query(
+              `INSERT INTO staff (full_name, email, username, password_hash, store_allocated, address, city, state, pincode, is_handler, role)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+               RETURNING id, full_name, email, username, role, store_allocated, is_handler`,
+              [fullName, null, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff']
+            );
+          } else {
+            throw colError2;
+          }
+        }
+      } else {
+        throw colError;
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      staff: result.rows[0],
+      message: 'Staff created successfully',
+      aadharFilePath: aadharFilePath
+    });
+  } catch (error) {
+    console.error('Create staff error:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
   }
 });
 

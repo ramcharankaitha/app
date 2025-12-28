@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { suppliersAPI } from '../services/api';
+import ConfirmDialog from './ConfirmDialog';
 import './suppliers.css';
 
 const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [suppliers, setSuppliers] = useState([]);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
   const [viewSupplierModal, setViewSupplierModal] = useState(null);
+  const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null, supplier: null });
   const menuRefs = useRef({});
 
   const handleBack = () => {
@@ -68,18 +71,7 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
       setError('');
       const response = await suppliersAPI.getAll();
       if (response.success) {
-        const formattedSuppliers = response.suppliers.map(supplier => ({
-          id: supplier.id,
-          name: supplier.supplier_name,
-          initials: supplier.supplier_name 
-            ? supplier.supplier_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
-            : 'SU',
-          phone: supplier.phone,
-          address: supplier.address,
-          email: supplier.email,
-          created_at: supplier.created_at
-        }));
-        setSuppliers(formattedSuppliers);
+        setSuppliers(response.suppliers || []);
       }
     } catch (err) {
       console.error('Error fetching suppliers:', err);
@@ -93,10 +85,10 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
 
   // Filter suppliers based on search
   const filteredSuppliers = suppliers.filter(supplier => {
-    const matchesSearch = supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch = supplier.supplier_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          supplier.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         supplier.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         supplier.email?.toLowerCase().includes(searchQuery.toLowerCase());
+                         supplier.phone1?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         supplier.address?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
 
@@ -135,6 +127,33 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
 
   const closeViewModal = () => {
     setViewSupplierModal(null);
+  };
+
+  // Handle delete supplier
+  const handleDeleteSupplier = (supplier) => {
+    setOpenMenuId(null);
+    setConfirmState({
+      open: true,
+      message: `Are you sure you want to delete "${supplier.supplier_name}"? This action cannot be undone.`,
+      supplier: supplier,
+      onConfirm: async () => {
+        try {
+          const response = await suppliersAPI.delete(supplier.id);
+          if (response.success) {
+            setSuccessMessage('Supplier deleted successfully');
+            setTimeout(() => setSuccessMessage(''), 3000);
+            await fetchSuppliers();
+            setConfirmState({ open: false, message: '', onConfirm: null, supplier: null });
+          } else {
+            setError('Failed to delete supplier');
+            setConfirmState({ open: false, message: '', onConfirm: null, supplier: null });
+          }
+        } catch (err) {
+          setError(err.message || 'Failed to delete supplier');
+          setConfirmState({ open: false, message: '', onConfirm: null, supplier: null });
+        }
+      }
+    });
   };
 
   return (
@@ -242,8 +261,15 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
           </div>
         )}
 
+        {/* Success Message */}
+        {successMessage && (
+          <div style={{ padding: '12px', background: '#d4edda', color: '#155724', borderRadius: '8px', marginBottom: '20px' }}>
+            <i className="fas fa-check-circle"></i> {successMessage}
+          </div>
+        )}
+
         {/* Suppliers List */}
-        <div className="staff-list">
+        <div className="staff-list-container" style={{ padding: '0 24px 24px' }}>
           {suppliers.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 40px', color: '#666' }}>
               <i className="fas fa-truck" style={{ fontSize: '64px', marginBottom: '20px', opacity: 0.4, color: '#dc3545' }}></i>
@@ -256,55 +282,89 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
               <p>No suppliers found matching your search</p>
             </div>
           ) : (
-            filteredSuppliers.map((supplier) => (
-            <div key={supplier.id} className="staff-card">
-              <div className="staff-avatar">
-                <span>{supplier.initials}</span>
-              </div>
-              <div className="staff-info">
-                <div className="staff-name">{supplier.name}</div>
-                {supplier.phone && (
-                  <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px' }}>
-                    <i className="fas fa-phone" style={{ marginRight: '6px', fontSize: '10px' }}></i>
-                    {supplier.phone}
-                  </div>
-                )}
-                {supplier.address && (
-                  <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <i className="fas fa-map-marker-alt" style={{ fontSize: '10px', color: '#666' }}></i>
-                    <span>{supplier.address.length > 40 ? supplier.address.substring(0, 40) + '...' : supplier.address}</span>
-                  </div>
-                )}
-              </div>
-              {supplier.email && (
-                <div className="staff-email">{supplier.email}</div>
-              )}
-              <div 
-                className="staff-options-container" 
-                ref={el => menuRefs.current[supplier.id] = el}
-              >
-                <button 
-                  className="staff-options"
-                  onClick={(e) => toggleMenu(supplier.id, e)}
+            <div className="premium-cards-grid">
+              {filteredSuppliers.map((supplier) => (
+                <div
+                  key={supplier.id}
+                  className="premium-identity-card"
                 >
-                  <i className="fas fa-ellipsis-v"></i>
-                </button>
-                {openMenuId === supplier.id && (
-                  <div className="staff-menu-dropdown">
-                    <div className="menu-item" onClick={() => handleViewSupplierDetails(supplier)}>
-                      <i className="fas fa-eye"></i>
-                      <span>View Supplier Details</span>
+                  {/* Card Header */}
+                  <div className="premium-card-header">
+                    <div className="premium-header-content">
+                      <h3 className="premium-worker-name">{supplier.supplier_name || 'N/A'}</h3>
+                    </div>
+                    {/* Floating Three-Dot Menu */}
+                    <div 
+                      className="premium-card-menu" 
+                      ref={el => menuRefs.current[supplier.id] = el}
+                    >
+                      <button 
+                        className="premium-menu-trigger"
+                        onClick={(e) => toggleMenu(supplier.id, e)}
+                      >
+                        <i className="fas fa-ellipsis-v"></i>
+                      </button>
+                      {openMenuId === supplier.id && (
+                        <div className="premium-menu-dropdown">
+                          <div className="premium-menu-item" onClick={() => handleViewSupplierDetails(supplier)}>
+                            <i className="fas fa-eye"></i>
+                            <span>View</span>
+                          </div>
+                          <div className="premium-menu-item premium-menu-item-danger" onClick={() => handleDeleteSupplier(supplier)}>
+                            <i className="fas fa-trash"></i>
+                            <span>Delete</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
-                )}
-              </div>
+
+                  {/* Card Body - Two Column Layout */}
+                  <div className="premium-card-body">
+                    <div className="premium-info-row">
+                      <div className="premium-info-item">
+                        <div className="premium-info-icon">
+                          <i className="fas fa-phone"></i>
+                        </div>
+                        <div className="premium-info-content">
+                          <span className="premium-info-label">Phone</span>
+                          <span className="premium-info-value">{supplier.phone || supplier.phone1 || 'N/A'}</span>
+                        </div>
+                      </div>
+                    </div>
+                    {supplier.address && (
+                      <div className="premium-info-row" style={{ marginTop: '16px' }}>
+                        <div className="premium-info-item">
+                          <div className="premium-info-icon">
+                            <i className="fas fa-map-marker-alt"></i>
+                          </div>
+                          <div className="premium-info-content">
+                            <span className="premium-info-label">Address</span>
+                            <span className="premium-info-value">{supplier.address || 'N/A'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
-            ))
           )}
         </div>
       </main>
       </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        open={confirmState.open}
+        title="Delete Supplier"
+        message={confirmState.message}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null, supplier: null })}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
 
       {/* View Supplier Details Modal */}
       {viewSupplierModal && (
@@ -328,24 +388,64 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
                     <span className="detail-label">Supplier Name:</span>
                     <span className="detail-value">{viewSupplierModal.supplier_name || 'N/A'}</span>
                   </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Phone:</span>
-                    <span className="detail-value">{viewSupplierModal.phone || 'N/A'}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Address:</span>
-                    <span className="detail-value">{viewSupplierModal.address || 'N/A'}</span>
-                  </div>
-                  {viewSupplierModal.email && (
+                  {viewSupplierModal.phone1 && (
                     <div className="detail-row">
-                      <span className="detail-label">Email:</span>
-                      <span className="detail-value">{viewSupplierModal.email}</span>
+                      <span className="detail-label">Phone 1:</span>
+                      <span className="detail-value">{viewSupplierModal.phone1}</span>
                     </div>
                   )}
-                  {viewSupplierModal.created_at && (
+                  {viewSupplierModal.phone2 && (
                     <div className="detail-row">
-                      <span className="detail-label">Created At:</span>
-                      <span className="detail-value">{new Date(viewSupplierModal.created_at).toLocaleString()}</span>
+                      <span className="detail-label">Phone 2:</span>
+                      <span className="detail-value">{viewSupplierModal.phone2}</span>
+                    </div>
+                  )}
+                  {viewSupplierModal.phone3 && (
+                    <div className="detail-row">
+                      <span className="detail-label">Phone 3:</span>
+                      <span className="detail-value">{viewSupplierModal.phone3}</span>
+                    </div>
+                  )}
+                  {viewSupplierModal.phone && !viewSupplierModal.phone1 && (
+                    <div className="detail-row">
+                      <span className="detail-label">Phone:</span>
+                      <span className="detail-value">{viewSupplierModal.phone}</span>
+                    </div>
+                  )}
+                  {viewSupplierModal.address && (
+                    <div className="detail-row">
+                      <span className="detail-label">Address:</span>
+                      <span className="detail-value">{viewSupplierModal.address}</span>
+                    </div>
+                  )}
+                  {viewSupplierModal.city && (
+                    <div className="detail-row">
+                      <span className="detail-label">City:</span>
+                      <span className="detail-value">{viewSupplierModal.city}</span>
+                    </div>
+                  )}
+                  {viewSupplierModal.state && (
+                    <div className="detail-row">
+                      <span className="detail-label">State:</span>
+                      <span className="detail-value">{viewSupplierModal.state}</span>
+                    </div>
+                  )}
+                  {viewSupplierModal.pincode && (
+                    <div className="detail-row">
+                      <span className="detail-label">Pincode:</span>
+                      <span className="detail-value">{viewSupplierModal.pincode}</span>
+                    </div>
+                  )}
+                  {viewSupplierModal.brand && (
+                    <div className="detail-row">
+                      <span className="detail-label">Brand:</span>
+                      <span className="detail-value">{viewSupplierModal.brand}</span>
+                    </div>
+                  )}
+                  {viewSupplierModal.notifications && (
+                    <div className="detail-row">
+                      <span className="detail-label">Notifications To:</span>
+                      <span className="detail-value">{viewSupplierModal.notifications}</span>
                     </div>
                   )}
                 </div>

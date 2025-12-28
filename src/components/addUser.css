@@ -230,6 +230,12 @@
     gap: 10px 12px;
 }
 
+/* Four column grid for forms with many fields */
+.form-grid.four-col {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px 12px;
+}
+
 /* For staff form: Pincode is 7th child, Username is 10th, Password is 11th */
 /* Pincode (7th child) - takes first column */
 .form-grid.three-col .form-group:nth-child(7) {
@@ -261,11 +267,41 @@
     display: none;
 }
 
-/* For Stock In form: Stock In Quantity (7th child) should be below SKV Code (4th child) in column 1, third row */
-/* This places it in the same row as the Fetch Product button (which is in row 2, column 3, but visually appears in row 3) */
-.add-stock-in-form .form-grid.three-col .form-group:nth-child(7) {
+/* For Stock In form: Use 4-column grid */
+.add-stock-in-form .form-grid.four-col {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px 12px;
+}
+
+/* Stock In Quantity and Add Product button in row 3 */
+.add-stock-in-form .form-grid.four-col .form-group:nth-child(9) {
     grid-column: 1;
     grid-row: 3;
+}
+
+.add-stock-in-form .form-grid.four-col .form-group:nth-child(10) {
+    grid-column: 2;
+    grid-row: 3;
+}
+
+/* Products table spacing - prevent overlap with Add Product button */
+.add-stock-in-form .form-section[style*="marginTop: 40px"] {
+    margin-top: 40px !important;
+    clear: both !important;
+    padding-top: 20px !important;
+    position: relative;
+    z-index: 1;
+}
+
+.add-stock-in-form .attendance-table-container {
+    margin-top: 12px !important;
+    max-height: 200px !important;
+    position: relative;
+}
+
+/* Ensure Add Product button has proper spacing */
+.add-stock-in-form .form-grid.four-col .form-group:nth-child(10) button {
+    margin-top: 24px !important;
 }
 
 /* Stock In Button (8th child) should be in the third row, second column */
@@ -367,6 +403,110 @@
 .add-user-content table td {
     padding: 8px 10px !important;
     font-size: 12px !important;
+}
+
+/* Dispatch form products - 4 column grid with scrolling */
+.add-dispatch-form .form-group[style*="grid-column: 3 / -1"] {
+    position: relative;
+    z-index: 1;
+}
+
+.add-dispatch-form .form-group[style*="grid-column: 3 / -1"] > div[style*="maxHeight"] {
+    max-height: 140px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    position: relative;
+}
+
+.add-dispatch-form .form-group[style*="grid-column: 3 / -1"] > div[style*="maxHeight"]::-webkit-scrollbar {
+    width: 8px;
+}
+
+.add-dispatch-form .form-group[style*="grid-column: 3 / -1"] > div[style*="maxHeight"]::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.add-dispatch-form .form-group[style*="grid-column: 3 / -1"] > div[style*="maxHeight"]::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.add-dispatch-form .form-group[style*="grid-column: 3 / -1"] > div[style*="maxHeight"]::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.add-dispatch-form .form-group[style*="grid-column: 1 / -1"] > div[style*="gridTemplateColumns"] {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 12px !important;
+    width: 100% !important;
+}
+
+.add-dispatch-form .form-group[style*="grid-column: 1 / -1"] > div[style*="gridTemplateColumns"] > div {
+    min-width: 0;
+    width: 100%;
+}
+
+/* Ensure form actions don't overlap */
+.add-dispatch-form .form-actions {
+    margin-top: 40px !important;
+    position: relative;
+    z-index: 0;
+    clear: both;
+    padding-top: 20px;
+}
+
+/* Ensure form section has proper spacing */
+.add-dispatch-form .form-section {
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+}
+
+/* Products section specific styling */
+.add-dispatch-form .form-group[style*="grid-column: 3 / -1"] {
+    margin-bottom: 30px !important;
+}
+
+/* Responsive: 3 columns on medium screens */
+@media (max-width: 1400px) {
+    .add-dispatch-form .form-group[style*="grid-column: 1 / -1"] > div[style*="gridTemplateColumns"] {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+}
+
+/* Responsive: 2 columns on smaller screens */
+@media (max-width: 992px) {
+    .add-dispatch-form .form-group[style*="grid-column: 1 / -1"] > div[style*="gridTemplateColumns"] {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+/* Responsive: 1 column on mobile */
+@media (max-width: 576px) {
+    .add-dispatch-form .form-group[style*="grid-column: 1 / -1"] > div[style*="gridTemplateColumns"] {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Scrollbar styling for products container */
+.add-dispatch-form .form-group[style*="grid-column: 1 / -1"] > div[style*="maxHeight"]::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.add-dispatch-form .form-group[style*="grid-column: 1 / -1"] > div[style*="maxHeight"]::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.add-dispatch-form .form-group[style*="grid-column: 1 / -1"] > div[style*="maxHeight"]::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.add-dispatch-form .form-group[style*="grid-column: 1 / -1"] > div[style*="maxHeight"]::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }
 
 /* Ensure form sections are compact */
@@ -626,6 +766,16 @@
     .form-grid.three-col {
         grid-template-columns: repeat(2, 1fr);
     }
+    
+    .form-grid.four-col {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 1200px) {
+    .form-grid.four-col {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 @media (max-width: 1200px) {
@@ -713,5 +863,28 @@
         font-size: 11px;
         margin-bottom: 5px;
     }
+}
+
+/* Dispatch form - Products section full width */
+.add-dispatch-form .form-group[style*="grid-column: 1 / -1"] {
+    grid-column: 1 / -1 !important;
+    width: 100%;
+    clear: both;
+    margin-top: 15px !important;
+    margin-bottom: 15px !important;
+    position: relative;
+    z-index: 1;
+}
+
+/* Ensure products section doesn't overlap with other form groups */
+.add-dispatch-form .form-grid {
+    overflow: visible;
+    position: relative;
+}
+
+/* Prevent any overlap issues */
+.add-dispatch-form .form-section {
+    position: relative;
+    overflow: visible;
 }
 

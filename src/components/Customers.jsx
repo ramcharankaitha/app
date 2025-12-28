@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { customersAPI } from '../services/api';
+import ConfirmDialog from './ConfirmDialog';
 import './customers.css';
 
 const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) => {
@@ -10,6 +11,7 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
   const [successMessage, setSuccessMessage] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
   const [viewCustomerModal, setViewCustomerModal] = useState(null);
+  const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null, customer: null });
   const menuRefs = useRef({});
 
   const handleBack = () => {
@@ -70,18 +72,7 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
       try {
         const response = await customersAPI.getAll();
         if (response.success) {
-          const formattedCustomers = response.customers.map(customer => ({
-            id: customer.id,
-            name: customer.full_name,
-            initials: customer.full_name 
-              ? customer.full_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
-              : 'CU',
-            email: customer.email,
-            phone: customer.phone,
-            address: customer.address,
-            created_at: customer.created_at
-          }));
-          setCustomers(formattedCustomers);
+          setCustomers(response.customers || []);
         }
       } catch (err) {
         console.error('Error fetching customers:', err);
@@ -93,8 +84,8 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
 
   // Filter customers based on search and store
   const filteredCustomers = customers.filter(customer => {
-    const matchesSearch = customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch = customer.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         customer.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          customer.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          customer.address?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStore = selectedStore === 'All Stores' || customer.store === selectedStore;
@@ -137,6 +128,37 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
 
   const closeViewModal = () => {
     setViewCustomerModal(null);
+  };
+
+  // Handle delete customer
+  const handleDeleteCustomer = (customer) => {
+    setOpenMenuId(null);
+    setConfirmState({
+      open: true,
+      message: `Are you sure you want to delete "${customer.full_name || customer.name}"? This action cannot be undone.`,
+      customer: customer,
+      onConfirm: async () => {
+        try {
+          const response = await customersAPI.delete(customer.id);
+          if (response.success) {
+            setSuccessMessage('Customer deleted successfully');
+            setTimeout(() => setSuccessMessage(''), 3000);
+            // Refresh customers list
+            const fetchResponse = await customersAPI.getAll();
+            if (fetchResponse.success) {
+              setCustomers(fetchResponse.customers || []);
+            }
+            setConfirmState({ open: false, message: '', onConfirm: null, customer: null });
+          } else {
+            setError('Failed to delete customer');
+            setConfirmState({ open: false, message: '', onConfirm: null, customer: null });
+          }
+        } catch (err) {
+          setError(err.message || 'Failed to delete customer');
+          setConfirmState({ open: false, message: '', onConfirm: null, customer: null });
+        }
+      }
+    });
   };
 
   return (
@@ -257,7 +279,7 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
         )}
 
         {/* Customers List */}
-        <div className="staff-list">
+        <div className="staff-list-container" style={{ padding: '0 24px 24px' }}>
           {customers.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 40px', color: '#666' }}>
               <i className="fas fa-user-friends" style={{ fontSize: '64px', marginBottom: '20px', opacity: 0.4, color: '#dc3545' }}></i>
@@ -270,53 +292,113 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
               <p>No customers found matching your search</p>
             </div>
           ) : (
-            filteredCustomers.map((customer) => (
-            <div key={customer.id} className="staff-card">
-              <div className="staff-avatar">
-                <span>{customer.initials}</span>
-              </div>
-              <div className="staff-info">
-                <div className="staff-name">{customer.name}</div>
-                <div className="staff-role">{customer.email}</div>
-                {customer.phone && (
-                  <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px' }}>
-                    <i className="fas fa-phone" style={{ marginRight: '6px', fontSize: '10px' }}></i>
-                    {customer.phone}
-                  </div>
-                )}
-                {customer.address && (
-                  <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <i className="fas fa-map-marker-alt" style={{ fontSize: '10px', color: '#666' }}></i>
-                    <span>{customer.address.length > 40 ? customer.address.substring(0, 40) + '...' : customer.address}</span>
-                  </div>
-                )}
-              </div>
-              <div 
-                className="staff-options-container" 
-                ref={el => menuRefs.current[customer.id] = el}
-              >
-                <button 
-                  className="staff-options"
-                  onClick={(e) => toggleMenu(customer.id, e)}
+            <div className="premium-cards-grid">
+              {filteredCustomers.map((customer) => (
+                <div
+                  key={customer.id}
+                  className="premium-identity-card"
                 >
-                  <i className="fas fa-ellipsis-v"></i>
-                </button>
-                {openMenuId === customer.id && (
-                  <div className="customer-menu-dropdown">
-                    <div className="menu-item" onClick={() => handleViewCustomerDetails(customer)}>
-                      <i className="fas fa-eye"></i>
-                      <span>View Customer Details</span>
+                  {/* Card Header */}
+                  <div className="premium-card-header">
+                    <div className="premium-header-content">
+                      <h3 className="premium-worker-name">{customer.full_name || customer.name || 'N/A'}</h3>
+                    </div>
+                    {/* Floating Three-Dot Menu */}
+                    <div 
+                      className="premium-card-menu" 
+                      ref={el => menuRefs.current[customer.id] = el}
+                    >
+                      <button 
+                        className="premium-menu-trigger"
+                        onClick={(e) => toggleMenu(customer.id, e)}
+                      >
+                        <i className="fas fa-ellipsis-v"></i>
+                      </button>
+                      {openMenuId === customer.id && (
+                        <div className="premium-menu-dropdown">
+                          <div className="premium-menu-item" onClick={() => handleViewCustomerDetails(customer)}>
+                            <i className="fas fa-eye"></i>
+                            <span>View</span>
+                          </div>
+                          <div className="premium-menu-item premium-menu-item-danger" onClick={() => handleDeleteCustomer(customer)}>
+                            <i className="fas fa-trash"></i>
+                            <span>Delete</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
-                )}
-              </div>
+
+                  {/* Card Body - Two Column Layout */}
+                  <div className="premium-card-body">
+                    <div className="premium-info-row">
+                      <div className="premium-info-item">
+                        <div className="premium-info-icon">
+                          <i className="fas fa-envelope"></i>
+                        </div>
+                        <div className="premium-info-content">
+                          <span className="premium-info-label">Email</span>
+                          <span className="premium-info-value premium-email-value">{customer.email || 'N/A'}</span>
+                        </div>
+                      </div>
+                      <div className="premium-info-item">
+                        <div className="premium-info-icon">
+                          <i className="fas fa-phone"></i>
+                        </div>
+                        <div className="premium-info-content">
+                          <span className="premium-info-label">Phone</span>
+                          <span className="premium-info-value">{customer.phone || 'N/A'}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="premium-info-row" style={{ marginTop: '16px' }}>
+                      <div className="premium-info-item">
+                        <div className="premium-info-icon">
+                          <i className="fas fa-user-tag"></i>
+                        </div>
+                        <div className="premium-info-content">
+                          <span className="premium-info-label">Customer Type</span>
+                          <span className="premium-info-value" style={{ 
+                            textTransform: 'uppercase',
+                            fontWeight: '600',
+                            color: customer.customer_type === 'chitplan' ? '#dc3545' : '#64748b'
+                          }}>
+                            {customer.customer_type === 'chitplan' ? 'Chit Plan' : 'Walk-in'}
+                          </span>
+                        </div>
+                      </div>
+                      {customer.address && (
+                        <div className="premium-info-item">
+                          <div className="premium-info-icon">
+                            <i className="fas fa-map-marker-alt"></i>
+                          </div>
+                          <div className="premium-info-content">
+                            <span className="premium-info-label">Address</span>
+                            <span className="premium-info-value">{customer.address || 'N/A'}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-            ))
           )}
         </div>
       </main>
       </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        open={confirmState.open}
+        title="Delete Customer"
+        message={confirmState.message}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null, customer: null })}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
 
       {/* View Customer Details Modal */}
       {viewCustomerModal && (

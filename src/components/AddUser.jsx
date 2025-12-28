@@ -7,7 +7,6 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
     supervisorName: '',
     phone: '',
     storeAllocated: 'mart', // Default value
-    email: '',
     address: '',
     city: '',
     state: '',
@@ -95,7 +94,6 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
       const response = await usersAPI.create({
         firstName: firstName,
         lastName: lastName,
-        email: formData.email,
         username: formData.username,
         password: formData.password,
         storeAllocated: formData.storeAllocated,
@@ -202,7 +200,7 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
                 {/* All fields in 3-column grid without section titles */}
                 <div className="form-section">
                   <div className="form-grid three-col">
-                    {/* Row 1: Name, Phone Number, Email Address */}
+                    {/* Row 1: Name, Phone Number */}
                     <div className="form-group">
                       <label htmlFor="supervisorName">Supervisor name</label>
                       <input
@@ -228,23 +226,6 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
                           className="form-input"
                           placeholder="Enter phone number"
                           value={formData.phone}
-                          onChange={handleInputChange}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="email">Email address</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-envelope input-icon"></i>
-                        <input
-                          type="email"
-                          id="email"
-                          name="email"
-                          className="form-input"
-                          placeholder="firstname.lastname@dmart.com"
-                          value={formData.email}
                           onChange={handleInputChange}
                           required
                         />

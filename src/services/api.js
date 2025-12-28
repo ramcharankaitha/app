@@ -97,6 +97,18 @@ export const staffAPI = {
       body: JSON.stringify(staffData),
     });
   },
+  createWithFile: async (formData) => {
+    const response = await fetch(`${API_BASE_URL}/staff/upload`, {
+      method: 'POST',
+      body: formData, // FormData is passed directly
+      // Do NOT set Content-Type header for FormData, browser sets it automatically
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to create staff with file.');
+    }
+    return response.json();
+  },
   update: async (id, staffData) => {
     return apiCall(`/staff/${id}`, {
       method: 'PUT',
@@ -378,6 +390,24 @@ export const chitPlansAPI = {
       method: 'DELETE',
     });
   },
+  getEntries: async () => {
+    return apiCall('/chit-plans/entries');
+  },
+  getEntryById: async (id) => {
+    return apiCall(`/chit-plans/entries/${id}`);
+  },
+  createEntry: async (entryData) => {
+    return apiCall('/chit-plans/entries', {
+      method: 'POST',
+      body: JSON.stringify(entryData),
+    });
+  },
+  updateEntry: async (id, entryData) => {
+    return apiCall(`/chit-plans/entries/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(entryData),
+    });
+  },
 };
 
 export const dispatchAPI = {
@@ -392,6 +422,36 @@ export const dispatchAPI = {
       method: 'POST',
       body: JSON.stringify(dispatchData),
     });
+  },
+  createWithFile: async (formData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/dispatch`, {
+        method: 'POST',
+        body: formData,
+        // Don't set Content-Type header, let browser set it with boundary
+      });
+
+      let data;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(text || `HTTP error! status: ${response.status}`);
+      }
+
+      if (!response.ok) {
+        throw new Error(data.error || `API request failed: ${response.status}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Error:', error);
+      if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+        throw new Error('Network error: Could not connect to server. Please check if the server is running.');
+      }
+      throw error;
+    }
   },
   update: async (id, dispatchData) => {
     return apiCall(`/dispatch/${id}`, {
@@ -505,6 +565,37 @@ export const salesOrdersAPI = {
     return apiCall('/sales-orders', {
       method: 'POST',
       body: JSON.stringify(salesOrderData),
+    });
+  },
+};
+
+export const purchaseOrdersAPI = {
+  getAll: async () => {
+    return apiCall('/purchase-orders');
+  },
+  getById: async (id) => {
+    return apiCall(`/purchase-orders/${id}`);
+  },
+  create: async (orderData) => {
+    return apiCall('/purchase-orders', {
+      method: 'POST',
+      body: JSON.stringify(orderData),
+    });
+  },
+  update: async (id, orderData) => {
+    return apiCall(`/purchase-orders/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(orderData),
+    });
+  },
+  delete: async (id) => {
+    return apiCall(`/purchase-orders/${id}`, {
+      method: 'DELETE',
+    });
+  },
+  sendSMS: async (id) => {
+    return apiCall(`/purchase-orders/${id}/send-sms`, {
+      method: 'POST',
     });
   },
 };

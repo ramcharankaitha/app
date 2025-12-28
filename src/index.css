@@ -288,7 +288,7 @@ body {
 
 /* Form Section */
 .form-section {
-    padding: 18px 20px 20px 20px;
+    padding: 28px 20px 20px 20px;
     flex: 1;
     overflow: hidden;
     min-height: 0;
@@ -305,6 +305,10 @@ body {
 
 .form-group {
     margin-bottom: 12px;
+}
+
+.form-group:first-of-type {
+    margin-top: 0;
 }
 
 .form-group:last-of-type {
@@ -661,7 +665,7 @@ body {
     }
 
     .form-section {
-        padding: 12px 18px;
+        padding: 20px 18px 12px 18px;
     }
 
     .user-icon {

@@ -6,7 +6,6 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
     customerName: '',
     customerPhone: '',
-    customerEmail: '',
     customerAddress: '',
     customerCity: '',
     customerState: '',
@@ -16,14 +15,12 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
   });
   const [customerVerified, setCustomerVerified] = useState(false);
   const [isCheckingCustomer, setIsCheckingCustomer] = useState(false);
-  const [customerError, setCustomerError] = useState('');
   const [customerDetails, setCustomerDetails] = useState(null);
   // Current product being entered (single form)
   const [currentProduct, setCurrentProduct] = useState({
       itemCode: '', 
       productName: '',
       skuCode: '',
-      category: '',
       modelNumber: '',
       quantity: '', // Current stock
       stockOutQuantity: '', // Quantity to remove
@@ -37,8 +34,6 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
   // Added products (displayed as cards)
   const [addedProducts, setAddedProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
 
   const getUserIdentifier = () => {
@@ -72,12 +67,10 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
     // Reset customer verification when name or phone changes
     if (name === 'customerName' || name === 'customerPhone') {
       setCustomerVerified(false);
-      setCustomerError('');
       setCustomerDetails(null);
       // Clear customer details
       setFormData(prev => ({
         ...prev,
-        customerEmail: '',
         customerAddress: '',
         customerCity: '',
         customerState: '',
@@ -88,7 +81,6 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
         itemCode: '',
         productName: '',
         skuCode: '',
-        category: '',
         modelNumber: '',
         quantity: '',
         stockOutQuantity: '',
@@ -107,12 +99,10 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
     const checkCustomer = async () => {
       if (!formData.customerName.trim() || !formData.customerPhone.trim()) {
         setCustomerVerified(false);
-        setCustomerError('');
         return;
       }
 
       setIsCheckingCustomer(true);
-      setCustomerError('');
       
       try {
         // Search by phone number first (more reliable)
@@ -127,12 +117,10 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
           
           if (matchingCustomer) {
             setCustomerVerified(true);
-            setCustomerError('');
             setCustomerDetails(matchingCustomer);
             // Fetch full customer details
             setFormData(prev => ({
               ...prev,
-              customerEmail: matchingCustomer.email || '',
               customerAddress: matchingCustomer.address || '',
               customerCity: matchingCustomer.city || '',
               customerState: matchingCustomer.state || '',
@@ -149,12 +137,10 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
               
               if (nameMatch) {
                 setCustomerVerified(true);
-                setCustomerError('');
                 setCustomerDetails(nameMatch);
                 // Fetch full customer details
                 setFormData(prev => ({
                   ...prev,
-                  customerEmail: nameMatch.email || '',
                   customerAddress: nameMatch.address || '',
                   customerCity: nameMatch.city || '',
                   customerState: nameMatch.state || '',
@@ -162,23 +148,19 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 }));
               } else {
                 setCustomerVerified(false);
-                setCustomerError('Customer not found. Please create the customer first in the Master Menu.');
                 setCustomerDetails(null);
               }
             } else {
               setCustomerVerified(false);
-              setCustomerError('Customer not found. Please create the customer first in the Master Menu.');
               setCustomerDetails(null);
             }
           }
         } else {
           setCustomerVerified(false);
-          setCustomerError('Customer not found. Please create the customer first in the Master Menu.');
         }
       } catch (err) {
         console.error('Error checking customer:', err);
         setCustomerVerified(false);
-        setCustomerError('Error verifying customer. Please try again.');
       } finally {
         setIsCheckingCustomer(false);
       }
@@ -201,7 +183,6 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
           updated.productInfo = null;
           updated.productName = '';
           updated.skuCode = '';
-          updated.category = '';
           updated.modelNumber = '';
           updated.quantity = '';
           updated.mrp = '';
@@ -215,12 +196,10 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
 
   const fetchProductByItemCode = async () => {
     if (!currentProduct.itemCode?.trim()) {
-      setError('Please enter an item code');
       return;
     }
     
     setCurrentProduct(prev => ({ ...prev, isFetching: true }));
-    setError('');
     
     try {
       const response = await productsAPI.getByItemCode(currentProduct.itemCode.trim());
@@ -233,7 +212,6 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
           itemCode: product.item_code || product.itemCode || '',
           skuCode: product.sku_code || product.skuCode || '',
           currentQuantity: product.current_quantity || 0,
-          category: product.category || '',
           modelNumber: product.model_number || product.modelNumber || '',
           mrp: product.mrp || 0,
           sellRate: product.sell_rate || product.sellRate || 0,
@@ -245,7 +223,6 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
             productInfo: productData,
             productName: productData.productName,
             skuCode: productData.skuCode,
-            category: productData.category,
             modelNumber: productData.modelNumber,
             quantity: productData.currentQuantity.toString(),
             mrp: productData.mrp.toString(),
@@ -253,17 +230,11 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
             discount: productData.discount.toString(),
             isFetching: false
         }));
-        
-        if (product.current_quantity <= 0) {
-          setError('This product is out of stock!');
-        }
       } else {
-        setError('Product not found with this item code');
         setCurrentProduct(prev => ({ ...prev, productInfo: null, isFetching: false }));
       }
     } catch (err) {
       console.error('Fetch product error:', err);
-      setError(err.message || 'Product not found. Please check the item code and try again.');
       setCurrentProduct(prev => ({ ...prev, productInfo: null, isFetching: false }));
     }
   };
@@ -276,37 +247,29 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
   };
 
   const addProduct = () => {
-    // Clear any previous errors
-    setError('');
-    
     // Validate that customer is verified
     if (!customerVerified) {
-      setError('Please verify the customer first');
       return;
     }
     
     // Validate that product info exists
     if (!currentProduct.productInfo) {
-      setError('Please fetch product details first by entering item code and clicking Fetch');
       return;
     }
     
     // Validate stock out quantity
     if (!currentProduct.stockOutQuantity || currentProduct.stockOutQuantity.trim() === '') {
-      setError('Please enter a stock out quantity');
       return;
     }
     
     const stockOutQty = parseInt(currentProduct.stockOutQuantity);
     if (isNaN(stockOutQty) || stockOutQty <= 0) {
-      setError('Please enter a valid stock out quantity (must be greater than 0)');
       return;
     }
     
     // Validate stock availability
     const currentStock = parseInt(currentProduct.quantity) || 0;
     if (stockOutQty > currentStock) {
-      setError(`Stock out quantity (${stockOutQty}) cannot exceed current stock (${currentStock})`);
       return;
     }
     
@@ -316,7 +279,6 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
     );
     
     if (isDuplicate) {
-      setError('This product is already added. Please remove it first if you want to change the quantity.');
       return;
     }
     
@@ -336,7 +298,6 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
       itemCode: '', 
       productName: '',
       skuCode: '',
-      category: '',
       modelNumber: '',
       quantity: '',
       stockOutQuantity: '',
@@ -346,9 +307,6 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
       productInfo: null,
       isFetching: false
     });
-    
-    setSuccessMessage('Product added successfully!');
-    setTimeout(() => setSuccessMessage(''), 2000);
   };
 
   const removeProduct = (productId) => {
@@ -357,31 +315,24 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccessMessage('');
 
     if (!formData.customerName || !formData.customerName.trim()) {
-      setError('Please enter customer name');
       return;
     }
 
     if (!formData.customerPhone || !formData.customerPhone.trim()) {
-      setError('Please enter customer phone number');
       return;
     }
 
     if (!customerVerified) {
-      setError('Customer not verified. Please ensure the customer exists in the system. Create the customer first in the Master Menu.');
       return;
     }
 
     if (!formData.paymentMode || !formData.paymentMode.trim()) {
-      setError('Please select a payment mode');
       return;
     }
 
     if (addedProducts.length === 0) {
-      setError('Please add at least one product');
       return;
     }
 
@@ -392,8 +343,6 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
       message: confirmMessage,
       onConfirm: async () => {
         setIsLoading(true);
-        setError('');
-        setSuccessMessage('');
         
         try {
           const createdBy = getUserIdentifier();
@@ -401,21 +350,18 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
           // Validate each product before submitting
           for (const item of addedProducts) {
             if (!item.itemCode || !item.itemCode.trim()) {
-              setError('One or more products have invalid item codes');
               setIsLoading(false);
               setConfirmState({ open: false, message: '', onConfirm: null });
               return;
             }
             
             if (!item.stockOutQuantity || item.stockOutQuantity <= 0) {
-              setError(`Invalid stock out quantity for product ${item.itemCode}`);
               setIsLoading(false);
               setConfirmState({ open: false, message: '', onConfirm: null });
               return;
             }
             
             if (!item.productInfo) {
-              setError(`Product information missing for ${item.itemCode}`);
               setIsLoading(false);
               setConfirmState({ open: false, message: '', onConfirm: null });
               return;
@@ -442,12 +388,10 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
           const allSuccess = results.every(result => result && result.success !== false);
 
           if (allSuccess) {
-            setSuccessMessage(`Stock removed successfully for ${addedProducts.length} item(s)!`);
             // Reset form after successful stock out
             setFormData({
               customerName: '',
               customerPhone: '',
-              customerEmail: '',
               customerAddress: '',
               customerCity: '',
               customerState: '',
@@ -456,13 +400,11 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
               notes: ''
             });
             setCustomerVerified(false);
-            setCustomerError('');
             setCustomerDetails(null);
             setCurrentProduct({
               itemCode: '',
               productName: '',
               skuCode: '',
-              category: '',
               modelNumber: '',
               quantity: '',
               stockOutQuantity: '',
@@ -477,18 +419,14 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
             setTimeout(() => {
               // Dispatch event to trigger refresh in StockOutMaster
               window.dispatchEvent(new Event('stockOutCompleted'));
-              setSuccessMessage('');
               // Navigate after a short delay to allow refresh to happen
               setTimeout(() => {
                 handleBack();
               }, 500);
             }, 1500);
-          } else {
-            setError('Some stock removals failed. Please try again.');
           }
         } catch (err) {
           console.error('Stock Out error:', err);
-          setError(err.message || 'Failed to remove stock. Please try again.');
         } finally {
           setIsLoading(false);
           setConfirmState({ open: false, message: '', onConfirm: null });
@@ -524,10 +462,10 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
       {/* Main Content */}
       <main className="add-user-content">
         <form onSubmit={handleSubmit} className="add-user-form add-stock-out-form">
-          {/* All fields in 3-column grid without section titles */}
+          {/* All fields in 4-column grid without section titles */}
           <div className="form-section">
-            <div className="form-grid three-col">
-              {/* Row 1: Customer Name, Phone Number, Email */}
+            <div className="form-grid four-col">
+              {/* Row 1: Customer Name, Phone Number */}
               <div className="form-group">
                 <label htmlFor="customerName">Customer Name *</label>
                 <div className="input-wrapper">
@@ -560,8 +498,8 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     onChange={handleInputChange}
                     required
                     style={{
-                      paddingRight: customerVerified || isCheckingCustomer || customerError ? '40px' : '18px',
-                      borderColor: customerError ? '#dc3545' : customerVerified ? '#28a745' : undefined
+                      paddingRight: customerVerified || isCheckingCustomer ? '40px' : '18px',
+                      borderColor: customerVerified ? '#28a745' : undefined
                     }}
                   />
                   {isCheckingCustomer && (
@@ -583,40 +521,9 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     }}></i>
                   )}
                 </div>
-                {customerError && (
-                  <div style={{ 
-                    marginTop: '8px', 
-                    fontSize: '12px', 
-                    color: '#dc3545',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}>
-                    <i className="fas fa-exclamation-circle"></i>
-                    {customerError}
-                  </div>
-                )}
           </div>
 
-              <div className="form-group">
-                <label htmlFor="customerEmail">Email</label>
-                <div className="input-wrapper">
-                  <i className="fas fa-envelope input-icon"></i>
-                  <input
-                    type="email"
-                    id="customerEmail"
-                    name="customerEmail"
-                    className="form-input"
-                    placeholder="customer@example.com"
-                    value={formData.customerEmail}
-                    onChange={handleInputChange}
-                    readOnly
-                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
-                  />
-            </div>
-                </div>
-
-              {/* Row 2: Item Code, Category, Product Name */}
+              {/* Row 2: Item Code, Product Name */}
                   <div className="form-group">
                 <label htmlFor="itemCode">Item Code *</label>
                     <div className="input-wrapper" style={{ position: 'relative' }}>
@@ -675,22 +582,6 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                   </div>
 
                   <div className="form-group">
-                <label htmlFor="category">Category</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-tags input-icon"></i>
-                      <input
-                        type="text"
-                    id="category"
-                        className="form-input"
-                        placeholder="Category"
-                    value={currentProduct.category}
-                        readOnly
-                        style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-group">
                 <label htmlFor="productName">Product Name</label>
                     <div className="input-wrapper">
                       <i className="fas fa-box input-icon"></i>
@@ -706,7 +597,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     </div>
                   </div>
 
-              {/* Row 3: SKV Code, Current Stock, Stock Out Quantity */}
+              {/* Row 3: SKV Code, Current Stock, Stock Out Quantity, Add Product Button */}
                   <div className="form-group">
                 <label htmlFor="skuCode">SKV Code</label>
                     <div className="input-wrapper">
@@ -742,31 +633,6 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                         }}
                       />
                     </div>
-                {/* Add Product button below Current Stock */}
-                <button
-                  type="button"
-                  onClick={addProduct}
-                  disabled={!customerVerified || !currentProduct.productInfo || !currentProduct.stockOutQuantity}
-                  style={{
-                    marginTop: '12px',
-                    padding: '8px 12px',
-                    background: (customerVerified && currentProduct.productInfo && currentProduct.stockOutQuantity) ? '#28a745' : '#ccc',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: (customerVerified && currentProduct.productInfo && currentProduct.stockOutQuantity) ? 'pointer' : 'not-allowed',
-                    fontSize: '12px',
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    boxSizing: 'border-box'
-                  }}
-                >
-                  <i className="fas fa-plus"></i>
-                  Add Product
-                </button>
                   </div>
 
                   <div className="form-group">
@@ -787,8 +653,137 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     disabled={!currentProduct.productInfo || !customerVerified}
                       />
                     </div>
-                {/* Payment Mode - Right side of Add Product button */}
-                <label htmlFor="paymentMode" style={{ marginTop: '12px' }}>Payment Mode *</label>
+                  </div>
+
+                {/* Add Product button in 4th column */}
+                <div className="form-group">
+                  <label style={{ visibility: 'hidden' }}>Add Product</label>
+                  <button
+                    type="button"
+                    onClick={addProduct}
+                    disabled={!customerVerified || !currentProduct.productInfo || !currentProduct.stockOutQuantity}
+                    style={{
+                      marginTop: '0',
+                      padding: '8px 12px',
+                      background: (customerVerified && currentProduct.productInfo && currentProduct.stockOutQuantity) ? '#28a745' : '#ccc',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: (customerVerified && currentProduct.productInfo && currentProduct.stockOutQuantity) ? 'pointer' : 'not-allowed',
+                      fontSize: '12px',
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <i className="fas fa-plus"></i>
+                    Add Product
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          {/* Display Added Products - Billing Summary Table */}
+          {addedProducts.length > 0 && (
+            <div className="form-section" style={{ marginTop: '60px', clear: 'both', paddingTop: '30px', marginBottom: '30px', width: '100%' }}>
+              <div className="form-group" style={{ gridColumn: '1 / -1', width: '100%', marginBottom: '0' }}>
+                <div className="attendance-table-container" style={{ 
+                  marginTop: '0', 
+                  maxHeight: '140px', 
+                  overflowY: 'auto', 
+                  overflowX: 'auto',
+                  width: '100%',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '8px'
+                }}>
+                  <table className="attendance-table" style={{ width: '100%', tableLayout: 'auto' }}>
+                    <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: '#fff' }}>
+                      <tr>
+                        <th style={{ width: '60px', textAlign: 'center', minWidth: '50px' }}>#</th>
+                        <th style={{ minWidth: '120px' }}>Item Code</th>
+                        <th style={{ minWidth: '200px' }}>Product Name</th>
+                        <th style={{ width: '100px', textAlign: 'center', minWidth: '100px' }}>Current Stock</th>
+                        <th style={{ width: '120px', textAlign: 'center', minWidth: '110px' }}>Stock Out Qty</th>
+                        <th style={{ width: '120px', textAlign: 'center', minWidth: '110px' }}>Remaining Stock</th>
+                        <th style={{ width: '100px', textAlign: 'center', minWidth: '90px' }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {addedProducts.map((product, index) => {
+                        const currentStock = parseInt(product.quantity) || 0;
+                        const stockOutQty = parseInt(product.stockOutQuantity) || 0;
+                        const remainingStock = currentStock - stockOutQty;
+                        return (
+                          <tr key={product.id}>
+                            <td style={{ textAlign: 'center', color: '#666', fontWeight: '500' }}>
+                              {index + 1}
+                            </td>
+                            <td style={{ fontWeight: '500', color: '#333' }}>
+                              {product.itemCode}
+                            </td>
+                            <td style={{ fontWeight: '500', color: '#333' }}>
+                              {product.productName}
+                            </td>
+                            <td style={{ textAlign: 'center', color: '#666' }}>
+                              {currentStock}
+                            </td>
+                            <td style={{ textAlign: 'center', color: '#dc3545', fontWeight: '600' }}>
+                              -{stockOutQty}
+                            </td>
+                            <td style={{ textAlign: 'center', fontWeight: '600', color: '#333' }}>
+                              {remainingStock}
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              <button
+                                type="button"
+                                onClick={() => removeProduct(product.id)}
+                                style={{
+                                  background: '#dc3545',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  padding: '6px 12px',
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  transition: 'all 0.2s ease',
+                                  whiteSpace: 'nowrap'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.background = '#c82333';
+                                  e.target.style.transform = 'scale(1.05)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.background = '#dc3545';
+                                  e.target.style.transform = 'scale(1)';
+                                }}
+                                title="Remove this product"
+                              >
+                                <i className="fas fa-trash"></i>
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Payment Mode - Only appears after adding products */}
+          {addedProducts.length > 0 && (
+            <div className="form-section">
+              <div className="form-grid four-col">
+                <div className="form-group">
+                  <label htmlFor="paymentMode">Payment Mode *</label>
                   <div className="input-wrapper">
                     <i className="fas fa-credit-card input-icon"></i>
                     <select
@@ -798,11 +793,11 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                       value={formData.paymentMode}
                       onChange={handleInputChange}
                       required
-                    disabled={!customerVerified}
-                    style={{ 
-                      background: !customerVerified ? '#f8f9fa' : '#fff',
-                      cursor: !customerVerified ? 'not-allowed' : 'pointer'
-                    }}
+                      disabled={!customerVerified}
+                      style={{ 
+                        background: !customerVerified ? '#f8f9fa' : '#fff',
+                        cursor: !customerVerified ? 'not-allowed' : 'pointer'
+                      }}
                     >
                       <option value="">Select payment mode</option>
                       <option value="Cash">Cash</option>
@@ -817,121 +812,15 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 </div>
               </div>
             </div>
-
-          {/* Display Added Products - Horizontal cards like transport addresses */}
-          {addedProducts.length > 0 && (
-            <div style={{ 
-              marginTop: '16px',
-              marginBottom: '20px',
-              clear: 'both'
-            }}>
-              <label style={{ 
-                display: 'block', 
-                marginBottom: '8px', 
-                fontWeight: '600', 
-                color: '#333', 
-                fontSize: '12px' 
-              }}>
-                Added Products ({addedProducts.length})
-              </label>
-              <div style={{ 
-                display: 'flex',
-                flexDirection: 'row',
-                gap: '8px',
-                overflowX: 'auto',
-                overflowY: 'hidden',
-                width: '100%'
-              }}>
-                {addedProducts.map((product, index) => (
-                  <div
-                    key={product.id}
-                    style={{
-                      padding: '8px',
-                      background: '#f8f9fa',
-                      border: '2px solid #e0e0e0',
-                      borderRadius: '6px',
-                      position: 'relative',
-                      minWidth: '200px',
-                      maxWidth: '200px',
-                      flexShrink: 0,
-                      boxSizing: 'border-box'
-                    }}
-                  >
-                    <div style={{ marginBottom: '6px', fontWeight: '600', color: '#dc3545', fontSize: '11px' }}>
-                      Product {index + 1}
-              </div>
-                    {product.itemCode && (
-                      <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
-                        <span style={{ fontWeight: '500', color: '#666' }}>Item Code: </span>
-                        <span style={{ color: '#333' }}>{product.itemCode}</span>
-            </div>
-                    )}
-                    {product.productName && (
-                      <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
-                        <span style={{ fontWeight: '500', color: '#666' }}>Product: </span>
-                        <span style={{ color: '#333' }}>{product.productName}</span>
-          </div>
-                    )}
-                    {product.skuCode && (
-                      <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
-                        <span style={{ fontWeight: '500', color: '#666' }}>SKV: </span>
-                        <span style={{ color: '#333' }}>{product.skuCode}</span>
-                      </div>
-                    )}
-                    <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
-                      <span style={{ fontWeight: '500', color: '#666' }}>Qty: </span>
-                      <span style={{ color: '#333', fontWeight: '600' }}>{product.stockOutQuantity}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeProduct(product.id)}
-                      style={{
-                        position: 'absolute',
-                        top: '6px',
-                        right: '6px',
-                        background: '#dc3545',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '50%',
-                        width: '20px',
-                        height: '20px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '10px',
-                        padding: 0
-                      }}
-                      title="Remove this product"
-                    >
-                      <i className="fas fa-times"></i>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
           )}
-
-          {/* Success/Error Messages */}
-          {successMessage && (
-            <div className="alert alert-success" style={{ marginBottom: '20px' }}>
-              <i className="fas fa-check-circle"></i> {successMessage}
-            </div>
-          )}
-
-          {error && (
-            <div className="alert alert-error" style={{ marginBottom: '20px' }}>
-              <i className="fas fa-exclamation-circle"></i> {error}
-            </div>
-          )}
-
 
           {/* Remove Stock Button - Centered below in the middle, same as Stock In button */}
           <div style={{ 
             display: 'flex', 
             justifyContent: 'center', 
             alignItems: 'center',
-            marginTop: '20px'
+            marginTop: '40px',
+            paddingTop: '20px'
           }}>
             <button
               type="submit"
@@ -948,19 +837,8 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
               }}
               onClick={(e) => {
                 // Additional validation before submit
-                if (!customerVerified) {
+                if (!customerVerified || !formData.paymentMode || addedProducts.length === 0) {
                   e.preventDefault();
-                  setError('Please verify the customer first');
-                  return;
-                }
-                if (!formData.paymentMode) {
-                  e.preventDefault();
-                  setError('Please select a payment mode');
-                  return;
-                }
-                if (addedProducts.length === 0) {
-                  e.preventDefault();
-                  setError('Please add at least one product before removing stock');
                   return;
                 }
               }}

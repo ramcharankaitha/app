@@ -26,6 +26,7 @@ const stockRoutes = require('./routes/stock');
 const categoryRoutes = require('./routes/categories');
 const serviceRoutes = require('./routes/services');
 const salesOrdersRoutes = require('./routes/salesOrders');
+const purchaseOrdersRoutes = require('./routes/purchaseOrders');
 const smsRoutes = require('./routes/sms');
 
 const app = express();
@@ -103,6 +104,7 @@ app.use('/api/stock', stockRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/sales-orders', salesOrdersRoutes);
+app.use('/api/purchase-orders', purchaseOrdersRoutes);
 app.use('/api/sms', smsRoutes);
 
 const startServer = async () => {

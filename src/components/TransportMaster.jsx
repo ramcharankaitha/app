@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { transportAPI } from '../services/api';
+import ConfirmDialog from './ConfirmDialog';
 import './suppliers.css';
 
 const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin' }) => {
@@ -8,6 +9,9 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
   const [error, setError] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
   const [viewTransportModal, setViewTransportModal] = useState(null);
+  const [editTransportModal, setEditTransportModal] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null, transport: null });
   const menuRefs = useRef({});
 
   const handleBack = () => {
@@ -163,8 +167,136 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
     setViewTransportModal(null);
   };
 
+  // Handle edit transport
+  const handleEditTransport = async (transport) => {
+    setOpenMenuId(null);
+    try {
+      const response = await transportAPI.getById(transport.id);
+      if (response.success) {
+        setEditTransportModal(response.transport);
+      } else {
+        setError('Failed to fetch transport details');
+      }
+    } catch (err) {
+      console.error('Error fetching transport details:', err);
+      setError('Failed to fetch transport details');
+    }
+  };
+
+  // Handle save transport details
+  const handleSaveTransportDetails = async () => {
+    if (!editTransportModal) return;
+    
+    setIsSaving(true);
+    setError('');
+    
+    try {
+      // Parse addresses if they're in JSONB format
+      let addressesData = [];
+      if (editTransportModal.addresses) {
+        try {
+          addressesData = typeof editTransportModal.addresses === 'string' 
+            ? JSON.parse(editTransportModal.addresses) 
+            : editTransportModal.addresses;
+        } catch (e) {
+          console.error('Error parsing addresses:', e);
+          // If parsing fails, try to create from legacy fields
+          if (editTransportModal.city) {
+            addressesData = [{
+              city: editTransportModal.city,
+              state: editTransportModal.state || '',
+              pincode: editTransportModal.pincode || ''
+            }];
+          }
+        }
+      } else if (editTransportModal.city) {
+        addressesData = [{
+          city: editTransportModal.city,
+          state: editTransportModal.state || '',
+          pincode: editTransportModal.pincode || ''
+        }];
+      }
+
+      const response = await transportAPI.update(editTransportModal.id, {
+        name: editTransportModal.name,
+        travels_name: editTransportModal.travels_name,
+        addresses: addressesData,
+        city: editTransportModal.city,
+        state: editTransportModal.state,
+        pincode: editTransportModal.pincode,
+        service: editTransportModal.service,
+        vehicle_number: editTransportModal.vehicle_number
+      });
+      
+      if (response.success) {
+        await fetchTransports();
+        setEditTransportModal(null);
+        setError('');
+      } else {
+        setError('Failed to update transport');
+      }
+    } catch (err) {
+      console.error('Error updating transport:', err);
+      setError(err.message || 'Failed to update transport');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle input change in edit modal
+  const handleEditInputChange = (field, value) => {
+    if (editTransportModal) {
+      setEditTransportModal({
+        ...editTransportModal,
+        [field]: value
+      });
+    }
+  };
+
+  const closeEditModal = () => {
+    setEditTransportModal(null);
+  };
+
+  // Handle disable transport
+  const handleDisableTransport = (transport) => {
+    setOpenMenuId(null);
+    setConfirmState({
+      open: true,
+      message: `Are you sure you want to disable ${transport.name}? This action can be reversed later.`,
+      transport: transport,
+      onConfirm: async () => {
+        try {
+          // Use delete API to disable/remove transport
+          const response = await transportAPI.delete(transport.id);
+          
+          if (response.success) {
+            await fetchTransports();
+            setConfirmState({ open: false, message: '', onConfirm: null, transport: null });
+          } else {
+            setError('Failed to disable transport');
+            setConfirmState({ open: false, message: '', onConfirm: null, transport: null });
+          }
+        } catch (err) {
+          console.error('Error disabling transport:', err);
+          setError('Failed to disable transport');
+          setConfirmState({ open: false, message: '', onConfirm: null, transport: null });
+        }
+      }
+    });
+  };
+
   return (
     <div className="dashboard-container">
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        open={confirmState.open}
+        title="Disable Transport"
+        message={confirmState.message}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null, transport: null })}
+        confirmText="Disable"
+        cancelText="Cancel"
+      />
       {/* Left Sidebar Navigation */}
       <nav className="sidebar-nav">
         <div className="nav-item" onClick={handleBack}>
@@ -269,7 +401,7 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
         )}
 
         {/* Transports List */}
-        <div className="staff-list">
+        <div className="staff-list-container" style={{ padding: '0 24px 24px' }}>
           {transports.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 40px', color: '#666' }}>
               <i className="fas fa-truck-moving" style={{ fontSize: '64px', marginBottom: '20px', opacity: 0.4, color: '#dc3545' }}></i>
@@ -282,73 +414,262 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
               <p>No transport records found matching your search</p>
             </div>
           ) : (
-            filteredTransports.map((transport) => (
-            <div key={transport.id} className="staff-card">
-              <div className="staff-avatar">
-                <span>{transport.initials}</span>
-              </div>
-              <div className="staff-info">
-                <div className="staff-name">{transport.name || 'N/A'}</div>
-                {transport.travelsName && (
-                  <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px' }}>
-                    <i className="fas fa-building" style={{ marginRight: '6px', fontSize: '10px' }}></i>
-                    Travels: {transport.travelsName}
-                  </div>
-                )}
-                {transport.addresses && transport.addresses.length > 0 && (
-                  <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px' }}>
-                    <i className="fas fa-map-marker-alt" style={{ marginRight: '6px', fontSize: '10px' }}></i>
-                    {transport.addresses.length === 1 
-                      ? transport.addresses[0].city || 'Multiple locations'
-                      : `${transport.addresses.length} locations: ${transport.addresses.map(a => a.city).filter(Boolean).join(', ')}`
-                    }
-                  </div>
-                )}
-                {(!transport.addresses || transport.addresses.length === 0) && transport.city && (
-                  <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px' }}>
-                    <i className="fas fa-map-marker-alt" style={{ marginRight: '6px', fontSize: '10px' }}></i>
-                    {transport.city}
-                  </div>
-                )}
-                {transport.service && (
-                  <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <i className="fas fa-cog" style={{ fontSize: '10px', color: '#666' }}></i>
-                    <span>{transport.service}</span>
-                  </div>
-                )}
-                {transport.vehicleNumber && (
-                  <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px' }}>
-                    <i className="fas fa-truck" style={{ marginRight: '6px', fontSize: '10px' }}></i>
-                    Vehicle: {transport.vehicleNumber}
-                  </div>
-                )}
-              </div>
-              <div 
-                className="staff-options-container" 
-                ref={el => menuRefs.current[transport.id] = el}
-              >
-                <button 
-                  className="staff-options"
-                  onClick={(e) => toggleMenu(transport.id, e)}
-                >
-                  <i className="fas fa-ellipsis-v"></i>
-                </button>
-                {openMenuId === transport.id && (
-                  <div className="staff-menu-dropdown">
-                    <div className="menu-item" onClick={() => handleViewTransportDetails(transport)}>
-                      <i className="fas fa-eye"></i>
-                      <span>View Transport Details</span>
+            <div className="premium-cards-grid">
+              {filteredTransports.map((transport) => {
+                // Format cities display: "2 Cities • Sundarapaly" or just city name if one
+                const getCitiesDisplay = () => {
+                  if (transport.addresses && transport.addresses.length > 0) {
+                    const cities = transport.addresses.map(a => a.city).filter(Boolean);
+                    if (cities.length === 0) return 'N/A';
+                    if (cities.length === 1) return cities[0];
+                    return `${cities.length} Cities • ${cities[0]}`;
+                  }
+                  if (transport.city) return transport.city;
+                  return 'N/A';
+                };
+
+                return (
+                  <div
+                    key={transport.id}
+                    className="premium-identity-card"
+                  >
+                    {/* Card Header */}
+                    <div className="premium-card-header">
+                      <div className="premium-avatar">
+                        <span>{transport.initials || 'TM'}</span>
+                      </div>
+                      <div className="premium-header-content">
+                        <h3 className="premium-worker-name">{transport.name || 'N/A'}</h3>
+                        {transport.travelsName && (
+                          <div 
+                            className="premium-role-badge"
+                            style={{ backgroundColor: '#dc3545' }}
+                          >
+                            {transport.travelsName}
+                          </div>
+                        )}
+                      </div>
+                      {/* Floating Three-Dot Menu */}
+                      <div 
+                        className="premium-card-menu" 
+                        ref={el => menuRefs.current[transport.id] = el}
+                      >
+                        <button 
+                          className="premium-menu-trigger"
+                          onClick={(e) => toggleMenu(transport.id, e)}
+                        >
+                          <i className="fas fa-ellipsis-v"></i>
+                        </button>
+                        {openMenuId === transport.id && (
+                          <div className="premium-menu-dropdown">
+                            <div className="premium-menu-item" onClick={() => handleViewTransportDetails(transport)}>
+                              <i className="fas fa-eye"></i>
+                              <span>View</span>
+                            </div>
+                            <div className="premium-menu-item" onClick={() => handleEditTransport(transport)}>
+                              <i className="fas fa-edit"></i>
+                              <span>Edit</span>
+                            </div>
+                            <div className="premium-menu-item premium-menu-item-danger" onClick={() => handleDisableTransport(transport)}>
+                              <i className="fas fa-ban"></i>
+                              <span>Disable</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Card Body - Two Column Layout */}
+                    <div className="premium-card-body">
+                      <div className="premium-info-row">
+                        <div className="premium-info-item">
+                          <div className="premium-info-icon">
+                            <i className="fas fa-map-marker-alt"></i>
+                          </div>
+                          <div className="premium-info-content">
+                            <span className="premium-info-label">Locations</span>
+                            <span className="premium-info-value">{getCitiesDisplay()}</span>
+                          </div>
+                        </div>
+                        <div className="premium-info-item">
+                          <div className="premium-info-icon">
+                            <i className="fas fa-truck"></i>
+                          </div>
+                          <div className="premium-info-content">
+                            <span className="premium-info-label">Vehicle</span>
+                            <span className="premium-info-value">{transport.vehicleNumber || 'N/A'}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                )}
-              </div>
+                );
+              })}
             </div>
-            ))
           )}
         </div>
       </main>
       </div>
       </div>
+
+      {/* Edit Transport Details Modal */}
+      {editTransportModal && (
+        <div className="modal-overlay" onClick={closeEditModal}>
+          <div className="customer-details-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', width: '90%' }}>
+            <div className="modal-header">
+              <h2>Edit Transport Details</h2>
+              <button className="modal-close-btn" onClick={closeEditModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="modal-content" style={{ padding: '20px' }}>
+              <div className="customer-detail-section">
+                <div className="detail-avatar">
+                  <span>{editTransportModal.name 
+                    ? editTransportModal.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+                    : 'TM'}</span>
+                </div>
+                <div className="detail-info" style={{ width: '100%' }}>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Name:</span>
+                    <input
+                      type="text"
+                      value={editTransportModal.name || ''}
+                      onChange={(e) => handleEditInputChange('name', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Travels Name:</span>
+                    <input
+                      type="text"
+                      value={editTransportModal.travels_name || ''}
+                      onChange={(e) => handleEditInputChange('travels_name', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>City:</span>
+                    <input
+                      type="text"
+                      value={editTransportModal.city || ''}
+                      onChange={(e) => handleEditInputChange('city', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>State:</span>
+                    <input
+                      type="text"
+                      value={editTransportModal.state || ''}
+                      onChange={(e) => handleEditInputChange('state', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Pincode:</span>
+                    <input
+                      type="text"
+                      value={editTransportModal.pincode || ''}
+                      onChange={(e) => handleEditInputChange('pincode', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Service:</span>
+                    <input
+                      type="text"
+                      value={editTransportModal.service || ''}
+                      onChange={(e) => handleEditInputChange('service', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Vehicle Number:</span>
+                    <input
+                      type="text"
+                      value={editTransportModal.vehicle_number || ''}
+                      onChange={(e) => handleEditInputChange('vehicle_number', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', padding: '20px' }}>
+              <button 
+                className="modal-close-button" 
+                onClick={closeEditModal}
+                style={{ background: '#6c757d', color: '#fff' }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="modal-close-button" 
+                onClick={handleSaveTransportDetails}
+                disabled={isSaving}
+                style={{ 
+                  background: '#dc3545', 
+                  color: '#fff',
+                  opacity: isSaving ? 0.6 : 1,
+                  cursor: isSaving ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* View Transport Details Modal */}
       {viewTransportModal && (

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { chitPlansAPI } from '../services/api';
+import ConfirmDialog from './ConfirmDialog';
 import './staff.css';
 
 const ChitPlanMaster = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' }) => {
@@ -9,10 +10,8 @@ const ChitPlanMaster = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' 
   const [successMessage, setSuccessMessage] = useState('');
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
-  const [editPlanModal, setEditPlanModal] = useState(null);
-  const [isSaving, setIsSaving] = useState(false);
+  const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null, plan: null });
   const menuRefs = useRef({});
 
   // Fetch chit plans from database
@@ -58,91 +57,30 @@ const ChitPlanMaster = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' 
     setOpenMenuId(null);
   };
 
-  const handleEditPlan = async (plan) => {
-    setOpenMenuId(null);
-    try {
-      const response = await chitPlansAPI.getPlanById(plan.id);
-      if (response && response.success) {
-        setEditPlanModal(response.plan);
-      } else {
-        setError('Failed to fetch chit plan details');
-      }
-    } catch (err) {
-      console.error('Error fetching chit plan details:', err);
-      setError('Failed to fetch chit plan details');
-    }
-  };
-
   const handleDeletePlan = (plan) => {
-    setSelectedPlan(plan);
-    setShowDeleteConfirm(true);
     setOpenMenuId(null);
-  };
-
-  const confirmDelete = async () => {
-    if (!selectedPlan) return;
-    
-    try {
-      const response = await chitPlansAPI.deletePlan(selectedPlan.id);
-      if (response && response.success) {
-        setSuccessMessage('Chit plan deleted successfully');
-        setTimeout(() => setSuccessMessage(''), 3000);
-        fetchPlans();
-      } else {
-        setError(response?.error || 'Failed to delete chit plan');
+    setConfirmState({
+      open: true,
+      message: `Are you sure you want to delete "${plan.plan_name}"? This action cannot be undone.`,
+      plan: plan,
+      onConfirm: async () => {
+        try {
+          const response = await chitPlansAPI.deletePlan(plan.id);
+          if (response && response.success) {
+            setSuccessMessage('Chit plan deleted successfully');
+            setTimeout(() => setSuccessMessage(''), 3000);
+            await fetchPlans();
+            setConfirmState({ open: false, message: '', onConfirm: null, plan: null });
+          } else {
+            setError(response?.error || 'Failed to delete chit plan');
+            setConfirmState({ open: false, message: '', onConfirm: null, plan: null });
+          }
+        } catch (err) {
+          setError(err.message || 'Failed to delete chit plan');
+          setConfirmState({ open: false, message: '', onConfirm: null, plan: null });
+        }
       }
-      setShowDeleteConfirm(false);
-      setSelectedPlan(null);
-    } catch (err) {
-      setError(err.message || 'Failed to delete chit plan');
-      setShowDeleteConfirm(false);
-    }
-  };
-
-  // Handle save chit plan details
-  const handleSavePlanDetails = async () => {
-    if (!editPlanModal) return;
-    
-    setIsSaving(true);
-    setError('');
-    
-    try {
-      const response = await chitPlansAPI.updatePlan(editPlanModal.id, {
-        planName: editPlanModal.plan_name,
-        planAmount: parseFloat(editPlanModal.plan_amount),
-        description: editPlanModal.description || ''
-      });
-      
-      if (response && response.success) {
-        // Refresh plans list
-        await fetchPlans();
-        setEditPlanModal(null);
-        setError('');
-        setSuccessMessage('Chit plan updated successfully');
-        setTimeout(() => setSuccessMessage(''), 3000);
-      } else {
-        setError(response?.error || 'Failed to update chit plan');
-      }
-    } catch (err) {
-      console.error('Error updating chit plan:', err);
-      setError(err.message || 'Failed to update chit plan');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // Handle input change in edit modal
-  const handleEditInputChange = (field, value) => {
-    if (editPlanModal) {
-      setEditPlanModal({
-        ...editPlanModal,
-        [field]: value
-      });
-    }
-  };
-
-  const closeEditModal = () => {
-    setEditPlanModal(null);
+    });
   };
 
   const handleBack = () => {
@@ -298,7 +236,7 @@ const ChitPlanMaster = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' 
             </div>
 
             {/* Plans List */}
-            <div className="staff-list">
+            <div className="staff-list-container" style={{ padding: '0 24px 24px' }}>
               {plans.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '60px 40px', color: '#666' }}>
                   <i className="fas fa-file-invoice-dollar" style={{ fontSize: '64px', marginBottom: '20px', opacity: 0.4, color: '#dc3545' }}></i>
@@ -311,220 +249,140 @@ const ChitPlanMaster = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' 
                   <p>No plans found matching your search</p>
                 </div>
               ) : (
-                filtered.map((plan) => (
-                  <div key={plan.id} className="staff-card" style={{ position: 'relative' }}>
-                    <div className="staff-info" style={{ flex: 1 }}>
-                      <div className="staff-name">{plan.plan_name}</div>
-                      <div className="staff-role" style={{ fontSize: '16px', fontWeight: '700', color: '#dc3545', marginTop: '8px' }}>
-                        ₹{parseFloat(plan.plan_amount).toLocaleString('en-IN')}
-                      </div>
-                      {plan.description && (
-                        <div className="staff-role" style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                          {plan.description}
-                        </div>
-                      )}
-                    </div>
-                    <div 
-                      className="staff-options-container" 
-                      ref={el => menuRefs.current[plan.id] = el}
+                <div className="premium-cards-grid">
+                  {filtered.map((plan) => (
+                    <div
+                      key={plan.id}
+                      className="premium-identity-card"
                     >
-                      <button 
-                        className="staff-options"
-                        onClick={(e) => toggleMenu(plan.id, e)}
-                      >
-                        <i className="fas fa-ellipsis-v"></i>
-                      </button>
-                      {openMenuId === plan.id && (
-                        <div className="staff-menu-dropdown">
-                          <div className="menu-item" onClick={() => handleViewPlan(plan)}>
-                            <i className="fas fa-eye"></i>
-                            <span>View Details</span>
-                          </div>
-                          <div className="menu-item" onClick={() => handleEditPlan(plan)}>
-                            <i className="fas fa-edit"></i>
-                            <span>Edit Plan</span>
-                          </div>
-                          <div className="menu-item" onClick={() => handleDeletePlan(plan)}>
-                            <i className="fas fa-trash"></i>
-                            <span>Delete</span>
+                      {/* Card Header */}
+                      <div className="premium-card-header">
+                        <div className="premium-header-content">
+                          <h3 className="premium-worker-name">{plan.plan_name || 'N/A'}</h3>
+                        </div>
+                        {/* Floating Three-Dot Menu */}
+                        <div 
+                          className="premium-card-menu" 
+                          ref={el => menuRefs.current[plan.id] = el}
+                        >
+                          <button 
+                            className="premium-menu-trigger"
+                            onClick={(e) => toggleMenu(plan.id, e)}
+                          >
+                            <i className="fas fa-ellipsis-v"></i>
+                          </button>
+                          {openMenuId === plan.id && (
+                            <div className="premium-menu-dropdown">
+                              <div className="premium-menu-item" onClick={() => handleViewPlan(plan)}>
+                                <i className="fas fa-eye"></i>
+                                <span>View</span>
+                              </div>
+                              <div className="premium-menu-item premium-menu-item-danger" onClick={() => handleDeletePlan(plan)}>
+                                <i className="fas fa-trash"></i>
+                                <span>Delete</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Card Body */}
+                      <div className="premium-card-body">
+                        <div className="premium-info-row">
+                          <div className="premium-info-item" style={{ gridColumn: '1 / -1' }}>
+                            <div className="premium-info-icon">
+                              <i className="fas fa-rupee-sign"></i>
+                            </div>
+                            <div className="premium-info-content">
+                              <span className="premium-info-label">Amount</span>
+                              <span className="premium-info-value" style={{ fontSize: '20px', color: '#dc3545', fontWeight: '700' }}>
+                                ₹{parseFloat(plan.plan_amount || 0).toLocaleString('en-IN')}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      )}
+                        {plan.description && (
+                          <div className="premium-info-row" style={{ marginTop: '16px' }}>
+                            <div className="premium-info-item" style={{ gridColumn: '1 / -1' }}>
+                              <div className="premium-info-icon">
+                                <i className="fas fa-file-alt"></i>
+                              </div>
+                              <div className="premium-info-content">
+                                <span className="premium-info-label">Description</span>
+                                <span className="premium-info-value" style={{ fontSize: '13px', color: '#64748b' }}>
+                                  {plan.description}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
           </main>
         </div>
       </div>
 
-      {/* View Modal */}
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        open={confirmState.open}
+        title="Delete Chit Plan"
+        message={confirmState.message}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null, plan: null })}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
+
+      {/* View Chit Plan Details Modal */}
       {showViewModal && selectedPlan && (
         <div className="modal-overlay" onClick={() => setShowViewModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+          <div className="customer-details-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Chit Plan Details</h2>
               <button className="modal-close-btn" onClick={() => setShowViewModal(false)}>
                 <i className="fas fa-times"></i>
               </button>
             </div>
-            <div className="modal-body">
-              <div style={{ marginBottom: '16px' }}>
-                <strong>Plan Name:</strong> {selectedPlan.plan_name}
-              </div>
-              <div style={{ marginBottom: '16px' }}>
-                <strong>Plan Amount:</strong> ₹{parseFloat(selectedPlan.plan_amount).toLocaleString('en-IN')}
-              </div>
-              {selectedPlan.description && (
-                <div style={{ marginBottom: '16px' }}>
-                  <strong>Description:</strong> {selectedPlan.description}
-                </div>
-              )}
-              <div style={{ marginBottom: '16px' }}>
-                <strong>Created At:</strong> {new Date(selectedPlan.created_at).toLocaleString()}
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="modal-close-button" onClick={() => setShowViewModal(false)}>
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Plan Modal */}
-      {editPlanModal && (
-        <div className="modal-overlay" onClick={closeEditModal}>
-          <div className="customer-details-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Edit Chit Plan</h2>
-              <button className="modal-close-btn" onClick={closeEditModal}>
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
             <div className="modal-content">
-              {error && (
-                <div style={{ 
-                  padding: '12px', 
-                  background: '#ffe0e0', 
-                  color: '#dc3545', 
-                  borderRadius: '8px', 
-                  marginBottom: '20px' 
-                }}>
-                  <i className="fas fa-exclamation-circle"></i> {error}
-                </div>
-              )}
               <div className="customer-detail-section">
                 <div className="detail-avatar">
-                  <span>{editPlanModal.plan_name 
-                    ? editPlanModal.plan_name.substring(0, 2).toUpperCase()
+                  <span>{selectedPlan.plan_name 
+                    ? selectedPlan.plan_name.substring(0, 2).toUpperCase()
                     : 'CP'}</span>
                 </div>
                 <div className="detail-info">
                   <div className="detail-row">
                     <span className="detail-label">Plan Name:</span>
-                    <input
-                      type="text"
-                      value={editPlanModal.plan_name || ''}
-                      onChange={(e) => handleEditInputChange('plan_name', e.target.value)}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        width: '100%',
-                        maxWidth: '300px'
-                      }}
-                    />
+                    <span className="detail-value">{selectedPlan.plan_name || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">Plan Amount:</span>
-                    <input
-                      type="number"
-                      value={editPlanModal.plan_amount || ''}
-                      onChange={(e) => handleEditInputChange('plan_amount', e.target.value)}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        width: '100%',
-                        maxWidth: '300px'
-                      }}
-                    />
+                    <span className="detail-value" style={{ fontSize: '18px', fontWeight: '700', color: '#dc3545' }}>
+                      ₹{parseFloat(selectedPlan.plan_amount || 0).toLocaleString('en-IN')}
+                    </span>
                   </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Description:</span>
-                    <textarea
-                      value={editPlanModal.description || ''}
-                      onChange={(e) => handleEditInputChange('description', e.target.value)}
-                      rows="3"
-                      placeholder="Enter description (optional)"
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        width: '100%',
-                        maxWidth: '300px',
-                        resize: 'vertical'
-                      }}
-                    />
-                  </div>
+                  {selectedPlan.description && (
+                    <div className="detail-row">
+                      <span className="detail-label">Description:</span>
+                      <span className="detail-value">{selectedPlan.description}</span>
+                    </div>
+                  )}
+                  {selectedPlan.created_at && (
+                    <div className="detail-row">
+                      <span className="detail-label">Created At:</span>
+                      <span className="detail-value">{new Date(selectedPlan.created_at).toLocaleString()}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
             <div className="modal-footer">
-              <button 
-                className="modal-close-button" 
-                onClick={closeEditModal}
-                disabled={isSaving}
-              >
-                Cancel
-              </button>
-              <button 
-                className="modal-close-button" 
-                onClick={handleSavePlanDetails}
-                disabled={isSaving}
-                style={{ 
-                  background: '#28a745', 
-                  color: '#fff', 
-                  marginLeft: '8px' 
-                }}
-              >
-                {isSaving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && selectedPlan && (
-        <div className="modal-overlay" onClick={() => setShowDeleteConfirm(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-            <div className="modal-header">
-              <h2>Confirm Delete</h2>
-              <button className="modal-close-btn" onClick={() => setShowDeleteConfirm(false)}>
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-            <div className="modal-body">
-              <p>Are you sure you want to delete the chit plan "{selectedPlan.plan_name}"?</p>
-              <p style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>This action cannot be undone.</p>
-            </div>
-            <div className="modal-footer">
-              <button className="modal-close-button" onClick={() => setShowDeleteConfirm(false)}>
-                Cancel
-              </button>
-              <button 
-                className="modal-close-button" 
-                onClick={confirmDelete}
-                style={{ background: '#dc3545', color: '#fff', marginLeft: '8px' }}
-              >
-                Delete
+              <button className="modal-close-button" onClick={() => setShowViewModal(false)}>
+                Close
               </button>
             </div>
           </div>

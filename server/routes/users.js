@@ -33,9 +33,9 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { firstName, lastName, email, username, password, storeAllocated, address, city, state, pincode, phone } = req.body;
+    const { firstName, lastName, username, password, storeAllocated, address, city, state, pincode, phone } = req.body;
 
-    if (!firstName || !lastName || !email || !username || !password) {
+    if (!firstName || !lastName || !username || !password) {
       return res.status(400).json({ error: 'Required fields are missing' });
     }
 
@@ -50,7 +50,7 @@ router.post('/', async (req, res) => {
       `INSERT INTO users (first_name, last_name, email, username, password_hash, store_allocated, address, city, state, pincode, phone, role)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING id, first_name, last_name, email, username, role, store_allocated`,
-      [firstName, lastName, email, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, phone || null, 'Supervisor']
+      [firstName, lastName, null, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, phone || null, 'Supervisor']
     );
     
     console.log('Supervisor created successfully:', result.rows[0].username);
@@ -62,7 +62,7 @@ router.post('/', async (req, res) => {
     });
   } catch (error) {
     if (error.code === '23505') { // Unique violation
-      return res.status(400).json({ error: 'Email or username already exists' });
+      return res.status(400).json({ error: 'Username already exists' });
     }
     console.error('Create user error:', error);
     res.status(500).json({ error: 'Internal server error' });

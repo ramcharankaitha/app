@@ -6,7 +6,6 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
   const [formData, setFormData] = useState({
     fullName: '',
     storeAllocated: '',
-    email: '',
     phoneNumber: '',
     address: '',
     city: '',
@@ -14,7 +13,9 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
     pincode: '',
     username: '',
     password: '',
-    isHandler: false
+    isHandler: false,
+    salary: '',
+    aadharFile: null
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -75,11 +76,18 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
   };
 
   const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    const { name, value, type, checked, files } = e.target;
+    if (type === 'file') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: files && files.length > 0 ? files[0] : null
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      }));
+    }
   };
 
   const submitStaff = async () => {
@@ -88,16 +96,39 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
     setSuccessMessage('');
 
     try {
-      const response = await staffAPI.create({
-        fullName: formData.fullName,
-        email: formData.email,
-        phoneNumber: formData.phoneNumber,
-        username: formData.username,
-        password: formData.password,
-        storeAllocated: formData.storeAllocated,
-        address: formData.address,
-        isHandler: formData.isHandler
-      });
+      // If Aadhar file is present, use FormData, otherwise use JSON
+      let response;
+      if (formData.aadharFile) {
+        const formDataToSend = new FormData();
+        formDataToSend.append('fullName', formData.fullName);
+        formDataToSend.append('phoneNumber', formData.phoneNumber);
+        formDataToSend.append('username', formData.username);
+        formDataToSend.append('password', formData.password);
+        formDataToSend.append('storeAllocated', formData.storeAllocated);
+        formDataToSend.append('address', formData.address);
+        formDataToSend.append('city', formData.city);
+        formDataToSend.append('state', formData.state);
+        formDataToSend.append('pincode', formData.pincode);
+        formDataToSend.append('isHandler', formData.isHandler);
+        formDataToSend.append('salary', formData.salary || '');
+        formDataToSend.append('aadharCopy', formData.aadharFile);
+        
+        response = await staffAPI.createWithFile(formDataToSend);
+      } else {
+        response = await staffAPI.create({
+          fullName: formData.fullName,
+          phoneNumber: formData.phoneNumber,
+          username: formData.username,
+          password: formData.password,
+          storeAllocated: formData.storeAllocated,
+          address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          pincode: formData.pincode,
+          isHandler: formData.isHandler,
+          salary: formData.salary || null
+        });
+      }
 
       if (response.success) {
         setSuccessMessage('Save changes are done');
@@ -197,7 +228,7 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                 {/* All fields in 3-column grid without section titles */}
                 <div className="form-section">
                   <div className="form-grid three-col">
-                    {/* Row 1: Name, Phone Number, Email */}
+                    {/* Row 1: Name, Phone Number */}
                     <div className="form-group">
                       <label htmlFor="fullName">Staff name</label>
                       <input
@@ -223,23 +254,6 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                           className="form-input"
                           placeholder="Enter phone number"
                           value={formData.phoneNumber}
-                          onChange={handleInputChange}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="email">Email</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-envelope input-icon"></i>
-                        <input
-                          type="email"
-                          id="email"
-                          name="email"
-                          className="form-input"
-                          placeholder="name.lastname@dmart.com"
-                          value={formData.email}
                           onChange={handleInputChange}
                           required
                         />
@@ -377,6 +391,76 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                         <i className="fas fa-chevron-down dropdown-icon"></i>
                   </div>
                 </div>
+
+                    {/* Row 4: Salary, Aadhar Upload */}
+                    <div className="form-group">
+                      <label htmlFor="salary">Salary</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-rupee-sign input-icon"></i>
+                        <input
+                          type="number"
+                          id="salary"
+                          name="salary"
+                          className="form-input"
+                          placeholder="Enter salary"
+                          value={formData.salary}
+                          onChange={handleInputChange}
+                          min="0"
+                          step="0.01"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="aadharFile">Upload Aadhar</label>
+                      <div className="input-wrapper" style={{ position: 'relative' }}>
+                        <i className="fas fa-id-card input-icon"></i>
+                        <input
+                          type="file"
+                          id="aadharFile"
+                          name="aadharFile"
+                          className="form-input"
+                          accept="image/*,.pdf"
+                          onChange={handleInputChange}
+                          style={{ 
+                            paddingTop: '10px',
+                            paddingBottom: '10px',
+                            cursor: 'pointer'
+                          }}
+                        />
+                        {formData.aadharFile && (
+                          <div style={{
+                            fontSize: '11px',
+                            color: '#28a745',
+                            marginTop: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}>
+                            <i className="fas fa-check-circle"></i>
+                            {formData.aadharFile.name}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData(prev => ({ ...prev, aadharFile: null }));
+                                document.getElementById('aadharFile').value = '';
+                              }}
+                              style={{
+                                marginLeft: '8px',
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#dc3545',
+                                cursor: 'pointer',
+                                fontSize: '12px'
+                              }}
+                              title="Remove file"
+                            >
+                              <i className="fas fa-times"></i>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
                     {/* Row 5: Username and Password (2 columns) */}
                     <div className="form-group">

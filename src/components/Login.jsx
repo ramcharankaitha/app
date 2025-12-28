@@ -4,7 +4,6 @@ import { authAPI } from '../services/api';
 const Login = ({ onLoginSuccess }) => {
   const [formData, setFormData] = useState({
     role: 'admin',
-    email: '',
     username: '',
     password: '',
     remember: true
@@ -13,22 +12,15 @@ const Login = ({ onLoginSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Temporary credentials (fallback if API is not available)
-  const TEMP_CREDENTIALS = {
-    email: 'admin@anithastores.com',
-    password: 'admin123'
-  };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     
-    // Clear the opposite field when role changes
+    // Handle role change
     if (name === 'role') {
       setFormData(prev => ({
         ...prev,
-        [name]: value,
-        email: value === 'admin' ? prev.email : '',
-        username: value === 'admin' ? '' : prev.username
+        [name]: value
       }));
     } else {
       setFormData(prev => ({
@@ -57,9 +49,8 @@ const Login = ({ onLoginSuccess }) => {
 
     try {
       // Try API login first
-      // For admin: use email, for supervisor/staff: use username
-      const loginIdentifier = formData.role === 'admin' ? formData.email : formData.username;
-      const response = await authAPI.login(loginIdentifier, formData.password, formData.role);
+      // Use username for all roles
+      const response = await authAPI.login(formData.username, formData.password, formData.role);
       
       if (response.success) {
         // Normalize role: Super Admin -> admin, Supervisor -> supervisor, Staff -> staff
@@ -88,36 +79,9 @@ const Login = ({ onLoginSuccess }) => {
       // Fallback to temporary credentials if API fails (only for admin)
       console.warn('API login failed, using fallback:', apiError.message);
       
-      if (
-        formData.role === 'admin' &&
-        formData.email.toLowerCase() === TEMP_CREDENTIALS.email.toLowerCase() &&
-        formData.password === TEMP_CREDENTIALS.password
-      ) {
-        // Successful login with fallback
-        if (formData.remember) {
-          localStorage.setItem('isLoggedIn', 'true');
-          localStorage.setItem('userRole', 'admin');
-          localStorage.setItem('userData', JSON.stringify({
-            name: 'Admin Root',
-            role: 'admin',
-            email: formData.email
-          }));
-        }
-        setIsLoading(false);
-        onLoginSuccess('admin', {
-          name: 'Admin Root',
-          role: 'admin',
-          email: formData.email
-        });
-      } else {
-        // Failed login
-        setIsLoading(false);
-        if (formData.role === 'admin') {
-          setError('Invalid email or password. Use: admin@anithastores.com / admin123');
-        } else {
-          setError('Invalid username or password. Please check your credentials.');
-        }
-      }
+      // Failed login
+      setIsLoading(false);
+      setError('Invalid username or password. Please check your credentials.');
     }
   };
 
@@ -173,42 +137,23 @@ const Login = ({ onLoginSuccess }) => {
                 </div>
               </div>
 
-              {/* Email/Username Field - Changes based on role */}
-              {formData.role === 'admin' ? (
-                <div className="form-group">
-                  <label htmlFor="email">Email Address</label>
-                  <div className="input-wrapper">
-                    <i className="fas fa-envelope input-icon"></i>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      className="form-input"
-                      placeholder="Enter your email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
+              {/* Username Field */}
+              <div className="form-group">
+                <label htmlFor="username">Username</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-user input-icon"></i>
+                  <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    className="form-input"
+                    placeholder="Enter your username"
+                    value={formData.username}
+                    onChange={handleInputChange}
+                    required
+                  />
                 </div>
-              ) : (
-                <div className="form-group">
-                  <label htmlFor="username">Username</label>
-                  <div className="input-wrapper">
-                    <i className="fas fa-user input-icon"></i>
-                    <input
-                      type="text"
-                      id="username"
-                      name="username"
-                      className="form-input"
-                      placeholder="Enter your username"
-                      value={formData.username}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                </div>
-              )}
+              </div>
 
               {/* Password Field */}
               <div className="form-group">

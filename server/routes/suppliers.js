@@ -32,26 +32,53 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { supplierName, phone, address, city, state, pincode, email } = req.body;
+    const { supplierName, phone, phone2, phone3, address, city, state, pincode, brand, notifications } = req.body;
 
     if (!supplierName) {
       return res.status(400).json({ error: 'Supplier name is required' });
     }
 
-    const result = await pool.query(
-      `INSERT INTO suppliers (supplier_name, phone, address, city, state, pincode, email)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING *`,
-      [
-        supplierName,
-        phone || null,
-        address || null,
-        city || null,
-        state || null,
-        pincode || null,
-        email || null
-      ]
-    );
+    // Try with new fields first, fallback to old structure if columns don't exist
+    let result;
+    try {
+      result = await pool.query(
+        `INSERT INTO suppliers (supplier_name, phone, phone_2, phone_3, address, city, state, pincode, brand, notifications)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         RETURNING *`,
+        [
+          supplierName,
+          phone || null,
+          phone2 || null,
+          phone3 || null,
+          address || null,
+          city || null,
+          state || null,
+          pincode || null,
+          brand || null,
+          notifications || null
+        ]
+      );
+    } catch (colError) {
+      // If new columns don't exist, use old structure
+      if (colError.code === '42703') { // undefined_column error
+        result = await pool.query(
+          `INSERT INTO suppliers (supplier_name, phone, address, city, state, pincode, email)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           RETURNING *`,
+          [
+            supplierName,
+            phone || null,
+            address || null,
+            city || null,
+            state || null,
+            pincode || null,
+            null // email removed
+          ]
+        );
+      } else {
+        throw colError;
+      }
+    }
 
     res.status(201).json({
       success: true,
@@ -70,26 +97,53 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { supplierName, phone, address, city, state, pincode, email } = req.body;
+    const { supplierName, phone, phone2, phone3, address, city, state, pincode, brand, notifications } = req.body;
 
     if (!supplierName) {
       return res.status(400).json({ error: 'Supplier name is required' });
     }
 
-    const result = await pool.query(
-      `UPDATE suppliers 
-       SET supplier_name = $1, 
-           phone = $2, 
-           address = $3,
-           city = $4,
-           state = $5,
-           pincode = $6, 
-           email = $7,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $8
-       RETURNING *`,
-      [supplierName, phone || null, address || null, city || null, state || null, pincode || null, email || null, id]
-    );
+    // Try with new fields first, fallback to old structure if columns don't exist
+    let result;
+    try {
+      result = await pool.query(
+        `UPDATE suppliers 
+         SET supplier_name = $1, 
+             phone = $2, 
+             phone_2 = $3,
+             phone_3 = $4,
+             address = $5,
+             city = $6,
+             state = $7,
+             pincode = $8, 
+             brand = $9,
+             notifications = $10,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = $11
+         RETURNING *`,
+        [supplierName, phone || null, phone2 || null, phone3 || null, address || null, city || null, state || null, pincode || null, brand || null, notifications || null, id]
+      );
+    } catch (colError) {
+      // If new columns don't exist, use old structure
+      if (colError.code === '42703') { // undefined_column error
+        result = await pool.query(
+          `UPDATE suppliers 
+           SET supplier_name = $1, 
+               phone = $2, 
+               address = $3,
+               city = $4,
+               state = $5,
+               pincode = $6, 
+               email = $7,
+               updated_at = CURRENT_TIMESTAMP
+           WHERE id = $8
+           RETURNING *`,
+          [supplierName, phone || null, address || null, city || null, state || null, pincode || null, null, id]
+        );
+      } else {
+        throw colError;
+      }
+    }
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Supplier not found' });

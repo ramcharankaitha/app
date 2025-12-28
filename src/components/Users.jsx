@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { usersAPI } from '../services/api';
+import ConfirmDialog from './ConfirmDialog';
 
 const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -8,6 +9,9 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
   const [error, setError] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
   const [viewSupervisorModal, setViewSupervisorModal] = useState(null);
+  const [editSupervisorModal, setEditSupervisorModal] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null, user: null });
   const menuRefs = useRef({});
 
   const handleBack = () => {
@@ -122,8 +126,149 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
     setViewSupervisorModal(null);
   };
 
+  // Handle edit supervisor
+  const handleEditSupervisor = async (user) => {
+    setOpenMenuId(null);
+    try {
+      const response = await usersAPI.getById(user.id);
+      if (response.success) {
+        setEditSupervisorModal(response.user);
+      } else {
+        setError('Failed to fetch supervisor details');
+      }
+    } catch (err) {
+      console.error('Error fetching supervisor details:', err);
+      setError('Failed to fetch supervisor details');
+    }
+  };
+
+  // Handle save supervisor details
+  const handleSaveSupervisorDetails = async () => {
+    if (!editSupervisorModal) return;
+    
+    setIsSaving(true);
+    setError('');
+    
+    try {
+      const response = await usersAPI.update(editSupervisorModal.id, {
+        firstName: editSupervisorModal.first_name,
+        lastName: editSupervisorModal.last_name,
+        email: editSupervisorModal.email,
+        username: editSupervisorModal.username,
+        storeAllocated: editSupervisorModal.store_allocated
+      });
+      
+      if (response.success) {
+        // Refresh users list
+        const fetchUsers = async () => {
+          try {
+            const response = await usersAPI.getAll();
+            if (response.success) {
+              const formattedUsers = response.users.map(user => ({
+                id: user.id,
+                name: `${user.first_name} ${user.last_name}`,
+                initials: `${user.first_name[0]}${user.last_name[0]}`.toUpperCase(),
+                role: user.role || 'Store User/Supervisor',
+                store: user.store_allocated || 'Not Assigned',
+                email: user.email
+              }));
+              setUsers(formattedUsers);
+            }
+          } catch (err) {
+            console.error('Error fetching users:', err);
+          }
+        };
+        await fetchUsers();
+        setEditSupervisorModal(null);
+        setError('');
+      } else {
+        setError('Failed to update supervisor');
+      }
+    } catch (err) {
+      console.error('Error updating supervisor:', err);
+      setError(err.message || 'Failed to update supervisor');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle input change in edit modal
+  const handleEditInputChange = (field, value) => {
+    if (editSupervisorModal) {
+      setEditSupervisorModal({
+        ...editSupervisorModal,
+        [field]: value
+      });
+    }
+  };
+
+  const closeEditModal = () => {
+    setEditSupervisorModal(null);
+  };
+
+  // Handle disable supervisor
+  const handleDisableSupervisor = (user) => {
+    setOpenMenuId(null);
+    setConfirmState({
+      open: true,
+      message: `Are you sure you want to disable ${user.name}? This action can be reversed later.`,
+      user: user,
+      onConfirm: async () => {
+        try {
+          // Note: You may need to add a disable endpoint to usersAPI
+          // For now, this is a placeholder that can be implemented based on your backend
+          const response = await usersAPI.update(user.id, {
+            ...user,
+            is_active: false
+          });
+          
+          if (response.success) {
+            // Refresh users list
+            const fetchUsers = async () => {
+              try {
+                const response = await usersAPI.getAll();
+                if (response.success) {
+                  const formattedUsers = response.users.map(user => ({
+                    id: user.id,
+                    name: `${user.first_name} ${user.last_name}`,
+                    initials: `${user.first_name[0]}${user.last_name[0]}`.toUpperCase(),
+                    role: user.role || 'Store User/Supervisor',
+                    store: user.store_allocated || 'Not Assigned',
+                    email: user.email
+                  }));
+                  setUsers(formattedUsers);
+                }
+              } catch (err) {
+                console.error('Error fetching users:', err);
+              }
+            };
+            await fetchUsers();
+            setConfirmState({ open: false, message: '', onConfirm: null, user: null });
+          } else {
+            setError('Failed to disable supervisor');
+            setConfirmState({ open: false, message: '', onConfirm: null, user: null });
+          }
+        } catch (err) {
+          console.error('Error disabling supervisor:', err);
+          setError('Failed to disable supervisor');
+          setConfirmState({ open: false, message: '', onConfirm: null, user: null });
+        }
+      }
+    });
+  };
+
   return (
     <div className="dashboard-container">
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        open={confirmState.open}
+        title="Disable Supervisor"
+        message={confirmState.message}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null, user: null })}
+        confirmText="Disable"
+        cancelText="Cancel"
+      />
       {/* Left Sidebar Navigation */}
       <nav className="sidebar-nav">
         <div className="nav-item" onClick={handleBack}>
@@ -224,7 +369,7 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
         )}
 
         {/* Users List */}
-        <div className="users-list">
+        <div className="staff-list-container" style={{ padding: '0 24px 24px' }}>
           {users.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 40px', color: '#666' }}>
               <i className="fas fa-users" style={{ fontSize: '64px', marginBottom: '20px', opacity: 0.4, color: '#dc3545' }}></i>
@@ -237,41 +382,93 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
               <p>No supervisors found matching your search</p>
             </div>
           ) : (
-            filteredUsers.map((user) => (
-            <div key={user.id} className="user-card">
-              <div className="user-avatar">
-                <span>{user.initials}</span>
-              </div>
-              <div className="user-info">
-                <div className="user-name">{user.name}</div>
-                <div className="user-role">{user.role}</div>
-                <div className="user-store-badge">
-                  <i className="fas fa-check-circle"></i>
-                  <span>{user.store}</span>
-                </div>
-              </div>
-              <div className="user-email">{user.email}</div>
-              <div 
-                className="user-options-container" 
-                ref={el => menuRefs.current[user.id] = el}
-              >
-                <button 
-                  className="user-options"
-                  onClick={(e) => toggleMenu(user.id, e)}
-                >
-                  <i className="fas fa-ellipsis-v"></i>
-                </button>
-                {openMenuId === user.id && (
-                  <div className="supervisor-menu-dropdown">
-                    <div className="menu-item" onClick={() => handleViewSupervisorDetails(user)}>
-                      <i className="fas fa-eye"></i>
-                      <span>View Supervisor Details</span>
+            <div className="premium-cards-grid">
+              {filteredUsers.map((user) => {
+                // Determine role badge color - Red theme
+                const getRoleBadgeColor = (role) => {
+                  const roleLower = (role || '').toLowerCase();
+                  if (roleLower.includes('supervisor')) return '#dc3545'; // Red
+                  if (roleLower.includes('admin')) return '#dc3545'; // Red
+                  return '#dc3545'; // Red for all roles
+                };
+
+                return (
+                  <div
+                    key={user.id}
+                    className="premium-identity-card"
+                  >
+
+                    {/* Card Header */}
+                    <div className="premium-card-header">
+                      <div className="premium-avatar">
+                        <span>{user.initials || 'SP'}</span>
+                      </div>
+                      <div className="premium-header-content">
+                        <h3 className="premium-worker-name">{user.name || 'N/A'}</h3>
+                        <div 
+                          className="premium-role-badge"
+                          style={{ backgroundColor: getRoleBadgeColor(user.role) }}
+                        >
+                          {user.role || 'Supervisor'}
+                        </div>
+                      </div>
+                      {/* Move menu to header to prevent overlap */}
+                      <div 
+                        className="premium-card-menu" 
+                        ref={el => menuRefs.current[user.id] = el}
+                      >
+                        <button 
+                          className="premium-menu-trigger"
+                          onClick={(e) => toggleMenu(user.id, e)}
+                        >
+                          <i className="fas fa-ellipsis-v"></i>
+                        </button>
+                        {openMenuId === user.id && (
+                          <div className="premium-menu-dropdown">
+                            <div className="premium-menu-item" onClick={() => handleViewSupervisorDetails(user)}>
+                              <i className="fas fa-eye"></i>
+                              <span>View</span>
+                            </div>
+                            <div className="premium-menu-item" onClick={() => handleEditSupervisor(user)}>
+                              <i className="fas fa-edit"></i>
+                              <span>Edit</span>
+                            </div>
+                            <div className="premium-menu-item premium-menu-item-danger" onClick={() => handleDisableSupervisor(user)}>
+                              <i className="fas fa-ban"></i>
+                              <span>Disable</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Card Body - Two Column Layout */}
+                    <div className="premium-card-body">
+                      <div className="premium-info-row">
+                        <div className="premium-info-item">
+                          <div className="premium-info-icon">
+                            <i className="fas fa-store"></i>
+                          </div>
+                          <div className="premium-info-content">
+                            <span className="premium-info-label">Store</span>
+                            <span className="premium-info-value">{user.store || 'Not Assigned'}</span>
+                          </div>
+                        </div>
+                        <div className="premium-info-item">
+                          <div className="premium-info-icon">
+                            <i className="fas fa-envelope"></i>
+                          </div>
+                          <div className="premium-info-content">
+                            <span className="premium-info-label">Email</span>
+                            <span className="premium-info-value premium-email-value">{user.email || 'N/A'}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                )}
-              </div>
+                );
+              })}
             </div>
-            ))
           )}
         </div>
       </main>
@@ -348,6 +545,138 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
             <div className="modal-footer">
               <button className="modal-close-button" onClick={closeViewModal}>
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Supervisor Details Modal */}
+      {editSupervisorModal && (
+        <div className="modal-overlay" onClick={closeEditModal}>
+          <div className="customer-details-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', width: '90%' }}>
+            <div className="modal-header">
+              <h2>Edit Supervisor Details</h2>
+              <button className="modal-close-btn" onClick={closeEditModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="modal-content" style={{ padding: '20px' }}>
+              <div className="customer-detail-section">
+                <div className="detail-avatar">
+                  <span>{editSupervisorModal.first_name && editSupervisorModal.last_name 
+                    ? `${editSupervisorModal.first_name[0]}${editSupervisorModal.last_name[0]}`.toUpperCase()
+                    : 'SP'}</span>
+                </div>
+                <div className="detail-info" style={{ width: '100%' }}>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>First Name:</span>
+                    <input
+                      type="text"
+                      value={editSupervisorModal.first_name || ''}
+                      onChange={(e) => handleEditInputChange('first_name', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Last Name:</span>
+                    <input
+                      type="text"
+                      value={editSupervisorModal.last_name || ''}
+                      onChange={(e) => handleEditInputChange('last_name', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Email:</span>
+                    <input
+                      type="email"
+                      value={editSupervisorModal.email || ''}
+                      onChange={(e) => handleEditInputChange('email', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Username:</span>
+                    <input
+                      type="text"
+                      value={editSupervisorModal.username || ''}
+                      onChange={(e) => handleEditInputChange('username', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Role:</span>
+                    <span className="detail-value">{editSupervisorModal.role || 'Supervisor'}</span>
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Store Allocated:</span>
+                    <input
+                      type="text"
+                      value={editSupervisorModal.store_allocated || ''}
+                      onChange={(e) => handleEditInputChange('store_allocated', e.target.value)}
+                      placeholder="Not Assigned"
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', padding: '20px' }}>
+              <button 
+                className="modal-close-button" 
+                onClick={closeEditModal}
+                style={{ background: '#6c757d', color: '#fff' }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="modal-close-button" 
+                onClick={handleSaveSupervisorDetails}
+                disabled={isSaving}
+                style={{ 
+                  background: '#dc3545', 
+                  color: '#fff',
+                  opacity: isSaving ? 0.6 : 1,
+                  cursor: isSaving ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

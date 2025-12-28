@@ -5,12 +5,15 @@ import ConfirmDialog from './ConfirmDialog';
 const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
     supplierName: '',
-    phone: '',
+    phone1: '',
+    phone2: '',
+    phone3: '',
     address: '',
     city: '',
     state: '',
     pincode: '',
-    email: ''
+    brand: '',
+    notifications: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -97,12 +100,15 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     try {
       const response = await suppliersAPI.create({
         supplierName: formData.supplierName,
-        phone: formData.phone,
+        phone: formData.phone1,
+        phone2: formData.phone2,
+        phone3: formData.phone3,
         address: formData.address,
         city: formData.city,
         state: formData.state,
         pincode: formData.pincode,
-        email: formData.email
+        brand: formData.brand,
+        notifications: formData.notifications
       });
 
       if (response.success) {
@@ -193,7 +199,7 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                 {/* All fields in 3-column grid without section titles */}
                 <div className="form-section">
                   <div className="form-grid three-col">
-                    {/* Row 1: Name, Phone Number, Email */}
+                    {/* Row 1: Name, Phone Number 1, Phone Number 2 */}
                     <div className="form-group">
                       <label htmlFor="supplierName">Name</label>
                       <div className="input-wrapper">
@@ -212,36 +218,92 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="phone">Phone number</label>
+                      <label htmlFor="phone1">Phone number 1</label>
                       <div className="input-wrapper">
                         <i className="fas fa-phone input-icon"></i>
                         <input
                           type="tel"
-                          id="phone"
-                          name="phone"
+                          id="phone1"
+                          name="phone1"
                           className="form-input"
-                          placeholder="Enter phone number"
-                          value={formData.phone}
+                          placeholder="Enter phone number 1"
+                          value={formData.phone1}
                           onChange={handleInputChange}
                         />
                       </div>
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="email">Email</label>
+                      <label htmlFor="phone2">Phone number 2</label>
                       <div className="input-wrapper">
-                        <i className="fas fa-envelope input-icon"></i>
+                        <i className="fas fa-phone input-icon"></i>
                         <input
-                          type="email"
-                          id="email"
-                          name="email"
+                          type="tel"
+                          id="phone2"
+                          name="phone2"
                           className="form-input"
-                          placeholder="supplier@example.com"
-                          value={formData.email}
+                          placeholder="Enter phone number 2"
+                          value={formData.phone2}
                           onChange={handleInputChange}
                         />
-                  </div>
-                </div>
+                      </div>
+                    </div>
+
+                    {/* Row 2: Phone Number 3, Brand, Notifications */}
+                    <div className="form-group">
+                      <label htmlFor="phone3">Phone number 3</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-phone input-icon"></i>
+                        <input
+                          type="tel"
+                          id="phone3"
+                          name="phone3"
+                          className="form-input"
+                          placeholder="Enter phone number 3"
+                          value={formData.phone3}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="brand">Brand</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-tag input-icon"></i>
+                        <input
+                          type="text"
+                          id="brand"
+                          name="brand"
+                          className="form-input"
+                          placeholder="Enter brand"
+                          value={formData.brand}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="notifications">Notifications</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-bell input-icon"></i>
+                        <select
+                          id="notifications"
+                          name="notifications"
+                          className="form-input"
+                          value={formData.notifications}
+                          onChange={handleInputChange}
+                          style={{ paddingRight: '40px' }}
+                        >
+                          <option value="">Select phone number for notifications</option>
+                          <option value="phone1">Phone Number 1</option>
+                          <option value="phone2">Phone Number 2</option>
+                          <option value="phone3">Phone Number 3</option>
+                          <option value="all">All Phone Numbers</option>
+                          <option value="none">None</option>
+                        </select>
+                        <i className="fas fa-chevron-down dropdown-icon"></i>
+                      </div>
+                    </div>
 
                     {/* Row 2: Street, City, State */}
                     <div className="form-group">

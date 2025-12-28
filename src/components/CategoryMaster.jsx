@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { categoriesAPI } from '../services/api';
+import ConfirmDialog from './ConfirmDialog';
 import './products.css';
 
 const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' }) => {
@@ -9,8 +10,10 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
   const [successMessage, setSuccessMessage] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [editCategoryModal, setEditCategoryModal] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null, category: null });
   const menuRefs = useRef({});
 
   // Fetch categories from database
@@ -56,30 +59,91 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
     setOpenMenuId(null);
   };
 
-  const handleDeleteCategory = (category) => {
-    setSelectedCategory(category);
-    setShowDeleteConfirm(true);
+  const handleEditCategory = async (category) => {
     setOpenMenuId(null);
+    try {
+      const response = await categoriesAPI.getById(category.id);
+      if (response && response.success) {
+        setEditCategoryModal(response.category);
+      } else {
+        setError('Failed to fetch category details');
+      }
+    } catch (err) {
+      console.error('Error fetching category details:', err);
+      setError('Failed to fetch category details');
+    }
   };
 
-  const confirmDelete = async () => {
-    if (!selectedCategory) return;
+  const handleDeleteCategory = (category) => {
+    setOpenMenuId(null);
+    setConfirmState({
+      open: true,
+      message: `Are you sure you want to delete "${category.main}" category? This action cannot be undone.`,
+      category: category,
+      onConfirm: async () => {
+        try {
+          const response = await categoriesAPI.delete(category.id);
+          if (response && response.success) {
+            setSuccessMessage('Category deleted successfully');
+            setTimeout(() => setSuccessMessage(''), 3000);
+            await fetchCategories();
+            setConfirmState({ open: false, message: '', onConfirm: null, category: null });
+          } else {
+            setError(response?.error || 'Failed to delete category');
+            setConfirmState({ open: false, message: '', onConfirm: null, category: null });
+          }
+        } catch (err) {
+          setError(err.message || 'Failed to delete category');
+          setConfirmState({ open: false, message: '', onConfirm: null, category: null });
+        }
+      }
+    });
+  };
+
+  // Handle save category details
+  const handleSaveCategoryDetails = async () => {
+    if (!editCategoryModal) return;
+    
+    setIsSaving(true);
+    setError('');
     
     try {
-      const response = await categoriesAPI.delete(selectedCategory.id);
+      const response = await categoriesAPI.update(editCategoryModal.id, {
+        main: editCategoryModal.main,
+        sub: editCategoryModal.sub,
+        common: editCategoryModal.common,
+        city: editCategoryModal.city
+      });
+      
       if (response && response.success) {
-        setSuccessMessage('Category deleted successfully');
+        await fetchCategories();
+        setEditCategoryModal(null);
+        setError('');
+        setSuccessMessage('Category updated successfully');
         setTimeout(() => setSuccessMessage(''), 3000);
-        fetchCategories();
       } else {
-        setError(response?.error || 'Failed to delete category');
+        setError('Failed to update category');
       }
-      setShowDeleteConfirm(false);
-      setSelectedCategory(null);
     } catch (err) {
-      setError(err.message || 'Failed to delete category');
-      setShowDeleteConfirm(false);
+      console.error('Error updating category:', err);
+      setError(err.message || 'Failed to update category');
+    } finally {
+      setIsSaving(false);
     }
+  };
+
+  // Handle input change in edit modal
+  const handleEditInputChange = (field, value) => {
+    if (editCategoryModal) {
+      setEditCategoryModal({
+        ...editCategoryModal,
+        [field]: value
+      });
+    }
+  };
+
+  const closeEditModal = () => {
+    setEditCategoryModal(null);
   };
 
   const handleBack = () => {
@@ -249,7 +313,7 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
             )}
 
             {/* Categories List */}
-            <div className="products-list">
+            <div className="staff-list-container" style={{ padding: '0 24px 24px' }}>
               {filtered.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '60px 40px', color: '#666' }}>
                   <i className="fas fa-tags" style={{ fontSize: '64px', marginBottom: '20px', opacity: 0.4, color: '#dc3545' }}></i>
@@ -257,181 +321,247 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
                   <p style={{ fontSize: '14px', color: '#666' }}>Categories will appear here once created.</p>
                 </div>
               ) : (
-                filtered.map((category) => (
-                  <div key={category.id} className="product-card" style={{ position: 'relative' }}>
-                    <div className="product-info">
-                      <div className="product-main-info">
-                        <div>
-                          <h3 className="product-name">{category.main || 'N/A'}</h3>
-                          <div className="product-details">
-                            <span><strong>Sub:</strong> {category.sub || 'N/A'}</span>
-                            <span><strong>Common:</strong> {category.common || 'N/A'}</span>
-                            {category.city && (
-                              <span><strong>City:</strong> {category.city}</span>
-                            )}
-                          </div>
+                <div className="premium-cards-grid">
+                  {filtered.map((category) => (
+                    <div
+                      key={category.id}
+                      className="premium-identity-card"
+                    >
+                      {/* Card Header */}
+                      <div className="premium-card-header">
+                        <div className="premium-header-content">
+                          <h3 className="premium-worker-name">{category.main || 'N/A'}</h3>
+                        </div>
+                        {/* Floating Three-Dot Menu */}
+                        <div 
+                          className="premium-card-menu" 
+                          ref={el => menuRefs.current[category.id] = el}
+                        >
+                          <button 
+                            className="premium-menu-trigger"
+                            onClick={(e) => toggleMenu(category.id, e)}
+                          >
+                            <i className="fas fa-ellipsis-v"></i>
+                          </button>
+                          {openMenuId === category.id && (
+                            <div className="premium-menu-dropdown">
+                              <div className="premium-menu-item" onClick={() => handleViewCategory(category)}>
+                                <i className="fas fa-eye"></i>
+                                <span>View</span>
+                              </div>
+                              <div className="premium-menu-item" onClick={() => handleEditCategory(category)}>
+                                <i className="fas fa-edit"></i>
+                                <span>Edit</span>
+                              </div>
+                              <div className="premium-menu-item premium-menu-item-danger" onClick={() => handleDeleteCategory(category)}>
+                                <i className="fas fa-trash"></i>
+                                <span>Delete</span>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
-                    <div 
-                      className="product-actions" 
-                      ref={el => menuRefs.current[category.id] = el}
-                      style={{ position: 'absolute', top: '50%', right: '12px', transform: 'translateY(-50%)', zIndex: 1000 }}
-                    >
-                      <button
-                        className="options-btn"
-                        onClick={(e) => toggleMenu(category.id, e)}
-                      >
-                        <i className="fas fa-ellipsis-v"></i>
-                      </button>
-                      {openMenuId === category.id && (
-                        <div className="options-menu">
-                          <button
-                            onClick={() => handleViewCategory(category)}
-                            className="menu-item"
-                          >
-                            <i className="fas fa-eye"></i>
-                            <span>View Category</span>
-                          </button>
-                          <button
-                            onClick={() => handleDeleteCategory(category)}
-                            className="menu-item"
-                            style={{ color: '#dc3545' }}
-                          >
-                            <i className="fas fa-trash"></i>
-                            <span>Delete</span>
-                          </button>
+
+                      {/* Card Body - Two Column Layout */}
+                      <div className="premium-card-body">
+                        <div className="premium-info-row">
+                          <div className="premium-info-item">
+                            <div className="premium-info-icon">
+                              <i className="fas fa-layer-group"></i>
+                            </div>
+                            <div className="premium-info-content">
+                              <span className="premium-info-label">Sub Category</span>
+                              <span className="premium-info-value">{category.sub || 'N/A'}</span>
+                            </div>
+                          </div>
+                          <div className="premium-info-item">
+                            <div className="premium-info-icon">
+                              <i className="fas fa-tags"></i>
+                            </div>
+                            <div className="premium-info-content">
+                              <span className="premium-info-label">Common Category</span>
+                              <span className="premium-info-value">{category.common || 'N/A'}</span>
+                            </div>
+                          </div>
                         </div>
-                      )}
+                        {category.city && (
+                          <div className="premium-info-row" style={{ marginTop: '16px' }}>
+                            <div className="premium-info-item">
+                              <div className="premium-info-icon">
+                                <i className="fas fa-map-marker-alt"></i>
+                              </div>
+                              <div className="premium-info-content">
+                                <span className="premium-info-label">City</span>
+                                <span className="premium-info-value">{category.city || 'N/A'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
           </main>
         </div>
       </div>
 
-      {/* View Category Modal */}
-      {showViewModal && selectedCategory && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2000
-        }} onClick={() => setShowViewModal(false)}>
-          <div style={{
-            background: '#fff',
-            borderRadius: '12px',
-            padding: '24px',
-            maxWidth: '500px',
-            width: '90%'
-          }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 style={{ margin: 0, color: '#333' }}>Category Details</h2>
-              <button onClick={() => setShowViewModal(false)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#666' }}>×</button>
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        open={confirmState.open}
+        title="Delete Category"
+        message={confirmState.message}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null, category: null })}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
+
+      {/* Edit Category Details Modal */}
+      {editCategoryModal && (
+        <div className="modal-overlay" onClick={closeEditModal}>
+          <div className="customer-details-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', width: '90%' }}>
+            <div className="modal-header">
+              <h2>Edit Category Details</h2>
+              <button className="modal-close-btn" onClick={closeEditModal}>
+                <i className="fas fa-times"></i>
+              </button>
             </div>
-            <div style={{ display: 'grid', gap: '16px' }}>
-              <div>
-                <strong>Main Category:</strong> {selectedCategory.main || 'N/A'}
-              </div>
-              <div>
-                <strong>Sub Category:</strong> {selectedCategory.sub || 'N/A'}
-              </div>
-              <div>
-                <strong>Common Category:</strong> {selectedCategory.common || 'N/A'}
-              </div>
-              {selectedCategory.city && (
-                <div>
-                  <strong>City:</strong> {selectedCategory.city}
+            <div className="modal-content" style={{ padding: '20px' }}>
+              <div className="customer-detail-section">
+                <div className="detail-info" style={{ width: '100%' }}>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Main Category:</span>
+                    <input
+                      type="text"
+                      value={editCategoryModal.main || ''}
+                      onChange={(e) => handleEditInputChange('main', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Sub Category:</span>
+                    <input
+                      type="text"
+                      value={editCategoryModal.sub || ''}
+                      onChange={(e) => handleEditInputChange('sub', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Common Category:</span>
+                    <input
+                      type="text"
+                      value={editCategoryModal.common || ''}
+                      onChange={(e) => handleEditInputChange('common', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>City:</span>
+                    <input
+                      type="text"
+                      value={editCategoryModal.city || ''}
+                      onChange={(e) => handleEditInputChange('city', e.target.value)}
+                      placeholder="Optional"
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
-              <button
-                onClick={() => setShowViewModal(false)}
-                style={{
-                  flex: 1,
-                  padding: '12px',
-                  background: '#dc3545',
+            <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', padding: '20px' }}>
+              <button 
+                className="modal-close-button" 
+                onClick={closeEditModal}
+                style={{ background: '#6c757d', color: '#fff' }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="modal-close-button" 
+                onClick={handleSaveCategoryDetails}
+                disabled={isSaving}
+                style={{ 
+                  background: '#dc3545', 
                   color: '#fff',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '600'
+                  opacity: isSaving ? 0.6 : 1,
+                  cursor: isSaving ? 'not-allowed' : 'pointer'
                 }}
               >
-                Close
+                {isSaving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2000
-        }} onClick={() => setShowDeleteConfirm(false)}>
-          <div style={{
-            background: '#fff',
-            borderRadius: '12px',
-            padding: '24px',
-            maxWidth: '400px',
-            width: '90%'
-          }} onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ margin: '0 0 16px 0', color: '#333' }}>Delete Category</h2>
-            <p style={{ margin: '0 0 20px 0', color: '#666' }}>
-              Are you sure you want to delete this category? This action cannot be undone.
-            </p>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button
-                onClick={confirmDelete}
-                style={{
-                  flex: 1,
-                  padding: '12px',
-                  background: '#dc3545',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '600'
-                }}
-              >
-                Delete
+      {/* View Category Details Modal */}
+      {showViewModal && selectedCategory && (
+        <div className="modal-overlay" onClick={() => setShowViewModal(false)}>
+          <div className="customer-details-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Category Details</h2>
+              <button className="modal-close-btn" onClick={() => setShowViewModal(false)}>
+                <i className="fas fa-times"></i>
               </button>
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                style={{
-                  flex: 1,
-                  padding: '12px',
-                  background: '#6c757d',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '600'
-                }}
-              >
-                Cancel
+            </div>
+            <div className="modal-content">
+              <div className="customer-detail-section">
+                <div className="detail-info">
+                  <div className="detail-row">
+                    <span className="detail-label">Main Category:</span>
+                    <span className="detail-value">{selectedCategory.main || 'N/A'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Sub Category:</span>
+                    <span className="detail-value">{selectedCategory.sub || 'N/A'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Common Category:</span>
+                    <span className="detail-value">{selectedCategory.common || 'N/A'}</span>
+                  </div>
+                  {selectedCategory.city && (
+                    <div className="detail-row">
+                      <span className="detail-label">City:</span>
+                      <span className="detail-value">{selectedCategory.city}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="modal-close-button" onClick={() => setShowViewModal(false)}>
+                Close
               </button>
             </div>
           </div>

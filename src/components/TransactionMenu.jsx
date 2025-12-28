@@ -9,6 +9,8 @@ const TransactionMenu = ({ onNavigate, onBack }) => {
     { title: 'Products', desc: 'Manage product pricing', target: 'transactionProducts', icon: 'fa-tags' },
     { title: 'Services', desc: 'Manage service transactions', target: 'services', icon: 'fa-cog' },
     { title: 'Sales Order', desc: 'View and manage sales orders', target: 'salesOrder', icon: 'fa-chart-line' },
+    { title: 'Entry Chit', desc: 'Record chit payments', target: 'chitEntryMaster', icon: 'fa-file-invoice-dollar' },
+    { title: 'Purchase Order', desc: 'Create and manage purchase orders', target: 'purchaseOrderMaster', icon: 'fa-shopping-cart' },
     { title: 'Purchase Bill Alert', desc: 'Monitor purchase bill alerts', target: 'purchaseBillAlert', icon: 'fa-bell' },
   ];
 

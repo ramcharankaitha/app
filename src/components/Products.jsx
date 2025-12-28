@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { productsAPI, categoriesAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
+import './products.css';
 
 const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -9,14 +10,14 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [showOptionsMenu, setShowOptionsMenu] = useState(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [editProductModal, setEditProductModal] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
-  const [editFormData, setEditFormData] = useState({});
   const [categories, setCategories] = useState([]);
-  const menuRef = useRef(null);
+  const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null, product: null });
+  const menuRefs = useRef({});
   const categoryMenuRef = useRef(null);
 
   // Fetch products from database
@@ -70,8 +71,8 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
   // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setShowOptionsMenu(null);
+      if (openMenuId && menuRefs.current[openMenuId] && !menuRefs.current[openMenuId].contains(event.target)) {
+        setOpenMenuId(null);
       }
       if (categoryMenuRef.current && !categoryMenuRef.current.contains(event.target)) {
         setShowCategoryDropdown(false);
@@ -80,120 +81,131 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [openMenuId]);
 
-  const handleOptionsClick = (e, productId) => {
+  const toggleMenu = (productId, e) => {
     e.stopPropagation();
-    setShowOptionsMenu(showOptionsMenu === productId ? null : productId);
+    setOpenMenuId(openMenuId === productId ? null : productId);
   };
 
   const handleViewProduct = async (product) => {
+    setOpenMenuId(null);
     try {
       const response = await productsAPI.getById(product.id);
       if (response.success) {
         setSelectedProduct(response.product);
         setShowViewModal(true);
-        setShowOptionsMenu(null);
+      } else {
+        setError('Failed to fetch product details');
       }
     } catch (err) {
-      setError('Failed to load product details');
+      console.error('Error fetching product details:', err);
+      setError('Failed to fetch product details');
     }
   };
 
   const handleEditProduct = async (product) => {
+    setOpenMenuId(null);
     try {
       const response = await productsAPI.getById(product.id);
       if (response.success) {
-        setEditFormData({
-          id: response.product.id,
-          productName: response.product.product_name,
-          itemCode: response.product.item_code,
-          skuCode: response.product.sku_code,
-          modelNumber: response.product.model_number || '',
-          minQuantity: response.product.minimum_quantity,
-          currentQuantity: response.product.current_quantity,
-          supplierName: response.product.supplier_name || '',
-          category: response.product.category || '',
-          mrp: response.product.mrp || '',
-          discount: response.product.discount || '',
-          sellRate: response.product.sell_rate || '',
-          salesRate: response.product.sales_rate || '',
-          nlc: response.product.nlc || '',
-          disc: response.product.disc || '',
-          points: response.product.points || '',
-          status: response.product.status
-        });
-        setShowEditModal(true);
-        setShowOptionsMenu(null);
+        setEditProductModal(response.product);
+      } else {
+        setError('Failed to fetch product details');
       }
     } catch (err) {
-      setError('Failed to load product for editing');
+      console.error('Error fetching product details:', err);
+      setError('Failed to fetch product details');
     }
   };
 
   const handleDeleteProduct = (product) => {
-    setSelectedProduct(product);
-    setShowDeleteConfirm(true);
-    setShowOptionsMenu(null);
+    setOpenMenuId(null);
+    setConfirmState({
+      open: true,
+      message: `Are you sure you want to delete "${product.name}"? This action cannot be undone.`,
+      product: product,
+      onConfirm: async () => {
+        try {
+          const response = await productsAPI.delete(product.id);
+          if (response.success) {
+            setSuccessMessage('Product deleted successfully');
+            setTimeout(() => setSuccessMessage(''), 3000);
+            await fetchProducts();
+            setConfirmState({ open: false, message: '', onConfirm: null, product: null });
+          } else {
+            setError('Failed to delete product');
+            setConfirmState({ open: false, message: '', onConfirm: null, product: null });
+          }
+        } catch (err) {
+          setError(err.message || 'Failed to delete product');
+          setConfirmState({ open: false, message: '', onConfirm: null, product: null });
+        }
+      }
+    });
   };
 
-  const confirmDelete = async () => {
-    if (!selectedProduct) return;
+  // Handle save product details
+  const handleSaveProductDetails = async () => {
+    if (!editProductModal) return;
+    
+    setIsSaving(true);
+    setError('');
     
     try {
-      const response = await productsAPI.delete(selectedProduct.id);
-      if (response.success) {
-        setSuccessMessage('Product deleted successfully');
-        setTimeout(() => setSuccessMessage(''), 3000);
-        fetchProducts();
-        setShowDeleteConfirm(false);
-        setSelectedProduct(null);
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to delete product');
-      setShowDeleteConfirm(false);
-    }
-  };
-
-  const handleUpdateProduct = async () => {
-    try {
-      const response = await productsAPI.update(editFormData.id, {
-        productName: editFormData.productName,
-        itemCode: editFormData.itemCode,
-        skuCode: editFormData.skuCode,
-        modelNumber: editFormData.modelNumber,
-        minimumQuantity: parseInt(editFormData.minQuantity) || 0,
-        currentQuantity: parseInt(editFormData.currentQuantity) || 0,
-        supplierName: editFormData.supplierName,
-        category: editFormData.category,
-        mrp: editFormData.mrp ? parseFloat(editFormData.mrp) : null,
-        discount: editFormData.discount ? parseFloat(editFormData.discount) : 0,
-        sellRate: editFormData.sellRate ? parseFloat(editFormData.sellRate) : null,
-        salesRate: editFormData.salesRate ? parseFloat(editFormData.salesRate) : null,
-        nlc: editFormData.nlc ? parseFloat(editFormData.nlc) : null,
-        disc: editFormData.disc ? parseFloat(editFormData.disc) : 0,
-        points: editFormData.points ? parseInt(editFormData.points) : 0,
-        status: editFormData.status
+      const response = await productsAPI.update(editProductModal.id, {
+        productName: editProductModal.product_name,
+        itemCode: editProductModal.item_code,
+        skuCode: editProductModal.sku_code,
+        modelNumber: editProductModal.model_number || '',
+        minimumQuantity: parseInt(editProductModal.minimum_quantity) || 0,
+        currentQuantity: parseInt(editProductModal.current_quantity) || 0,
+        supplierName: editProductModal.supplier_name || '',
+        category: editProductModal.category || '',
+        mrp: editProductModal.mrp ? parseFloat(editProductModal.mrp) : null,
+        discount: editProductModal.discount ? parseFloat(editProductModal.discount) : 0,
+        sellRate: editProductModal.sell_rate ? parseFloat(editProductModal.sell_rate) : null,
+        salesRate: editProductModal.sales_rate ? parseFloat(editProductModal.sales_rate) : null,
+        nlc: editProductModal.nlc ? parseFloat(editProductModal.nlc) : null,
+        disc: editProductModal.disc ? parseFloat(editProductModal.disc) : 0,
+        points: editProductModal.points ? parseInt(editProductModal.points) : 0,
+        status: editProductModal.status || 'STOCK'
       });
-
+      
       if (response.success) {
+        await fetchProducts();
+        setEditProductModal(null);
+        setError('');
         setSuccessMessage('Product updated successfully');
         setTimeout(() => setSuccessMessage(''), 3000);
-        fetchProducts();
-        setShowEditModal(false);
-        setEditFormData({});
+      } else {
+        setError('Failed to update product');
       }
     } catch (err) {
+      console.error('Error updating product:', err);
       setError(err.message || 'Failed to update product');
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleEditInputChange = (e) => {
-    const { name, value } = e.target;
-    setEditFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  // Handle input change in edit modal
+  const handleEditInputChange = (field, value) => {
+    if (editProductModal) {
+      setEditProductModal({
+        ...editProductModal,
+        [field]: value
+      });
+    }
+  };
+
+  const closeEditModal = () => {
+    setEditProductModal(null);
+  };
+
+  const closeViewModal = () => {
+    setShowViewModal(false);
+    setSelectedProduct(null);
   };
 
   const handleBack = () => {
@@ -440,7 +452,7 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
               </div>
             )}
 
-            <div className="products-list">
+            <div className="staff-list-container" style={{ padding: '0 24px 24px' }}>
               {products.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '60px 40px', color: '#666' }}>
                   <i className="fas fa-box" style={{ fontSize: '64px', marginBottom: '20px', opacity: 0.4, color: '#dc3545' }}></i>
@@ -453,478 +465,426 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
                   <p>No products found matching your search</p>
                 </div>
               ) : (
-                filtered.map((p) => (
-                <div key={p.id} className="product-card" style={{ position: 'relative' }}>
-                  <div className="product-info">
-                    <div className="product-name">{p.name}</div>
-                    <div className="product-meta">Item Code: {p.itemCode}</div>
-                    <div className="product-meta-row">
-                      <div className="product-sku">
-                        <span className="label">SKU code:</span>
-                        <span className="value">{p.sku}</span>
+                <div className="premium-cards-grid">
+                  {filtered.map((p) => (
+                    <div
+                      key={p.id}
+                      className="premium-identity-card"
+                    >
+                      {/* Card Header */}
+                      <div className="premium-card-header">
+                        <div className="premium-header-content">
+                          <h3 className="premium-worker-name">{p.name || 'N/A'}</h3>
+                          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                            Item Code: {p.itemCode || 'N/A'}
+                          </div>
+                        </div>
+                        {/* Floating Three-Dot Menu */}
+                        <div 
+                          className="premium-card-menu" 
+                          ref={el => menuRefs.current[p.id] = el}
+                        >
+                          <button 
+                            className="premium-menu-trigger"
+                            onClick={(e) => toggleMenu(p.id, e)}
+                          >
+                            <i className="fas fa-ellipsis-v"></i>
+                          </button>
+                          {openMenuId === p.id && (
+                            <div className="premium-menu-dropdown">
+                              <div className="premium-menu-item" onClick={() => handleViewProduct(p)}>
+                                <i className="fas fa-eye"></i>
+                                <span>View</span>
+                              </div>
+                              <div className="premium-menu-item" onClick={() => handleEditProduct(p)}>
+                                <i className="fas fa-edit"></i>
+                                <span>Edit</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="product-qty" style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '4px 10px',
-                        borderRadius: '6px',
-                        background: p.qty <= 0 ? '#f8d7da' : p.qty <= 10 ? '#fff3cd' : '#d1ecf1',
-                        border: `2px solid ${p.qty <= 0 ? '#dc3545' : p.qty <= 10 ? '#ffc107' : '#0dcaf0'}`,
-                        fontWeight: '600'
-                      }}>
-                        <i className={`fas ${p.qty <= 0 ? 'fa-exclamation-triangle' : p.qty <= 10 ? 'fa-exclamation-circle' : 'fa-check-circle'}`} 
-                           style={{ 
-                             color: p.qty <= 0 ? '#dc3545' : p.qty <= 10 ? '#856404' : '#28a745',
-                             fontSize: '14px'
-                           }}></i>
-                        <span className="label" style={{ color: p.qty <= 0 ? '#721c24' : p.qty <= 10 ? '#856404' : '#155724' }}>
-                          Stock:
-                        </span>
-                        <span className="value" style={{ 
-                          color: p.qty <= 0 ? '#dc3545' : p.qty <= 10 ? '#856404' : '#28a745',
-                          fontSize: '16px'
-                        }}>
-                          {p.qty}
-                        </span>
-                        {p.qty <= 0 && (
-                          <span style={{ fontSize: '11px', color: '#dc3545', fontWeight: 'bold' }}>OUT</span>
-                        )}
-                        {p.qty > 0 && p.qty <= 10 && (
-                          <span style={{ fontSize: '11px', color: '#856404', fontWeight: 'bold' }}>LOW</span>
-                        )}
-                      </div>
-                      <div className={`product-status ${p.status === 'STOCK' ? 'status-stock' : 'status-instock'}`}>
-                        {p.status}
+
+                      {/* Card Body - Two Column Layout */}
+                      <div className="premium-card-body">
+                        <div className="premium-info-row">
+                          <div className="premium-info-item">
+                            <div className="premium-info-icon">
+                              <i className="fas fa-barcode"></i>
+                            </div>
+                            <div className="premium-info-content">
+                              <span className="premium-info-label">SKU Code</span>
+                              <span className="premium-info-value">{p.sku || 'N/A'}</span>
+                            </div>
+                          </div>
+                          <div className="premium-info-item">
+                            <div className="premium-info-icon" style={{
+                              background: p.qty <= 0 ? 'linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(200, 35, 51, 0.1) 100%)' :
+                                          p.qty <= 10 ? 'linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 152, 0, 0.1) 100%)' :
+                                          'linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(34, 139, 58, 0.1) 100%)',
+                              color: p.qty <= 0 ? '#dc3545' : p.qty <= 10 ? '#ffc107' : '#28a745'
+                            }}>
+                              <i className={`fas ${p.qty <= 0 ? 'fa-exclamation-triangle' : p.qty <= 10 ? 'fa-exclamation-circle' : 'fa-check-circle'}`}></i>
+                            </div>
+                            <div className="premium-info-content">
+                              <span className="premium-info-label">Stock</span>
+                              <span className="premium-info-value" style={{
+                                color: p.qty <= 0 ? '#dc3545' : p.qty <= 10 ? '#856404' : '#28a745'
+                              }}>
+                                {p.qty || 0}
+                                {p.qty <= 0 && ' (OUT)'}
+                                {p.qty > 0 && p.qty <= 10 && ' (LOW)'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div style={{ position: 'absolute', top: '50%', right: '12px', transform: 'translateY(-50%)', zIndex: 1 }} ref={menuRef}>
-                    <button 
-                      className="product-options"
-                      onClick={(e) => handleOptionsClick(e, p.id)}
-                    >
-                      <i className="fas fa-ellipsis-v"></i>
-                    </button>
-                    {showOptionsMenu === p.id && (
-                      <div style={{
-                        position: 'absolute',
-                        top: 'calc(100% + 16px)',
-                        right: '0',
-                        background: '#fff',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                        zIndex: 10000,
-                        minWidth: '150px',
-                        padding: '8px 0'
-                      }}>
-                        <button
-                          onClick={() => handleViewProduct(p)}
-                          style={{
-                            width: '100%',
-                            padding: '10px 16px',
-                            border: 'none',
-                            background: 'transparent',
-                            textAlign: 'left',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            color: '#333'
-                          }}
-                          onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                          onMouseLeave={(e) => e.target.style.background = 'transparent'}
-                        >
-                          <i className="fas fa-eye" style={{ marginRight: '8px', color: '#dc3545' }}></i>
-                          View Details
-                        </button>
-                        <button
-                          onClick={() => handleEditProduct(p)}
-                          style={{
-                            width: '100%',
-                            padding: '10px 16px',
-                            border: 'none',
-                            background: 'transparent',
-                            textAlign: 'left',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            color: '#333'
-                          }}
-                          onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                          onMouseLeave={(e) => e.target.style.background = 'transparent'}
-                        >
-                          <i className="fas fa-edit" style={{ marginRight: '8px', color: '#007bff' }}></i>
-                          Edit Product
-                        </button>
-                        <button
-                          onClick={() => handleDeleteProduct(p)}
-                          style={{
-                            width: '100%',
-                            padding: '10px 16px',
-                            border: 'none',
-                            background: 'transparent',
-                            textAlign: 'left',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            color: '#dc3545'
-                          }}
-                          onMouseEnter={(e) => e.target.style.background = '#ffe0e0'}
-                          onMouseLeave={(e) => e.target.style.background = 'transparent'}
-                        >
-                          <i className="fas fa-trash" style={{ marginRight: '8px' }}></i>
-                          Delete
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  ))}
                 </div>
-                ))
               )}
             </div>
           </main>
         </div>
       </div>
 
-      {/* View Product Modal */}
-      {showViewModal && selectedProduct && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2000
-        }} onClick={() => setShowViewModal(false)}>
-          <div style={{
-            background: '#fff',
-            borderRadius: '12px',
-            padding: '24px',
-            maxWidth: '500px',
-            width: '90%',
-            maxHeight: '80vh',
-            overflow: 'auto'
-          }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 style={{ margin: 0, color: '#333' }}>Product Details</h2>
-              <button onClick={() => setShowViewModal(false)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#666' }}>×</button>
-            </div>
-            <div style={{ display: 'grid', gap: '16px' }}>
-              <div><strong>Product Name:</strong> {selectedProduct.product_name}</div>
-              <div><strong>Item Code:</strong> {selectedProduct.item_code}</div>
-              <div><strong>SKU Code:</strong> {selectedProduct.sku_code}</div>
-              <div style={{
-                padding: '16px',
-                borderRadius: '8px',
-                background: (selectedProduct.current_quantity || 0) <= 0 ? '#f8d7da' : 
-                            (selectedProduct.current_quantity || 0) <= 10 ? '#fff3cd' : '#d1ecf1',
-                border: `2px solid ${
-                  (selectedProduct.current_quantity || 0) <= 0 ? '#dc3545' : 
-                  (selectedProduct.current_quantity || 0) <= 10 ? '#ffc107' : '#0dcaf0'
-                }`,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                fontWeight: '600'
-              }}>
-                <i className={`fas ${(selectedProduct.current_quantity || 0) <= 0 ? 'fa-exclamation-triangle' : 
-                                 (selectedProduct.current_quantity || 0) <= 10 ? 'fa-exclamation-circle' : 'fa-check-circle'}`} 
-                   style={{ 
-                     color: (selectedProduct.current_quantity || 0) <= 0 ? '#dc3545' : 
-                            (selectedProduct.current_quantity || 0) <= 10 ? '#856404' : '#28a745',
-                     fontSize: '20px'
-                   }}></i>
-                <div>
-                  <div style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>Current Stock</div>
-                  <div style={{ 
-                    fontSize: '24px', 
-                    color: (selectedProduct.current_quantity || 0) <= 0 ? '#dc3545' : 
-                           (selectedProduct.current_quantity || 0) <= 10 ? '#856404' : '#28a745',
-                    fontWeight: 'bold'
-                  }}>
-                    {selectedProduct.current_quantity || 0}
-                  </div>
-                  {(selectedProduct.current_quantity || 0) <= 0 && (
-                    <div style={{ fontSize: '12px', color: '#dc3545', marginTop: '4px', fontWeight: 'bold' }}>
-                      OUT OF STOCK
-                    </div>
-                  )}
-                  {(selectedProduct.current_quantity || 0) > 0 && (selectedProduct.current_quantity || 0) <= 10 && (
-                    <div style={{ fontSize: '12px', color: '#856404', marginTop: '4px', fontWeight: 'bold' }}>
-                      LOW STOCK WARNING
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div><strong>Minimum Quantity:</strong> {selectedProduct.minimum_quantity || 0}</div>
-              <div><strong>Supplier Name:</strong> {selectedProduct.supplier_name || 'N/A'}</div>
-              <div><strong>Category:</strong> {selectedProduct.category || 'Uncategorized'}</div>
-              <div><strong>MRP:</strong> ₹{selectedProduct.mrp || 'N/A'}</div>
-              <div><strong>Discount:</strong> {selectedProduct.discount || 0}%</div>
-              <div><strong>Sell Rate:</strong> ₹{selectedProduct.sell_rate || 'N/A'}</div>
-              <div><strong>Status:</strong> {selectedProduct.status}</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Product Modal */}
-      {showEditModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2000
-        }} onClick={() => setShowEditModal(false)}>
-          <div style={{
-            background: '#fff',
-            borderRadius: '12px',
-            padding: '24px',
-            maxWidth: '600px',
-            width: '90%',
-            maxHeight: '80vh',
-            overflow: 'auto'
-          }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 style={{ margin: 0, color: '#333' }}>Edit Product</h2>
-              <button onClick={() => setShowEditModal(false)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#666' }}>×</button>
-            </div>
-            <div style={{ display: 'grid', gap: '16px' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Product Name</label>
-                <input
-                  type="text"
-                  name="productName"
-                  value={editFormData.productName || ''}
-                  onChange={handleEditInputChange}
-                  style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
-                />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Item Code</label>
-                  <input
-                    type="text"
-                    name="itemCode"
-                    value={editFormData.itemCode || ''}
-                    onChange={handleEditInputChange}
-                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>SKU Code</label>
-                  <input
-                    type="text"
-                    name="skuCode"
-                    value={editFormData.skuCode || ''}
-                    onChange={handleEditInputChange}
-                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
-                  />
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Current Quantity</label>
-                  <input
-                    type="number"
-                    name="currentQuantity"
-                    value={editFormData.currentQuantity || ''}
-                    onChange={handleEditInputChange}
-                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Minimum Quantity</label>
-                  <input
-                    type="number"
-                    name="minQuantity"
-                    value={editFormData.minQuantity || ''}
-                    onChange={handleEditInputChange}
-                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
-                  />
-                </div>
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Supplier Name</label>
-                <input
-                  type="text"
-                  name="supplierName"
-                  value={editFormData.supplierName || ''}
-                  onChange={handleEditInputChange}
-                  style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
-                  placeholder="Enter supplier name"
-                />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>MRP</label>
-                  <input
-                    type="number"
-                    name="mrp"
-                    value={editFormData.mrp || ''}
-                    onChange={handleEditInputChange}
-                    step="0.01"
-                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Discount (%)</label>
-                  <input
-                    type="number"
-                    name="discount"
-                    value={editFormData.discount || ''}
-                    onChange={handleEditInputChange}
-                    step="0.01"
-                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Sell Rate</label>
-                  <input
-                    type="number"
-                    name="sellRate"
-                    value={editFormData.sellRate || ''}
-                    onChange={handleEditInputChange}
-                    step="0.01"
-                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
-                  />
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Sales Rate</label>
-                  <input
-                    type="number"
-                    name="salesRate"
-                    value={editFormData.salesRate || ''}
-                    onChange={handleEditInputChange}
-                    step="0.01"
-                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>NLC</label>
-                  <input
-                    type="number"
-                    name="nlc"
-                    value={editFormData.nlc || ''}
-                    onChange={handleEditInputChange}
-                    step="0.01"
-                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>DISC</label>
-                  <input
-                    type="number"
-                    name="disc"
-                    value={editFormData.disc || ''}
-                    onChange={handleEditInputChange}
-                    step="0.01"
-                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Points</label>
-                  <input
-                    type="number"
-                    name="points"
-                    value={editFormData.points || ''}
-                    onChange={handleEditInputChange}
-                    min="0"
-                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
-                  />
-                </div>
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Category</label>
-                <select
-                  name="category"
-                  value={editFormData.category || ''}
-                  onChange={handleEditInputChange}
-                  style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
-                >
-                  <option value="">Select category</option>
-                  {categories.map((cat) => {
-                    const categoryLabel = `${cat.main}${cat.sub ? ' - ' + cat.sub : ''}${cat.common ? ' - ' + cat.common : ''}`;
-                    return (
-                      <option key={cat.id} value={categoryLabel}>
-                        {categoryLabel}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Status</label>
-                <select
-                  name="status"
-                  value={editFormData.status || 'STOCK'}
-                  onChange={handleEditInputChange}
-                  style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
-                >
-                  <option value="STOCK">STOCK</option>
-                  <option value="OUT_OF_STOCK">OUT OF STOCK</option>
-                  <option value="LOW_STOCK">LOW STOCK</option>
-                </select>
-              </div>
-              <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
-                <button
-                  onClick={handleUpdateProduct}
-                  style={{
-                    flex: 1,
-                    padding: '12px',
-                    background: '#dc3545',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontWeight: '600'
-                  }}
-                >
-                  Update Product
-                </button>
-                <button
-                  onClick={() => setShowEditModal(false)}
-                  style={{
-                    flex: 1,
-                    padding: '12px',
-                    background: '#6c757d',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontWeight: '600'
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Dialog */}
+      {/* Confirmation Dialog */}
       <ConfirmDialog
-        isOpen={showDeleteConfirm}
+        open={confirmState.open}
         title="Delete Product"
-        message={`Are you sure you want to delete "${selectedProduct?.name}"? This action cannot be undone.`}
-        confirmText="Yes, Delete"
+        message={confirmState.message}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null, product: null })}
+        confirmText="Delete"
         cancelText="Cancel"
-        onConfirm={confirmDelete}
-        onCancel={() => {
-          setShowDeleteConfirm(false);
-          setSelectedProduct(null);
-        }}
       />
+
+      {/* Edit Product Details Modal */}
+      {editProductModal && (
+        <div className="modal-overlay" onClick={closeEditModal}>
+          <div className="customer-details-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="modal-header">
+              <h2>Edit Product Details</h2>
+              <button className="modal-close-btn" onClick={closeEditModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="modal-content" style={{ padding: '20px' }}>
+              {error && (
+                <div style={{ 
+                  padding: '12px', 
+                  background: '#ffe0e0', 
+                  color: '#dc3545', 
+                  borderRadius: '8px', 
+                  marginBottom: '20px' 
+                }}>
+                  <i className="fas fa-exclamation-circle"></i> {error}
+                </div>
+              )}
+              <div className="customer-detail-section">
+                <div className="detail-info" style={{ width: '100%' }}>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Product Name:</span>
+                    <input
+                      type="text"
+                      value={editProductModal.product_name || ''}
+                      onChange={(e) => handleEditInputChange('product_name', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '400px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Item Code:</span>
+                    <input
+                      type="text"
+                      value={editProductModal.item_code || ''}
+                      onChange={(e) => handleEditInputChange('item_code', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '400px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>SKU Code:</span>
+                    <input
+                      type="text"
+                      value={editProductModal.sku_code || ''}
+                      onChange={(e) => handleEditInputChange('sku_code', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '400px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Current Quantity:</span>
+                    <input
+                      type="number"
+                      value={editProductModal.current_quantity || ''}
+                      onChange={(e) => handleEditInputChange('current_quantity', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '400px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Minimum Quantity:</span>
+                    <input
+                      type="number"
+                      value={editProductModal.minimum_quantity || ''}
+                      onChange={(e) => handleEditInputChange('minimum_quantity', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '400px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Supplier Name:</span>
+                    <input
+                      type="text"
+                      value={editProductModal.supplier_name || ''}
+                      onChange={(e) => handleEditInputChange('supplier_name', e.target.value)}
+                      placeholder="Optional"
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '400px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Category:</span>
+                    <select
+                      value={editProductModal.category || ''}
+                      onChange={(e) => handleEditInputChange('category', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '400px'
+                      }}
+                    >
+                      <option value="">Select category</option>
+                      {categories.map((cat) => {
+                        const categoryLabel = `${cat.main}${cat.sub ? ' - ' + cat.sub : ''}${cat.common ? ' - ' + cat.common : ''}`;
+                        return (
+                          <option key={cat.id} value={categoryLabel}>
+                            {categoryLabel}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>MRP:</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editProductModal.mrp || ''}
+                      onChange={(e) => handleEditInputChange('mrp', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '400px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Discount (%):</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editProductModal.discount || ''}
+                      onChange={(e) => handleEditInputChange('discount', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '400px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Sell Rate:</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editProductModal.sell_rate || ''}
+                      onChange={(e) => handleEditInputChange('sell_rate', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '400px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row" style={{ marginBottom: '16px' }}>
+                    <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Status:</span>
+                    <select
+                      value={editProductModal.status || 'STOCK'}
+                      onChange={(e) => handleEditInputChange('status', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '400px'
+                      }}
+                    >
+                      <option value="STOCK">STOCK</option>
+                      <option value="OUT_OF_STOCK">OUT OF STOCK</option>
+                      <option value="LOW_STOCK">LOW STOCK</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', padding: '20px' }}>
+              <button 
+                className="modal-close-button" 
+                onClick={closeEditModal}
+                style={{ background: '#6c757d', color: '#fff' }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="modal-close-button" 
+                onClick={handleSaveProductDetails}
+                disabled={isSaving}
+                style={{ 
+                  background: '#dc3545', 
+                  color: '#fff',
+                  opacity: isSaving ? 0.6 : 1,
+                  cursor: isSaving ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Product Details Modal */}
+      {showViewModal && selectedProduct && (
+        <div className="modal-overlay" onClick={closeViewModal}>
+          <div className="customer-details-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Product Details</h2>
+              <button className="modal-close-btn" onClick={closeViewModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="modal-content">
+              <div className="customer-detail-section">
+                <div className="detail-avatar">
+                  <span>{selectedProduct.product_name 
+                    ? selectedProduct.product_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+                    : 'PR'}</span>
+                </div>
+                <div className="detail-info">
+                  <div className="detail-row">
+                    <span className="detail-label">Product Name:</span>
+                    <span className="detail-value">{selectedProduct.product_name || 'N/A'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Item Code:</span>
+                    <span className="detail-value">{selectedProduct.item_code || 'N/A'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">SKU Code:</span>
+                    <span className="detail-value">{selectedProduct.sku_code || 'N/A'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Current Quantity:</span>
+                    <span className="detail-value" style={{
+                      color: (selectedProduct.current_quantity || 0) <= 0 ? '#dc3545' : 
+                             (selectedProduct.current_quantity || 0) <= 10 ? '#856404' : '#28a745',
+                      fontWeight: '600'
+                    }}>
+                      {selectedProduct.current_quantity || 0}
+                      {(selectedProduct.current_quantity || 0) <= 0 && ' (OUT OF STOCK)'}
+                      {(selectedProduct.current_quantity || 0) > 0 && (selectedProduct.current_quantity || 0) <= 10 && ' (LOW STOCK)'}
+                    </span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Minimum Quantity:</span>
+                    <span className="detail-value">{selectedProduct.minimum_quantity || 0}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Supplier Name:</span>
+                    <span className="detail-value">{selectedProduct.supplier_name || 'N/A'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Category:</span>
+                    <span className="detail-value">{selectedProduct.category || 'Uncategorized'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">MRP:</span>
+                    <span className="detail-value">₹{selectedProduct.mrp || 'N/A'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Discount:</span>
+                    <span className="detail-value">{selectedProduct.discount || 0}%</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Sell Rate:</span>
+                    <span className="detail-value">₹{selectedProduct.sell_rate || 'N/A'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Status:</span>
+                    <span className="detail-value">{selectedProduct.status || 'STOCK'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="modal-close-button" onClick={closeViewModal}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

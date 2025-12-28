@@ -4,6 +4,7 @@ import ConfirmDialog from './ConfirmDialog';
 
 const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
+    supplierName: '',
     category: '',
     itemCode: '',
     productName: '',
@@ -14,6 +15,7 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
     notes: ''
   });
   const [productInfo, setProductInfo] = useState(null);
+  const [addedProducts, setAddedProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingProduct, setIsFetchingProduct] = useState(false);
   const [error, setError] = useState('');
@@ -65,6 +67,59 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
     }
   };
 
+  const addProduct = () => {
+    if (!formData.itemCode || !formData.itemCode.trim()) {
+      return;
+    }
+
+    if (!productInfo) {
+      return;
+    }
+
+    if (!formData.stockInQuantity || parseFloat(formData.stockInQuantity) <= 0) {
+      return;
+    }
+
+    // Check if product already added - silently skip if duplicate
+    const isDuplicate = addedProducts.some(p => p.itemCode === formData.itemCode.trim());
+    if (isDuplicate) {
+      return;
+    }
+
+    const newProduct = {
+      id: Date.now(),
+      itemCode: formData.itemCode.trim(),
+      productName: formData.productName,
+      category: formData.category,
+      skuCode: formData.skuCode,
+      modelNumber: formData.modelNumber,
+      currentQuantity: parseInt(formData.quantity) || 0,
+      stockInQuantity: parseInt(formData.stockInQuantity),
+      productInfo: productInfo
+    };
+
+    setAddedProducts(prev => [...prev, newProduct]);
+    
+    // Reset form fields for next product
+    setFormData(prev => ({
+      ...prev,
+      itemCode: '',
+      category: '',
+      productName: '',
+      skuCode: '',
+      modelNumber: '',
+      quantity: '',
+      stockInQuantity: ''
+    }));
+    setProductInfo(null);
+    setError('');
+    setSuccessMessage('');
+  };
+
+  const removeProduct = (id) => {
+    setAddedProducts(prev => prev.filter(p => p.id !== id));
+  };
+
   // Auto-fetch product when item code is entered and loses focus
   const handleItemCodeBlur = async () => {
     if (formData.itemCode && formData.itemCode.trim() && !productInfo) {
@@ -82,7 +137,6 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
   const fetchProductByItemCode = async () => {
     const itemCode = formData.itemCode?.trim();
     if (!itemCode) {
-      setError('Please enter an item code');
       return;
     }
     
@@ -116,15 +170,12 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
           quantity: productData.currentQuantity.toString()
         }));
         
-        setSuccessMessage('Product found! Enter stock in quantity.');
-        setTimeout(() => setSuccessMessage(''), 3000);
+        setSuccessMessage('');
       } else {
-        setError('Product not found with this item code');
         setProductInfo(null);
       }
     } catch (err) {
       console.error('Fetch product error:', err);
-      setError(err.message || 'Product not found. Please check the item code and try again.');
       setProductInfo(null);
     } finally {
       setIsFetchingProduct(false);
@@ -136,28 +187,12 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
     setError('');
     setSuccessMessage('');
 
-    if (!formData.itemCode || !formData.itemCode.trim()) {
-      setError('Please enter an item code');
+    // Check if products are added
+    if (addedProducts.length === 0) {
       return;
     }
 
-    if (!formData.stockInQuantity || parseFloat(formData.stockInQuantity) <= 0) {
-      setError('Please enter a valid stock in quantity (greater than 0)');
-      return;
-    }
-
-    if (!productInfo) {
-      setError('Please fetch product details first by pressing Enter on item code field');
-      return;
-    }
-
-    const quantity = parseInt(formData.stockInQuantity);
-    if (isNaN(quantity) || quantity <= 0) {
-      setError('Stock in quantity must be a positive number');
-      return;
-    }
-
-    const confirmMessage = `Add ${quantity} units to ${productInfo.productName}?\n\nCurrent Stock: ${productInfo.currentQuantity}\nNew Stock: ${productInfo.currentQuantity + quantity}`;
+    const confirmMessage = `Add stock for ${addedProducts.length} product(s)?\n\n${addedProducts.map((p, i) => `${i + 1}. ${p.productName} (+${p.stockInQuantity})`).join('\n')}`;
     
     setConfirmState({
       open: true,
@@ -169,38 +204,37 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
         
         try {
           const createdBy = getUserIdentifier();
-          const response = await stockAPI.stockIn(
-            formData.itemCode.trim(),
-            quantity,
-            formData.notes || null,
-            createdBy
+          const promises = addedProducts.map(product =>
+            stockAPI.stockIn(
+              product.itemCode,
+              product.stockInQuantity,
+              formData.supplierName ? `Supplier: ${formData.supplierName}` : null,
+              createdBy
+            )
           );
-          
-          if (response.success) {
-            const newQuantity = response.product.newQuantity;
-            setSuccessMessage(`Stock added successfully! New quantity: ${newQuantity}`);
-            
-            // Update product info
-            setProductInfo(prev => ({
-              ...prev,
-              currentQuantity: newQuantity
-            }));
-            
-            // Update form data with new quantity and reset stock in quantity
-            setFormData(prev => ({
-              ...prev,
-              quantity: newQuantity.toString(),
+
+          const results = await Promise.all(promises);
+          const allSuccess = results.every(result => result.success);
+
+          if (allSuccess) {
+            // Reset form
+            setFormData({
+              supplierName: '',
+              category: '',
+              itemCode: '',
+              productName: '',
+              skuCode: '',
+              modelNumber: '',
+              quantity: '',
               stockInQuantity: '',
               notes: ''
-            }));
-            
-            setTimeout(() => {
-              setSuccessMessage('');
-            }, 5000);
+            });
+            setProductInfo(null);
+            setAddedProducts([]);
+            setSuccessMessage('');
           }
         } catch (err) {
           console.error('Stock In error:', err);
-          setError(err.message || 'Failed to add stock. Please try again.');
         } finally {
           setIsLoading(false);
           setConfirmState({ open: false, message: '', onConfirm: null });
@@ -236,9 +270,9 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
       {/* Main Content */}
       <main className="add-user-content">
         <form onSubmit={handleSubmit} className="add-user-form add-stock-in-form">
-          {/* All fields in 3-column grid without section titles */}
+          {/* All fields in 4-column grid without section titles */}
           <div className="form-section">
-            <div className="form-grid three-col">
+            <div className="form-grid four-col">
               {/* Row 1: Item Code, Category, Product Name */}
               <div className="form-group">
                 <label htmlFor="itemCode">Item Code *</label>
@@ -389,7 +423,7 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 </div>
               </div>
 
-              {/* Row 3: Stock In Quantity - Same row as Fetch Product button (below SKV Code) */}
+              {/* Row 3: Stock In Quantity, Add Product Button */}
               <div className="form-group">
                 <label htmlFor="stockInQuantity">Stock In Quantity *</label>
                 <div className="input-wrapper">
@@ -404,26 +438,147 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     onChange={handleInputChange}
                     min="1"
                     step="1"
-                    required
                     disabled={!productInfo}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>&nbsp;</label>
+                <button
+                  type="button"
+                  onClick={addProduct}
+                  disabled={!productInfo || !formData.stockInQuantity || parseFloat(formData.stockInQuantity) <= 0}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    background: productInfo && formData.stockInQuantity && parseFloat(formData.stockInQuantity) > 0 ? '#dc3545' : '#ccc',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: productInfo && formData.stockInQuantity && parseFloat(formData.stockInQuantity) > 0 ? 'pointer' : 'not-allowed',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (productInfo && formData.stockInQuantity && parseFloat(formData.stockInQuantity) > 0) {
+                      e.target.style.background = '#c82333';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (productInfo && formData.stockInQuantity && parseFloat(formData.stockInQuantity) > 0) {
+                      e.target.style.background = '#dc3545';
+                    }
+                  }}
+                >
+                  <i className="fas fa-plus"></i>
+                  Add Product
+                </button>
+              </div>
+
+              {/* Row 4: Supplier Name */}
+              <div className="form-group" style={{ gridColumn: '1' }}>
+                <label htmlFor="supplierName">Supplier Name</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-truck input-icon"></i>
+                  <input
+                    type="text"
+                    id="supplierName"
+                    name="supplierName"
+                    className="form-input"
+                    placeholder="Enter supplier name"
+                    value={formData.supplierName}
+                    onChange={handleInputChange}
                   />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Success/Error Messages */}
-          {successMessage && (
-            <div className="alert alert-success" style={{ marginBottom: '20px' }}>
-              <i className="fas fa-check-circle"></i> {successMessage}
+          {/* Display Added Products - Billing Summary Table */}
+          {addedProducts.length > 0 && (
+            <div className="form-section" style={{ marginTop: '60px', clear: 'both', paddingTop: '20px' }}>
+              <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: '30px' }}>
+                <div className="attendance-table-container" style={{ marginTop: '0', maxHeight: '200px' }}>
+                  <table className="attendance-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: '60px', textAlign: 'center' }}>#</th>
+                        <th>Item Code</th>
+                        <th>Product Name</th>
+                        <th style={{ width: '100px', textAlign: 'center' }}>Current Stock</th>
+                        <th style={{ width: '120px', textAlign: 'center' }}>Stock In Qty</th>
+                        <th style={{ width: '120px', textAlign: 'center' }}>New Stock</th>
+                        <th style={{ width: '100px', textAlign: 'center' }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {addedProducts.map((product, index) => (
+                        <tr key={product.id}>
+                          <td style={{ textAlign: 'center', color: '#666', fontWeight: '500' }}>
+                            {index + 1}
+                          </td>
+                          <td style={{ fontWeight: '500', color: '#333' }}>
+                            {product.itemCode}
+                          </td>
+                          <td style={{ fontWeight: '500', color: '#333' }}>
+                            {product.productName}
+                          </td>
+                          <td style={{ textAlign: 'center', color: '#666' }}>
+                            {product.currentQuantity}
+                          </td>
+                          <td style={{ textAlign: 'center', color: '#28a745', fontWeight: '600' }}>
+                            +{product.stockInQuantity}
+                          </td>
+                          <td style={{ textAlign: 'center', fontWeight: '600', color: '#333' }}>
+                            {product.currentQuantity + product.stockInQuantity}
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            <button
+                              type="button"
+                              onClick={() => removeProduct(product.id)}
+                              style={{
+                                background: '#dc3545',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s ease',
+                                whiteSpace: 'nowrap'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#c82333';
+                                e.target.style.transform = 'scale(1.05)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#dc3545';
+                                e.target.style.transform = 'scale(1)';
+                              }}
+                              title="Remove this product"
+                            >
+                              <i className="fas fa-trash"></i>
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           )}
 
-          {error && (
-            <div className="alert alert-error" style={{ marginBottom: '20px' }}>
-              <i className="fas fa-exclamation-circle"></i> {error}
-            </div>
-          )}
 
           {/* Stock In Button - Centered below in the middle */}
           <div style={{ 
@@ -435,7 +590,7 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
             <button
               type="submit"
               className="btn-primary"
-              disabled={isLoading || !productInfo || !formData.stockInQuantity}
+              disabled={isLoading || addedProducts.length === 0}
               style={{
                 width: '200px',
                 maxWidth: '200px',

@@ -9,9 +9,13 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     skuCode: '',
     modelNumber: '',
     minQuantity: '',
+    maintainingQuantity: '',
     openingQuantity: '',
     supplierName: '',
     category: '',
+    mrp: '',
+    sellRate: '',
+    points: '',
     image: ''
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -253,9 +257,13 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
         skuCode: formData.skuCode,
         modelNumber: formData.modelNumber,
         minimumQuantity: parseInt(formData.minQuantity) || 0,
+        maintainingQuantity: parseInt(formData.maintainingQuantity) || 0,
         currentQuantity: parseInt(formData.openingQuantity) || 0,
         supplierName: formData.supplierName,
-        category: formData.category
+        category: formData.category,
+        mrp: parseFloat(formData.mrp) || null,
+        sellRate: parseFloat(formData.sellRate) || null,
+        points: parseInt(formData.points) || 0
       });
 
       if (response.success) {
@@ -346,7 +354,7 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
             <form onSubmit={handleSubmit} className="add-user-form">
                 {/* Product Fields - No section title */}
                 <div className="form-section">
-                  <div className="form-grid three-col">
+                  <div className="form-grid four-col">
                     {/* Category Selection - All three in first row */}
                     {/* 1. Main Category */}
                     <div className="form-group" ref={mainDropdownRef} style={{ position: 'relative', zIndex: 1000 }}>
@@ -654,21 +662,118 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                         />
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Image Upload Section - Below all form fields, outside the grid */}
-                <div style={{ 
-                  marginTop: '16px', 
-                  marginBottom: '12px',
-                  width: '100%',
-                  clear: 'both',
-                  position: 'relative',
-                  zIndex: 1
-                }}>
-                  <div className="upload-placeholder">
-                    <i className="fas fa-plus"></i>
-                    <span>Tap to upload image</span>
+                    {/* Row 4: Maintaining Quantity, Minimum Quantity, MRP */}
+                    <div className="form-group">
+                      <label htmlFor="maintainingQuantity">Maintaining Quantity</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-cubes input-icon"></i>
+                        <input
+                          type="number"
+                          id="maintainingQuantity"
+                          name="maintainingQuantity"
+                          className="form-input"
+                          placeholder="Enter maintaining quantity"
+                          value={formData.maintainingQuantity}
+                          onChange={handleInputChange}
+                          min="0"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="minQuantity">Minimum Quantity</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-exclamation-triangle input-icon"></i>
+                        <input
+                          type="number"
+                          id="minQuantity"
+                          name="minQuantity"
+                          className="form-input"
+                          placeholder="Enter minimum quantity"
+                          value={formData.minQuantity}
+                          onChange={handleInputChange}
+                          min="0"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="mrp">MRP</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-rupee-sign input-icon"></i>
+                        <input
+                          type="number"
+                          id="mrp"
+                          name="mrp"
+                          className="form-input"
+                          placeholder="Enter MRP"
+                          value={formData.mrp}
+                          onChange={handleInputChange}
+                          min="0"
+                          step="0.01"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Row 5: Sell Rate, Points, Upload Image Button */}
+                    <div className="form-group">
+                      <label htmlFor="sellRate">Sell Rate</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-rupee-sign input-icon"></i>
+                        <input
+                          type="number"
+                          id="sellRate"
+                          name="sellRate"
+                          className="form-input"
+                          placeholder="Enter sell rate"
+                          value={formData.sellRate}
+                          onChange={handleInputChange}
+                          min="0"
+                          step="0.01"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="points">Points</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-star input-icon"></i>
+                        <input
+                          type="number"
+                          id="points"
+                          name="points"
+                          className="form-input"
+                          placeholder="Enter points"
+                          value={formData.points}
+                          onChange={handleInputChange}
+                          min="0"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Upload Image Button */}
+                    <div className="form-group">
+                      <label>Upload Image</label>
+                      <div style={{ 
+                        width: '100%',
+                        position: 'relative',
+                        zIndex: 1
+                      }}>
+                        <div className="upload-placeholder" style={{
+                          cursor: 'pointer',
+                          padding: '12px',
+                          border: '2px dashed #dc3545',
+                          borderRadius: '8px',
+                          textAlign: 'center',
+                          background: '#fff',
+                          transition: 'all 0.3s ease'
+                        }}>
+                          <i className="fas fa-plus" style={{ marginRight: '8px' }}></i>
+                          <span>Tap to upload image</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 

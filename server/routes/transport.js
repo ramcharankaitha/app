@@ -77,20 +77,20 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { name, travelsName, addresses, service, vehicleNumber } = req.body;
+    const { travelsName, phoneNumber, addresses } = req.body;
 
-    if (!name || !travelsName || !service) {
-      return res.status(400).json({ error: 'Required fields: name, travelsName, service' });
+    if (!travelsName) {
+      return res.status(400).json({ error: 'Required fields: travelsName' });
     }
 
     if (!addresses || !Array.isArray(addresses) || addresses.length === 0) {
-      return res.status(400).json({ error: 'At least one address is required' });
+      return res.status(400).json({ error: 'At least one city is required' });
     }
 
     // Validate that at least one address has a city
     const hasValidCity = addresses.some(addr => addr.city && addr.city.trim() !== '');
     if (!hasValidCity) {
-      return res.status(400).json({ error: 'At least one address must have a city' });
+      return res.status(400).json({ error: 'At least one city must be provided' });
     }
 
     // Store addresses as JSONB, also keep first address in legacy fields for backward compatibility
@@ -102,14 +102,14 @@ router.post('/', async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
       [
-        name, 
+        '', // name - removed (empty string instead of null for NOT NULL constraint)
         travelsName, 
-        firstAddress.address || null, 
-        firstAddress.city || null, 
-        firstAddress.state || null, 
-        firstAddress.pincode || null, 
-        service, 
-        vehicleNumber || null,
+        null, // address - removed
+        firstAddress.city || '', 
+        null, // state - removed
+        null, // pincode - removed
+        '', // service - removed (empty string instead of null for NOT NULL constraint)
+        null, // vehicleNumber - removed
         addressesJson
       ]
     );
@@ -128,20 +128,20 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, travelsName, addresses, service, vehicleNumber } = req.body;
+    const { travelsName, phoneNumber, addresses } = req.body;
 
-    if (!name || !travelsName || !service) {
-      return res.status(400).json({ error: 'Required fields: name, travelsName, service' });
+    if (!travelsName) {
+      return res.status(400).json({ error: 'Required fields: travelsName' });
     }
 
     if (!addresses || !Array.isArray(addresses) || addresses.length === 0) {
-      return res.status(400).json({ error: 'At least one address is required' });
+      return res.status(400).json({ error: 'At least one city is required' });
     }
 
     // Validate that at least one address has a city
     const hasValidCity = addresses.some(addr => addr.city && addr.city.trim() !== '');
     if (!hasValidCity) {
-      return res.status(400).json({ error: 'At least one address must have a city' });
+      return res.status(400).json({ error: 'At least one city must be provided' });
     }
 
     // Store addresses as JSONB, also keep first address in legacy fields for backward compatibility
@@ -163,14 +163,14 @@ router.put('/:id', async (req, res) => {
        WHERE id = $10
        RETURNING *`,
       [
-        name, 
+        '', // name - removed (empty string instead of null for NOT NULL constraint)
         travelsName, 
-        firstAddress.address || null, 
-        firstAddress.city || null, 
-        firstAddress.state || null, 
-        firstAddress.pincode || null, 
-        service, 
-        vehicleNumber || null,
+        null, // address - removed
+        firstAddress.city || '', 
+        null, // state - removed
+        null, // pincode - removed
+        '', // service - removed (empty string instead of null for NOT NULL constraint)
+        null, // vehicleNumber - removed
         addressesJson,
         id
       ]
