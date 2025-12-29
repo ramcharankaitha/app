@@ -584,12 +584,30 @@
     }
 }
 
-/* Premium Identity Cards Grid - Same as Users */
+/* Premium Identity Cards Grid - 3 cards per row */
 .premium-cards-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 24px;
     padding: 0;
+}
+
+@media (max-width: 1200px) {
+    .premium-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+    .premium-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .premium-cards-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Premium Identity Card */

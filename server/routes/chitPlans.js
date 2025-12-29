@@ -127,6 +127,20 @@ router.delete('/plans/:id', async (req, res) => {
 
 router.get('/customers', async (req, res) => {
   try {
+    // Ensure chit_number column exists
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'chit_customers' AND column_name = 'chit_number'
+        ) THEN
+          ALTER TABLE chit_customers ADD COLUMN chit_number VARCHAR(100);
+          RAISE NOTICE 'Added chit_number column to chit_customers';
+        END IF;
+      END $$;
+    `);
+    
     const result = await pool.query(
       `SELECT 
         cc.*,

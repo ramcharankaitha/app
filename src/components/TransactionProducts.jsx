@@ -275,7 +275,7 @@ const TransactionProducts = ({ onBack, onAddPricing, onNavigate, userRole = 'adm
             )}
 
             {/* Products List */}
-            <div className="products-list">
+            <div className="staff-list-container" style={{ padding: '0 24px 24px' }}>
               {products.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '60px 40px', color: '#666' }}>
                   <i className="fas fa-box" style={{ fontSize: '64px', marginBottom: '20px', opacity: 0.4, color: '#dc3545' }}></i>
@@ -288,95 +288,126 @@ const TransactionProducts = ({ onBack, onAddPricing, onNavigate, userRole = 'adm
                   <p>No products found matching your search</p>
                 </div>
               ) : (
-                filtered.map((p) => (
-                <div key={p.id} className="product-card" style={{ position: 'relative' }}>
-                  <div className="product-info">
-                    <div className="product-name">{p.name}</div>
-                    <div className="product-meta">Item Code: {p.itemCode}</div>
-                    <div className="product-meta-row">
-                      <div className="product-sku">
-                        <span className="label">SKU code:</span>
-                        <span className="value">{p.sku}</span>
+                <div className="products-grid">
+                  {filtered.map((p) => (
+                    <div
+                      key={p.id}
+                      className="product-card pricing-card"
+                      onClick={() => handleViewProduct(p)}
+                      style={{ cursor: 'pointer', position: 'relative' }}
+                    >
+                      <div className="product-header">
+                        <div className="product-title">{p.name || 'Unknown Product'}</div>
                       </div>
-                      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                      <div className="product-details">
+                        <div className="detail-row">
+                          <span className="detail-label">Item Code:</span>
+                          <span className="detail-value">{p.itemCode || 'N/A'}</span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">SKU Code:</span>
+                          <span className="detail-value">{p.sku || 'N/A'}</span>
+                        </div>
                         {p.mrp && (
-                          <div style={{ fontSize: '12px', color: '#666' }}>
-                            <strong>MRP:</strong> ₹{p.mrp}
+                          <div className="detail-row">
+                            <span className="detail-label">MRP:</span>
+                            <span className="detail-value" style={{ color: '#28a745', fontWeight: 'bold' }}>
+                              ₹{p.mrp}
+                            </span>
                           </div>
                         )}
                         {p.sellRate && (
-                          <div style={{ fontSize: '12px', color: '#666' }}>
-                            <strong>Sell Rate:</strong> ₹{p.sellRate}
+                          <div className="detail-row">
+                            <span className="detail-label">Sell Rate:</span>
+                            <span className="detail-value" style={{ fontWeight: 'bold' }}>
+                              ₹{p.sellRate}
+                            </span>
                           </div>
                         )}
                         {p.salesRate && (
-                          <div style={{ fontSize: '12px', color: '#666' }}>
-                            <strong>Sales Rate:</strong> ₹{p.salesRate}
+                          <div className="detail-row">
+                            <span className="detail-label">Sales Rate:</span>
+                            <span className="detail-value">₹{p.salesRate}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 1 }} ref={menuRef}>
+                        <button 
+                          className="product-options"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOptionsClick(e, p.id);
+                          }}
+                          style={{
+                            background: 'rgba(255,255,255,0.9)',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            padding: '4px 8px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <i className="fas fa-ellipsis-v"></i>
+                        </button>
+                        {showOptionsMenu === p.id && (
+                          <div style={{
+                            position: 'absolute',
+                            top: 'calc(100% + 8px)',
+                            right: '0',
+                            background: '#fff',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                            zIndex: 10000,
+                            minWidth: '150px',
+                            padding: '8px 0'
+                          }}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewProduct(p);
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '10px 16px',
+                                border: 'none',
+                                background: 'transparent',
+                                textAlign: 'left',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                color: '#333'
+                              }}
+                              onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
+                              onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                            >
+                              <i className="fas fa-eye" style={{ marginRight: '8px', color: '#dc3545' }}></i>
+                              View Details
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditPricing(p);
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '10px 16px',
+                                border: 'none',
+                                background: 'transparent',
+                                textAlign: 'left',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                color: '#333'
+                              }}
+                              onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
+                              onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                            >
+                              <i className="fas fa-edit" style={{ marginRight: '8px', color: '#007bff' }}></i>
+                              Edit Pricing
+                            </button>
                           </div>
                         )}
                       </div>
                     </div>
-                  </div>
-                  <div style={{ position: 'absolute', top: '50%', right: '12px', transform: 'translateY(-50%)', zIndex: 1 }} ref={menuRef}>
-                    <button 
-                      className="product-options"
-                      onClick={(e) => handleOptionsClick(e, p.id)}
-                    >
-                      <i className="fas fa-ellipsis-v"></i>
-                    </button>
-                    {showOptionsMenu === p.id && (
-                      <div style={{
-                        position: 'absolute',
-                        top: 'calc(100% + 16px)',
-                        right: '0',
-                        background: '#fff',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                        zIndex: 10000,
-                        minWidth: '150px',
-                        padding: '8px 0'
-                      }}>
-                        <button
-                          onClick={() => handleViewProduct(p)}
-                          style={{
-                            width: '100%',
-                            padding: '10px 16px',
-                            border: 'none',
-                            background: 'transparent',
-                            textAlign: 'left',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            color: '#333'
-                          }}
-                          onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                          onMouseLeave={(e) => e.target.style.background = 'transparent'}
-                        >
-                          <i className="fas fa-eye" style={{ marginRight: '8px', color: '#dc3545' }}></i>
-                          View Details
-                        </button>
-                        <button
-                          onClick={() => handleEditPricing(p)}
-                          style={{
-                            width: '100%',
-                            padding: '10px 16px',
-                            border: 'none',
-                            background: 'transparent',
-                            textAlign: 'left',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            color: '#333'
-                          }}
-                          onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                          onMouseLeave={(e) => e.target.style.background = 'transparent'}
-                        >
-                          <i className="fas fa-edit" style={{ marginRight: '8px', color: '#007bff' }}></i>
-                          Edit Pricing
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  ))}
                 </div>
-                ))
               )}
             </div>
           </main>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { customersAPI, chitPlansAPI } from '../services/api';
+import { customersAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 
 const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
@@ -21,9 +21,6 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
-  const [customerType, setCustomerType] = useState('walkin'); // 'walkin' or 'chitplan'
-  const [chitPlans, setChitPlans] = useState([]);
-  const [selectedChitPlanId, setSelectedChitPlanId] = useState('');
 
   const handleBack = () => {
     if (onNavigate) {
@@ -152,20 +149,6 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     };
   }, []);
 
-  // Fetch chit plans on component mount
-  useEffect(() => {
-    const fetchChitPlans = async () => {
-      try {
-        const response = await chitPlansAPI.getPlans();
-        if (response && response.success) {
-          setChitPlans(response.plans || []);
-        }
-      } catch (err) {
-        console.error('Error fetching chit plans:', err);
-      }
-    };
-    fetchChitPlans();
-  }, []);
 
   // Product handling removed - products are handled in Stock Out (Transaction Menu) only
 
@@ -174,12 +157,6 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     setError('');
     setSuccessMessage('');
 
-    // Validate chit plan selection if customer type is chit plan
-    if (customerType === 'chitplan' && !selectedChitPlanId) {
-      setError('Please select a chit plan');
-      setIsLoading(false);
-      return;
-    }
 
     // Check if phone number already exists before submission
     if (formData.phone && formData.phone.trim() !== '') {
@@ -246,10 +223,6 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
         createdBy: createdBy
       };
 
-      // Add chit plan ID if chit plan is selected
-      if (customerType === 'chitplan' && selectedChitPlanId) {
-        customerData.chitPlanId = parseInt(selectedChitPlanId);
-      }
 
       const response = await customersAPI.create(customerData);
 
@@ -447,56 +420,6 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                         </div>
                     </div>
 
-                    {/* Customer Type Dropdown */}
-                    <div className="form-group">
-                      <label htmlFor="customerType">Customer Type</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-user-tag input-icon"></i>
-                        <select
-                          id="customerType"
-                          name="customerType"
-                          className="form-input"
-                          value={customerType}
-                          onChange={(e) => {
-                            setCustomerType(e.target.value);
-                            if (e.target.value === 'walkin') {
-                              setSelectedChitPlanId('');
-                            }
-                          }}
-                          required
-                        >
-                          <option value="walkin">Walk-in</option>
-                          <option value="chitplan">Chit Plan</option>
-                        </select>
-                        <i className="fas fa-chevron-down dropdown-icon"></i>
-                      </div>
-                    </div>
-
-                    {/* Chit Plan Dropdown - Only show when Chit Plan is selected */}
-                    {customerType === 'chitplan' && (
-                      <div className="form-group">
-                        <label htmlFor="chitPlan">Chit Plan</label>
-                        <div className="input-wrapper">
-                          <i className="fas fa-file-invoice-dollar input-icon"></i>
-                          <select
-                            id="chitPlan"
-                            name="chitPlan"
-                            className="form-input"
-                            value={selectedChitPlanId}
-                            onChange={(e) => setSelectedChitPlanId(e.target.value)}
-                            required={customerType === 'chitplan'}
-                          >
-                            <option value="">Select Chit Plan</option>
-                            {chitPlans.map((plan) => (
-                              <option key={plan.id} value={plan.id}>
-                                {plan.plan_name} - ₹{parseFloat(plan.plan_amount || 0).toLocaleString('en-IN')}
-                              </option>
-                            ))}
-                          </select>
-                          <i className="fas fa-chevron-down dropdown-icon"></i>
-                        </div>
-                      </div>
-                    )}
 
                     {/* Row 2: Street, City, State */}
                     <div className="form-group">

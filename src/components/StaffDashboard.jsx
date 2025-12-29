@@ -9,6 +9,7 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
   const { profile, avatarUrl, initials } = useProfile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeNav, setActiveNav] = useState('home');
+  const [isHandler, setIsHandler] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const [attendanceType, setAttendanceType] = useState(null); // 'checkin' or 'checkout'
@@ -89,10 +90,40 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
     return () => clearInterval(interval);
   }, []);
 
+  // Check if user is a handler
+  useEffect(() => {
+    const checkHandlerStatus = async () => {
+      try {
+        const storedUserData = JSON.parse(localStorage.getItem('userData') || '{}');
+        const userId = storedUserData.id || userData?.id;
+        
+        if (userId) {
+          const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/staff/${userId}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+            }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.staff) {
+              setIsHandler(data.staff.is_handler === true);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error checking handler status:', err);
+      }
+    };
+    
+    checkHandlerStatus();
+  }, [userData]);
+
   // Sync activeNav with currentPage
   useEffect(() => {
     if (currentPage === 'staffHome') {
       setActiveNav('home');
+    } else if (currentPage === 'handler') {
+      setActiveNav('handler');
     } else if (currentPage === 'customers') {
       setActiveNav('customers');
     } else if (currentPage === 'products') {
@@ -133,6 +164,8 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
       if (currentPage !== 'staffHome') {
         onNavigate('staffHome');
       }
+    } else if (navItem === 'handler') {
+      onNavigate('handler');
     } else if (navItem === 'customers') {
       onNavigate('customers');
     } else if (navItem === 'masterMenu') {
@@ -218,6 +251,17 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
           </div>
           <span>Home</span>
         </div>
+        {isHandler && (
+          <div 
+            className={`nav-item ${activeNav === 'handler' ? 'active' : ''}`} 
+            onClick={(e) => handleNavClick('handler', e)}
+          >
+            <div className="nav-icon">
+              <i className="fas fa-tools"></i>
+            </div>
+            <span>Handler</span>
+          </div>
+        )}
         <div 
           className={`nav-item ${activeNav === 'masterMenu' ? 'active' : ''}`} 
           onClick={(e) => handleNavClick('masterMenu', e)}

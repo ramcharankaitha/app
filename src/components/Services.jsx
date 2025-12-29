@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { servicesAPI } from '../services/api';
-import './staff.css';
+import './products.css';
 
 const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [services, setServices] = useState([]);
   const [error, setError] = useState('');
-  const [openMenuId, setOpenMenuId] = useState(null);
   const [viewServiceModal, setViewServiceModal] = useState(null);
-  const menuRefs = useRef({});
 
   // Fetch services from database
   const fetchServices = async () => {
@@ -114,26 +112,8 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
     return matchesName || matchesDescription || matchesCategory;
   });
 
-  // Handle menu toggle
-  const toggleMenu = (serviceId, e) => {
-    e.stopPropagation();
-    setOpenMenuId(openMenuId === serviceId ? null : serviceId);
-  };
-
-  // Close menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (openMenuId && menuRefs.current[openMenuId] && !menuRefs.current[openMenuId].contains(event.target)) {
-        setOpenMenuId(null);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [openMenuId]);
-
   // Handle view service details
   const handleViewServiceDetails = (service) => {
-    setOpenMenuId(null);
     setViewServiceModal(service);
   };
 
@@ -247,7 +227,7 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
         )}
 
         {/* Services List */}
-        <div className="staff-list">
+        <div className="staff-list-container" style={{ padding: '0 24px 24px' }}>
           {services.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 40px', color: '#666' }}>
               <i className="fas fa-concierge-bell" style={{ fontSize: '64px', marginBottom: '20px', opacity: 0.4, color: '#dc3545' }}></i>
@@ -260,47 +240,75 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
               <p>No services found matching your search</p>
             </div>
           ) : (
-            filteredServices.map((service) => (
-            <div key={service.id} className="staff-card">
-              <div className="staff-avatar">
-                <span>{service.initials || 'SV'}</span>
-              </div>
-              <div className="staff-info">
-                <div className="staff-name">{service.name || 'N/A'}</div>
-                {service.description && (
-                  <div className="staff-role">{service.description}</div>
-                )}
-                {service.category && (
-                  <div className="staff-store-badge">
-                    <i className="fas fa-tag"></i>
-                    <span>{service.category}</span>
-                  </div>
-                )}
-              </div>
-              {service.price && (
-                <div className="staff-email">₹{service.price}</div>
-              )}
-              <div 
-                className="staff-options-container" 
-                ref={el => menuRefs.current[service.id] = el}
-              >
-                <button 
-                  className="staff-options"
-                  onClick={(e) => toggleMenu(service.id, e)}
+            <div className="products-grid">
+              {filteredServices.map((service) => (
+                <div
+                  key={service.id}
+                  className="product-card service-card"
+                  onClick={() => handleViewServiceDetails(service)}
+                  style={{ cursor: 'pointer' }}
                 >
-                  <i className="fas fa-ellipsis-v"></i>
-                </button>
-                {openMenuId === service.id && (
-                  <div className="staff-menu-dropdown">
-                    <div className="menu-item" onClick={() => handleViewServiceDetails(service)}>
-                      <i className="fas fa-eye"></i>
-                      <span>View Service Details</span>
+                  <div className="product-header">
+                    <div className="product-title">{service.name || 'N/A'}</div>
+                    <div className="product-badge" style={{ background: '#6f42c1', color: '#fff' }}>
+                      <i className="fas fa-concierge-bell"></i> Service
                     </div>
                   </div>
-                )}
-              </div>
+                  <div className="product-details">
+                    {service.description && (
+                      <div className="detail-row">
+                        <span className="detail-label">Product:</span>
+                        <span className="detail-value">{service.description}</span>
+                      </div>
+                    )}
+                    {service.category && (
+                      <div className="detail-row">
+                        <span className="detail-label">Brand:</span>
+                        <span className="detail-value">{service.category}</span>
+                      </div>
+                    )}
+                    {service.itemCode && (
+                      <div className="detail-row">
+                        <span className="detail-label">Item Code:</span>
+                        <span className="detail-value">{service.itemCode}</span>
+                      </div>
+                    )}
+                    {service.handlerName && (
+                      <div className="detail-row">
+                        <span className="detail-label">Handler:</span>
+                        <span className="detail-value">{service.handlerName}</span>
+                      </div>
+                    )}
+                    {service.serviceDate && (
+                      <div className="detail-row">
+                        <span className="detail-label">Service Date:</span>
+                        <span className="detail-value">
+                          {new Date(service.serviceDate).toLocaleDateString('en-IN', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </span>
+                      </div>
+                    )}
+                    {service.created_at && (
+                      <div className="detail-row">
+                        <span className="detail-label">Created:</span>
+                        <span className="detail-value">
+                          {new Date(service.created_at).toLocaleString('en-IN', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
-            ))
           )}
         </div>
       </main>

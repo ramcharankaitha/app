@@ -327,6 +327,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     { title: 'Supply Master', desc: 'Suppliers and logistics', icon: 'fa-truck', target: 'suppliers' },
     { title: 'Customers', desc: 'Customer management & details', icon: 'fa-user-friends', target: 'customers' },
     { title: 'Chit Plan Master', desc: 'Create and manage chit plans', icon: 'fa-file-invoice-dollar', target: 'chitPlanMaster' },
+    { title: 'Chit Plan', desc: 'Create customers with chit plans', icon: 'fa-user-check', target: 'chitPlan' },
   ];
 
   const transactionSections = [
@@ -339,6 +340,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     { title: 'Sales Order', desc: 'View and manage sales orders', icon: 'fa-chart-line', target: 'salesOrder' },
     { title: 'Entry Chit', desc: 'Record chit payments', icon: 'fa-file-invoice-dollar', target: 'chitEntryMaster' },
     { title: 'Purchase Order', desc: 'Create and manage purchase orders', icon: 'fa-shopping-cart', target: 'purchaseOrderMaster' },
+    { title: 'Quotations', desc: 'Create and manage quotations', icon: 'fa-file-invoice', target: 'quotationMaster' },
   ];
 
   const renderContent = () => {

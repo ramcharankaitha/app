@@ -373,12 +373,6 @@ const ChitEntryMaster = ({ onBack, onAddChitEntry, onNavigate, userRole = 'admin
                         <span className="detail-value">{entry.payment_mode || 'N/A'}</span>
                       </div>
                       <div className="detail-row">
-                        <span className="detail-label">Payment Amount:</span>
-                        <span className="detail-value" style={{ fontWeight: 'bold', color: '#28a745' }}>
-                          ₹{entry.payment_amount ? parseFloat(entry.payment_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}
-                        </span>
-                      </div>
-                      <div className="detail-row">
                         <span className="detail-label">Date:</span>
                         <span className="detail-value">{formatDate(entry.created_at)}</span>
                       </div>

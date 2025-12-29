@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { suppliersAPI, purchaseOrdersAPI } from '../services/api';
+import React, { useState, useEffect } from 'react';
+import { suppliersAPI, purchaseOrdersAPI, productsAPI, salesOrdersAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import './addUser.css';
 
@@ -11,7 +11,7 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
     handlerName: '',
     poNumber: '',
     orderDate: new Date().toISOString().split('T')[0],
-    expectedDeliveryDate: ''
+    expectedDeliveryDate: '',
   });
   const [supplierSearchResults, setSupplierSearchResults] = useState([]);
   const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
@@ -20,6 +20,19 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
+  
+  // Product input fields
+  const [currentProduct, setCurrentProduct] = useState({
+    itemCode: '',
+    productName: '',
+    quantity: '',
+    unitPrice: '',
+    isFetching: false,
+    productInfo: null
+  });
+  
+  // Added products list
+  const [addedProducts, setAddedProducts] = useState([]);
 
   const getUserIdentifier = () => {
     const userDataStr = localStorage.getItem('userData');
@@ -52,6 +65,224 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
     if (name === 'supplierName') {
       searchSuppliers(value);
     }
+    
+    // If PO number is entered, fetch products from sales order
+    if (name === 'poNumber' && value.trim()) {
+      fetchProductsFromPO(value.trim());
+    }
+  };
+  
+  // Fetch products from sales order by PO number
+  const fetchProductsFromPO = async (poNumber) => {
+    if (!poNumber || poNumber.trim() === '') {
+      // Clear products if PO number is cleared
+      if (addedProducts.length > 0) {
+        setAddedProducts([]);
+      }
+      return;
+    }
+    
+    try {
+      setError('');
+      // Search for sales order with this PO number
+      const response = await salesOrdersAPI.getAll();
+      if (response.success && response.salesOrders) {
+        const salesOrder = response.salesOrders.find(so => 
+          so.po_number && so.po_number.trim().toUpperCase() === poNumber.trim().toUpperCase()
+        );
+        
+        if (salesOrder && salesOrder.products) {
+          let products = salesOrder.products;
+          if (typeof products === 'string') {
+            try {
+              products = JSON.parse(products);
+            } catch (e) {
+              console.error('Error parsing products JSON:', e);
+              products = [];
+            }
+          }
+          
+          if (Array.isArray(products) && products.length > 0) {
+            // Transform sales order products to purchase order items
+            const transformedItems = products.map((product, index) => {
+              const quantity = parseFloat(product.quantity) || 0;
+              const sellRate = parseFloat(product.sellRate) || parseFloat(product.sell_rate) || 0;
+              const mrp = parseFloat(product.mrp) || 0;
+              const unitPrice = sellRate > 0 ? sellRate : mrp;
+              
+              return {
+                id: Date.now() + index,
+                itemCode: product.itemCode || product.item_code || '',
+                productName: product.productName || product.product_name || '',
+                quantity: quantity,
+                unitPrice: unitPrice,
+                totalPrice: quantity * unitPrice
+              };
+            });
+            
+            setAddedProducts(transformedItems);
+            setSuccessMessage(`Loaded ${transformedItems.length} product(s) from sales order`);
+            setTimeout(() => setSuccessMessage(''), 3000);
+          } else {
+            setError('No products found in the sales order with this PO number');
+            setTimeout(() => setError(''), 3000);
+          }
+        } else {
+          // PO number not found - don't show error, user can add products manually
+          if (addedProducts.length > 0) {
+            // Clear products if PO number doesn't match
+            setAddedProducts([]);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching products from PO:', err);
+      // Don't show error, just continue - user can add products manually
+    }
+  };
+  
+  // Handle product input changes
+  const handleProductChange = (field, value) => {
+    setCurrentProduct(prev => {
+      const updated = { ...prev, [field]: value };
+      
+      // Reset product info if item code changes
+      if (field === 'itemCode') {
+        updated.productInfo = null;
+        updated.productName = '';
+        updated.unitPrice = '';
+      }
+      
+      return updated;
+    });
+  };
+  
+  // Fetch product by item code
+  const fetchProductByItemCode = async () => {
+    if (!currentProduct.itemCode?.trim()) {
+      setError('Please enter an item code');
+      return;
+    }
+    
+    setCurrentProduct(prev => ({ ...prev, isFetching: true }));
+    setError('');
+    
+    try {
+      const response = await productsAPI.getByItemCode(currentProduct.itemCode.trim());
+      
+      if (response.success && response.product) {
+        const product = response.product;
+        const productData = {
+          id: product.id,
+          productName: product.product_name || product.productName || '',
+          itemCode: product.item_code || product.itemCode || '',
+          mrp: product.mrp || 0,
+          sellRate: product.sell_rate || product.sellRate || 0
+        };
+        
+        setCurrentProduct(prev => ({
+          ...prev,
+          productInfo: productData,
+          productName: productData.productName,
+          unitPrice: (productData.sellRate > 0 ? productData.sellRate : productData.mrp).toString(),
+          isFetching: false
+        }));
+      } else {
+        setError('Product not found with this item code');
+        setCurrentProduct(prev => ({ 
+          ...prev, 
+          productInfo: null, 
+          productName: '',
+          unitPrice: '',
+          isFetching: false 
+        }));
+      }
+    } catch (err) {
+      console.error('Fetch product error:', err);
+      setError('Product not found. Please check the item code and try again.');
+      setCurrentProduct(prev => ({ 
+        ...prev, 
+        productInfo: null, 
+        productName: '',
+        unitPrice: '',
+        isFetching: false 
+      }));
+    }
+  };
+  
+  const handleItemCodeKeyPress = async (e) => {
+    if (e.key === 'Enter' || e.keyCode === 13) {
+      e.preventDefault();
+      await fetchProductByItemCode();
+    }
+  };
+  
+  // Add product to list
+  const addProduct = () => {
+    if (!currentProduct.productInfo) {
+      setError('Please fetch product first');
+      return;
+    }
+    
+    if (!currentProduct.quantity || parseFloat(currentProduct.quantity) <= 0) {
+      setError('Please enter a valid quantity');
+      return;
+    }
+    
+    if (!currentProduct.unitPrice || parseFloat(currentProduct.unitPrice) <= 0) {
+      setError('Please enter a valid unit price');
+      return;
+    }
+    
+    // Check for duplicate item codes - silently skip if duplicate
+    const isDuplicate = addedProducts.some(p => 
+      p.itemCode && p.itemCode.trim() === currentProduct.itemCode.trim()
+    );
+    
+    if (isDuplicate) {
+      // Silently skip duplicate products without showing error
+      return;
+    }
+    
+    const quantity = parseFloat(currentProduct.quantity) || 0;
+    const unitPrice = parseFloat(currentProduct.unitPrice) || 0;
+    const totalPrice = quantity * unitPrice;
+    
+    const newId = addedProducts.length > 0 
+      ? Math.max(...addedProducts.map(p => p.id)) + 1 
+      : 1;
+    
+    setAddedProducts(prev => [...prev, {
+      id: newId,
+      itemCode: currentProduct.itemCode.trim(),
+      productName: currentProduct.productName,
+      quantity: quantity,
+      unitPrice: unitPrice,
+      totalPrice: totalPrice
+    }]);
+    
+    // Clear current product form
+    setCurrentProduct({
+      itemCode: '',
+      productName: '',
+      quantity: '',
+      unitPrice: '',
+      isFetching: false,
+      productInfo: null
+    });
+    setError('');
+  };
+  
+  // Remove product from list
+  const removeProduct = (productId) => {
+    setAddedProducts(prev => prev.filter(p => p.id !== productId));
+  };
+  
+  // Calculate total amount from added products
+  const calculateTotalAmount = () => {
+    return addedProducts.reduce((total, product) => {
+      return total + (parseFloat(product.totalPrice) || 0);
+    }, 0);
   };
 
 
@@ -156,6 +387,19 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
         
         try {
           const createdBy = getUserIdentifier();
+          
+          // Prepare items array from added products
+          const items = addedProducts.map(product => ({
+            itemCode: product.itemCode,
+            productName: product.productName,
+            quantity: product.quantity,
+            unitPrice: product.unitPrice,
+            totalPrice: product.totalPrice
+          }));
+          
+          // Calculate total amount
+          const totalAmount = calculateTotalAmount();
+          
           const response = await purchaseOrdersAPI.create({
             supplierId: finalSupplierId,
             supplierName: finalSupplierName,
@@ -164,14 +408,8 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
             poNumber: finalPoNumber,
             orderDate: finalOrderDate,
             expectedDeliveryDate: finalExpectedDeliveryDate,
-            supplierName: formData.supplierName,
-            supplierNumber: formData.supplierNumber,
-            handlerName: formData.handlerName,
-            poNumber: formData.poNumber,
-            orderDate: formData.orderDate,
-            expectedDeliveryDate: formData.expectedDeliveryDate,
-            items: [],
-            totalAmount: 0,
+            items: items,
+            totalAmount: totalAmount,
             createdBy: createdBy
           });
 
@@ -183,8 +421,17 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
               handlerName: '',
               poNumber: '',
               orderDate: new Date().toISOString().split('T')[0],
-              expectedDeliveryDate: ''
+              expectedDeliveryDate: '',
             });
+            setCurrentProduct({
+              itemCode: '',
+              productName: '',
+              quantity: '',
+              unitPrice: '',
+              isFetching: false,
+              productInfo: null
+            });
+            setAddedProducts([]);
             setSuccessMessage('Purchase order created successfully!');
             setTimeout(() => {
               if (onNavigate) {
@@ -244,7 +491,7 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
             </div>
           )}
 
-          <div className="form-section" style={{ marginTop: '40px' }}>
+          <div className="form-section">
             <div className="form-grid four-col">
               {/* Row 1: Supplier Name, Supplier Number, Handler Name, PO */}
               <div className="form-group" style={{ position: 'relative' }}>
@@ -348,7 +595,7 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 </div>
               </div>
 
-              {/* Row 2: Order Date, Expected Delivery Date */}
+              {/* Row 2: Order Date, Expected Delivery Date, Item Code, Product Name */}
               <div className="form-group">
                 <label htmlFor="orderDate">Order Date *</label>
                 <div className="input-wrapper">
@@ -381,26 +628,299 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 </div>
               </div>
 
+              {/* Item Code */}
+              <div className="form-group" style={{ position: 'relative' }}>
+                <label htmlFor="itemCode">Item Code *</label>
+                <div className="input-wrapper" style={{ position: 'relative' }}>
+                  <i className="fas fa-barcode input-icon"></i>
+                  <input
+                    type="text"
+                    id="itemCode"
+                    className="form-input"
+                    placeholder="Enter item code"
+                    value={currentProduct.itemCode}
+                    onChange={(e) => handleProductChange('itemCode', e.target.value)}
+                    onKeyPress={handleItemCodeKeyPress}
+                    style={{ paddingRight: currentProduct.isFetching ? '40px' : '50px' }}
+                  />
+                  {currentProduct.isFetching ? (
+                    <div style={{ 
+                      position: 'absolute', 
+                      right: '10px', 
+                      top: '50%', 
+                      transform: 'translateY(-50%)',
+                      color: '#999'
+                    }}>
+                      <i className="fas fa-spinner fa-spin"></i>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={fetchProductByItemCode}
+                      style={{
+                        position: 'absolute',
+                        right: '8px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        padding: '6px 8px',
+                        width: '32px',
+                        height: '32px',
+                        background: '#dc3545',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                      title="Fetch Product"
+                    >
+                      <i className="fas fa-search"></i>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Product Name */}
+              <div className="form-group">
+                <label htmlFor="productName">Product Name</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-box input-icon"></i>
+                  <input
+                    type="text"
+                    id="productName"
+                    className="form-input"
+                    placeholder="Product Name (auto-filled)"
+                    value={currentProduct.productName}
+                    readOnly
+                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                  />
+                </div>
+              </div>
+
+              {/* Row 3: Quantity */}
+              {/* Quantity */}
+              <div className="form-group">
+                <label htmlFor="quantity">Quantity *</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-shopping-cart input-icon"></i>
+                  <input
+                    type="number"
+                    id="quantity"
+                    className="form-input"
+                    placeholder="Enter quantity"
+                    value={currentProduct.quantity}
+                    onChange={(e) => handleProductChange('quantity', e.target.value)}
+                    min="1"
+                    step="1"
+                    disabled={!currentProduct.productInfo}
+                  />
+                </div>
+              </div>
+
+              {/* Sell Rate */}
+              <div className="form-group">
+                <label htmlFor="unitPrice">Sell Rate (Rs) *</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-rupee-sign input-icon"></i>
+                  <input
+                    type="number"
+                    id="unitPrice"
+                    className="form-input"
+                    placeholder="Enter sell rate"
+                    value={currentProduct.unitPrice}
+                    onChange={(e) => handleProductChange('unitPrice', e.target.value)}
+                    min="0"
+                    step="0.01"
+                    disabled={!currentProduct.productInfo}
+                  />
+                </div>
+              </div>
+
+              {/* Add Product Button */}
+              <div className="form-group">
+                <label>&nbsp;</label>
+                <button
+                  type="button"
+                  onClick={addProduct}
+                  disabled={!currentProduct.productInfo || !currentProduct.quantity || !currentProduct.unitPrice || parseFloat(currentProduct.quantity) <= 0 || parseFloat(currentProduct.unitPrice) <= 0}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    background: (currentProduct.productInfo && currentProduct.quantity && currentProduct.unitPrice && parseFloat(currentProduct.quantity) > 0 && parseFloat(currentProduct.unitPrice) > 0) ? '#dc3545' : '#ccc',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: (currentProduct.productInfo && currentProduct.quantity && currentProduct.unitPrice && parseFloat(currentProduct.quantity) > 0 && parseFloat(currentProduct.unitPrice) > 0) ? 'pointer' : 'not-allowed',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (currentProduct.productInfo && currentProduct.quantity && currentProduct.unitPrice && parseFloat(currentProduct.quantity) > 0 && parseFloat(currentProduct.unitPrice) > 0) {
+                      e.target.style.background = '#c82333';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (currentProduct.productInfo && currentProduct.quantity && currentProduct.unitPrice && parseFloat(currentProduct.quantity) > 0 && parseFloat(currentProduct.unitPrice) > 0) {
+                      e.target.style.background = '#dc3545';
+                    }
+                  }}
+                >
+                  <i className="fas fa-plus"></i>
+                  Add Product
+                </button>
+              </div>
+
             </div>
           </div>
 
+          {/* Product Summary Section */}
+          {addedProducts.length > 0 && (
+            <div className="form-section" style={{ 
+              clear: 'both', 
+              marginTop: '80px', 
+              marginBottom: '20px',
+              paddingTop: '40px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px',
+              width: '100%'
+            }}>
+              {/* Product List Container */}
+              <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: '0', width: '100%' }}>
+                <div className="attendance-table-container" style={{ 
+                  marginTop: '0', 
+                  maxHeight: '250px', 
+                  overflowY: 'auto', 
+                  marginBottom: '0',
+                  width: '100%'
+                }}>
+                  <table className="attendance-table" style={{ width: '100%' }}>
+                    <tbody>
+                      {addedProducts.map((product, index) => (
+                        <tr key={product.id}>
+                          <td style={{ textAlign: 'center', color: '#666', fontWeight: '500' }}>
+                            {index + 1}
+                          </td>
+                          <td style={{ fontWeight: '500', color: '#333' }}>
+                            {product.itemCode}
+                          </td>
+                          <td style={{ fontWeight: '500', color: '#333' }}>
+                            {product.productName}
+                          </td>
+                          <td style={{ textAlign: 'center', color: '#666' }}>
+                            {product.quantity}
+                          </td>
+                          <td style={{ textAlign: 'right', color: '#666' }}>
+                            ₹{parseFloat(product.unitPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          </td>
+                          <td style={{ textAlign: 'right', fontWeight: '600', color: '#28a745' }}>
+                            ₹{parseFloat(product.totalPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            <button
+                              type="button"
+                              onClick={() => removeProduct(product.id)}
+                              style={{
+                                background: '#dc3545',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s ease',
+                                whiteSpace: 'nowrap'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#c82333';
+                                e.target.style.transform = 'scale(1.05)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#dc3545';
+                                e.target.style.transform = 'scale(1)';
+                              }}
+                              title="Remove this product"
+                            >
+                              <i className="fas fa-trash"></i>
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Total Amount Summary Container */}
+              <div className="form-group" style={{ 
+                gridColumn: '1 / -1', 
+                marginTop: '0',
+                marginBottom: '0',
+                width: '100%',
+                paddingTop: '16px',
+                borderTop: '2px solid #e9ecef'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  alignItems: 'center',
+                  gap: '16px',
+                  padding: '12px 16px',
+                  background: '#f8f9fa',
+                  borderRadius: '8px',
+                  width: '100%',
+                  boxSizing: 'border-box'
+                }}>
+                  <span style={{ 
+                    fontSize: '16px', 
+                    fontWeight: '700', 
+                    color: '#333'
+                  }}>
+                    Total Amount:
+                  </span>
+                  <span style={{ 
+                    fontSize: '18px', 
+                    fontWeight: '700', 
+                    color: '#28a745',
+                    minWidth: '120px',
+                    textAlign: 'right'
+                  }}>
+                    ₹{calculateTotalAmount().toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Submit Button */}
-          <div className="form-actions" style={{ marginTop: '40px', paddingTop: '20px' }}>
+          <div className="form-actions" style={{ marginTop: '20px' }}>
             <button
               type="submit"
-              disabled={isLoading || !formData.supplierName || formData.supplierName.trim() === ''}
+              disabled={isLoading || !formData.supplierName || formData.supplierName.trim() === '' || addedProducts.length === 0}
               className="submit-btn"
               style={{
                 width: '200px',
                 margin: '0 auto',
                 padding: '12px 24px',
-                background: (isLoading || !formData.supplierName || formData.supplierName.trim() === '') ? '#ccc' : '#dc3545',
+                background: (isLoading || !formData.supplierName || formData.supplierName.trim() === '' || addedProducts.length === 0) ? '#ccc' : '#dc3545',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '8px',
                 fontSize: '16px',
                 fontWeight: '600',
-                cursor: (isLoading || !formData.supplierName || formData.supplierName.trim() === '') ? 'not-allowed' : 'pointer',
+                cursor: (isLoading || !formData.supplierName || formData.supplierName.trim() === '' || addedProducts.length === 0) ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

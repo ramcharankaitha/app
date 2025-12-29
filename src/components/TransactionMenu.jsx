@@ -12,6 +12,7 @@ const TransactionMenu = ({ onNavigate, onBack }) => {
     { title: 'Entry Chit', desc: 'Record chit payments', target: 'chitEntryMaster', icon: 'fa-file-invoice-dollar' },
     { title: 'Purchase Order', desc: 'Create and manage purchase orders', target: 'purchaseOrderMaster', icon: 'fa-shopping-cart' },
     { title: 'Purchase Bill Alert', desc: 'Monitor purchase bill alerts', target: 'purchaseBillAlert', icon: 'fa-bell' },
+    { title: 'Quotations', desc: 'Create and manage quotations', target: 'quotationMaster', icon: 'fa-file-invoice' },
   ];
 
   const handleOpen = (target) => {

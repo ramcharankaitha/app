@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { dispatchAPI } from '../services/api';
-import './suppliers.css';
+import './products.css';
 
 const DispatchDepartment = ({ onBack, onAddDispatch, onNavigate, userRole = 'admin' }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [dispatches, setDispatches] = useState([]);
   const [error, setError] = useState('');
-  const [openMenuId, setOpenMenuId] = useState(null);
   const [viewDispatchModal, setViewDispatchModal] = useState(null);
-  const menuRefs = useRef({});
 
   const handleBack = () => {
     if (onNavigate) {
@@ -88,26 +86,8 @@ const DispatchDepartment = ({ onBack, onAddDispatch, onNavigate, userRole = 'adm
     return matchesSearch;
   });
 
-  // Handle menu toggle
-  const toggleMenu = (dispatchId, e) => {
-    e.stopPropagation();
-    setOpenMenuId(openMenuId === dispatchId ? null : dispatchId);
-  };
-
-  // Close menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (openMenuId && menuRefs.current[openMenuId] && !menuRefs.current[openMenuId].contains(event.target)) {
-        setOpenMenuId(null);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [openMenuId]);
-
   // Handle view dispatch details
   const handleViewDispatchDetails = async (dispatch) => {
-    setOpenMenuId(null);
     try {
       const response = await dispatchAPI.getById(dispatch.id);
       if (response.success) {
@@ -231,7 +211,7 @@ const DispatchDepartment = ({ onBack, onAddDispatch, onNavigate, userRole = 'adm
         )}
 
         {/* Dispatches List */}
-        <div className="staff-list">
+        <div className="staff-list-container" style={{ padding: '0 24px 24px' }}>
           {dispatches.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 40px', color: '#666' }}>
               <i className="fas fa-shipping-fast" style={{ fontSize: '64px', marginBottom: '20px', opacity: 0.4, color: '#dc3545' }}></i>
@@ -244,53 +224,57 @@ const DispatchDepartment = ({ onBack, onAddDispatch, onNavigate, userRole = 'adm
               <p>No dispatch records found matching your search</p>
             </div>
           ) : (
-            filteredDispatches.map((dispatch) => (
-            <div key={dispatch.id} className="staff-card">
-              <div className="staff-avatar">
-                <span>{dispatch.initials}</span>
-              </div>
-              <div className="staff-info">
-                <div className="staff-name">{dispatch.name || 'N/A'}</div>
-                {dispatch.customer && (
-                  <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px' }}>
-                    <i className="fas fa-user" style={{ marginRight: '6px', fontSize: '10px' }}></i>
-                    Customer: {dispatch.customer}
-                  </div>
-                )}
-                {dispatch.phone && (
-                  <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px' }}>
-                    <i className="fas fa-phone" style={{ marginRight: '6px', fontSize: '10px' }}></i>
-                    {dispatch.phone}
-                  </div>
-                )}
-                {dispatch.transportName && (
-                  <div className="staff-role" style={{ fontSize: '11px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <i className="fas fa-truck" style={{ fontSize: '10px', color: '#666' }}></i>
-                    <span>{dispatch.transportName}</span>
-                  </div>
-                )}
-              </div>
-              <div 
-                className="staff-options-container" 
-                ref={el => menuRefs.current[dispatch.id] = el}
-              >
-                <button 
-                  className="staff-options"
-                  onClick={(e) => toggleMenu(dispatch.id, e)}
+            <div className="products-grid">
+              {filteredDispatches.map((dispatch) => (
+                <div
+                  key={dispatch.id}
+                  className="product-card dispatch-card"
+                  onClick={() => handleViewDispatchDetails(dispatch)}
+                  style={{ cursor: 'pointer' }}
                 >
-                  <i className="fas fa-ellipsis-v"></i>
-                </button>
-                {openMenuId === dispatch.id && (
-                  <div className="staff-menu-dropdown">
-                    <div className="menu-item" onClick={() => handleViewDispatchDetails(dispatch)}>
-                      <i className="fas fa-eye"></i>
-                      <span>View Dispatch Details</span>
+                  <div className="product-header">
+                    <div className="product-title">{dispatch.name || 'N/A'}</div>
+                    <div className="product-badge" style={{ background: '#007bff', color: '#fff' }}>
+                      <i className="fas fa-shipping-fast"></i> Dispatch
                     </div>
                   </div>
-                )}
-              </div>
+                  <div className="product-details">
+                    {dispatch.customer && (
+                      <div className="detail-row">
+                        <span className="detail-label">Customer:</span>
+                        <span className="detail-value">{dispatch.customer}</span>
+                      </div>
+                    )}
+                    {dispatch.phone && (
+                      <div className="detail-row">
+                        <span className="detail-label">Phone:</span>
+                        <span className="detail-value">{dispatch.phone}</span>
+                      </div>
+                    )}
+                    {dispatch.transportName && (
+                      <div className="detail-row">
+                        <span className="detail-label">Transport:</span>
+                        <span className="detail-value">{dispatch.transportName}</span>
+                      </div>
+                    )}
+                    {dispatch.created_at && (
+                      <div className="detail-row">
+                        <span className="detail-label">Date:</span>
+                        <span className="detail-value">
+                          {new Date(dispatch.created_at).toLocaleString('en-IN', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
-            ))
           )}
         </div>
       </main>

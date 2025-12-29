@@ -28,6 +28,7 @@ const serviceRoutes = require('./routes/services');
 const salesOrdersRoutes = require('./routes/salesOrders');
 const purchaseOrdersRoutes = require('./routes/purchaseOrders');
 const smsRoutes = require('./routes/sms');
+const quotationsRoutes = require('./routes/quotations');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -106,6 +107,7 @@ app.use('/api/services', serviceRoutes);
 app.use('/api/sales-orders', salesOrdersRoutes);
 app.use('/api/purchase-orders', purchaseOrdersRoutes);
 app.use('/api/sms', smsRoutes);
+app.use('/api/quotations', quotationsRoutes);
 
 const startServer = async () => {
   try {

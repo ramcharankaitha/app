@@ -523,5 +523,224 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// Generate unique 4-digit chit number
+const generateChitNumber = async () => {
+  const prefix = 'CHIT';
+  let attempts = 0;
+  const maxAttempts = 100;
+  
+  while (attempts < maxAttempts) {
+    // Generate a random 4-digit number (1000-9999)
+    const fourDigit = Math.floor(1000 + Math.random() * 9000);
+    const chitNumber = `${prefix}-${fourDigit}`;
+    
+    // Check if this chit number already exists
+    try {
+      // First ensure the chit_number column exists in chit_customers table
+      await pool.query(`
+        DO $$ 
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'chit_customers' AND column_name = 'chit_number'
+          ) THEN
+            ALTER TABLE chit_customers ADD COLUMN chit_number VARCHAR(100);
+            RAISE NOTICE 'Added chit_number column to chit_customers';
+          END IF;
+        END $$;
+      `);
+      
+      const checkResult = await pool.query(
+        'SELECT id FROM chit_customers WHERE chit_number = $1 LIMIT 1',
+        [chitNumber]
+      );
+      
+      if (checkResult.rows.length === 0) {
+        // Chit number is unique
+        console.log('Generated unique chit number:', chitNumber);
+        return chitNumber;
+      }
+    } catch (error) {
+      // If there's an error checking, just return the number anyway
+      console.log('Could not check chit number uniqueness, using generated number:', chitNumber, error.message);
+      return chitNumber;
+    }
+    
+    attempts++;
+  }
+  
+  // Fallback: use timestamp-based if we can't find a unique 4-digit number
+  const timestamp = Date.now();
+  const random = Math.floor(Math.random() * 1000);
+  return `${prefix}-${timestamp}-${random}`;
+};
+
+// Create chit plan customer with chit number
+router.post('/chit-plan', async (req, res) => {
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    const { fullName, phone, address, city, state, pincode, whatsapp, chitPlanId, duration, createdBy } = req.body;
+
+    if (!fullName || !phone || !chitPlanId) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Full name, phone, and chit plan are required' });
+    }
+
+    // Check if phone number already exists
+    if (phone && phone.trim() !== '') {
+      const existingCustomer = await client.query(
+        'SELECT id, full_name FROM customers WHERE phone = $1 LIMIT 1',
+        [phone.trim()]
+      );
+      
+      if (existingCustomer.rows.length > 0) {
+        await client.query('ROLLBACK');
+        const existing = existingCustomer.rows[0];
+        return res.status(400).json({ 
+          error: `Mobile number already exists! This number is registered with customer: ${existing.full_name}` 
+        });
+      }
+    }
+
+    // Create customer record
+    const customerResult = await client.query(
+      `INSERT INTO customers (full_name, email, phone, address, city, state, pincode, whatsapp, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING *`,
+      [
+        fullName.trim(), 
+        null, // email
+        phone.trim(), 
+        address ? address.trim() : null,
+        city ? city.trim() : null,
+        state ? state.trim() : null,
+        pincode ? pincode.trim() : null,
+        whatsapp ? whatsapp.trim() : null,
+        createdBy || 'system'
+      ]
+    );
+
+    const customer = customerResult.rows[0];
+
+    // Generate unique chit number
+    const chitNumber = await generateChitNumber();
+
+    // Ensure duration column exists
+    await client.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'chit_customers' AND column_name = 'duration'
+        ) THEN
+          ALTER TABLE chit_customers ADD COLUMN duration INTEGER;
+          RAISE NOTICE 'Added duration column to chit_customers';
+        END IF;
+      END $$;
+    `);
+
+    // Create chit customer entry with chit number
+    const chitCustomerResult = await client.query(
+      `INSERT INTO chit_customers (customer_name, phone, address, city, state, pincode, email, chit_plan_id, chit_number, duration, enrollment_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_DATE)
+       RETURNING *`,
+      [
+        fullName.trim(),
+        phone.trim(),
+        address ? address.trim() : null,
+        city ? city.trim() : null,
+        state ? state.trim() : null,
+        pincode ? pincode.trim() : null,
+        null, // email
+        parseInt(chitPlanId),
+        chitNumber,
+        duration ? parseInt(duration) : null
+      ]
+    );
+
+    await client.query('COMMIT');
+
+    res.status(201).json({
+      success: true,
+      customer: customer,
+      chitCustomer: chitCustomerResult.rows[0],
+      chitNumber: chitNumber,
+      message: 'Chit plan customer created successfully'
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Create chit plan customer error:', error);
+    if (error.code === '23503') {
+      return res.status(400).json({ error: 'Invalid chit plan selected' });
+    }
+    if (error.code === '23505') {
+      return res.status(400).json({ error: 'Phone number already exists' });
+    }
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+});
+
+// Get customer by chit number
+router.get('/chit-number/:chitNumber', async (req, res) => {
+  try {
+    const { chitNumber } = req.params;
+    
+    const result = await pool.query(
+      `SELECT 
+        cc.*,
+        c.full_name,
+        c.phone,
+        c.address,
+        c.city,
+        c.state,
+        c.pincode,
+        c.whatsapp,
+        cp.plan_name,
+        cp.plan_amount,
+        cp.description
+      FROM chit_customers cc
+      LEFT JOIN customers c ON cc.phone = c.phone
+      LEFT JOIN chit_plans cp ON cc.chit_plan_id = cp.id
+      WHERE cc.chit_number = $1
+      LIMIT 1`,
+      [chitNumber]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Chit number not found' });
+    }
+
+    const chitCustomer = result.rows[0];
+    
+    res.json({
+      success: true,
+      customer: {
+        id: chitCustomer.id,
+        customerName: chitCustomer.customer_name || chitCustomer.full_name,
+        phone: chitCustomer.phone,
+        address: chitCustomer.address,
+        city: chitCustomer.city,
+        state: chitCustomer.state,
+        pincode: chitCustomer.pincode,
+        whatsapp: chitCustomer.whatsapp,
+        chitNumber: chitCustomer.chit_number,
+        chitPlanId: chitCustomer.chit_plan_id,
+        chitPlanName: chitCustomer.plan_name,
+        chitPlanAmount: chitCustomer.plan_amount,
+        duration: chitCustomer.duration,
+        enrollmentDate: chitCustomer.enrollment_date
+      }
+    });
+  } catch (error) {
+    console.error('Get customer by chit number error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;
 

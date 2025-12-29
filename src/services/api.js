@@ -210,6 +210,15 @@ export const customersAPI = {
       method: 'DELETE',
     });
   },
+  createChitPlanCustomer: async (customerData) => {
+    return apiCall('/customers/chit-plan', {
+      method: 'POST',
+      body: JSON.stringify(customerData),
+    });
+  },
+  getByChitNumber: async (chitNumber) => {
+    return apiCall(`/customers/chit-number/${encodeURIComponent(chitNumber)}`);
+  },
 };
 
 export const exportAPI = {
@@ -548,6 +557,23 @@ export const servicesAPI = {
   getById: async (id) => {
     return apiCall(`/services/${id}`);
   },
+  getByHandler: async (handlerName, handlerId = null) => {
+    const url = handlerId 
+      ? `/services/handler/${encodeURIComponent(handlerName)}?handlerId=${handlerId}`
+      : `/services/handler/${encodeURIComponent(handlerName)}`;
+    return apiCall(url);
+  },
+  sendOTP: async (serviceId) => {
+    return apiCall(`/services/${serviceId}/send-otp`, {
+      method: 'POST',
+    });
+  },
+  verifyOTP: async (serviceId, otp) => {
+    return apiCall(`/services/${serviceId}/verify-otp`, {
+      method: 'POST',
+      body: JSON.stringify({ otp }),
+    });
+  },
   create: async (serviceData) => {
     return apiCall('/services', {
       method: 'POST',
@@ -661,6 +687,32 @@ export const smsAPI = {
   },
 };
 
+export const quotationsAPI = {
+  getAll: async () => {
+    return apiCall('/quotations');
+  },
+  getById: async (id) => {
+    return apiCall(`/quotations/${id}`);
+  },
+  create: async (quotationData) => {
+    return apiCall('/quotations', {
+      method: 'POST',
+      body: JSON.stringify(quotationData),
+    });
+  },
+  update: async (id, quotationData) => {
+    return apiCall(`/quotations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(quotationData),
+    });
+  },
+  delete: async (id) => {
+    return apiCall(`/quotations/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
 export default {
   authAPI,
   usersAPI,
@@ -678,5 +730,6 @@ export default {
   stockAPI,
   categoriesAPI,
   smsAPI,
+  quotationsAPI,
 };
 

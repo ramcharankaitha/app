@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { chitPlansAPI } from '../services/api';
+import { chitPlansAPI, customersAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 
 const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
+    chitNumber: '',
     customerName: '',
     customerPhone: '',
     chitPlanId: '',
     chitPlanName: '',
     chitPlanAmount: '',
+    duration: '',
     paymentMode: '',
     notes: ''
   });
-  const [customerSearchResults, setCustomerSearchResults] = useState([]);
-  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
-  const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
+  const [isSearchingChit, setIsSearchingChit] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
 
   const getUserIdentifier = () => {
@@ -47,76 +48,78 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
       [name]: value
     }));
 
-    // Search customers when name changes
-    if (name === 'customerName' && value.trim().length > 0) {
-      searchCustomers(value.trim());
-    } else if (name === 'customerName' && value.trim().length === 0) {
-      setCustomerSearchResults([]);
-      setShowCustomerDropdown(false);
-      setSelectedCustomer(null);
+    // Search customer by chit number when chit number changes
+    if (name === 'chitNumber' && value.trim().length > 0) {
+      fetchCustomerByChitNumber(value.trim());
+    } else if (name === 'chitNumber' && value.trim().length === 0) {
       resetForm();
     }
   };
 
-  const searchCustomers = async (query) => {
-    setIsSearchingCustomer(true);
+  const fetchCustomerByChitNumber = async (chitNumber) => {
+    setIsSearchingChit(true);
+    setError('');
     try {
-      const response = await chitPlansAPI.getCustomers();
-      if (response.success && response.customers) {
-        const filtered = response.customers.filter(customer =>
-          customer.customer_name?.toLowerCase().includes(query.toLowerCase())
-        );
-        setCustomerSearchResults(filtered);
-        setShowCustomerDropdown(filtered.length > 0);
+      const response = await customersAPI.getByChitNumber(chitNumber);
+      if (response.success && response.customer) {
+        const customer = response.customer;
+        setSelectedCustomer(customer);
+        setFormData(prev => ({
+          ...prev,
+          customerName: customer.customerName,
+          customerPhone: customer.phone,
+          chitPlanId: customer.chitPlanId,
+          chitPlanName: customer.chitPlanName || '',
+          chitPlanAmount: customer.chitPlanAmount || '',
+          duration: customer.duration || ''
+        }));
+      } else {
+        setError('Chit number not found');
+        setSelectedCustomer(null);
+        resetForm();
       }
     } catch (err) {
-      console.error('Error searching customers:', err);
-      setCustomerSearchResults([]);
-      setShowCustomerDropdown(false);
+      console.error('Error fetching customer by chit number:', err);
+      setError('Chit number not found');
+      setSelectedCustomer(null);
+      resetForm();
     } finally {
-      setIsSearchingCustomer(false);
+      setIsSearchingChit(false);
     }
-  };
-
-  const handleCustomerSelect = async (customer) => {
-    setSelectedCustomer(customer);
-    setFormData(prev => ({
-      ...prev,
-      customerName: customer.customer_name,
-      customerPhone: customer.phone,
-      chitPlanId: customer.chit_plan_id,
-      chitPlanName: customer.plan_name || '',
-      chitPlanAmount: customer.plan_amount || ''
-    }));
-    setShowCustomerDropdown(false);
-    setCustomerSearchResults([]);
   };
 
   const resetForm = () => {
     setFormData({
+      chitNumber: '',
       customerName: '',
       customerPhone: '',
       chitPlanId: '',
       chitPlanName: '',
       chitPlanAmount: '',
+      duration: '',
       paymentMode: '',
       notes: ''
     });
     setSelectedCustomer(null);
+    setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
 
-    if (!formData.customerName || !formData.customerName.trim()) {
+    if (!formData.chitNumber || !formData.chitNumber.trim()) {
+      setError('Please enter a chit number');
       return;
     }
 
-    if (!formData.chitPlanId) {
+    if (!selectedCustomer) {
+      setError('Please enter a valid chit number');
       return;
     }
 
     if (!formData.paymentMode || !formData.paymentMode.trim()) {
+      setError('Please select a payment mode');
       return;
     }
 
@@ -183,26 +186,32 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
       {/* Main Content */}
       <main className="add-user-content">
         <form onSubmit={handleSubmit} className="add-user-form">
+          {error && (
+            <div className="alert alert-error" style={{ marginBottom: '20px' }}>
+              <i className="fas fa-exclamation-circle"></i> {error}
+            </div>
+          )}
+
           <div className="form-section">
             <div className="form-grid three-col">
-              {/* Row 1: Customer Name */}
+              {/* Row 1: Chit Number */}
               <div className="form-group" style={{ gridColumn: '1 / -1', position: 'relative' }}>
-                <label htmlFor="customerName">Customer Name *</label>
+                <label htmlFor="chitNumber">Chit Number *</label>
                 <div className="input-wrapper">
-                  <i className="fas fa-user input-icon"></i>
+                  <i className="fas fa-hashtag input-icon"></i>
                   <input
                     type="text"
-                    id="customerName"
-                    name="customerName"
+                    id="chitNumber"
+                    name="chitNumber"
                     className="form-input"
-                    placeholder="Enter customer name"
-                    value={formData.customerName}
+                    placeholder="Enter chit number (e.g., CHIT-1234)"
+                    value={formData.chitNumber}
                     onChange={handleInputChange}
                     required
                     autoFocus
-                    style={{ paddingRight: isSearchingCustomer ? '40px' : '18px' }}
+                    style={{ paddingRight: isSearchingChit ? '40px' : '18px' }}
                   />
-                  {isSearchingCustomer && (
+                  {isSearchingChit && (
                     <i className="fas fa-spinner fa-spin" style={{ 
                       position: 'absolute', 
                       right: '12px', 
@@ -212,56 +221,26 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     }}></i>
                   )}
                 </div>
-                {/* Customer Dropdown */}
-                {showCustomerDropdown && customerSearchResults.length > 0 && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    background: '#fff',
-                    border: '1px solid #dee2e6',
-                    borderRadius: '8px',
-                    marginTop: '4px',
-                    maxHeight: '200px',
-                    overflowY: 'auto',
-                    zIndex: 1000,
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                  }}>
-                    {customerSearchResults.map((customer) => (
-                      <div
-                        key={customer.id}
-                        onClick={() => handleCustomerSelect(customer)}
-                        style={{
-                          padding: '12px 16px',
-                          cursor: 'pointer',
-                          borderBottom: '1px solid #f0f0f0',
-                          transition: 'background 0.2s'
-                        }}
-                        onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                        onMouseLeave={(e) => e.target.style.background = '#fff'}
-                      >
-                        <div style={{ fontWeight: '600', color: '#333', marginBottom: '4px' }}>
-                          {customer.customer_name}
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#666' }}>
-                          <i className="fas fa-phone" style={{ marginRight: '6px' }}></i>
-                          {customer.phone || 'N/A'}
-                          {customer.plan_name && (
-                            <>
-                              <span style={{ margin: '0 8px' }}>•</span>
-                              <i className="fas fa-file-invoice-dollar" style={{ marginRight: '6px' }}></i>
-                              {customer.plan_name} - ₹{customer.plan_amount ? parseFloat(customer.plan_amount).toLocaleString('en-IN') : '0'}
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
 
-              {/* Row 2: Phone, Chit Plan Name, Chit Plan Amount */}
+              {/* Row 2: Customer Name, Phone, Chit Plan */}
+              <div className="form-group">
+                <label htmlFor="customerName">Customer Name</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-user input-icon"></i>
+                  <input
+                    type="text"
+                    id="customerName"
+                    name="customerName"
+                    className="form-input"
+                    placeholder="Customer name"
+                    value={formData.customerName}
+                    readOnly
+                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                  />
+                </div>
+              </div>
+
               <div className="form-group">
                 <label htmlFor="customerPhone">Phone Number</label>
                 <div className="input-wrapper">
@@ -296,7 +275,27 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 </div>
               </div>
 
-              {/* Row 3: Payment Mode */}
+              {/* Row 3: Duration */}
+              {formData.duration && (
+                <div className="form-group">
+                  <label htmlFor="duration">Duration (Months)</label>
+                  <div className="input-wrapper">
+                    <i className="fas fa-calendar-alt input-icon"></i>
+                    <input
+                      type="text"
+                      id="duration"
+                      name="duration"
+                      className="form-input"
+                      placeholder="Duration"
+                      value={`${formData.duration} months`}
+                      readOnly
+                      style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Row 4: Payment Mode */}
               <div className="form-group">
                 <label htmlFor="paymentMode">Payment Mode *</label>
                 <div className="input-wrapper">

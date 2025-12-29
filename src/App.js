@@ -23,10 +23,14 @@ import ChitPlans from './components/ChitPlans';
 import AddChitCustomer from './components/AddChitCustomer';
 import ChitPlanMaster from './components/ChitPlanMaster';
 import AddChitPlan from './components/AddChitPlan';
+import ChitPlan from './components/ChitPlan';
+import ChitPlanList from './components/ChitPlanList';
 import ChitEntryMaster from './components/ChitEntryMaster';
 import AddChitEntry from './components/AddChitEntry';
 import PurchaseOrderMaster from './components/PurchaseOrderMaster';
 import AddPurchaseOrder from './components/AddPurchaseOrder';
+import QuotationMaster from './components/QuotationMaster';
+import AddQuotation from './components/AddQuotation';
 import StockIn from './components/StockIn';
 import StockInMaster from './components/StockInMaster';
 import StockOut from './components/StockOut';
@@ -39,6 +43,7 @@ import TransactionProducts from './components/TransactionProducts';
 import AddProductPricing from './components/AddProductPricing';
 import Services from './components/Services';
 import AddService from './components/AddService';
+import Handler from './components/Handler';
 import SalesOrder from './components/SalesOrder';
 import AddSalesOrder from './components/AddSalesOrder';
 import PurchaseBillAlert from './components/PurchaseBillAlert';
@@ -192,7 +197,7 @@ const createNavWrapper = (Component, props = {}) => {
 // Admin Routes
 const AdminRoutes = () => {
   const navigate = useNavigate();
-  const { userRole } = getUserData();
+  const { userRole, userData } = getUserData();
 
   const handleNavigation = (page) => {
     navigate(`/admin/${page}`);
@@ -465,6 +470,29 @@ const AdminRoutes = () => {
       />
       
       <Route
+        path="/chitPlan"
+        element={
+          <ProtectedRoute>
+            <ChitPlanList 
+              onBack={() => handleNavigation('masterMenu')} 
+              onAddChitPlan={() => handleNavigation('addChitPlan')} 
+              onNavigate={handleNavigation} 
+              userRole={userRole} 
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/addChitPlan"
+        element={
+          <ProtectedRoute>
+            <ChitPlan onBack={() => handleNavigation('chitPlan')} onNavigate={handleNavigation} userRole={userRole} />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
         path="/stockInMaster"
         element={
           <ProtectedRoute>
@@ -616,6 +644,19 @@ const AdminRoutes = () => {
       />
       
       <Route
+        path="/handler"
+        element={
+          <ProtectedRoute>
+            <Handler
+              onBack={() => handleNavigation('staffHome')}
+              onNavigate={handleNavigation}
+              userData={userData}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
         path="/salesOrder"
         element={
           <ProtectedRoute>
@@ -639,6 +680,29 @@ const AdminRoutes = () => {
               onNavigate={handleNavigation}
               userRole={userRole}
             />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/quotationMaster"
+        element={
+          <ProtectedRoute>
+            <QuotationMaster
+              onBack={() => handleNavigation('transactionMenu')}
+              onAddQuotation={() => handleNavigation('addQuotation')}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/addQuotation"
+        element={
+          <ProtectedRoute>
+            <AddQuotation onBack={() => handleNavigation('quotationMaster')} onCancel={() => handleNavigation('quotationMaster')} onNavigate={handleNavigation} userRole={userRole} />
           </ProtectedRoute>
         }
       />
