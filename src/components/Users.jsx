@@ -61,13 +61,24 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
         const response = await usersAPI.getAll();
         if (response.success) {
           // Transform database users to display format
-          const formattedUsers = response.users.map(user => ({
-            id: user.id,
-            name: `${user.first_name} ${user.last_name}`,
-            initials: `${user.first_name[0]}${user.last_name[0]}`.toUpperCase(),
-            role: user.role || 'Store User/Supervisor',
-            store: user.store_allocated || 'Not Assigned',
-          }));
+          const formattedUsers = response.users.map(user => {
+            // Handle null last_name (supervisor name might be single word)
+            const firstName = user.first_name || '';
+            const lastName = user.last_name || '';
+            const fullName = `${firstName} ${lastName}`.trim();
+            // Generate initials: use first letter of first name, and first letter of last name if available
+            const firstInitial = firstName ? firstName[0] : '';
+            const lastInitial = lastName ? lastName[0] : '';
+            const initials = `${firstInitial}${lastInitial}`.toUpperCase() || 'SU';
+            
+            return {
+              id: user.id,
+              name: fullName || firstName || 'Supervisor',
+              initials: initials,
+              role: user.role || 'Store User/Supervisor',
+              store: user.store_allocated || 'Not Assigned',
+            };
+          });
           setUsers(formattedUsers);
         }
       } catch (err) {
@@ -161,13 +172,24 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
           try {
             const response = await usersAPI.getAll();
             if (response.success) {
-              const formattedUsers = response.users.map(user => ({
-                id: user.id,
-                name: `${user.first_name} ${user.last_name}`,
-                initials: `${user.first_name[0]}${user.last_name[0]}`.toUpperCase(),
-                role: user.role || 'Store User/Supervisor',
-                store: user.store_allocated || 'Not Assigned',
-              }));
+              const formattedUsers = response.users.map(user => {
+                // Handle null last_name (supervisor name might be single word)
+                const firstName = user.first_name || '';
+                const lastName = user.last_name || '';
+                const fullName = `${firstName} ${lastName}`.trim();
+                // Generate initials: use first letter of first name, and first letter of last name if available
+                const firstInitial = firstName ? firstName[0] : '';
+                const lastInitial = lastName ? lastName[0] : '';
+                const initials = `${firstInitial}${lastInitial}`.toUpperCase() || 'SU';
+                
+                return {
+                  id: user.id,
+                  name: fullName || firstName || 'Supervisor',
+                  initials: initials,
+                  role: user.role || 'Store User/Supervisor',
+                  store: user.store_allocated || 'Not Assigned',
+                };
+              });
               setUsers(formattedUsers);
             }
           } catch (err) {
@@ -224,13 +246,24 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
               try {
                 const response = await usersAPI.getAll();
                 if (response.success) {
-                  const formattedUsers = response.users.map(user => ({
-                    id: user.id,
-                    name: `${user.first_name} ${user.last_name}`,
-                    initials: `${user.first_name[0]}${user.last_name[0]}`.toUpperCase(),
-                    role: user.role || 'Store User/Supervisor',
-                    store: user.store_allocated || 'Not Assigned',
-                  }));
+                  const formattedUsers = response.users.map(user => {
+                    // Handle null last_name (supervisor name might be single word)
+                    const firstName = user.first_name || '';
+                    const lastName = user.last_name || '';
+                    const fullName = `${firstName} ${lastName}`.trim();
+                    // Generate initials: use first letter of first name, and first letter of last name if available
+                    const firstInitial = firstName ? firstName[0] : '';
+                    const lastInitial = lastName ? lastName[0] : '';
+                    const initials = `${firstInitial}${lastInitial}`.toUpperCase() || 'SU';
+                    
+                    return {
+                      id: user.id,
+                      name: fullName || firstName || 'Supervisor',
+                      initials: initials,
+                      role: user.role || 'Store User/Supervisor',
+                      store: user.store_allocated || 'Not Assigned',
+                    };
+                  });
                   setUsers(formattedUsers);
                 }
               } catch (err) {
@@ -474,9 +507,15 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
             <div className="modal-content">
               <div className="customer-detail-section">
                 <div className="detail-avatar">
-                  <span>{viewSupervisorModal.first_name && viewSupervisorModal.last_name 
-                    ? `${viewSupervisorModal.first_name[0]}${viewSupervisorModal.last_name[0]}`.toUpperCase()
-                    : 'SP'}</span>
+                  <span>{
+                    (() => {
+                      const firstName = viewSupervisorModal.first_name || '';
+                      const lastName = viewSupervisorModal.last_name || '';
+                      const firstInitial = firstName ? firstName[0] : '';
+                      const lastInitial = lastName ? lastName[0] : '';
+                      return `${firstInitial}${lastInitial}`.toUpperCase() || 'SP';
+                    })()
+                  }</span>
                 </div>
                 <div className="detail-info">
                   <div className="detail-row">
@@ -548,9 +587,15 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
             <div className="modal-content" style={{ padding: '20px' }}>
               <div className="customer-detail-section">
                 <div className="detail-avatar">
-                  <span>{editSupervisorModal.first_name && editSupervisorModal.last_name 
-                    ? `${editSupervisorModal.first_name[0]}${editSupervisorModal.last_name[0]}`.toUpperCase()
-                    : 'SP'}</span>
+                  <span>{
+                    (() => {
+                      const firstName = editSupervisorModal.first_name || '';
+                      const lastName = editSupervisorModal.last_name || '';
+                      const firstInitial = firstName ? firstName[0] : '';
+                      const lastInitial = lastName ? lastName[0] : '';
+                      return `${firstInitial}${lastInitial}`.toUpperCase() || 'SP';
+                    })()
+                  }</span>
                 </div>
                 <div className="detail-info" style={{ width: '100%' }}>
                   <div className="detail-row" style={{ marginBottom: '16px' }}>

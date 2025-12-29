@@ -28,6 +28,7 @@ const SalesOrder = ({ onBack, onAddSalesOrder, onNavigate, userRole = 'admin' })
           supplierName: record.supplier_name || 'N/A',
           totalAmount: parseFloat(record.total_amount || 0) || 0,
           products: record.products || [],
+          poNumber: record.po_number || null,
           created_at: record.created_at
         }));
         setSalesOrders(formattedRecords);
@@ -357,6 +358,12 @@ const SalesOrder = ({ onBack, onAddSalesOrder, onNavigate, userRole = 'admin' })
                     <div className="detail-row">
                       <span className="detail-label">Date:</span>
                       <span className="detail-value">{record.dateOfDuration ? new Date(record.dateOfDuration).toLocaleDateString('en-IN') : 'N/A'}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">PO Number:</span>
+                      <span className="detail-value" style={{ fontWeight: '600', color: '#dc3545' }}>
+                        {record.poNumber || 'N/A'}
+                      </span>
                     </div>
                     <div className="detail-row">
                       <span className="detail-label">Created:</span>

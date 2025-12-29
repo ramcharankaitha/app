@@ -174,8 +174,10 @@ export const permissionsAPI = {
 };
 
 export const customersAPI = {
-  getAll: async () => {
-    return apiCall('/customers');
+  getAll: async (type) => {
+    // type can be 'walkin' or 'chitplan' or undefined for all
+    const url = type ? `/customers?type=${encodeURIComponent(type)}` : '/customers';
+    return apiCall(url);
   },
   getById: async (id) => {
     return apiCall(`/customers/${id}`);

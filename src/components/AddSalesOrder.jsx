@@ -20,6 +20,8 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
     category: '',
     productName: '',
     quantity: '',
+    mrp: '',
+    sellRate: '',
     isFetching: false,
     productInfo: null
   });
@@ -306,10 +308,14 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
             id: product.id,
             productName: product.product_name || product.productName || '',
             itemCode: product.item_code || product.itemCode || '',
-            category: product.category || ''
+            category: product.category || '',
+            mrp: product.mrp || 0,
+            sellRate: product.sell_rate || product.sellRate || 0
           },
           category: product.category || '',
           productName: product.product_name || product.productName || '',
+          mrp: (product.mrp || 0).toString(),
+          sellRate: (product.sell_rate || product.sellRate || 0).toString(),
           isFetching: false
         }));
       } else {
@@ -368,7 +374,9 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
       itemCode: currentProduct.itemCode.trim(),
       category: currentProduct.category,
       productName: currentProduct.productName,
-      quantity: parseFloat(currentProduct.quantity),
+      quantity: parseFloat(currentProduct.quantity) || 0,
+      mrp: parseFloat(currentProduct.mrp) || 0,
+      sellRate: parseFloat(currentProduct.sellRate) || 0,
       productInfo: currentProduct.productInfo
     }]);
     
@@ -378,6 +386,8 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
       category: '',
       productName: '',
       quantity: '',
+      mrp: '',
+      sellRate: '',
       isFetching: false,
       productInfo: null
     });
@@ -419,16 +429,22 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
         return;
       }
 
-      // Prepare products array
+      // Prepare products array with pricing
       const products = addedProducts.map(item => ({
         itemCode: item.itemCode.trim(),
         productName: item.productName,
         category: item.category,
-        quantity: item.quantity || 0
+        quantity: item.quantity || 0,
+        mrp: item.mrp || 0,
+        sellRate: item.sellRate || 0
       }));
 
-      // Calculate total amount (set to 0 since pricing fields are removed)
-      const totalAmount = 0;
+      // Calculate total amount from products
+      const totalAmount = products.reduce((total, product) => {
+        const quantity = parseFloat(product.quantity) || 0;
+        const sellRate = parseFloat(product.sellRate) || 0;
+        return total + (quantity * sellRate);
+      }, 0);
 
       const userData = JSON.parse(localStorage.getItem('userData') || '{}');
       const createdBy = userData.username || userData.email || 'system';

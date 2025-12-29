@@ -95,6 +95,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
   };
 
   // Check if customer exists when both name and phone are entered
+  // Only check walk-in customers (not chit plan customers)
   useEffect(() => {
     const checkCustomer = async () => {
       if (!formData.customerName.trim() || !formData.customerPhone.trim()) {
@@ -105,14 +106,15 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
       setIsCheckingCustomer(true);
       
       try {
-        // Search by phone number first (more reliable)
-        const phoneResponse = await customersAPI.search(formData.customerPhone.trim());
+        // Get all walk-in customers only
+        const allCustomersResponse = await customersAPI.getAll('walkin');
         
-        if (phoneResponse.success && phoneResponse.customers && phoneResponse.customers.length > 0) {
-          // Check if any customer matches both name and phone
-          const matchingCustomer = phoneResponse.customers.find(c => 
+        if (allCustomersResponse.success && allCustomersResponse.customers && allCustomersResponse.customers.length > 0) {
+          // Check if any walk-in customer matches both name and phone
+          const matchingCustomer = allCustomersResponse.customers.find(c => 
             c.phone === formData.customerPhone.trim() &&
-            c.full_name.toLowerCase() === formData.customerName.trim().toLowerCase()
+            c.full_name.toLowerCase() === formData.customerName.trim().toLowerCase() &&
+            c.customer_type === 'walkin' // Ensure it's a walk-in customer
           );
           
           if (matchingCustomer) {
@@ -127,12 +129,13 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
               customerPincode: matchingCustomer.pincode || ''
             }));
           } else {
-            // Try searching by name
-            const nameResponse = await customersAPI.search(formData.customerName.trim());
+            // Try searching by name in walk-in customers only
+            const nameResponse = await customersAPI.getAll('walkin');
             if (nameResponse.success && nameResponse.customers && nameResponse.customers.length > 0) {
               const nameMatch = nameResponse.customers.find(c => 
                 c.full_name.toLowerCase() === formData.customerName.trim().toLowerCase() &&
-                c.phone === formData.customerPhone.trim()
+                c.phone === formData.customerPhone.trim() &&
+                c.customer_type === 'walkin' // Ensure it's a walk-in customer
               );
               
               if (nameMatch) {

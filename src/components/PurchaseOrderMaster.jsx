@@ -795,37 +795,40 @@ const PurchaseOrderMaster = ({ onBack, onAddPurchaseOrder, onNavigate, userRole 
               </div>
               
               {/* Items List */}
-              {selectedOrder.items && (
-                <div style={{ padding: '12px', background: '#f8f9fa', borderRadius: '8px' }}>
-                  <strong style={{ display: 'block', marginBottom: '12px' }}>Order Items:</strong>
-                  <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr style={{ background: '#e9ecef', borderBottom: '2px solid #dee2e6' }}>
-                          <th style={{ padding: '8px', textAlign: 'left', fontSize: '12px' }}>#</th>
-                          <th style={{ padding: '8px', textAlign: 'left', fontSize: '12px' }}>Item Code</th>
-                          <th style={{ padding: '8px', textAlign: 'left', fontSize: '12px' }}>Product Name</th>
-                          <th style={{ padding: '8px', textAlign: 'right', fontSize: '12px' }}>Qty</th>
-                          <th style={{ padding: '8px', textAlign: 'right', fontSize: '12px' }}>Unit Price</th>
-                          <th style={{ padding: '8px', textAlign: 'right', fontSize: '12px' }}>Total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(typeof selectedOrder.items === 'string' ? JSON.parse(selectedOrder.items) : selectedOrder.items).map((item, index) => (
-                          <tr key={index} style={{ borderBottom: '1px solid #dee2e6' }}>
-                            <td style={{ padding: '8px', fontSize: '13px' }}>{index + 1}</td>
-                            <td style={{ padding: '8px', fontSize: '13px' }}>{item.itemCode}</td>
-                            <td style={{ padding: '8px', fontSize: '13px' }}>{item.productName}</td>
-                            <td style={{ padding: '8px', textAlign: 'right', fontSize: '13px' }}>{item.quantity}</td>
-                            <td style={{ padding: '8px', textAlign: 'right', fontSize: '13px' }}>₹{parseFloat(item.unitPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                            <td style={{ padding: '8px', textAlign: 'right', fontSize: '13px', fontWeight: 'bold' }}>₹{parseFloat(item.totalPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+              {selectedOrder.items && (() => {
+                const items = typeof selectedOrder.items === 'string' ? JSON.parse(selectedOrder.items) : selectedOrder.items;
+                return items.length > 0 ? (
+                  <div style={{ padding: '12px', background: '#f8f9fa', borderRadius: '8px' }}>
+                    <strong style={{ display: 'block', marginBottom: '12px' }}>Order Items:</strong>
+                    <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                          <tr style={{ background: '#e9ecef', borderBottom: '2px solid #dee2e6' }}>
+                            <th style={{ padding: '8px', textAlign: 'left', fontSize: '12px' }}>#</th>
+                            <th style={{ padding: '8px', textAlign: 'left', fontSize: '12px' }}>Item Code</th>
+                            <th style={{ padding: '8px', textAlign: 'left', fontSize: '12px' }}>Product Name</th>
+                            <th style={{ padding: '8px', textAlign: 'right', fontSize: '12px' }}>Qty</th>
+                            <th style={{ padding: '8px', textAlign: 'right', fontSize: '12px' }}>Unit Price</th>
+                            <th style={{ padding: '8px', textAlign: 'right', fontSize: '12px' }}>Total</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {items.map((item, index) => (
+                            <tr key={index} style={{ borderBottom: '1px solid #dee2e6' }}>
+                              <td style={{ padding: '8px', fontSize: '13px' }}>{index + 1}</td>
+                              <td style={{ padding: '8px', fontSize: '13px' }}>{item.itemCode || item.item_code || 'N/A'}</td>
+                              <td style={{ padding: '8px', fontSize: '13px' }}>{item.productName || item.product_name || 'N/A'}</td>
+                              <td style={{ padding: '8px', textAlign: 'right', fontSize: '13px' }}>{item.quantity || 0}</td>
+                              <td style={{ padding: '8px', textAlign: 'right', fontSize: '13px' }}>₹{parseFloat(item.unitPrice || item.mrp || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                              <td style={{ padding: '8px', textAlign: 'right', fontSize: '13px', fontWeight: 'bold' }}>₹{parseFloat(item.totalPrice || (item.quantity || 0) * (item.unitPrice || item.mrp || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
-              )}
+                ) : null;
+              })()}
               
               {selectedOrder.notes && (
                 <div style={{ padding: '12px', background: '#f8f9fa', borderRadius: '8px' }}>

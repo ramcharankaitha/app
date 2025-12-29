@@ -88,8 +88,35 @@ router.post('/', async (req, res) => {
   try {
     const { fullName, username, password, storeAllocated, address, city, state, pincode, isHandler, phoneNumber, salary } = req.body;
 
-    if (!fullName || !username || !password) {
-      return res.status(400).json({ error: 'Required fields are missing' });
+    // Validate required fields
+    if (!fullName || !username || !password || !phoneNumber) {
+      return res.status(400).json({ 
+        error: 'Required fields are missing',
+        missing: {
+          fullName: !fullName,
+          username: !username,
+          password: !password,
+          phoneNumber: !phoneNumber
+        }
+      });
+    }
+
+    // Check if phone number already exists (phone is unique identifier)
+    const phoneCheck = await pool.query(
+      'SELECT id FROM staff WHERE phone = $1',
+      [phoneNumber]
+    );
+    if (phoneCheck.rows.length > 0) {
+      return res.status(400).json({ error: 'Phone number already exists' });
+    }
+
+    // Check if username already exists
+    const usernameCheck = await pool.query(
+      'SELECT id FROM staff WHERE username = $1',
+      [username]
+    );
+    if (usernameCheck.rows.length > 0) {
+      return res.status(400).json({ error: 'Username already exists' });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
@@ -101,26 +128,42 @@ router.post('/', async (req, res) => {
 
     let result;
     try {
+      // Try with all columns including phone, salary, explicitly setting email to NULL
       result = await pool.query(
-        `INSERT INTO staff (full_name, username, password_hash, store_allocated, address, city, state, pincode, is_handler, role, salary)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-         RETURNING id, full_name, username, role, store_allocated, is_handler`,
-        [fullName, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff', salary || null]
+        `INSERT INTO staff (full_name, username, password_hash, phone, email, store_allocated, address, city, state, pincode, is_handler, role, salary, created_at)
+         VALUES ($1, $2, $3, $4, NULL, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP)
+         RETURNING id, full_name, username, phone, role, store_allocated, is_handler`,
+        [fullName, username, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'STAFF', salary || null]
       );
     } catch (colError) {
-      if (colError.code === '42703') { // undefined_column error
-        result = await pool.query(
-          `INSERT INTO staff (full_name, username, password_hash, store_allocated, address, city, state, pincode, is_handler, role)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-           RETURNING id, full_name, username, role, store_allocated, is_handler`,
-          [fullName, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff']
-        );
+      if (colError.code === '42703') { // undefined_column error (email or salary might not exist)
+        try {
+          // Try without email and salary
+          result = await pool.query(
+            `INSERT INTO staff (full_name, username, password_hash, phone, store_allocated, address, city, state, pincode, is_handler, role, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
+             RETURNING id, full_name, username, phone, role, store_allocated, is_handler`,
+            [fullName, username, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'STAFF']
+          );
+        } catch (colError2) {
+          if (colError2.code === '42703') {
+            // Fallback: try with 'Staff' instead of 'STAFF' for role
+            result = await pool.query(
+              `INSERT INTO staff (full_name, username, password_hash, phone, store_allocated, address, city, state, pincode, is_handler, role, created_at)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
+               RETURNING id, full_name, username, phone, role, store_allocated, is_handler`,
+              [fullName, username, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff']
+            );
+          } else {
+            throw colError2;
+          }
+        }
       } else {
         throw colError;
       }
     }
     
-    console.log('Staff created successfully:', result.rows[0].username);
+    console.log('Staff created successfully:', result.rows[0].username, 'Phone:', result.rows[0].phone);
 
     res.status(201).json({
       success: true,
@@ -133,19 +176,31 @@ router.post('/', async (req, res) => {
       code: error.code,
       message: error.message,
       detail: error.detail,
-      constraint: error.constraint
+      constraint: error.constraint,
+      column: error.column,
+      stack: error.stack
     });
     
-    if (error.code === '23505') {
-      return res.status(400).json({ error: 'Username already exists' });
+    if (error.code === '23505') { // Unique violation
+      if (error.constraint && error.constraint.includes('phone')) {
+        return res.status(400).json({ error: 'Phone number already exists' });
+      }
+      if (error.constraint && error.constraint.includes('username')) {
+        return res.status(400).json({ error: 'Username already exists' });
+      }
+      return res.status(400).json({ error: 'Duplicate entry. Please check phone number and username.' });
     }
-    if (error.code === '23502') {
-      return res.status(400).json({ error: `Required field missing: ${error.column || 'unknown'}` });
+    if (error.code === '23502') { // Not null violation
+      return res.status(400).json({ 
+        error: `Required field missing: ${error.column || 'unknown'}. Please check database constraints.`,
+        column: error.column
+      });
     }
     
     res.status(500).json({ 
       error: 'Internal server error',
-      message: process.env.NODE_ENV === 'development' ? error.message : 'Please check server logs'
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Please check server logs',
+      code: process.env.NODE_ENV === 'development' ? error.code : undefined
     });
   }
 });
@@ -156,8 +211,35 @@ router.post('/upload', uploadAadhar.single('aadharCopy'), async (req, res) => {
     const { fullName, username, password, storeAllocated, address, city, state, pincode, isHandler, phoneNumber, salary } = req.body;
     const aadharFilePath = req.file ? `/uploads/aadhar/${req.file.filename}` : null;
 
-    if (!fullName || !username || !password) {
-      return res.status(400).json({ error: 'Required fields: fullName, username, password' });
+    // Validate required fields
+    if (!fullName || !username || !password || !phoneNumber) {
+      return res.status(400).json({ 
+        error: 'Required fields are missing',
+        missing: {
+          fullName: !fullName,
+          username: !username,
+          password: !password,
+          phoneNumber: !phoneNumber
+        }
+      });
+    }
+
+    // Check if phone number already exists (phone is unique identifier)
+    const phoneCheck = await pool.query(
+      'SELECT id FROM staff WHERE phone = $1',
+      [phoneNumber]
+    );
+    if (phoneCheck.rows.length > 0) {
+      return res.status(400).json({ error: 'Phone number already exists' });
+    }
+
+    // Check if username already exists
+    const usernameCheck = await pool.query(
+      'SELECT id FROM staff WHERE username = $1',
+      [username]
+    );
+    if (usernameCheck.rows.length > 0) {
+      return res.status(400).json({ error: 'Username already exists' });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
@@ -169,31 +251,42 @@ router.post('/upload', uploadAadhar.single('aadharCopy'), async (req, res) => {
 
     let result;
     try {
+      // Try with all columns including phone, salary, aadhar_file_path, explicitly setting email to NULL
       result = await pool.query(
-        `INSERT INTO staff (full_name, username, password_hash, store_allocated, address, city, state, pincode, is_handler, role, salary, aadhar_file_path)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-         RETURNING id, full_name, username, role, store_allocated, is_handler`,
-        [fullName, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff', salary || null, aadharFilePath]
+        `INSERT INTO staff (full_name, username, password_hash, phone, email, store_allocated, address, city, state, pincode, is_handler, role, salary, aadhar_file_path, created_at)
+         VALUES ($1, $2, $3, $4, NULL, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP)
+         RETURNING id, full_name, username, phone, role, store_allocated, is_handler`,
+        [fullName, username, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'STAFF', salary || null, aadharFilePath]
       );
     } catch (colError) {
-      if (colError.code === '42703') { // undefined_column error
-        // Try without salary and aadhar_file_path
+      if (colError.code === '42703') { // undefined_column error (email, salary, or aadhar_file_path might not exist)
         try {
+          // Try without email and aadhar_file_path
           result = await pool.query(
-            `INSERT INTO staff (full_name, username, password_hash, store_allocated, address, city, state, pincode, is_handler, role, salary)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-             RETURNING id, full_name, username, role, store_allocated, is_handler`,
-            [fullName, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff', salary || null]
+            `INSERT INTO staff (full_name, username, password_hash, phone, store_allocated, address, city, state, pincode, is_handler, role, salary, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP)
+             RETURNING id, full_name, username, phone, role, store_allocated, is_handler`,
+            [fullName, username, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'STAFF', salary || null]
           );
         } catch (colError2) {
           if (colError2.code === '42703') {
-            // Fallback to original schema without salary and aadhar
-            result = await pool.query(
-              `INSERT INTO staff (full_name, username, password_hash, store_allocated, address, city, state, pincode, is_handler, role)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-               RETURNING id, full_name, username, role, store_allocated, is_handler`,
-              [fullName, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff']
-            );
+            // Try without salary
+            try {
+              result = await pool.query(
+                `INSERT INTO staff (full_name, username, password_hash, phone, store_allocated, address, city, state, pincode, is_handler, role, created_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
+                 RETURNING id, full_name, username, phone, role, store_allocated, is_handler`,
+                [fullName, username, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'STAFF']
+              );
+            } catch (colError3) {
+              // Fallback: try with 'Staff' instead of 'STAFF' for role
+              result = await pool.query(
+                `INSERT INTO staff (full_name, username, password_hash, phone, store_allocated, address, city, state, pincode, is_handler, role, created_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
+                 RETURNING id, full_name, username, phone, role, store_allocated, is_handler`,
+                [fullName, username, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff']
+              );
+            }
           } else {
             throw colError2;
           }
@@ -203,6 +296,8 @@ router.post('/upload', uploadAadhar.single('aadharCopy'), async (req, res) => {
       }
     }
 
+    console.log('Staff created successfully:', result.rows[0].username, 'Phone:', result.rows[0].phone);
+
     res.status(201).json({
       success: true,
       staff: result.rows[0],
@@ -211,7 +306,36 @@ router.post('/upload', uploadAadhar.single('aadharCopy'), async (req, res) => {
     });
   } catch (error) {
     console.error('Create staff error:', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    console.error('Error details:', {
+      code: error.code,
+      message: error.message,
+      detail: error.detail,
+      constraint: error.constraint,
+      column: error.column,
+      stack: error.stack
+    });
+    
+    if (error.code === '23505') { // Unique violation
+      if (error.constraint && error.constraint.includes('phone')) {
+        return res.status(400).json({ error: 'Phone number already exists' });
+      }
+      if (error.constraint && error.constraint.includes('username')) {
+        return res.status(400).json({ error: 'Username already exists' });
+      }
+      return res.status(400).json({ error: 'Duplicate entry. Please check phone number and username.' });
+    }
+    if (error.code === '23502') { // Not null violation
+      return res.status(400).json({ 
+        error: `Required field missing: ${error.column || 'unknown'}. Please check database constraints.`,
+        column: error.column
+      });
+    }
+    
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Please check server logs',
+      code: process.env.NODE_ENV === 'development' ? error.code : undefined
+    });
   }
 });
 

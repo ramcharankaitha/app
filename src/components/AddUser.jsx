@@ -87,18 +87,22 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
 
     try {
       // Split supervisor name into first and last name for backend compatibility
-      const nameParts = formData.supervisorName.trim().split(' ');
+      const nameParts = formData.supervisorName.trim().split(' ').filter(part => part.length > 0);
       const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
+      const lastName = nameParts.slice(1).join(' ').trim() || null; // Use null if empty
       
+      // Trim all values before sending
       const response = await usersAPI.create({
-        firstName: firstName,
-        lastName: lastName,
-        username: formData.username,
+        firstName: firstName.trim(),
+        lastName: lastName, // Can be null
+        username: formData.username.trim(),
         password: formData.password,
-        storeAllocated: formData.storeAllocated,
-        address: formData.address,
-        phone: formData.phone
+        storeAllocated: formData.storeAllocated || 'mart',
+        address: formData.address.trim() || null,
+        city: formData.city.trim() || null,
+        state: formData.state.trim() || null,
+        pincode: formData.pincode.trim() || null,
+        phone: formData.phone.trim()
       });
 
       if (response.success) {

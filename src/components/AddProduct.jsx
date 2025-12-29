@@ -251,19 +251,30 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     setSuccessMessage('');
 
     try {
+      // Helper function to parse numeric value, removing currency symbols and text
+      const parseNumericValue = (value) => {
+        if (!value || value === '') return null;
+        // Remove "Rs", "₹", commas, and any non-numeric characters except decimal point
+        const cleaned = String(value).replace(/[Rs₹,\s]/gi, '').trim();
+        const parsed = parseFloat(cleaned);
+        return isNaN(parsed) ? null : parsed;
+      };
+
+      // Trim all string values and convert empty strings to null
       const response = await productsAPI.create({
-        productName: formData.productName,
-        itemCode: formData.itemCode,
-        skuCode: formData.skuCode,
-        modelNumber: formData.modelNumber,
-        minimumQuantity: parseInt(formData.minQuantity) || 0,
-        maintainingQuantity: parseInt(formData.maintainingQuantity) || 0,
-        currentQuantity: parseInt(formData.openingQuantity) || 0,
-        supplierName: formData.supplierName,
-        category: formData.category,
-        mrp: parseFloat(formData.mrp) || null,
-        sellRate: parseFloat(formData.sellRate) || null,
-        points: parseInt(formData.points) || 0
+        productName: formData.productName?.trim() || null,
+        itemCode: formData.itemCode?.trim() || null,
+        skuCode: formData.skuCode?.trim() || null,
+        modelNumber: formData.modelNumber?.trim() || null,
+        minimumQuantity: formData.minQuantity ? parseInt(formData.minQuantity) : 0,
+        maintainingQuantity: formData.maintainingQuantity ? parseInt(formData.maintainingQuantity) : 0,
+        currentQuantity: formData.openingQuantity ? parseInt(formData.openingQuantity) : 0,
+        supplierName: formData.supplierName?.trim() || null,
+        category: formData.category?.trim() || null,
+        mrp: parseNumericValue(formData.mrp),
+        sellRate: parseNumericValue(formData.sellRate),
+        points: formData.points ? parseInt(formData.points) : 0,
+        imageUrl: formData.image?.trim() || null
       });
 
       if (response.success) {

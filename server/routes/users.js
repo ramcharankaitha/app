@@ -6,11 +6,16 @@ const { pool } = require('../config/database');
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, first_name, last_name, role, store_allocated, created_at FROM users ORDER BY created_at DESC'
+      'SELECT id, first_name, last_name, role, store_allocated, phone, created_at FROM users ORDER BY created_at DESC'
     );
     res.json({ success: true, users: result.rows });
   } catch (error) {
     console.error('Get users error:', error);
+    console.error('Error details:', {
+      code: error.code,
+      message: error.message,
+      stack: error.stack
+    });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -35,8 +40,43 @@ router.post('/', async (req, res) => {
   try {
     const { firstName, lastName, username, password, storeAllocated, address, city, state, pincode, phone } = req.body;
 
-    if (!firstName || !lastName || !username || !password) {
-      return res.status(400).json({ error: 'Required fields are missing' });
+    // Validate required fields - trim whitespace and check
+    const trimmedFirstName = firstName ? firstName.trim() : '';
+    const trimmedLastName = lastName ? lastName.trim() : '';
+    const trimmedUsername = username ? username.trim() : '';
+    const trimmedPassword = password ? password.trim() : '';
+    const trimmedPhone = phone ? phone.trim() : '';
+
+    // firstName is required, lastName can be empty (supervisor name might be single word)
+    if (!trimmedFirstName || !trimmedUsername || !trimmedPassword || !trimmedPhone) {
+      return res.status(400).json({ 
+        error: 'Required fields are missing',
+        missing: {
+          firstName: !trimmedFirstName,
+          lastName: false, // lastName is optional
+          username: !trimmedUsername,
+          password: !trimmedPassword,
+          phone: !trimmedPhone
+        }
+      });
+    }
+
+    // Check if phone number already exists (phone is unique identifier)
+    const phoneCheck = await pool.query(
+      'SELECT id FROM users WHERE phone = $1',
+      [trimmedPhone]
+    );
+    if (phoneCheck.rows.length > 0) {
+      return res.status(400).json({ error: 'Phone number already exists' });
+    }
+
+    // Check if username already exists
+    const usernameCheck = await pool.query(
+      'SELECT id FROM users WHERE username = $1',
+      [trimmedUsername]
+    );
+    if (usernameCheck.rows.length > 0) {
+      return res.status(400).json({ error: 'Username already exists' });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
@@ -46,14 +86,53 @@ router.post('/', async (req, res) => {
       return res.status(500).json({ error: 'Failed to hash password' });
     }
 
-    const result = await pool.query(
-      `INSERT INTO users (first_name, last_name, username, password_hash, store_allocated, address, city, state, pincode, phone, role)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-       RETURNING id, first_name, last_name, username, role, store_allocated`,
-      [firstName, lastName, username, passwordHash, storeAllocated || null, address || null, city || null, state || null, pincode || null, phone || null, 'Supervisor']
-    );
+    let result;
+    try {
+      // Try with 'SUPERVISOR' role (uppercase), explicitly setting email to NULL
+      // Use trimmed values and ensure lastName is not empty string (use null if empty)
+      result = await pool.query(
+        `INSERT INTO users (first_name, last_name, username, password_hash, phone, email, store_allocated, address, city, state, pincode, role, created_at)
+         VALUES ($1, $2, $3, $4, $5, NULL, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
+         RETURNING id, first_name, last_name, username, phone, role, store_allocated`,
+        [trimmedFirstName, trimmedLastName || null, trimmedUsername, passwordHash, trimmedPhone, storeAllocated || null, address || null, city || null, state || null, pincode || null, 'SUPERVISOR']
+      );
+    } catch (insertError) {
+      if (insertError.code === '42703') { // undefined_column error (email might not exist in some schemas)
+        // Try without email column
+        try {
+          result = await pool.query(
+            `INSERT INTO users (first_name, last_name, username, password_hash, phone, store_allocated, address, city, state, pincode, role, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
+             RETURNING id, first_name, last_name, username, phone, role, store_allocated`,
+            [trimmedFirstName, trimmedLastName || null, trimmedUsername, passwordHash, trimmedPhone, storeAllocated || null, address || null, city || null, state || null, pincode || null, 'SUPERVISOR']
+          );
+        } catch (roleError) {
+          // If role enum doesn't accept 'SUPERVISOR', try 'Supervisor'
+          if (roleError.code === '23502' || roleError.message.includes('role')) {
+            result = await pool.query(
+              `INSERT INTO users (first_name, last_name, username, password_hash, phone, store_allocated, address, city, state, pincode, role, created_at)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
+               RETURNING id, first_name, last_name, username, phone, role, store_allocated`,
+              [trimmedFirstName, trimmedLastName || null, trimmedUsername, passwordHash, trimmedPhone, storeAllocated || null, address || null, city || null, state || null, pincode || null, 'Supervisor']
+            );
+          } else {
+            throw roleError;
+          }
+        }
+      } else if (insertError.code === '23502' || insertError.message.includes('role')) {
+        // If role enum doesn't accept 'SUPERVISOR', try 'Supervisor'
+        result = await pool.query(
+          `INSERT INTO users (first_name, last_name, username, password_hash, phone, email, store_allocated, address, city, state, pincode, role, created_at)
+           VALUES ($1, $2, $3, $4, $5, NULL, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
+           RETURNING id, first_name, last_name, username, phone, role, store_allocated`,
+          [trimmedFirstName, trimmedLastName || null, trimmedUsername, passwordHash, trimmedPhone, storeAllocated || null, address || null, city || null, state || null, pincode || null, 'Supervisor']
+        );
+      } else {
+        throw insertError;
+      }
+    }
     
-    console.log('Supervisor created successfully:', result.rows[0].username);
+    console.log('Supervisor created successfully:', result.rows[0].username, 'Phone:', result.rows[0].phone);
 
     res.status(201).json({
       success: true,
@@ -67,14 +146,24 @@ router.post('/', async (req, res) => {
       message: error.message,
       detail: error.detail,
       constraint: error.constraint,
-      column: error.column
+      column: error.column,
+      stack: error.stack
     });
     
     if (error.code === '23505') { // Unique violation
-      return res.status(400).json({ error: 'Username already exists' });
+      if (error.constraint && error.constraint.includes('phone')) {
+        return res.status(400).json({ error: 'Phone number already exists' });
+      }
+      if (error.constraint && error.constraint.includes('username')) {
+        return res.status(400).json({ error: 'Username already exists' });
+      }
+      return res.status(400).json({ error: 'Duplicate entry. Please check phone number and username.' });
     }
     if (error.code === '23502') { // Not null violation
-      return res.status(400).json({ error: `Required field missing: ${error.column || 'unknown'}. Please check database constraints.` });
+      return res.status(400).json({ 
+        error: `Required field missing: ${error.column || 'unknown'}. Please check database constraints.`,
+        column: error.column
+      });
     }
     if (error.code === '23503') { // Foreign key violation
       return res.status(400).json({ error: 'Invalid reference data' });

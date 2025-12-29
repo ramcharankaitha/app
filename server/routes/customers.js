@@ -5,8 +5,36 @@ const { sendCustomerWelcomeMessage } = require('../services/smsService');
 
 router.get('/', async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT 
+    const { type } = req.query; // Optional: 'walkin' or 'chitplan'
+    
+    let query;
+    if (type === 'walkin') {
+      // Get only walk-in customers (not in chit_customers table)
+      query = `SELECT 
+        c.*,
+        'walkin' as customer_type
+      FROM customers c 
+      WHERE NOT EXISTS (
+        SELECT 1 FROM chit_customers cc 
+        WHERE cc.phone = c.phone 
+        AND c.phone IS NOT NULL
+      )
+      ORDER BY c.created_at DESC`;
+    } else if (type === 'chitplan') {
+      // Get only chit plan customers
+      query = `SELECT 
+        c.*,
+        'chitplan' as customer_type
+      FROM customers c 
+      WHERE EXISTS (
+        SELECT 1 FROM chit_customers cc 
+        WHERE cc.phone = c.phone 
+        AND c.phone IS NOT NULL
+      )
+      ORDER BY c.created_at DESC`;
+    } else {
+      // Get all customers with type
+      query = `SELECT 
         c.*,
         CASE 
           WHEN EXISTS (
@@ -17,8 +45,10 @@ router.get('/', async (req, res) => {
           ELSE 'walkin'
         END as customer_type
       FROM customers c 
-      ORDER BY c.created_at DESC`
-    );
+      ORDER BY c.created_at DESC`;
+    }
+    
+    const result = await pool.query(query);
     res.json({ success: true, customers: result.rows });
   } catch (error) {
     console.error('Get customers error:', error);

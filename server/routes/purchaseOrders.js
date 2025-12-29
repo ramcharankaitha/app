@@ -61,13 +61,37 @@ router.get('/', async (req, res) => {
       success: true, 
       orders: result.rows.map(order => {
         let itemsCount = 0;
+        let calculatedTotal = parseFloat(order.total_amount) || 0;
+        
         try {
           if (order.items) {
+            let items = [];
             if (typeof order.items === 'string') {
-              const parsed = JSON.parse(order.items);
-              itemsCount = Array.isArray(parsed) ? parsed.length : 0;
+              items = JSON.parse(order.items);
             } else if (Array.isArray(order.items)) {
-              itemsCount = order.items.length;
+              items = order.items;
+            }
+            
+            itemsCount = items.length;
+            
+            // Calculate total from items if total_amount is 0 or missing
+            if (calculatedTotal === 0 && items.length > 0) {
+              calculatedTotal = items.reduce((total, item) => {
+                const quantity = parseFloat(item.quantity) || 0;
+                const unitPrice = parseFloat(item.unitPrice) || parseFloat(item.mrp) || 0;
+                const totalPrice = parseFloat(item.totalPrice) || (quantity * unitPrice);
+                return total + totalPrice;
+              }, 0);
+              
+              // Update database if calculated total is greater than 0
+              if (calculatedTotal > 0) {
+                pool.query(
+                  'UPDATE purchase_orders SET total_amount = $1 WHERE id = $2',
+                  [calculatedTotal, order.id]
+                ).catch(err => {
+                  console.error('Error updating total_amount:', err);
+                });
+              }
             }
           }
         } catch (e) {
@@ -76,7 +100,8 @@ router.get('/', async (req, res) => {
         
         return {
           ...order,
-          items_count: order.items_count || itemsCount
+          items_count: order.items_count || itemsCount,
+          total_amount: calculatedTotal > 0 ? calculatedTotal : (parseFloat(order.total_amount) || 0)
         };
       })
     });
@@ -92,13 +117,37 @@ router.get('/', async (req, res) => {
         success: true, 
         orders: fallbackResult.rows.map(order => {
           let itemsCount = 0;
+          let calculatedTotal = parseFloat(order.total_amount) || 0;
+          
           try {
             if (order.items) {
+              let items = [];
               if (typeof order.items === 'string') {
-                const parsed = JSON.parse(order.items);
-                itemsCount = Array.isArray(parsed) ? parsed.length : 0;
+                items = JSON.parse(order.items);
               } else if (Array.isArray(order.items)) {
-                itemsCount = order.items.length;
+                items = order.items;
+              }
+              
+              itemsCount = items.length;
+              
+              // Calculate total from items if total_amount is 0 or missing
+              if (calculatedTotal === 0 && items.length > 0) {
+                calculatedTotal = items.reduce((total, item) => {
+                  const quantity = parseFloat(item.quantity) || 0;
+                  const unitPrice = parseFloat(item.unitPrice) || parseFloat(item.mrp) || 0;
+                  const totalPrice = parseFloat(item.totalPrice) || (quantity * unitPrice);
+                  return total + totalPrice;
+                }, 0);
+                
+                // Update database if calculated total is greater than 0
+                if (calculatedTotal > 0) {
+                  pool.query(
+                    'UPDATE purchase_orders SET total_amount = $1 WHERE id = $2',
+                    [calculatedTotal, order.id]
+                  ).catch(err => {
+                    console.error('Error updating total_amount:', err);
+                  });
+                }
               }
             }
           } catch (e) {
@@ -107,7 +156,8 @@ router.get('/', async (req, res) => {
           
           return {
             ...order,
-            items_count: itemsCount
+            items_count: itemsCount,
+            total_amount: calculatedTotal > 0 ? calculatedTotal : (parseFloat(order.total_amount) || 0)
           };
         })
       });
@@ -131,7 +181,101 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Purchase order not found' });
     }
 
-    res.json({ success: true, order: result.rows[0] });
+    let order = result.rows[0];
+    
+    // Calculate total amount from items if total_amount is 0 or missing
+    if (!order.total_amount || parseFloat(order.total_amount) === 0) {
+      try {
+        let items = [];
+        if (order.items) {
+          if (typeof order.items === 'string') {
+            items = JSON.parse(order.items);
+          } else if (Array.isArray(order.items)) {
+            items = order.items;
+          }
+        }
+        
+        if (items.length > 0) {
+          const calculatedTotal = items.reduce((total, item) => {
+            const quantity = parseFloat(item.quantity) || 0;
+            const unitPrice = parseFloat(item.unitPrice) || parseFloat(item.mrp) || 0;
+            const totalPrice = parseFloat(item.totalPrice) || (quantity * unitPrice);
+            return total + totalPrice;
+          }, 0);
+          
+          if (calculatedTotal > 0) {
+            order.total_amount = calculatedTotal;
+            // Update the database
+            await pool.query(
+              'UPDATE purchase_orders SET total_amount = $1 WHERE id = $2',
+              [calculatedTotal, order.id]
+            );
+          }
+        }
+      } catch (calcError) {
+        console.error('Error calculating total from items:', calcError);
+      }
+    }
+    
+    // If PO number exists and items are empty, try to fetch from sales order
+    if (order.po_number && (!order.items || (typeof order.items === 'string' ? JSON.parse(order.items) : order.items).length === 0)) {
+      try {
+        const salesOrderResult = await pool.query(
+          'SELECT products FROM sales_records WHERE po_number = $1 ORDER BY created_at DESC LIMIT 1',
+          [order.po_number]
+        );
+        
+        if (salesOrderResult.rows.length > 0 && salesOrderResult.rows[0].products) {
+          const salesProducts = salesOrderResult.rows[0].products;
+          // Convert sales order products to purchase order items format
+          let items = [];
+          if (typeof salesProducts === 'string') {
+            items = JSON.parse(salesProducts);
+          } else if (Array.isArray(salesProducts)) {
+            items = salesProducts;
+          }
+          
+          // Transform to purchase order item format
+          const transformedItems = items.map(product => {
+            const quantity = parseFloat(product.quantity) || 0;
+            const sellRate = parseFloat(product.sellRate) || parseFloat(product.sell_rate) || 0;
+            const mrp = parseFloat(product.mrp) || 0;
+            const unitPrice = sellRate > 0 ? sellRate : mrp;
+            const totalPrice = quantity * unitPrice;
+            
+            return {
+              itemCode: product.itemCode || product.item_code || '',
+              productName: product.productName || product.product_name || '',
+              quantity: quantity,
+              unitPrice: unitPrice,
+              totalPrice: totalPrice
+            };
+          });
+          
+          if (transformedItems.length > 0) {
+            order.items = transformedItems;
+            // Calculate total amount from items
+            const calculatedTotal = transformedItems.reduce((total, item) => {
+              return total + (parseFloat(item.totalPrice) || 0);
+            }, 0);
+            
+            // Update the purchase order with items and total amount
+            await pool.query(
+              'UPDATE purchase_orders SET items = $1, total_amount = $2 WHERE id = $3',
+              [JSON.stringify(transformedItems), calculatedTotal, id]
+            );
+            
+            // Update order object for response
+            order.total_amount = calculatedTotal;
+          }
+        }
+      } catch (salesError) {
+        console.error('Error fetching items from sales order:', salesError);
+        // Continue with existing order data
+      }
+    }
+
+    res.json({ success: true, order: order });
   } catch (error) {
     console.error('Get purchase order by ID error:', error);
     res.status(500).json({ error: 'Internal server error' });

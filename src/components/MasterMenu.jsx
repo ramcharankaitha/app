@@ -8,7 +8,6 @@ const MasterMenu = ({ onNavigate, onBack }) => {
     { title: 'Category Master', desc: 'Product categories', target: 'categoryMaster' },
     { title: 'Customers', desc: 'Customer management & details', target: 'customers' },
     { title: 'Chit Plan Master', desc: 'Create and manage chit plans', target: 'chitPlanMaster' },
-    { title: 'Chit Plans', desc: 'Chit plan setup & customers', target: 'chitPlans' },
   ];
 
   const handleOpen = (target) => {

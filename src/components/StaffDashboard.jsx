@@ -365,7 +365,6 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
                 { title: 'Supply Master', desc: 'Suppliers and logistics', icon: 'fa-truck', target: 'suppliers' },
                 { title: 'Customers', desc: 'Customer management & details', icon: 'fa-user-friends', target: 'customers' },
                 { title: 'Chit Plan Master', desc: 'Create and manage chit plans', icon: 'fa-file-invoice-dollar', target: 'chitPlanMaster' },
-                { title: 'Chit Plans', desc: 'Chit plan setup & customers', icon: 'fa-file-invoice-dollar', target: 'chitPlans' },
               ].map((item) => (
                 <div
                   key={item.title}

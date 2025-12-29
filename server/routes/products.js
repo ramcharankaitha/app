@@ -68,60 +68,117 @@ router.get('/item-code/:itemCode', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { productName, itemCode, skuCode, minimumQuantity, maintainingQuantity, currentQuantity, supplierName, category, mrp, discount, sellRate, points } = req.body;
+    const { productName, itemCode, skuCode, minimumQuantity, maintainingQuantity, currentQuantity, supplierName, category, mrp, discount, sellRate, points, imageUrl } = req.body;
 
-    if (!productName || !itemCode || !skuCode) {
-      return res.status(400).json({ error: 'Required fields are missing' });
-    }
+    console.log('=== CREATE PRODUCT REQUEST ===');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
 
-    // Check if maintaining_quantity column exists, if not, use a query without it
-    let result;
-    try {
-      result = await pool.query(
-        `INSERT INTO products (product_name, item_code, sku_code, minimum_quantity, maintaining_quantity, current_quantity, status, mrp, discount, sell_rate, points, supplier_name, category)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-         RETURNING *`,
-        [
-          productName, 
-          itemCode, 
-          skuCode, 
-          minimumQuantity || 0, 
-          maintainingQuantity || 0,
-          currentQuantity || 0, 
-          'STOCK',
-          mrp || null,
-          discount || 0,
-          sellRate || null,
-          points || 0,
-          supplierName || null,
-          category && category.trim() !== '' ? category.trim() : null
-        ]
-      );
-    } catch (colError) {
-      // If maintaining_quantity column doesn't exist, use query without it
-      if (colError.code === '42703') { // undefined_column error
-        result = await pool.query(
-          `INSERT INTO products (product_name, item_code, sku_code, minimum_quantity, current_quantity, status, mrp, discount, sell_rate, points, supplier_name, category)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-           RETURNING *`,
-          [
-            productName, 
-            itemCode, 
-            skuCode, 
-            minimumQuantity || 0, 
-            currentQuantity || 0, 
-            'STOCK',
-            mrp || null,
-            discount || 0,
-            sellRate || null,
-            points || 0,
-            supplierName || null,
-            category && category.trim() !== '' ? category.trim() : null
-          ]
-        );
-      } else {
-        throw colError;
+    // Helper function to safely parse numeric values
+    const parseNumeric = (value) => {
+      if (value === null || value === undefined || value === '') return null;
+      if (typeof value === 'number') return isNaN(value) ? null : value;
+      if (typeof value === 'string') {
+        // Remove currency symbols, commas, spaces
+        const cleaned = value.replace(/[Rs₹,\s]/gi, '').trim();
+        const parsed = parseFloat(cleaned);
+        return isNaN(parsed) ? null : parsed;
       }
+      return null;
+    };
+
+    // Trim and validate - all fields are now optional
+    const trimmedProductName = productName ? productName.trim() : null;
+    const trimmedItemCode = itemCode ? itemCode.trim() : null;
+    const trimmedSkuCode = skuCode ? skuCode.trim() : null;
+    
+    // Generate default values if not provided - ensure they're not empty strings
+    const finalProductName = (trimmedProductName && trimmedProductName.length > 0) ? trimmedProductName : 'Unnamed Product';
+    const finalItemCode = (trimmedItemCode && trimmedItemCode.length > 0) ? trimmedItemCode : `ITEM-${Date.now()}`;
+    const finalSkuCode = (trimmedSkuCode && trimmedSkuCode.length > 0) ? trimmedSkuCode : `SKU-${Date.now()}`;
+
+    // Parse numeric values safely
+    const parsedMrp = parseNumeric(mrp);
+    const parsedSellRate = parseNumeric(sellRate);
+    const parsedDiscount = parseNumeric(discount) || 0;
+    const parsedPoints = parseNumeric(points) || 0;
+    const parsedMinQty = parseNumeric(minimumQuantity) || 0;
+    const parsedMaintainingQty = parseNumeric(maintainingQuantity) || 0;
+    const parsedCurrentQty = parseNumeric(currentQuantity) || 0;
+
+    console.log('Parsed values:', {
+      mrp: parsedMrp,
+      sellRate: parsedSellRate,
+      discount: parsedDiscount,
+      points: parsedPoints
+    });
+
+    // Check which columns exist and build query dynamically
+    let result;
+    let insertQuery;
+    
+    // First, check which columns exist
+    const columnCheck = await pool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'products' 
+      AND column_name IN ('maintaining_quantity', 'points', 'image_url')
+    `);
+    
+    const existingColumns = columnCheck.rows.map(r => r.column_name);
+    const hasMaintainingQty = existingColumns.includes('maintaining_quantity');
+    const hasPoints = existingColumns.includes('points');
+    const hasImageUrl = existingColumns.includes('image_url');
+    
+    // Build query based on existing columns
+    let columns = ['product_name', 'item_code', 'sku_code', 'minimum_quantity', 'current_quantity', 'status', 'mrp', 'discount', 'sell_rate', 'supplier_name', 'category'];
+    let values = [finalProductName, finalItemCode, finalSkuCode, parsedMinQty, parsedCurrentQty, 'STOCK', parsedMrp, parsedDiscount, parsedSellRate, supplierName ? supplierName.trim() : null, category && category.trim() !== '' ? category.trim() : null];
+    let paramIndex = values.length + 1;
+    
+    if (hasMaintainingQty) {
+      columns.splice(4, 0, 'maintaining_quantity');
+      values.splice(4, 0, parsedMaintainingQty);
+      paramIndex++;
+    }
+    
+    if (hasPoints) {
+      columns.push('points');
+      values.push(parsedPoints);
+      paramIndex++;
+    }
+    
+    if (hasImageUrl) {
+      columns.push('image_url');
+      values.push(imageUrl || null);
+      paramIndex++;
+    }
+    
+    // Build the parameterized query
+    const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
+    insertQuery = `INSERT INTO products (${columns.join(', ')}) VALUES (${placeholders}) RETURNING *`;
+    
+    console.log('Insert query:', insertQuery);
+    console.log('Insert values:', values);
+    
+    try {
+      result = await pool.query(insertQuery, values);
+    } catch (dbError) {
+      // If it's a unique constraint violation, provide better error
+      if (dbError.code === '23505') {
+        if (dbError.constraint && dbError.constraint.includes('item_code')) {
+          return res.status(400).json({ 
+            error: `Item code "${finalItemCode}" already exists. Please use a different item code.` 
+          });
+        }
+        if (dbError.constraint && dbError.constraint.includes('sku_code')) {
+          return res.status(400).json({ 
+            error: `SKU code "${finalSkuCode}" already exists. Please use a different SKU code.` 
+          });
+        }
+        return res.status(400).json({ 
+          error: 'Item code or SKU code already exists. Please use different codes.' 
+        });
+      }
+      throw dbError;
     }
 
     res.status(201).json({
@@ -135,20 +192,41 @@ router.post('/', async (req, res) => {
       code: error.code,
       message: error.message,
       detail: error.detail,
-      constraint: error.constraint
+      constraint: error.constraint,
+      column: error.column,
+      stack: error.stack
     });
     
-    if (error.code === '23505') {
+    if (error.code === '23505') { // Unique violation
+      if (error.constraint && error.constraint.includes('item_code')) {
+        return res.status(400).json({ error: 'Item code already exists. Please use a different item code.' });
+      }
+      if (error.constraint && error.constraint.includes('sku_code')) {
+        return res.status(400).json({ error: 'SKU code already exists. Please use a different SKU code.' });
+      }
       return res.status(400).json({ error: 'Item code or SKU code already exists' });
     }
-    if (error.code === '23502') {
-      return res.status(400).json({ error: `Required field missing: ${error.column || 'unknown'}` });
+    if (error.code === '23502') { // Not null violation
+      return res.status(400).json({ 
+        error: `Required field missing: ${error.column || 'unknown'}. Please check database constraints.`,
+        column: error.column
+      });
     }
     
-    res.status(500).json({ 
+    // Return more detailed error in development, generic in production
+    const errorResponse = {
       error: 'Internal server error',
-      message: process.env.NODE_ENV === 'development' ? error.message : 'Please check server logs'
-    });
+      message: error.message || 'An unexpected error occurred while creating the product'
+    };
+    
+    if (process.env.NODE_ENV === 'development') {
+      errorResponse.code = error.code;
+      errorResponse.detail = error.detail;
+      errorResponse.constraint = error.constraint;
+      errorResponse.column = error.column;
+    }
+    
+    res.status(500).json(errorResponse);
   }
 });
 

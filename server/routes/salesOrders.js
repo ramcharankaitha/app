@@ -2,6 +2,58 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 
+// Generate unique 4-digit PO number
+const generatePONumber = async () => {
+  const prefix = 'PO';
+  let attempts = 0;
+  const maxAttempts = 100;
+  
+  while (attempts < maxAttempts) {
+    // Generate a random 4-digit number (1000-9999)
+    const fourDigit = Math.floor(1000 + Math.random() * 9000);
+    const poNumber = `${prefix}-${fourDigit}`;
+    
+    // Check if this PO number already exists
+    try {
+      // First ensure the po_number column exists
+      await pool.query(`
+        DO $$ 
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'sales_records' AND column_name = 'po_number'
+          ) THEN
+            ALTER TABLE sales_records ADD COLUMN po_number VARCHAR(100);
+            RAISE NOTICE 'Added po_number column to sales_records';
+          END IF;
+        END $$;
+      `);
+      
+      const checkResult = await pool.query(
+        'SELECT id FROM sales_records WHERE po_number = $1 LIMIT 1',
+        [poNumber]
+      );
+      
+      if (checkResult.rows.length === 0) {
+        // PO number is unique
+        console.log('Generated unique PO number:', poNumber);
+        return poNumber;
+      }
+    } catch (error) {
+      // If there's an error checking, just return the number anyway
+      console.log('Could not check PO number uniqueness, using generated number:', poNumber, error.message);
+      return poNumber;
+    }
+    
+    attempts++;
+  }
+  
+  // Fallback: use timestamp-based if we can't find a unique 4-digit number
+  const timestamp = Date.now();
+  const random = Math.floor(Math.random() * 1000);
+  return `${prefix}-${timestamp}-${random}`;
+};
+
 // Create sales_records table if it doesn't exist
 const createTableIfNotExists = async () => {
   try {
@@ -17,7 +69,7 @@ const createTableIfNotExists = async () => {
     `);
     
     if (!tableExists.rows[0].exists) {
-      // Create table with all columns
+      // Create table with all columns including po_number
       await pool.query(`
         CREATE TABLE sales_records (
           id SERIAL PRIMARY KEY,
@@ -32,12 +84,13 @@ const createTableIfNotExists = async () => {
           products JSONB DEFAULT '[]'::jsonb,
           product_details JSONB DEFAULT '[]'::jsonb,
           total_amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
+          po_number VARCHAR(100),
           created_by VARCHAR(255),
           created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         )
       `);
-      console.log('sales_records table created successfully');
+      console.log('sales_records table created successfully with po_number column');
     } else {
       console.log('sales_records table already exists');
       
@@ -51,10 +104,37 @@ const createTableIfNotExists = async () => {
         { name: 'supplier_name', type: 'VARCHAR(255)' },
         { name: 'supplier_number', type: 'VARCHAR(50)' },
         { name: 'total_amount', type: 'DECIMAL(10, 2)', default: '0' },
+        { name: 'po_number', type: 'VARCHAR(100)' },
         { name: 'created_by', type: 'VARCHAR(255)' },
         { name: 'created_at', type: 'TIMESTAMP WITH TIME ZONE', default: 'CURRENT_TIMESTAMP' },
         { name: 'updated_at', type: 'TIMESTAMP WITH TIME ZONE', default: 'CURRENT_TIMESTAMP' }
       ];
+      
+      // Ensure po_number column exists and is added to new tables
+      if (!tableExists.rows[0].exists) {
+        // Add po_number to the CREATE TABLE statement
+        await pool.query(`
+          CREATE TABLE sales_records (
+            id SERIAL PRIMARY KEY,
+            customer_name VARCHAR(255) NOT NULL,
+            customer_contact VARCHAR(50) NOT NULL,
+            handler_id INTEGER,
+            handler_name VARCHAR(255),
+            handler_mobile VARCHAR(50),
+            date_of_duration DATE NOT NULL,
+            supplier_name VARCHAR(255),
+            supplier_number VARCHAR(50),
+            products JSONB DEFAULT '[]'::jsonb,
+            product_details JSONB DEFAULT '[]'::jsonb,
+            total_amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
+            po_number VARCHAR(100),
+            created_by VARCHAR(255),
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        console.log('sales_records table created with po_number column');
+      }
       
       for (const col of columnsToAdd) {
         try {
@@ -179,6 +259,20 @@ router.post('/', async (req, res) => {
 
     console.log('Valid products:', validProducts.length);
 
+    // Calculate total amount from products if not provided or is 0
+    let calculatedTotalAmount = parseFloat(totalAmount) || 0;
+    if (calculatedTotalAmount === 0) {
+      calculatedTotalAmount = validProducts.reduce((total, product) => {
+        const quantity = parseFloat(product.quantity) || 0;
+        const sellRate = parseFloat(product.sellRate) || parseFloat(product.sell_rate) || 0;
+        const mrp = parseFloat(product.mrp) || 0;
+        // Use sellRate if available, otherwise use mrp
+        const price = sellRate > 0 ? sellRate : mrp;
+        return total + (quantity * price);
+      }, 0);
+      console.log('Calculated total amount from products:', calculatedTotalAmount);
+    }
+
     const productsJson = JSON.stringify(validProducts);
     console.log('Products JSON length:', productsJson.length);
 
@@ -196,7 +290,11 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // Prepare values
+    // Generate unique 4-digit PO number FIRST
+    const poNumber = await generatePONumber();
+    console.log('Generated PO Number:', poNumber);
+
+    // Prepare values - IMPORTANT: po_number comes BEFORE created_by to match INSERT order
     const values = [
       customerName.trim(),
       customerContact.trim(),
@@ -207,27 +305,94 @@ router.post('/', async (req, res) => {
       supplierName ? supplierName.trim() : null,
       supplierNumber ? supplierNumber.trim() : null,
       productsJson,
-      parseFloat(totalAmount) || 0,
-      createdBy || 'system'
+      calculatedTotalAmount,  // Use calculated total amount
+      poNumber,  // $11 - po_number
+      createdBy || 'system'  // $12 - created_by
     ];
 
     console.log('Prepared values:', values.map((v, i) => `$${i+1}: ${typeof v === 'string' && v.length > 50 ? v.substring(0, 50) + '...' : v}`));
+    console.log('PO Number position (should be $11):', values[10]);
+    console.log('Created By position (should be $12):', values[11]);
 
     // Insert into sales_records - use products column (should exist after createTableIfNotExists)
     console.log('Attempting insert into sales_records...');
-    const result = await pool.query(
-      `INSERT INTO sales_records (
-        customer_name, customer_contact, handler_id, handler_name, handler_mobile,
-        date_of_duration, supplier_name, supplier_number, products, total_amount, created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-      RETURNING *`,
-      values
-    );
+    let result;
+    try {
+      result = await pool.query(
+        `INSERT INTO sales_records (
+          customer_name, customer_contact, handler_id, handler_name, handler_mobile,
+          date_of_duration, supplier_name, supplier_number, products, total_amount, po_number, created_by
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        RETURNING *`,
+        values  // Now values array has po_number at position 10 and created_by at position 11
+      );
+    } catch (colError) {
+      if (colError.code === '42703') { // undefined_column error (po_number might not exist)
+        // Try without po_number - need to remove poNumber from values array
+        const valuesWithoutPO = [
+          customerName.trim(),
+          customerContact.trim(),
+          validHandlerId,
+          handlerName ? handlerName.trim() : null,
+          handlerMobile ? handlerMobile.trim() : null,
+          dateOfDuration,
+          supplierName ? supplierName.trim() : null,
+          supplierNumber ? supplierNumber.trim() : null,
+          productsJson,
+          parseFloat(totalAmount) || 0,
+          createdBy || 'system'
+        ];
+        result = await pool.query(
+          `INSERT INTO sales_records (
+            customer_name, customer_contact, handler_id, handler_name, handler_mobile,
+            date_of_duration, supplier_name, supplier_number, products, total_amount, created_by
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          RETURNING *`,
+          valuesWithoutPO
+        );
+        // Update with PO number after insert
+        await pool.query(
+          `UPDATE sales_records SET po_number = $1 WHERE id = $2`,
+          [poNumber, result.rows[0].id]
+        );
+        // Fetch updated record
+        const updatedResult = await pool.query(
+          'SELECT * FROM sales_records WHERE id = $1',
+          [result.rows[0].id]
+        );
+        result = updatedResult;
+      } else {
+        throw colError;
+      }
+    }
     console.log('Sales order created successfully, ID:', result.rows[0]?.id);
+    console.log('PO Number in result:', result.rows[0]?.po_number);
+
+    // Ensure PO number is in the response
+    const salesOrderResponse = result.rows[0];
+    if (!salesOrderResponse.po_number) {
+      // If PO number is missing, fetch it again
+      const fetchResult = await pool.query(
+        'SELECT po_number FROM sales_records WHERE id = $1',
+        [salesOrderResponse.id]
+      );
+      if (fetchResult.rows.length > 0 && fetchResult.rows[0].po_number) {
+        salesOrderResponse.po_number = fetchResult.rows[0].po_number;
+        console.log('Fetched PO number from database:', salesOrderResponse.po_number);
+      } else {
+        // If still missing, update it
+        await pool.query(
+          'UPDATE sales_records SET po_number = $1 WHERE id = $2',
+          [poNumber, salesOrderResponse.id]
+        );
+        salesOrderResponse.po_number = poNumber;
+        console.log('Updated PO number in database:', poNumber);
+      }
+    }
 
     res.status(201).json({
       success: true,
-      salesOrder: result.rows[0],
+      salesOrder: salesOrderResponse,
       message: 'Sales order created successfully'
     });
   } catch (error) {
