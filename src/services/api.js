@@ -12,7 +12,12 @@ const getApiBaseUrl = () => {
     return url;
   }
   if (process.env.NODE_ENV === 'production') {
-    throw new Error('REACT_APP_API_URL is not set. Please configure it in your deployment environment.');
+    // Don't throw error - show warning and use a fallback
+    console.error('⚠️  REACT_APP_API_URL is not set. Please configure it in Vercel environment variables.');
+    console.error('⚠️  Go to: Vercel Dashboard → Your Project → Settings → Environment Variables');
+    console.error('⚠️  Add: REACT_APP_API_URL = https://your-backend-url.com/api');
+    // Return empty string to prevent crashes, but API calls will fail gracefully
+    return '';
   }
   return 'http://localhost:5000/api';
 };
