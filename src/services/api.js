@@ -2,7 +2,14 @@
 const getApiBaseUrl = () => {
   const envUrl = process.env.REACT_APP_API_URL;
   if (envUrl && envUrl.trim().length > 0) {
-    return envUrl.trim().replace(/\/+$/, ''); // strip trailing slashes
+    // Ensure HTTPS in production
+    let url = envUrl.trim().replace(/\/+$/, ''); // strip trailing slashes
+    if (process.env.NODE_ENV === 'production' && url.startsWith('http://')) {
+      console.warn('⚠️  API URL uses HTTP in production. Consider using HTTPS for security.');
+      // Auto-convert to HTTPS in production
+      url = url.replace('http://', 'https://');
+    }
+    return url;
   }
   if (process.env.NODE_ENV === 'production') {
     throw new Error('REACT_APP_API_URL is not set. Please configure it in your deployment environment.');
