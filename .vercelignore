@@ -1,6 +1,15 @@
-server/
+# Files to ignore in Vercel deployment
 node_modules/
+server/
 .env
 .env.local
+.env.*.local
 *.log
-
+.DS_Store
+.vscode/
+.idea/
+*.md
+!README.md
+coverage/
+build/
+dist/
