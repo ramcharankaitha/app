@@ -43,7 +43,10 @@ const corsOptions = {
     const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:3001',
-      process.env.FRONTEND_URL, // Your Vercel frontend URL
+      process.env.FRONTEND_URL, // Your frontend URL (Vercel/Hostinger)
+      // Add your Hostinger domain here if using Hostinger
+      // 'https://yourdomain.com',
+      // 'https://www.yourdomain.com',
     ].filter(Boolean);
     
     // In development, allow all origins
