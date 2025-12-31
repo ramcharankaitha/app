@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useProfile } from '../hooks/useProfile';
-import { profileAPI, exportAPI } from '../services/api';
+import { profileAPI, exportAPI, notificationsAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import SupervisorAttendanceView from './SupervisorAttendanceView';
 import UnifiedAttendanceView from './UnifiedAttendanceView';
 import ReportsView from './ReportsView';
 import BestSalesPerson from './BestSalesPerson';
+import SendNotification from './SendNotification';
+import NotificationsPanel from './NotificationsPanel';
 import { downloadCSV } from '../utils/fileDownload';
 
 const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
@@ -21,6 +23,11 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
   const [showSupervisorAttendance, setShowSupervisorAttendance] = useState(false);
   const [showUnifiedAttendance, setShowUnifiedAttendance] = useState(false);
   const [showReports, setShowReports] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [criticalAlerts, setCriticalAlerts] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showSendNotification, setShowSendNotification] = useState(false);
+  const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
   const menuRef = useRef(null);
   const { profile, avatarUrl, initials } = useProfile();
 
@@ -90,20 +97,30 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     }
   ];
 
-  const alerts = [
-    {
-      priority: 'High Priority',
-      message: 'Stock below minimum (Stock-Name)',
-      time: '5 min ago',
-      color: '#ff6b9d'
-    },
-    {
-      priority: 'Medium Priority',
-      message: 'Unusual login attempt detected',
-      time: '18 min ago',
-      color: '#ffa500'
+  // Format time ago
+  const formatTimeAgo = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  };
+
+  // Get alert color based on type
+  const getAlertColor = (type) => {
+    switch (type) {
+      case 'error': return '#dc3545';
+      case 'warning': return '#ffa500';
+      case 'success': return '#28a745';
+      default: return '#17a2b8';
     }
-  ];
+  };
 
   // Mock chart data for horizontal bars (12 data points for 24 hours)
   const chartData = [45, 60, 55, 70, 65, 80, 75, 90, 85, 70, 65, 75, 80, 85, 75, 70, 65, 60, 55, 50, 45, 50, 55, 60];
@@ -178,6 +195,49 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     }
     setShowReports(true);
   };
+
+  // Fetch notifications and critical alerts
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!profile?.id) return;
+      
+      try {
+        // Fetch all notifications
+        const notifResponse = await notificationsAPI.getAll(profile.id, 'admin');
+        if (notifResponse.success) {
+          setNotifications(notifResponse.notifications || []);
+          const unread = (notifResponse.notifications || []).filter(n => !n.is_read).length;
+          setUnreadCount(unread);
+        }
+
+        // Fetch critical alerts
+        const alertsResponse = await notificationsAPI.getCriticalAlerts(profile.id);
+        if (alertsResponse.success) {
+          setCriticalAlerts(alertsResponse.alerts || []);
+        }
+      } catch (err) {
+        console.error('Error fetching notifications:', err);
+      }
+    };
+
+    fetchNotifications();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    
+    // Listen for notification updates
+    const handleNotificationUpdate = () => {
+      console.log('🔔 Admin: Notification update event received, refreshing...');
+      fetchNotifications();
+    };
+    window.addEventListener('notificationsUpdated', handleNotificationUpdate);
+    window.addEventListener('notificationSent', handleNotificationUpdate);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('notificationsUpdated', handleNotificationUpdate);
+      window.removeEventListener('notificationSent', handleNotificationUpdate);
+    };
+  }, [profile]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -509,22 +569,109 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
         <div className="alerts-card">
           <div className="alerts-header">
             <h3>Critical Alerts</h3>
-            <span className="active-alerts-badge">5 Active</span>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <span className="active-alerts-badge">{criticalAlerts.length} Active</span>
+              <button 
+                onClick={() => setShowSendNotification(true)}
+                style={{ 
+                  padding: '5px 10px', 
+                  background: '#dc3545', 
+                  color: 'white', 
+                  border: 'none', 
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                <i className="fas fa-bell"></i> Send Notification
+              </button>
+            </div>
           </div>
           <div className="alerts-list">
-            {alerts.map((alert, index) => (
-              <div key={index} className="alert-item">
-                <span className="alert-priority" style={{ backgroundColor: `${alert.color}20`, color: alert.color }}>
-                  {alert.priority}
-                </span>
-                <div className="alert-content">
-                  <p className="alert-message">{alert.message}</p>
-                  <span className="alert-time">{alert.time}</span>
-                </div>
+            {criticalAlerts.length === 0 ? (
+              <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+                <i className="fas fa-check-circle" style={{ fontSize: '24px', marginBottom: '10px', opacity: 0.5 }}></i>
+                <p>No critical alerts</p>
               </div>
-            ))}
+            ) : (
+              criticalAlerts.slice(0, 5).map((alert) => (
+                <div key={alert.id} className="alert-item">
+                  <span 
+                    className="alert-priority" 
+                    style={{ 
+                      backgroundColor: `${getAlertColor(alert.notification_type)}20`, 
+                      color: getAlertColor(alert.notification_type) 
+                    }}
+                  >
+                    {alert.notification_type.toUpperCase()}
+                  </span>
+                  <div className="alert-content">
+                    <p className="alert-message">{alert.title}</p>
+                    <p style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>{alert.message}</p>
+                    <span className="alert-time">{formatTimeAgo(alert.created_at)}</span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-          <a href="#" className="view-all-alerts">View all alerts →</a>
+          {criticalAlerts.length > 5 && (
+            <a href="#" className="view-all-alerts">View all alerts →</a>
+          )}
+        </div>
+
+        {/* Notifications Panel */}
+        <div className="panel" style={{ marginTop: '20px' }}>
+          <div className="panel-header">
+            <div className="panel-title">
+              Notifications
+              {unreadCount > 0 && (
+                <span style={{ 
+                  marginLeft: '10px', 
+                  background: '#dc3545', 
+                  color: 'white', 
+                  padding: '2px 8px', 
+                  borderRadius: '12px',
+                  fontSize: '12px'
+                }}>
+                  {unreadCount} new
+                </span>
+              )}
+            </div>
+          </div>
+          {notifications.length === 0 ? (
+            <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+              <i className="fas fa-bell-slash" style={{ fontSize: '24px', marginBottom: '10px', opacity: 0.5 }}></i>
+              <p>No notifications</p>
+            </div>
+          ) : (
+            notifications.slice(0, 5).map((notif) => (
+              <div 
+                key={notif.id} 
+                className={`notif-row ${notif.notification_type} ${!notif.is_read ? 'unread' : ''}`}
+                style={{ cursor: 'pointer' }}
+                onClick={async () => {
+                  if (!notif.is_read) {
+                    try {
+                      await notificationsAPI.markAsRead(notif.id);
+                      setNotifications(prev => 
+                        prev.map(n => n.id === notif.id ? { ...n, is_read: true } : n)
+                      );
+                      setUnreadCount(prev => Math.max(0, prev - 1));
+                    } catch (err) {
+                      console.error('Error marking notification as read:', err);
+                    }
+                  }
+                }}
+              >
+                {!notif.is_read && <span className="dot"></span>}
+                <div>
+                  <div className="notif-title">{notif.title}</div>
+                  <div className="notif-desc">{notif.message}</div>
+                </div>
+                <span className="time">{formatTimeAgo(notif.created_at)}</span>
+              </div>
+            ))
+          )}
         </div>
 
         {/* Footer */}
@@ -641,9 +788,21 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
           </div>
         </div>
         <div className="header-right">
-          <div className    ="notification-icon">
+          <div 
+            className="notification-icon"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('🔔 Admin: Bell clicked, opening notifications panel');
+              setShowNotificationsPanel(true);
+            }}
+            style={{ cursor: 'pointer', position: 'relative', zIndex: 10 }}
+            title="View Notifications"
+          >
             <i className="fas fa-bell"></i>
-            <span className="notification-badge">3</span>
+            {unreadCount > 0 && (
+              <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+            )}
           </div>
           <div className="menu-icon-container" ref={menuRef}>
             <div className="menu-icon" onClick={handleMenuClick}>
@@ -712,6 +871,21 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
       )}
       {showReports && (
         <ReportsView onClose={() => setShowReports(false)} />
+      )}
+
+      {showSendNotification && (
+        <SendNotification 
+          onClose={() => setShowSendNotification(false)} 
+          userRole="admin"
+        />
+      )}
+
+      {showNotificationsPanel && profile?.id && (
+        <NotificationsPanel
+          onClose={() => setShowNotificationsPanel(false)}
+          userId={profile.id}
+          userType="admin"
+        />
       )}
     </div>
   );

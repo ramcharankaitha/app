@@ -3,6 +3,7 @@ import { useProfile } from '../hooks/useProfile';
 import ConfirmDialog from './ConfirmDialog';
 import AttendanceModal from './AttendanceModal';
 import BestSalesPerson from './BestSalesPerson';
+import NotificationsPanel from './NotificationsPanel';
 import './attendanceModal.css';
 
 const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
@@ -18,6 +19,7 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
   const [checkOutTime, setCheckOutTime] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [warningMessage, setWarningMessage] = useState('');
   const menuRef = useRef(null);
@@ -87,7 +89,20 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
     fetchNotifications();
     // Refresh notifications every 30 seconds
     const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
+    
+    // Listen for notification updates
+    const handleNotificationUpdate = () => {
+      console.log('🔔 Staff: Notification update event received, refreshing...');
+      fetchNotifications();
+    };
+    window.addEventListener('notificationsUpdated', handleNotificationUpdate);
+    window.addEventListener('notificationSent', handleNotificationUpdate);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('notificationsUpdated', handleNotificationUpdate);
+      window.removeEventListener('notificationSent', handleNotificationUpdate);
+    };
   }, []);
 
   // Check if user is a handler
@@ -338,9 +353,21 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
             </div>
           </div>
           <div className="header-right">
-            <div className="notification-icon">
+            <div 
+              className="notification-icon"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🔔 Staff: Bell clicked, opening notifications panel');
+                setShowNotificationsPanel(true);
+              }}
+              style={{ cursor: 'pointer', position: 'relative', zIndex: 10 }}
+              title="View Notifications"
+            >
               <i className="fas fa-bell"></i>
-              {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
+              {unreadCount > 0 && (
+                <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+              )}
             </div>
             <div className="menu-icon-container" ref={menuRef}>
               <div className="menu-icon" onClick={() => setMenuOpen((p) => !p)}>
@@ -613,6 +640,14 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
           type={attendanceType}
           onSuccess={handleAttendanceSuccess}
           onClose={handleAttendanceClose}
+        />
+      )}
+
+      {showNotificationsPanel && userData?.id && (
+        <NotificationsPanel
+          onClose={() => setShowNotificationsPanel(false)}
+          userId={userData.id}
+          userType="staff"
         />
       )}
     </div>

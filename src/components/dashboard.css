@@ -159,6 +159,9 @@
     color: var(--accent-color);
     cursor: pointer;
     position: relative;
+    z-index: 10;
+    cursor: pointer;
+    position: relative;
     transition: all 0.3s ease;
 }
 
@@ -186,6 +189,8 @@
     align-items: center;
     justify-content: center;
     font-weight: 700;
+    z-index: 11;
+    pointer-events: none;
 }
 
 /* Dropdown Menu */

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
+const { createCriticalAlert } = require('../services/notificationService');
 
 // Public endpoint for storefront - only returns available products
 router.get('/public', async (req, res) => {
@@ -181,9 +182,24 @@ router.post('/', async (req, res) => {
       throw dbError;
     }
 
+    const newProduct = result.rows[0];
+    
+    // Create critical alert for new product
+    try {
+      await createCriticalAlert(
+        'info',
+        'New Product Created',
+        `Product "${newProduct.product_name}" (${newProduct.item_code}) has been added to inventory`,
+        newProduct.id
+      );
+    } catch (notifError) {
+      console.error('Error creating notification:', notifError);
+      // Don't fail the request if notification fails
+    }
+
     res.status(201).json({
       success: true,
-      product: result.rows[0],
+      product: newProduct,
       message: 'Product created successfully'
     });
   } catch (error) {
@@ -261,9 +277,31 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Product not found' });
     }
 
+    const updatedProduct = result.rows[0];
+    const newQty = parseInt(updatedProduct.current_quantity) || 0;
+    const minQty = parseInt(updatedProduct.minimum_quantity) || 0;
+    
+    // Check if stock went from above minimum to below minimum
+    const wasAboveMin = prevQty > prevMinQty;
+    const isNowBelowMin = newQty <= minQty;
+    
+    // Create critical alert if stock is low
+    if (isNowBelowMin && (wasAboveMin || newQty < prevQty)) {
+      try {
+        await createCriticalAlert(
+          'warning',
+          'Low Stock Alert',
+          `Product "${updatedProduct.product_name}" (${updatedProduct.item_code}) stock is now ${newQty} units (below minimum: ${minQty})`,
+          updatedProduct.id
+        );
+      } catch (notifError) {
+        console.error('Error creating notification:', notifError);
+      }
+    }
+
     res.json({
       success: true,
-      product: result.rows[0],
+      product: updatedProduct,
       message: 'Product updated successfully'
     });
   } catch (error) {

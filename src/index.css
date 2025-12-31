@@ -156,8 +156,8 @@ body {
 }
 
 .back-btn {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: #dc3545;
     border: none;
@@ -168,6 +168,16 @@ body {
     justify-content: center;
     margin-right: 10px;
     transition: all 0.3s ease;
+    position: relative;
+}
+
+.back-btn::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: #fff;
+    border-radius: 50%;
+    position: absolute;
 }
 
 .back-btn:hover {
@@ -177,6 +187,19 @@ body {
 
 .header-content {
     flex: 1;
+}
+
+.header-logo-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-logo {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    flex-shrink: 0;
 }
 
 .store-name {
@@ -255,20 +278,33 @@ body {
     text-align: center;
 }
 
-.user-icon {
-    width: 48px;
-    height: 48px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
+.banner-logo {
+    width: auto;
+    max-width: 160px;
+    height: auto;
+    min-height: 80px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 8px;
+    margin: 0 auto 12px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 16px 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    font-size: 0;
+    line-height: 0;
+    overflow: hidden;
 }
 
-.user-icon i {
-    font-size: 22px;
-    color: #ffffff;
+.logo-image {
+    width: 100%;
+    height: auto;
+    max-width: 140px;
+    max-height: 80px;
+    object-fit: contain;
+    display: block;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
 }
 
 .welcome-text {
@@ -294,6 +330,7 @@ body {
     min-height: 0;
     display: flex;
     flex-direction: column;
+    gap: 8px;
 }
 
 .login-form {
@@ -308,7 +345,7 @@ body {
 }
 
 .form-group:first-of-type {
-    margin-top: 0;
+    margin-top: 20px;
 }
 
 .form-group:last-of-type {
@@ -329,21 +366,29 @@ body {
     position: relative;
     display: flex;
     align-items: center;
+    width: 100%;
 }
 
 .input-icon {
     position: absolute;
-    left: 11px;
+    left: 15px;
     color: #dc3545;
-    font-size: 12px;
-    z-index: 1;
+    font-size: 13px;
+    z-index: 2;
     top: 50%;
     transform: translateY(-50%);
+    pointer-events: none;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
 }
 
 .form-input {
     width: 100%;
-    padding: 8px 10px 8px 35px;
+    padding: 8px 44px 8px 50px;
     border: 2px solid var(--input-border);
     border-radius: 8px;
     background: var(--input-bg);
@@ -352,6 +397,23 @@ body {
     outline: none;
     transition: all 0.3s ease;
     font-weight: 400;
+    box-sizing: border-box;
+    line-height: 1.5;
+    text-indent: 0;
+}
+
+/* Role select has dropdown icon, needs different right padding */
+.role-select .form-input {
+    padding-right: 40px;
+}
+
+/* Ensure username and password fields are EXACTLY identical */
+#username.form-input,
+#password.form-input {
+    padding: 8px 44px 8px 50px;
+    background: var(--input-bg) !important;
+    border: 2px solid var(--input-border);
+    border-radius: 8px;
 }
 
 .form-input:hover {
@@ -365,6 +427,13 @@ body {
     box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
 }
 
+/* Ensure username and password have same focus state */
+#username.form-input:focus,
+#password.form-input:focus {
+    background: var(--input-hover-bg) !important;
+    border-color: var(--input-focus-border);
+}
+
 .form-input::placeholder {
     color: var(--text-tertiary);
     opacity: 0.7;
@@ -374,12 +443,14 @@ body {
 
 .role-select {
     position: relative;
+    width: 100%;
 }
 
 .role-select select {
     appearance: none;
     cursor: pointer;
     padding-right: 40px;
+    width: 100%;
 }
 
 .role-select select option {
@@ -390,33 +461,54 @@ body {
 
 .dropdown-icon {
     position: absolute;
-    right: 10px;
+    right: 12px;
     color: #dc3545;
-    font-size: 11px;
+    font-size: 12px;
     pointer-events: none;
     top: 50%;
     transform: translateY(-50%);
-}
-
-.password-toggle {
-    position: absolute;
-    right: 10px;
-    background: none;
-    border: none;
-    color: #dc3545;
-    cursor: pointer;
-    font-size: 12px;
-    padding: 4px 5px;
-    z-index: 1;
-    top: 50%;
-    transform: translateY(-50%);
+    z-index: 2;
+    width: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.password-toggle:hover {
+.password-toggle,
+.username-clear {
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    color: #dc3545;
+    cursor: pointer;
+    font-size: 13px;
+    padding: 4px 6px;
+    z-index: 3;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.username-clear {
+    font-size: 12px;
+}
+
+.password-toggle:hover,
+.username-clear:hover {
     color: #c82333;
+    background: rgba(220, 53, 69, 0.1);
+}
+
+.password-toggle:active,
+.username-clear:active {
+    background: rgba(220, 53, 69, 0.15);
 }
 
 /* Form Options */
@@ -668,13 +760,21 @@ body {
         padding: 20px 18px 12px 18px;
     }
 
-    .user-icon {
-        width: 45px;
-        height: 45px;
+    .banner-logo {
+        max-width: 130px;
+        min-height: 70px;
+        margin-bottom: 10px;
+        padding: 12px 16px;
     }
 
-    .user-icon i {
-        font-size: 22px;
+    .logo-image {
+        max-width: 110px;
+        max-height: 65px;
+    }
+
+    .header-logo {
+        width: 28px;
+        height: 28px;
     }
 
     .main-content {
@@ -691,8 +791,55 @@ body {
     }
 
     .form-input {
-        padding: 7px 8px 7px 30px;
+        padding: 7px 40px 7px 46px;
         font-size: 12px;
+        text-indent: 0;
+    }
+
+    /* Role select has dropdown icon, needs different right padding on mobile */
+    .role-select .form-input {
+        padding-right: 36px;
+    }
+
+    /* Ensure username and password are EXACTLY identical on mobile */
+    #username.form-input,
+    #password.form-input {
+        padding: 7px 40px 7px 46px !important;
+        background: var(--input-bg) !important;
+        border: 2px solid var(--input-border);
+    }
+
+    .input-icon {
+        left: 13px;
+        font-size: 13px;
+        width: 14px;
+        height: 14px;
+    }
+
+    .password-toggle {
+        right: 10px;
+        font-size: 12px;
+        width: 26px;
+        height: 26px;
+        padding: 3px 5px;
+    }
+
+    .dropdown-icon {
+        right: 10px;
+        font-size: 11px;
+    }
+
+    .role-select select {
+        padding-right: 36px;
+    }
+
+
+    .username-clear {
+        right: 10px;
+        font-size: 11px;
+        width: 26px;
+        height: 26px;
+        padding: 3px 5px;
     }
 }
 

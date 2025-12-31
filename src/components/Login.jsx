@@ -34,6 +34,13 @@ const Login = ({ onLoginSuccess }) => {
     setShowPassword(prev => !prev);
   };
 
+  const clearUsername = () => {
+    setFormData(prev => ({
+      ...prev,
+      username: ''
+    }));
+  };
+
   const handleBack = () => {
     if (window.history.length > 1) {
       window.history.back();
@@ -91,10 +98,12 @@ const Login = ({ onLoginSuccess }) => {
       {/* Header */}
       <header className="header">
         <button className="back-btn" onClick={handleBack}>
-          <i className="fas fa-arrow-left"></i>
         </button>
         <div className="header-content">
-          <h1 className="store-name">Anitha Stores</h1>
+          <div className="header-logo-name">
+            <img src="/logo.png" alt="Anitha Stores Logo" className="header-logo" />
+            <h1 className="store-name">Anitha Stores</h1>
+          </div>
           <p className="subtitle">Secure login for Admin</p>
         </div>
       </header>
@@ -106,10 +115,27 @@ const Login = ({ onLoginSuccess }) => {
           <div className="banner">
             <div className="banner-pattern"></div>
             <div className="banner-content">
-              <div className="user-icon">
-                <i className="fas fa-user"></i>
+              <div className="banner-logo">
+                <img 
+                  src="/logo.png" 
+                  alt="" 
+                  className="logo-image"
+                  onError={(e) => {
+                    // Try alternative logo paths
+                    if (e.target.src.includes('logo.png')) {
+                      e.target.src = '/logo192.png';
+                    } else if (e.target.src.includes('logo192.png')) {
+                      e.target.src = '/logo.jpg';
+                    } else if (e.target.src.includes('logo.jpg')) {
+                      e.target.src = '/logo.svg';
+                    } else {
+                      e.target.style.display = 'none';
+                      console.error('Logo image not found. Please add logo.png to the public folder.');
+                    }
+                  }}
+                />
               </div>
-              <h2 className="welcome-text">Welcome Back</h2>
+              <h2 className="welcome-text">Welcome</h2>
               <p className="welcome-subtitle">Sign in to continue</p>
             </div>
           </div>
@@ -152,6 +178,17 @@ const Login = ({ onLoginSuccess }) => {
                     onChange={handleInputChange}
                     required
                   />
+                  {formData.username && (
+                    <button
+                      type="button"
+                      className="password-toggle username-clear"
+                      onClick={clearUsername}
+                      title="Clear username"
+                      aria-label="Clear username"
+                    >
+                      <i className="fas fa-times"></i>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -221,7 +258,7 @@ const Login = ({ onLoginSuccess }) => {
       <footer className="footer">
         <div className="ssl-badge">
           <i className="fas fa-check-circle ssl-icon"></i>
-          <span className="ssl-text">Secure SSL Encrypted Connection</span>
+          <span className="ssl-text">Powered by Evercode</span>
         </div>
       </footer>
     </div>

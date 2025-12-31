@@ -44,9 +44,8 @@ const corsOptions = {
       'http://localhost:3000',
       'http://localhost:3001',
       process.env.FRONTEND_URL, // Your frontend URL (Vercel/Hostinger)
-      // Add your Hostinger domain here if using Hostinger
-      // 'https://yourdomain.com',
-      // 'https://www.yourdomain.com',
+      // Support multiple frontend URLs (comma-separated)
+      ...(process.env.FRONTEND_URLS ? process.env.FRONTEND_URLS.split(',').map(url => url.trim()) : []),
     ].filter(Boolean);
     
     // In development, allow all origins
@@ -54,19 +53,34 @@ const corsOptions = {
       return callback(null, true);
     }
     
-    // In production, allow Vercel domains and specified frontend URL
+    // Normalize origin for comparison (remove trailing slash, handle www)
+    const normalizeUrl = (url) => {
+      if (!url) return '';
+      return url.replace(/\/$/, '').toLowerCase();
+    };
+    
+    const normalizedOrigin = normalizeUrl(origin);
+    
+    // Check if origin matches any allowed origin (exact match or www variant)
+    const isAllowed = allowedOrigins.some(allowed => {
+      const normalizedAllowed = normalizeUrl(allowed);
+      return normalizedOrigin === normalizedAllowed ||
+             normalizedOrigin === normalizedAllowed.replace(/^https?:\/\/(www\.)?/, 'https://') ||
+             normalizedOrigin === normalizedAllowed.replace(/^https?:\/\//, 'https://www.');
+    });
+    
+    // In production, allow Vercel domains and specified frontend URLs
     // Vercel apps can have multiple domains (*.vercel.app, custom domains)
     const isVercelDomain = origin.includes('.vercel.app') || 
-                          origin.includes('vercel.app') ||
-                          allowedOrigins.some(allowed => origin === allowed);
+                          origin.includes('vercel.app');
     
-    if (isVercelDomain || allowedOrigins.indexOf(origin) !== -1) {
+    if (isVercelDomain || isAllowed) {
       callback(null, true);
     } else {
       console.warn(`⚠️  CORS blocked origin: ${origin}`);
       console.warn(`⚠️  Allowed origins: ${allowedOrigins.join(', ')}`);
       // In production, be more permissive if FRONTEND_URL is not set
-      if (!process.env.FRONTEND_URL) {
+      if (!process.env.FRONTEND_URL && !process.env.FRONTEND_URLS) {
         console.warn('⚠️  FRONTEND_URL not set - allowing all origins');
         callback(null, true);
       } else {

@@ -725,6 +725,40 @@ export const quotationsAPI = {
   },
 };
 
+export const notificationsAPI = {
+  getAll: async (userId, userType) => {
+    return apiCall(`/notifications?userId=${userId}&userType=${userType}`);
+  },
+  getCriticalAlerts: async (userId) => {
+    return apiCall(`/notifications/critical-alerts?userId=${userId}`);
+  },
+  getUnreadCount: async (userId, userType) => {
+    return apiCall(`/notifications/unread-count?userId=${userId}&userType=${userType}`);
+  },
+  markAsRead: async (id) => {
+    return apiCall(`/notifications/${id}/read`, {
+      method: 'PUT',
+    });
+  },
+  markAllAsRead: async (userId, userType) => {
+    return apiCall('/notifications/mark-all-read', {
+      method: 'PUT',
+      body: JSON.stringify({ userId, userType }),
+    });
+  },
+  send: async (notificationData) => {
+    return apiCall('/notifications/send', {
+      method: 'POST',
+      body: JSON.stringify(notificationData),
+    });
+  },
+  delete: async (id, userId) => {
+    return apiCall(`/notifications/${id}?userId=${userId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
 export default {
   authAPI,
   usersAPI,
@@ -743,5 +777,6 @@ export default {
   categoriesAPI,
   smsAPI,
   quotationsAPI,
+  notificationsAPI,
 };
 

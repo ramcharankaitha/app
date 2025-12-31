@@ -59,6 +59,18 @@ router.post('/in', async (req, res) => {
     
     await client.query('COMMIT');
     
+    // Create critical alert for stock in
+    try {
+      await createCriticalAlert(
+        'success',
+        'Stock Added',
+        `${quantityToAdd} units of "${product.product_name}" (${itemCode.trim()}) added. New quantity: ${newQuantity}`,
+        product.id
+      );
+    } catch (notifError) {
+      console.error('Error creating notification:', notifError);
+    }
+    
     res.status(201).json({
       success: true,
       message: `Stock added successfully. New quantity: ${newQuantity}`,
@@ -177,6 +189,35 @@ router.post('/out', async (req, res) => {
     // This MUST happen before any customer record creation to ensure stock transaction is saved
     await client.query('COMMIT');
     console.log('✅ Stock OUT transaction COMMITTED successfully');
+    
+    // Check if stock is low after stock out
+    const productCheck = await pool.query(
+      'SELECT current_quantity, minimum_quantity FROM products WHERE id = $1',
+      [product.id]
+    );
+    const updatedProduct = productCheck.rows[0];
+    const isLowStock = updatedProduct.current_quantity <= updatedProduct.minimum_quantity;
+    
+    // Create critical alert for stock out
+    try {
+      if (isLowStock) {
+        await createCriticalAlert(
+          'warning',
+          'Low Stock Alert',
+          `Stock for "${product.product_name}" (${itemCode.trim()}) is now ${newQuantity} units (below minimum: ${updatedProduct.minimum_quantity})`,
+          product.id
+        );
+      } else {
+        await createCriticalAlert(
+          'info',
+          'Stock Removed',
+          `${quantityToRemove} units of "${product.product_name}" (${itemCode.trim()}) removed. Remaining: ${newQuantity}`,
+          product.id
+        );
+      }
+    } catch (notifError) {
+      console.error('Error creating notification:', notifError);
+    }
     
     // Release the client after commit
     client.release();
