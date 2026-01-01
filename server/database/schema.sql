@@ -253,6 +253,27 @@ BEGIN
     ) THEN
         ALTER TABLE products ADD COLUMN supplier_name VARCHAR(255);
     END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'products' AND column_name = 'purchase_rate'
+    ) THEN
+        ALTER TABLE products ADD COLUMN purchase_rate DECIMAL(10, 2);
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'products' AND column_name = 'discount_1'
+    ) THEN
+        ALTER TABLE products ADD COLUMN discount_1 DECIMAL(10, 2) DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'products' AND column_name = 'discount_2'
+    ) THEN
+        ALTER TABLE products ADD COLUMN discount_2 DECIMAL(10, 2) DEFAULT 0;
+    END IF;
 END $$;
 
 -- Suppliers Table

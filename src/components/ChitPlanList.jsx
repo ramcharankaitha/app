@@ -49,10 +49,10 @@ const ChitPlanList = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' })
   };
 
   const handleAddChitPlan = () => {
-    if (onAddChitPlan) {
+    if (onNavigate) {
+      onNavigate('addChitPlanCustomer');
+    } else if (onAddChitPlan) {
       onAddChitPlan();
-    } else if (onNavigate) {
-      onNavigate('addChitPlan');
     }
   };
 

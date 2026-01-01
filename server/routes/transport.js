@@ -59,6 +59,40 @@ router.get('/by-address', async (req, res) => {
   }
 });
 
+// Get all unique cities from transport addresses
+router.get('/cities', async (req, res) => {
+  try {
+    const { search } = req.query;
+    let query = `
+      SELECT DISTINCT city
+      FROM (
+        SELECT city FROM transport WHERE city IS NOT NULL AND city != ''
+        UNION
+        SELECT addr->>'city' as city
+        FROM transport, jsonb_array_elements(COALESCE(addresses, '[]'::jsonb)) AS addr
+        WHERE addr->>'city' IS NOT NULL AND addr->>'city' != ''
+      ) AS all_cities
+      WHERE city IS NOT NULL AND city != ''
+    `;
+    
+    const params = [];
+    if (search && search.trim() !== '') {
+      query += ` AND LOWER(TRIM(city)) LIKE LOWER($1)`;
+      params.push(`%${search.trim()}%`);
+    }
+    
+    query += ` ORDER BY city ASC`;
+    
+    const result = await pool.query(query, params);
+    const cities = result.rows.map(row => row.city).filter(city => city && city.trim() !== '');
+    
+    res.json({ success: true, cities: cities });
+  } catch (error) {
+    console.error('Get cities error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -77,20 +111,56 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { travelsName, phoneNumber, addresses } = req.body;
+    const { travelsName, phoneNumber1, phoneNumber2, address, addresses } = req.body;
 
     if (!travelsName) {
       return res.status(400).json({ error: 'Required fields: travelsName' });
+    }
+
+    if (!phoneNumber1 || !phoneNumber2) {
+      return res.status(400).json({ error: 'Phone Number 1 and Phone Number 2 are required' });
+    }
+
+    if (!address) {
+      return res.status(400).json({ error: 'Address is required' });
     }
 
     if (!addresses || !Array.isArray(addresses) || addresses.length === 0) {
       return res.status(400).json({ error: 'At least one city is required' });
     }
 
-    // Validate that at least one address has a city
-    const hasValidCity = addresses.some(addr => addr.city && addr.city.trim() !== '');
-    if (!hasValidCity) {
-      return res.status(400).json({ error: 'At least one city must be provided' });
+    // Validate that all 10 cities have both city name and phone number
+    if (addresses.length !== 10) {
+      return res.status(400).json({ error: 'Exactly 10 cities are required' });
+    }
+
+    const invalidCities = addresses.filter(addr => 
+      !addr.city || !addr.city.trim() || !addr.phoneNumber || !addr.phoneNumber.trim()
+    );
+
+    if (invalidCities.length > 0) {
+      return res.status(400).json({ error: 'All 10 cities and their phone numbers are required' });
+    }
+
+    // Check for duplicate transport name
+    const existingTransport = await pool.query(
+      'SELECT id FROM transport WHERE LOWER(TRIM(travels_name)) = LOWER(TRIM($1))',
+      [travelsName]
+    );
+
+    if (existingTransport.rows.length > 0) {
+      return res.status(400).json({ error: 'Transport name already exists. Please use a different name.' });
+    }
+
+    // Check for duplicate phone number combination
+    const phoneNumber = `${phoneNumber1.trim()}, ${phoneNumber2.trim()}`;
+    const existingPhone = await pool.query(
+      'SELECT id FROM transport WHERE phone_number = $1',
+      [phoneNumber]
+    );
+
+    if (existingPhone.rows.length > 0) {
+      return res.status(400).json({ error: 'This phone number combination already exists. Please use different phone numbers.' });
     }
 
     // Store addresses as JSONB, also keep first address in legacy fields for backward compatibility
@@ -98,13 +168,14 @@ router.post('/', async (req, res) => {
     const addressesJson = JSON.stringify(addresses);
 
     const result = await pool.query(
-      `INSERT INTO transport (name, travels_name, address, city, state, pincode, service, vehicle_number, addresses)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO transport (name, travels_name, phone_number, address, city, state, pincode, service, vehicle_number, addresses)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
       [
         '', // name - removed (empty string instead of null for NOT NULL constraint)
-        travelsName, 
-        null, // address - removed
+        travelsName.trim(), 
+        phoneNumber, // Combined phone numbers
+        address.trim(), // Main address
         firstAddress.city || '', 
         null, // state - removed
         null, // pincode - removed
@@ -121,6 +192,18 @@ router.post('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Create transport error:', error);
+    
+    // Handle database unique constraint violations
+    if (error.code === '23505') { // Unique violation
+      if (error.constraint && error.constraint.includes('travels_name')) {
+        return res.status(400).json({ error: 'Transport name already exists. Please use a different name.' });
+      }
+      if (error.constraint && error.constraint.includes('phone_number')) {
+        return res.status(400).json({ error: 'This phone number combination already exists. Please use different phone numbers.' });
+      }
+      return res.status(400).json({ error: 'Duplicate entry detected. Please check transport name and phone numbers.' });
+    }
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -128,44 +211,64 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { travelsName, phoneNumber, addresses } = req.body;
+    const { travelsName, phoneNumber1, phoneNumber2, address, addresses } = req.body;
 
     if (!travelsName) {
       return res.status(400).json({ error: 'Required fields: travelsName' });
+    }
+
+    if (!phoneNumber1 || !phoneNumber2) {
+      return res.status(400).json({ error: 'Phone Number 1 and Phone Number 2 are required' });
+    }
+
+    if (!address) {
+      return res.status(400).json({ error: 'Address is required' });
     }
 
     if (!addresses || !Array.isArray(addresses) || addresses.length === 0) {
       return res.status(400).json({ error: 'At least one city is required' });
     }
 
-    // Validate that at least one address has a city
-    const hasValidCity = addresses.some(addr => addr.city && addr.city.trim() !== '');
-    if (!hasValidCity) {
-      return res.status(400).json({ error: 'At least one city must be provided' });
+    // Validate that all 10 cities have both city name and phone number
+    if (addresses.length !== 10) {
+      return res.status(400).json({ error: 'Exactly 10 cities are required' });
+    }
+
+    const invalidCities = addresses.filter(addr => 
+      !addr.city || !addr.city.trim() || !addr.phoneNumber || !addr.phoneNumber.trim()
+    );
+
+    if (invalidCities.length > 0) {
+      return res.status(400).json({ error: 'All 10 cities and their phone numbers are required' });
     }
 
     // Store addresses as JSONB, also keep first address in legacy fields for backward compatibility
     const firstAddress = addresses[0];
     const addressesJson = JSON.stringify(addresses);
 
+    // Combine phoneNumber1 and phoneNumber2 for legacy phoneNumber field
+    const phoneNumber = `${phoneNumber1.trim()}, ${phoneNumber2.trim()}`;
+
     const result = await pool.query(
       `UPDATE transport 
        SET name = $1, 
            travels_name = $2,
-           address = $3,
-           city = $4,
-           state = $5,
-           pincode = $6, 
-           service = $7,
-           vehicle_number = $8,
-           addresses = $9,
+           phone_number = $3,
+           address = $4,
+           city = $5,
+           state = $6,
+           pincode = $7, 
+           service = $8,
+           vehicle_number = $9,
+           addresses = $10,
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $10
+       WHERE id = $11
        RETURNING *`,
       [
         '', // name - removed (empty string instead of null for NOT NULL constraint)
         travelsName, 
-        null, // address - removed
+        phoneNumber, // Combined phone numbers
+        address.trim(), // Main address
         firstAddress.city || '', 
         null, // state - removed
         null, // pincode - removed

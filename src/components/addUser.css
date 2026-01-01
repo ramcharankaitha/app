@@ -226,6 +226,15 @@
     align-content: start;
 }
 
+/* Transport form - reduce top margin for first grid */
+.add-transport-form .form-section:first-child .form-grid {
+    margin-top: 0;
+}
+
+.add-transport-form .form-section:first-child {
+    margin-bottom: 8px;
+}
+
 /* Three column grid for forms with many fields */
 .form-grid.three-col {
     grid-template-columns: repeat(3, 1fr);
@@ -561,6 +570,21 @@
 
 .upload-placeholder i {
     font-size: 20px !important;
+}
+
+/* Product form - compact upload image */
+.add-user-form .form-group:has(.upload-placeholder) .upload-placeholder {
+    min-height: 38px !important;
+    height: 38px !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    flex-direction: row !important;
+    gap: 6px !important;
+}
+
+.add-user-form .form-group:has(.upload-placeholder) .upload-placeholder i {
+    font-size: 14px !important;
+    margin-right: 0 !important;
 }
 
 .form-group {
@@ -1071,5 +1095,75 @@ form.add-user-form .form-grid > .form-group:first-child > label {
 .add-dispatch-form .form-section {
     position: relative;
     overflow: visible;
+}
+
+/* Transport form - compact spacing and proper bottom margin */
+.add-transport-form .form-section {
+    margin-bottom: 8px;
+    margin-top: 0;
+}
+
+.add-transport-form .form-section:last-of-type {
+    margin-bottom: 20px;
+    padding-bottom: 0;
+}
+
+.add-transport-form .form-grid {
+    margin-top: 8px;
+    gap: 8px 10px;
+}
+
+.add-transport-form .form-grid.four-col {
+    gap: 6px 8px;
+    margin-bottom: 6px;
+}
+
+.add-transport-form .form-grid.four-col:last-child {
+    margin-bottom: 0;
+}
+
+.add-transport-form .form-group {
+    margin: 0;
+    padding: 0;
+}
+
+.add-transport-form .form-group label {
+    margin-bottom: 3px;
+    font-size: 11px;
+    height: 14px;
+    min-height: 14px;
+    max-height: 14px;
+    line-height: 1.1;
+}
+
+.add-transport-form .form-input {
+    padding: 6px 10px;
+    font-size: 11px;
+    min-height: 32px;
+    height: 32px;
+}
+
+.add-transport-form .input-wrapper .form-input {
+    padding: 6px 10px 6px 46px;
+    min-height: 32px;
+    height: 32px;
+}
+
+.add-transport-form .input-icon {
+    left: 12px;
+    font-size: 12px;
+    width: 14px;
+    height: 14px;
+}
+
+.add-transport-form .form-actions {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.add-transport-form .error-message,
+.add-transport-form .success-message {
+    margin-bottom: 16px;
 }
 

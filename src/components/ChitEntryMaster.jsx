@@ -237,14 +237,14 @@ const ChitEntryMaster = ({ onBack, onAddChitEntry, onNavigate, userRole = 'admin
                 <i className="fas fa-arrow-left"></i>
               </button>
               <div>
-                <h1 className="staff-title">Chit Entry Master</h1>
+                <h1 className="staff-title">Chit Receipt Master</h1>
                 <p className="staff-subtitle">View and manage all chit payment entries</p>
               </div>
             </div>
             <div className="header-right">
               <button className="add-btn" onClick={handleAddChitEntry}>
                 <i className="fas fa-plus"></i>
-                <span>Add Chit Entry</span>
+                <span>Add Chit Receipt</span>
               </button>
             </div>
           </header>

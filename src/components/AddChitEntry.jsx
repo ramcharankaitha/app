@@ -11,6 +11,8 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
     chitPlanName: '',
     chitPlanAmount: '',
     duration: '',
+    startDate: '',
+    endDate: '',
     paymentMode: '',
     notes: ''
   });
@@ -71,7 +73,9 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
           chitPlanId: customer.chitPlanId,
           chitPlanName: customer.chitPlanName || '',
           chitPlanAmount: customer.chitPlanAmount || '',
-          duration: customer.duration || ''
+          duration: customer.duration || '',
+          startDate: customer.startDate || customer.start_date || '',
+          endDate: customer.endDate || customer.end_date || ''
         }));
       } else {
         setError('Chit number not found');
@@ -97,6 +101,8 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
       chitPlanName: '',
       chitPlanAmount: '',
       duration: '',
+      startDate: '',
+      endDate: '',
       paymentMode: '',
       notes: ''
     });
@@ -174,7 +180,7 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
           <button className="back-btn" onClick={handleBack}>
             <i className="fas fa-arrow-left"></i>
           </button>
-          <h1 className="add-user-title">Add Chit Entry</h1>
+          <h1 className="add-user-title">Chit Receipt</h1>
         </div>
         <div className="header-right">
           <button className="header-btn" onClick={() => onNavigate && onNavigate('dashboard')}>
@@ -193,10 +199,10 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
           )}
 
           <div className="form-section">
-            <div className="form-grid three-col">
-              {/* Row 1: Chit Number */}
-              <div className="form-group" style={{ gridColumn: '1 / -1', position: 'relative' }}>
-                <label htmlFor="chitNumber">Chit Number *</label>
+            {/* First Row: Chit ID, Customer Name, Customer Phone Number, Chit Type */}
+            <div className="form-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: '4px' }}>
+              <div className="form-group" style={{ position: 'relative' }}>
+                <label htmlFor="chitNumber">Chit ID *</label>
                 <div className="input-wrapper">
                   <i className="fas fa-hashtag input-icon"></i>
                   <input
@@ -204,7 +210,7 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     id="chitNumber"
                     name="chitNumber"
                     className="form-input"
-                    placeholder="Enter chit number (e.g., CHIT-1234)"
+                    placeholder="Enter chit ID"
                     value={formData.chitNumber}
                     onChange={handleInputChange}
                     required
@@ -223,7 +229,6 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 </div>
               </div>
 
-              {/* Row 2: Customer Name, Phone, Chit Plan */}
               <div className="form-group">
                 <label htmlFor="customerName">Customer Name</label>
                 <div className="input-wrapper">
@@ -242,7 +247,7 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="customerPhone">Phone Number</label>
+                <label htmlFor="customerPhone">Customer Phone Number</label>
                 <div className="input-wrapper">
                   <i className="fas fa-phone input-icon"></i>
                   <input
@@ -259,7 +264,7 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="chitPlanName">Chit Plan</label>
+                <label htmlFor="chitPlanName">Chit Type</label>
                 <div className="input-wrapper">
                   <i className="fas fa-file-invoice-dollar input-icon"></i>
                   <input
@@ -267,64 +272,50 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     id="chitPlanName"
                     name="chitPlanName"
                     className="form-input"
-                    placeholder="Chit plan"
+                    placeholder="Chit type"
                     value={formData.chitPlanName ? `${formData.chitPlanName} - ₹${parseFloat(formData.chitPlanAmount || 0).toLocaleString('en-IN')}` : ''}
                     readOnly
                     style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
                   />
                 </div>
               </div>
+            </div>
 
-              {/* Row 3: Duration */}
-              {formData.duration && (
+            {/* Second Row: Payment Mode (only after Chit ID is entered) */}
+            {formData.chitNumber && formData.chitNumber.trim() !== '' && (
+              <div className="form-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginTop: '0' }}>
                 <div className="form-group">
-                  <label htmlFor="duration">Duration (Months)</label>
+                  <label htmlFor="paymentMode">Payment *</label>
                   <div className="input-wrapper">
-                    <i className="fas fa-calendar-alt input-icon"></i>
-                    <input
-                      type="text"
-                      id="duration"
-                      name="duration"
+                    <i className="fas fa-credit-card input-icon"></i>
+                    <select
+                      id="paymentMode"
+                      name="paymentMode"
                       className="form-input"
-                      placeholder="Duration"
-                      value={`${formData.duration} months`}
-                      readOnly
-                      style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
-                    />
+                      value={formData.paymentMode}
+                      onChange={handleInputChange}
+                      required
+                      disabled={!selectedCustomer}
+                      style={{ 
+                        paddingLeft: '50px',
+                        appearance: 'auto',
+                        cursor: !selectedCustomer ? 'not-allowed' : 'pointer',
+                        background: !selectedCustomer ? '#f8f9fa' : '#fff'
+                      }}
+                    >
+                      <option value="">Select payment mode</option>
+                      <option value="Cash">Cash</option>
+                      <option value="Card">Card</option>
+                      <option value="UPI">UPI</option>
+                      <option value="Net Banking">Net Banking</option>
+                      <option value="Wallet">Wallet</option>
+                      <option value="Credit">Credit</option>
+                    </select>
+                    <i className="fas fa-chevron-down dropdown-icon"></i>
                   </div>
                 </div>
-              )}
-
-              {/* Row 4: Payment Mode */}
-              <div className="form-group">
-                <label htmlFor="paymentMode">Payment Mode *</label>
-                <div className="input-wrapper">
-                  <i className="fas fa-credit-card input-icon"></i>
-                  <select
-                    id="paymentMode"
-                    name="paymentMode"
-                    className="form-input"
-                    value={formData.paymentMode}
-                    onChange={handleInputChange}
-                    required
-                    disabled={!selectedCustomer}
-                    style={{ 
-                      background: !selectedCustomer ? '#f8f9fa' : '#fff',
-                      cursor: !selectedCustomer ? 'not-allowed' : 'pointer'
-                    }}
-                  >
-                    <option value="">Select payment mode</option>
-                    <option value="Cash">Cash</option>
-                    <option value="Card">Card</option>
-                    <option value="UPI">UPI</option>
-                    <option value="Net Banking">Net Banking</option>
-                    <option value="Wallet">Wallet</option>
-                    <option value="Credit">Credit</option>
-                  </select>
-                  <i className="fas fa-chevron-down dropdown-icon"></i>
-                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Submit Button */}

@@ -475,7 +475,7 @@ const AdminRoutes = () => {
           <ProtectedRoute>
             <ChitPlanList 
               onBack={() => handleNavigation('masterMenu')} 
-              onAddChitPlan={() => handleNavigation('addChitPlan')} 
+              onAddChitPlan={() => handleNavigation('addChitPlanCustomer')} 
               onNavigate={handleNavigation} 
               userRole={userRole} 
             />
@@ -484,7 +484,7 @@ const AdminRoutes = () => {
       />
       
       <Route
-        path="/addChitPlan"
+        path="/addChitPlanCustomer"
         element={
           <ProtectedRoute>
             <ChitPlan onBack={() => handleNavigation('chitPlan')} onNavigate={handleNavigation} userRole={userRole} />

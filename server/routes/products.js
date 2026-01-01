@@ -69,7 +69,7 @@ router.get('/item-code/:itemCode', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { productName, itemCode, skuCode, minimumQuantity, maintainingQuantity, currentQuantity, supplierName, category, mrp, discount, sellRate, points, imageUrl } = req.body;
+    const { productName, itemCode, skuCode, minimumQuantity, maintainingQuantity, currentQuantity, supplierName, category, mrp, discount, discount1, discount2, sellRate, purchaseRate, points, imageUrl } = req.body;
 
     console.log('=== CREATE PRODUCT REQUEST ===');
     console.log('Request body:', JSON.stringify(req.body, null, 2));
@@ -100,7 +100,10 @@ router.post('/', async (req, res) => {
     // Parse numeric values safely
     const parsedMrp = parseNumeric(mrp);
     const parsedSellRate = parseNumeric(sellRate);
+    const parsedPurchaseRate = parseNumeric(purchaseRate);
     const parsedDiscount = parseNumeric(discount) || 0;
+    const parsedDiscount1 = parseNumeric(discount1) || 0;
+    const parsedDiscount2 = parseNumeric(discount2) || 0;
     const parsedPoints = parseNumeric(points) || 0;
     const parsedMinQty = parseNumeric(minimumQuantity) || 0;
     const parsedMaintainingQty = parseNumeric(maintainingQuantity) || 0;
@@ -122,13 +125,16 @@ router.post('/', async (req, res) => {
       SELECT column_name 
       FROM information_schema.columns 
       WHERE table_name = 'products' 
-      AND column_name IN ('maintaining_quantity', 'points', 'image_url')
+      AND column_name IN ('maintaining_quantity', 'points', 'image_url', 'purchase_rate', 'discount_1', 'discount_2')
     `);
     
     const existingColumns = columnCheck.rows.map(r => r.column_name);
     const hasMaintainingQty = existingColumns.includes('maintaining_quantity');
     const hasPoints = existingColumns.includes('points');
     const hasImageUrl = existingColumns.includes('image_url');
+    const hasPurchaseRate = existingColumns.includes('purchase_rate');
+    const hasDiscount1 = existingColumns.includes('discount_1');
+    const hasDiscount2 = existingColumns.includes('discount_2');
     
     // Build query based on existing columns
     let columns = ['product_name', 'item_code', 'sku_code', 'minimum_quantity', 'current_quantity', 'status', 'mrp', 'discount', 'sell_rate', 'supplier_name', 'category'];
@@ -150,6 +156,24 @@ router.post('/', async (req, res) => {
     if (hasImageUrl) {
       columns.push('image_url');
       values.push(imageUrl || null);
+      paramIndex++;
+    }
+    
+    if (hasPurchaseRate) {
+      columns.push('purchase_rate');
+      values.push(parsedPurchaseRate);
+      paramIndex++;
+    }
+    
+    if (hasDiscount1) {
+      columns.push('discount_1');
+      values.push(parsedDiscount1);
+      paramIndex++;
+    }
+    
+    if (hasDiscount2) {
+      columns.push('discount_2');
+      values.push(parsedDiscount2);
       paramIndex++;
     }
     

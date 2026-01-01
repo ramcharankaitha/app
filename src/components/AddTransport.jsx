@@ -1,20 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { transportAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 
 const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
-    phoneNumber: '',
     travelsName: '',
-    city: ''
+    phoneNumber1: '',
+    phoneNumber2: '',
+    address: '',
+    cities: Array(10).fill(null).map((_, index) => ({
+      id: index + 1,
+      city: '',
+      phoneNumber: ''
+    }))
   });
-  const [addresses, setAddresses] = useState([
-    { id: 1, city: '' }
-  ]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
+  const isSubmittingRef = useRef(false);
+  
+  // City autocomplete states
+  const [citySuggestions, setCitySuggestions] = useState({});
+  const [showCityDropdown, setShowCityDropdown] = useState({});
+  const [isLoadingCities, setIsLoadingCities] = useState({});
+  const cityDropdownRefs = useRef({});
+  const cityInputRefs = useRef({});
 
   const handleBack = () => {
     if (onNavigate) {
@@ -70,64 +81,111 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     }));
   };
 
-  const handleAddressChange = (id, field, value) => {
-    setAddresses(prev =>
-      prev.map(addr =>
-        addr.id === id ? { ...addr, [field]: value } : addr
-      )
-    );
-  };
+  // Search cities from database
+  const searchCities = async (searchTerm, cityIndex) => {
+    if (!searchTerm || searchTerm.trim().length < 1) {
+      setCitySuggestions(prev => ({ ...prev, [cityIndex]: [] }));
+      setShowCityDropdown(prev => ({ ...prev, [cityIndex]: false }));
+      return;
+    }
 
-  const addAddress = () => {
-    // At least city is required (backend validation)
-    if (formData.city && formData.city.trim() !== '') {
-      const newId = addresses.length > 0
-        ? Math.max(...addresses.map(addr => addr.id)) + 1
-        : 1;
-      setAddresses(prev => [...prev, { 
-        id: newId, 
-        city: formData.city.trim()
-      }]);
-      // Clear city field after adding
-      setFormData(prev => ({ 
-        ...prev, 
-        city: ''
-      }));
-      setError(''); // Clear any previous errors
-    } else {
-      setError('City is required.');
+    try {
+      setIsLoadingCities(prev => ({ ...prev, [cityIndex]: true }));
+      const response = await transportAPI.getCities(searchTerm);
+      if (response.success) {
+        setCitySuggestions(prev => ({ ...prev, [cityIndex]: response.cities || [] }));
+        setShowCityDropdown(prev => ({ ...prev, [cityIndex]: true }));
+      }
+    } catch (err) {
+      console.error('Error searching cities:', err);
+      setCitySuggestions(prev => ({ ...prev, [cityIndex]: [] }));
+    } finally {
+      setIsLoadingCities(prev => ({ ...prev, [cityIndex]: false }));
     }
   };
 
-  const removeAddress = (id) => {
-    setAddresses(prev => prev.filter(addr => addr.id !== id));
+  // Handle city selection from dropdown
+  const handleCitySelect = (city, index) => {
+    setFormData(prev => ({
+      ...prev,
+      cities: prev.cities.map((c, i) => 
+        i === index ? { ...c, city: city } : c
+      )
+    }));
+    setShowCityDropdown(prev => ({ ...prev, [index]: false }));
+    setCitySuggestions(prev => ({ ...prev, [index]: [] }));
   };
 
+  const handleCityChange = (index, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      cities: prev.cities.map((city, i) => 
+        i === index ? { ...city, [field]: value } : city
+      )
+    }));
+    
+    // If city field is being changed, search for cities
+    if (field === 'city') {
+      searchCities(value, index);
+    }
+  };
+
+  // Close city dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      Object.keys(cityDropdownRefs.current).forEach(cityIndex => {
+        const dropdownRef = cityDropdownRefs.current[cityIndex];
+        const inputRef = cityInputRefs.current[cityIndex];
+        if (dropdownRef && !dropdownRef.contains(event.target) && 
+            inputRef && !inputRef.contains(event.target)) {
+          setShowCityDropdown(prev => ({ ...prev, [cityIndex]: false }));
+        }
+      });
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const submitTransport = async () => {
+    // Prevent double submission
+    if (isSubmittingRef.current || isLoading) {
+      return;
+    }
+
+    isSubmittingRef.current = true;
     setIsLoading(true);
     setError('');
     setSuccessMessage('');
 
     try {
-      // Filter out empty addresses - at least city is required
-      const validAddresses = addresses.filter(addr => 
-        addr.city && addr.city.trim() !== ''
+      // Validate all 10 cities are filled
+      const emptyCities = formData.cities.filter(city => 
+        !city.city || !city.city.trim() || !city.phoneNumber || !city.phoneNumber.trim()
       );
 
-      if (validAddresses.length === 0) {
-        setError('Please add at least one city.');
+      if (emptyCities.length > 0) {
+        setError('All 10 cities and their phone numbers are required.');
         setIsLoading(false);
+        isSubmittingRef.current = false;
         return;
       }
 
+      // Prepare addresses array
+      const addresses = formData.cities.map(city => ({
+        city: city.city.trim(),
+        phoneNumber: city.phoneNumber.trim()
+      }));
+
       const response = await transportAPI.create({
         travelsName: formData.travelsName,
-        phoneNumber: formData.phoneNumber,
-        addresses: validAddresses
+        phoneNumber1: formData.phoneNumber1,
+        phoneNumber2: formData.phoneNumber2,
+        address: formData.address,
+        addresses: addresses
       });
 
       if (response.success) {
-        setSuccessMessage('Save changes are done');
+        setSuccessMessage('Transport record created successfully');
         setTimeout(() => {
           setSuccessMessage('');
           handleCancel();
@@ -138,11 +196,18 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
       console.error('Create transport error:', err);
     } finally {
       setIsLoading(false);
+      isSubmittingRef.current = false;
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Prevent opening confirm dialog if already submitting
+    if (isLoading || isSubmittingRef.current) {
+      return;
+    }
+    
     setConfirmState({
       open: true,
       message: 'Are you sure you want to submit?',
@@ -210,30 +275,12 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
 
           {/* Main Content */}
           <main className="add-user-content">
-            <form onSubmit={handleSubmit} className="add-user-form add-transport-form">
-                {/* All fields in 3-column grid without section titles */}
+            <form onSubmit={handleSubmit} className="add-user-form add-transport-form" noValidate>
                 <div className="form-section">
-                  <div className="form-grid three-col">
-                    {/* Row 1: Phone Number, Transport Name */}
+                  {/* Row 1: Transport Name, Phone Number 1, Phone Number 2, Address */}
+                  <div className="form-grid four-col">
                     <div className="form-group">
-                      <label htmlFor="phoneNumber">Phone number</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-phone input-icon"></i>
-                        <input
-                          type="tel"
-                          id="phoneNumber"
-                          name="phoneNumber"
-                          className="form-input"
-                          placeholder="Enter phone number"
-                          value={formData.phoneNumber}
-                          onChange={handleInputChange}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="travelsName">Transport Name</label>
+                      <label htmlFor="travelsName">Transport Name <span style={{ color: '#dc3545' }}>*</span></label>
                       <div className="input-wrapper">
                         <i className="fas fa-building input-icon"></i>
                         <input
@@ -249,118 +296,233 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       </div>
                     </div>
 
-                    {/* Row 2: City with Add City button below, aligned to right */}
-                    <div className="form-group" style={{ gridColumn: 'span 1' }}>
-                      <label htmlFor="city">City <span style={{ color: '#dc3545' }}>*</span></label>
+                    <div className="form-group">
+                      <label htmlFor="phoneNumber1">Phone Number 1 <span style={{ color: '#dc3545' }}>*</span></label>
                       <div className="input-wrapper">
-                        <i className="fas fa-city input-icon"></i>
+                        <i className="fas fa-phone input-icon"></i>
                         <input
-                          type="text"
-                          id="city"
-                          name="city"
+                          type="tel"
+                          id="phoneNumber1"
+                          name="phoneNumber1"
                           className="form-input"
-                          placeholder="Enter city"
-                          value={formData.city || ''}
+                          placeholder="Enter phone number 1"
+                          value={formData.phoneNumber1}
                           onChange={handleInputChange}
+                          required
                         />
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
-                        <button
-                          type="button"
-                          onClick={addAddress}
-                          style={{
-                            padding: '4px 10px',
-                            background: '#28a745',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '10px',
-                            fontWeight: '500',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '4px',
-                            whiteSpace: 'nowrap'
-                          }}
-                        >
-                          <i className="fas fa-plus" style={{ fontSize: '9px' }}></i>
-                          <span>Add City</span>
-                        </button>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="phoneNumber2">Phone Number 2 <span style={{ color: '#dc3545' }}>*</span></label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-phone input-icon"></i>
+                        <input
+                          type="tel"
+                          id="phoneNumber2"
+                          name="phoneNumber2"
+                          className="form-input"
+                          placeholder="Enter phone number 2"
+                          value={formData.phoneNumber2}
+                          onChange={handleInputChange}
+                          required
+                        />
                       </div>
                     </div>
-                      
-                    {/* Display Added Cities - Side by side with Add City button in same row */}
-                      {addresses.length > 0 && addresses.some(addr => addr.city && addr.city.trim() !== '') && (
-                      <div className="form-group" style={{ gridColumn: 'span 1' }}>
-                        <label style={{ 
-                          display: 'block', 
-                          marginBottom: '8px', 
-                          fontWeight: '600', 
-                          color: '#333', 
-                          fontSize: '12px' 
-                        }}>
-                          Added ({addresses.filter(addr => addr.city && addr.city.trim() !== '').length})
+
+                    <div className="form-group">
+                      <label htmlFor="address">Address <span style={{ color: '#dc3545' }}>*</span></label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-map-marker-alt input-icon"></i>
+                        <input
+                          type="text"
+                          id="address"
+                          name="address"
+                          className="form-input"
+                          placeholder="Enter address"
+                          value={formData.address}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cities Section - 5 rows, each with 4 fields (2 cities with their phone numbers) */}
+                  <div className="form-section" style={{ marginTop: '8px', marginBottom: '0' }}>
+                    {Array.from({ length: 5 }, (_, rowIndex) => (
+                      <div key={rowIndex} className="form-grid four-col" style={{ marginBottom: rowIndex === 4 ? '0' : '6px' }}>
+                        {/* City 1 of this row */}
+                        <div className="form-group" style={{ position: 'relative' }}>
+                          <label htmlFor={`city${rowIndex * 2 + 1}`}>
+                            City {rowIndex * 2 + 1} <span style={{ color: '#dc3545' }}>*</span>
                           </label>
-                        <div style={{ 
-                          display: 'flex',
-                          flexDirection: 'row',
-                          gap: '8px',
-                          overflowX: 'auto',
-                          overflowY: 'hidden',
-                          width: '100%'
-                        }}>
-                          {addresses
-                            .filter(addr => addr.city && addr.city.trim() !== '')
-                            .map((addr, index) => (
-                              <div
-                                key={addr.id}
-                                style={{
-                                  padding: '8px',
-                                  background: '#f8f9fa',
-                                  border: '2px solid #e0e0e0',
-                                  borderRadius: '6px',
-                                  position: 'relative',
-                                  minWidth: '150px',
-                                  maxWidth: '150px',
-                                  flexShrink: 0,
-                                  boxSizing: 'border-box'
-                                }}
-                              >
-                                <div style={{ marginBottom: '6px', fontWeight: '600', color: '#dc3545', fontSize: '11px' }}>
-                                  City {index + 1}
+                          <div className="input-wrapper" ref={el => cityInputRefs.current[rowIndex * 2] = el}>
+                            <i className="fas fa-city input-icon"></i>
+                            <input
+                              type="text"
+                              id={`city${rowIndex * 2 + 1}`}
+                              className="form-input"
+                              placeholder={`Enter city ${rowIndex * 2 + 1}`}
+                              value={formData.cities[rowIndex * 2].city}
+                              onChange={(e) => handleCityChange(rowIndex * 2, 'city', e.target.value)}
+                              onFocus={() => {
+                                if (formData.cities[rowIndex * 2].city) {
+                                  searchCities(formData.cities[rowIndex * 2].city, rowIndex * 2);
+                                }
+                              }}
+                              required
+                            />
+                          </div>
+                          {showCityDropdown[rowIndex * 2] && citySuggestions[rowIndex * 2] && citySuggestions[rowIndex * 2].length > 0 && (
+                            <div 
+                              ref={el => cityDropdownRefs.current[rowIndex * 2] = el}
+                              style={{
+                                position: 'absolute',
+                                top: '100%',
+                                left: 0,
+                                right: 0,
+                                background: '#fff',
+                                border: '1px solid #e0e0e0',
+                                borderRadius: '8px',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                zIndex: 10000,
+                                maxHeight: '200px',
+                                overflowY: 'auto',
+                                marginTop: '4px'
+                              }}
+                            >
+                              {isLoadingCities[rowIndex * 2] ? (
+                                <div style={{ padding: '12px 16px', textAlign: 'center', color: '#666' }}>
+                                  <i className="fas fa-spinner fa-spin"></i> Searching...
                                 </div>
-                                <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
-                                  <span style={{ color: '#333' }}>{addr.city || 'N/A'}</span>
+                              ) : (
+                                citySuggestions[rowIndex * 2].map((city, idx) => (
+                                  <div
+                                    key={idx}
+                                    onClick={() => handleCitySelect(city, rowIndex * 2)}
+                                    style={{
+                                      padding: '12px 16px',
+                                      cursor: 'pointer',
+                                      borderBottom: idx < citySuggestions[rowIndex * 2].length - 1 ? '1px solid #f0f0f0' : 'none',
+                                      background: '#fff',
+                                      color: '#333'
+                                    }}
+                                    onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
+                                    onMouseLeave={(e) => e.target.style.background = '#fff'}
+                                  >
+                                    {city}
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="form-group">
+                          <label htmlFor={`cityPhone${rowIndex * 2 + 1}`}>
+                            City {rowIndex * 2 + 1} Phone Number <span style={{ color: '#dc3545' }}>*</span>
+                          </label>
+                          <div className="input-wrapper">
+                            <i className="fas fa-phone input-icon"></i>
+                            <input
+                              type="tel"
+                              id={`cityPhone${rowIndex * 2 + 1}`}
+                              className="form-input"
+                              placeholder={`Enter phone number for city ${rowIndex * 2 + 1}`}
+                              value={formData.cities[rowIndex * 2].phoneNumber}
+                              onChange={(e) => handleCityChange(rowIndex * 2, 'phoneNumber', e.target.value)}
+                              required
+                            />
+                          </div>
+                        </div>
+
+                        {/* City 2 of this row */}
+                        <div className="form-group" style={{ position: 'relative' }}>
+                          <label htmlFor={`city${rowIndex * 2 + 2}`}>
+                            City {rowIndex * 2 + 2} <span style={{ color: '#dc3545' }}>*</span>
+                          </label>
+                          <div className="input-wrapper" ref={el => cityInputRefs.current[rowIndex * 2 + 1] = el}>
+                            <i className="fas fa-city input-icon"></i>
+                            <input
+                              type="text"
+                              id={`city${rowIndex * 2 + 2}`}
+                              className="form-input"
+                              placeholder={`Enter city ${rowIndex * 2 + 2}`}
+                              value={formData.cities[rowIndex * 2 + 1].city}
+                              onChange={(e) => handleCityChange(rowIndex * 2 + 1, 'city', e.target.value)}
+                              onFocus={() => {
+                                if (formData.cities[rowIndex * 2 + 1].city) {
+                                  searchCities(formData.cities[rowIndex * 2 + 1].city, rowIndex * 2 + 1);
+                                }
+                              }}
+                              required
+                            />
+                          </div>
+                          {showCityDropdown[rowIndex * 2 + 1] && citySuggestions[rowIndex * 2 + 1] && citySuggestions[rowIndex * 2 + 1].length > 0 && (
+                            <div 
+                              ref={el => cityDropdownRefs.current[rowIndex * 2 + 1] = el}
+                              style={{
+                                position: 'absolute',
+                                top: '100%',
+                                left: 0,
+                                right: 0,
+                                background: '#fff',
+                                border: '1px solid #e0e0e0',
+                                borderRadius: '8px',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                zIndex: 10000,
+                                maxHeight: '200px',
+                                overflowY: 'auto',
+                                marginTop: '4px'
+                              }}
+                            >
+                              {isLoadingCities[rowIndex * 2 + 1] ? (
+                                <div style={{ padding: '12px 16px', textAlign: 'center', color: '#666' }}>
+                                  <i className="fas fa-spinner fa-spin"></i> Searching...
                                 </div>
-                                <button
-                                  type="button"
-                                  onClick={() => removeAddress(addr.id)}
-                                  style={{
-                                    position: 'absolute',
-                                    top: '6px',
-                                    right: '6px',
-                                    background: '#dc3545',
-                                    color: '#fff',
-                                    border: 'none',
-                                    borderRadius: '50%',
-                                    width: '18px',
-                                    height: '18px',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '9px'
-                                  }}
-                                  title="Remove this city"
-                                >
-                                  <i className="fas fa-times"></i>
-                                </button>
-                              </div>
-                            ))}
+                              ) : (
+                                citySuggestions[rowIndex * 2 + 1].map((city, idx) => (
+                                  <div
+                                    key={idx}
+                                    onClick={() => handleCitySelect(city, rowIndex * 2 + 1)}
+                                    style={{
+                                      padding: '12px 16px',
+                                      cursor: 'pointer',
+                                      borderBottom: idx < citySuggestions[rowIndex * 2 + 1].length - 1 ? '1px solid #f0f0f0' : 'none',
+                                      background: '#fff',
+                                      color: '#333'
+                                    }}
+                                    onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
+                                    onMouseLeave={(e) => e.target.style.background = '#fff'}
+                                  >
+                                    {city}
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          )}
                         </div>
+
+                        <div className="form-group">
+                          <label htmlFor={`cityPhone${rowIndex * 2 + 2}`}>
+                            City {rowIndex * 2 + 2} Phone Number <span style={{ color: '#dc3545' }}>*</span>
+                          </label>
+                          <div className="input-wrapper">
+                            <i className="fas fa-phone input-icon"></i>
+                            <input
+                              type="tel"
+                              id={`cityPhone${rowIndex * 2 + 2}`}
+                              className="form-input"
+                              placeholder={`Enter phone number for city ${rowIndex * 2 + 2}`}
+                              value={formData.cities[rowIndex * 2 + 1].phoneNumber}
+                              onChange={(e) => handleCityChange(rowIndex * 2 + 1, 'phoneNumber', e.target.value)}
+                              required
+                            />
+                          </div>
                         </div>
-                      )}
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -393,10 +555,10 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
 
                 {/* Action Buttons */}
                 <div className="form-actions">
-                  <button type="submit" className="create-user-btn" disabled={isLoading}>
+                  <button type="submit" className="create-user-btn" disabled={isLoading || isSubmittingRef.current}>
                     {isLoading ? 'Creating...' : 'Create Transport Record'}
                   </button>
-                  <button type="button" className="cancel-btn" onClick={handleCancel}>
+                  <button type="button" className="cancel-btn" onClick={handleCancel} disabled={isLoading}>
                     Cancel and go back
                   </button>
                 </div>
@@ -413,9 +575,13 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
         cancelText="Cancel"
         onConfirm={() => {
           setConfirmState({ open: false, message: '', onConfirm: null });
-          if (confirmState.onConfirm) confirmState.onConfirm();
+          if (confirmState.onConfirm && !isLoading && !isSubmittingRef.current) {
+            confirmState.onConfirm();
+          }
         }}
-        onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
+        onCancel={() => {
+          setConfirmState({ open: false, message: '', onConfirm: null });
+        }}
       />
     </div>
   );

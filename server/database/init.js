@@ -96,23 +96,34 @@ const initDatabase = async () => {
       console.log('✅ Default role permissions created');
     }
 
-    // Insert default chit plans
-    const checkChitPlans = await pool.query('SELECT id FROM chit_plans LIMIT 1');
-    if (checkChitPlans.rows.length === 0) {
-      await pool.query(
-        `INSERT INTO chit_plans (plan_name, plan_amount, description)
-         VALUES 
-         ($1, $2, $3),
-         ($4, $5, $6),
-         ($7, $8, $9)
-         ON CONFLICT DO NOTHING`,
-        [
-          'Chit Plan 1', 1000.00, 'Monthly chit plan of ₹1000',
-          'Chit Plan 2', 5000.00, 'Monthly chit plan of ₹5000',
-          'Chit Plan 3', 10000.00, 'Monthly chit plan of ₹10000'
-        ]
-      );
-      console.log('✅ Default chit plans created');
+    // Insert default chit plans (1, 2, 3, 4, 5)
+    const checkChitPlans = await pool.query('SELECT COUNT(*) as count FROM chit_plans');
+    const planCount = parseInt(checkChitPlans.rows[0]?.count || 0);
+    
+    if (planCount < 5) {
+      // Check which plans exist
+      const existingPlans = await pool.query('SELECT plan_name FROM chit_plans');
+      const existingNames = existingPlans.rows.map(p => p.plan_name);
+      
+      const defaultPlans = [
+        { name: 'Chit Plan 1', amount: 1000.00, desc: 'Chit plan of ₹1000' },
+        { name: 'Chit Plan 2', amount: 2000.00, desc: 'Chit plan of ₹2000' },
+        { name: 'Chit Plan 3', amount: 3000.00, desc: 'Chit plan of ₹3000' },
+        { name: 'Chit Plan 4', amount: 4000.00, desc: 'Chit plan of ₹4000' },
+        { name: 'Chit Plan 5', amount: 5000.00, desc: 'Chit plan of ₹5000' }
+      ];
+      
+      for (const plan of defaultPlans) {
+        if (!existingNames.includes(plan.name)) {
+          await pool.query(
+            `INSERT INTO chit_plans (plan_name, plan_amount, description)
+             VALUES ($1, $2, $3)
+             ON CONFLICT (plan_name) DO NOTHING`,
+            [plan.name, plan.amount, plan.desc]
+          );
+        }
+      }
+      console.log('✅ Default chit plans (1-5) created');
     }
 
     console.log('✅ Database initialization completed');

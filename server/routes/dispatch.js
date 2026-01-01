@@ -66,7 +66,7 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', uploadLlr.single('llrCopy'), async (req, res) => {
   try {
-    const { customer, name, phone, address, city, state, pincode, transportName, transportPhone, packaging, llrNumber } = req.body;
+    const { customer, name, phone, address, area, city, material, packaging, bookingToCity, bookingCityNumber, transportName, transportPhone, estimatedDate, llrNumber } = req.body;
 
     if (!customer || !name || !phone || !transportName) {
       return res.status(400).json({ error: 'Required fields: customer, name, phone, transportName' });
@@ -81,11 +81,33 @@ router.post('/', uploadLlr.single('llrCopy'), async (req, res) => {
     // Try with new fields first, fallback to old structure if columns don't exist
     let result;
     try {
+      // Ensure new columns exist
+      await pool.query(`
+        DO $$ 
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'dispatch' AND column_name = 'area') THEN
+            ALTER TABLE dispatch ADD COLUMN area VARCHAR(255);
+          END IF;
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'dispatch' AND column_name = 'material') THEN
+            ALTER TABLE dispatch ADD COLUMN material VARCHAR(255);
+          END IF;
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'dispatch' AND column_name = 'booking_to_city') THEN
+            ALTER TABLE dispatch ADD COLUMN booking_to_city VARCHAR(255);
+          END IF;
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'dispatch' AND column_name = 'booking_city_number') THEN
+            ALTER TABLE dispatch ADD COLUMN booking_city_number VARCHAR(20);
+          END IF;
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'dispatch' AND column_name = 'estimated_date') THEN
+            ALTER TABLE dispatch ADD COLUMN estimated_date DATE;
+          END IF;
+        END $$;
+      `);
+      
       result = await pool.query(
-        `INSERT INTO dispatch (customer, name, phone, address, city, state, pincode, transport_name, transport_phone, packaging, llr_number, llr_file_path)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        `INSERT INTO dispatch (customer, name, phone, address, area, city, material, packaging, booking_to_city, booking_city_number, transport_name, transport_phone, estimated_date, llr_number, llr_file_path)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
          RETURNING *`,
-        [customer, name, phone, address || null, city || null, state || null, pincode || null, transportName, transportPhone || null, packaging || null, llrNumber || null, llrFilePath]
+        [customer, name, phone, address || null, area || null, city || null, material || null, packaging || null, bookingToCity || null, bookingCityNumber || null, transportName, transportPhone || null, estimatedDate || null, llrNumber || null, llrFilePath]
       );
     } catch (colError) {
       // If new columns don't exist, use old structure

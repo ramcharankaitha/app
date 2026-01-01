@@ -435,7 +435,6 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
                 { title: 'Products', desc: 'Catalog and pricing', icon: 'fa-box', target: 'products' },
                 { title: 'Supply Master', desc: 'Suppliers and logistics', icon: 'fa-truck', target: 'suppliers' },
                 { title: 'Customers', desc: 'Customer management & details', icon: 'fa-user-friends', target: 'customers' },
-                { title: 'Chit Plan Master', desc: 'Create and manage chit plans', icon: 'fa-file-invoice-dollar', target: 'chitPlanMaster' },
               ].map((item) => (
                 <div
                   key={item.title}
@@ -469,7 +468,7 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
                 { title: 'Products', desc: 'Manage product pricing', icon: 'fa-tags', target: 'transactionProducts' },
                 { title: 'Services', desc: 'Manage service transactions', icon: 'fa-cog', target: 'services' },
                 { title: 'Sales Order', desc: 'View and manage sales orders', icon: 'fa-chart-line', target: 'salesOrder' },
-                { title: 'Entry Chit', desc: 'Record chit payments', icon: 'fa-file-invoice-dollar', target: 'chitEntryMaster' },
+                { title: 'Chit Receipt', desc: 'Record chit payments', icon: 'fa-file-invoice-dollar', target: 'chitEntryMaster' },
                 { title: 'Purchase Order', desc: 'Create and manage purchase orders', icon: 'fa-shopping-cart', target: 'purchaseOrderMaster' },
               ].map((item) => (
                 <div

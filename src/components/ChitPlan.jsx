@@ -1,27 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { customersAPI, chitPlansAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import './addUser.css';
 
 const ChitPlan = ({ onBack, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
-    fullName: '',
-    phone: '',
-    address: '',
-    city: '',
-    state: '',
-    pincode: '',
-    whatsapp: '',
     chitPlanId: '',
-    duration: ''
+    duration: '',
+    startDate: new Date().toISOString().split('T')[0], // Current date as default
+    endDate: '',
+    customerName: '',
+    phone: ''
   });
   const [chitPlans, setChitPlans] = useState([]);
+  const [customerSuggestions, setCustomerSuggestions] = useState([]);
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [isLoadingCustomers, setIsLoadingCustomers] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
   const [generatedChitNumber, setGeneratedChitNumber] = useState('');
+  const customerDropdownRef = useRef(null);
+  const phoneInputRef = useRef(null);
 
+  // Fetch chit plans on mount
   useEffect(() => {
     const fetchChitPlans = async () => {
       try {
@@ -36,16 +40,106 @@ const ChitPlan = ({ onBack, onNavigate, userRole = 'admin' }) => {
     fetchChitPlans();
   }, []);
 
+  // Calculate end date when duration or start date changes
+  useEffect(() => {
+    if (formData.startDate && formData.duration && parseInt(formData.duration) > 0) {
+      const start = new Date(formData.startDate);
+      const months = parseInt(formData.duration);
+      const end = new Date(start);
+      end.setMonth(end.getMonth() + months);
+      setFormData(prev => ({
+        ...prev,
+        endDate: end.toISOString().split('T')[0]
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        endDate: ''
+      }));
+    }
+  }, [formData.startDate, formData.duration]);
+
+  // Close customer dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (customerDropdownRef.current && !customerDropdownRef.current.contains(event.target) && 
+          phoneInputRef.current && !phoneInputRef.current.contains(event.target)) {
+        setShowCustomerDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleBack = () => {
     if (onNavigate) {
-      onNavigate('chitPlanList');
+      onNavigate('chitPlan');
     } else if (onBack) {
       onBack();
     }
   };
 
+  // Search customers by phone number
+  const searchCustomers = async (searchTerm) => {
+    if (!searchTerm || searchTerm.trim().length < 2) {
+      setCustomerSuggestions([]);
+      setShowCustomerDropdown(false);
+      return;
+    }
+
+    try {
+      setIsLoadingCustomers(true);
+      const response = await customersAPI.search(searchTerm);
+      if (response.success) {
+        setCustomerSuggestions(response.customers || []);
+        setShowCustomerDropdown(true);
+      }
+    } catch (err) {
+      console.error('Error searching customers:', err);
+      setCustomerSuggestions([]);
+    } finally {
+      setIsLoadingCustomers(false);
+    }
+  };
+
+  // Handle customer selection from dropdown
+  const handleCustomerSelect = (customer) => {
+    setSelectedCustomer(customer);
+    setFormData(prev => ({
+      ...prev,
+      customerName: customer.full_name || '',
+      phone: customer.phone || ''
+    }));
+    setShowCustomerDropdown(false);
+    setCustomerSuggestions([]);
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Handle phone number input with customer search
+    if (name === 'phone') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        customerName: selectedCustomer && selectedCustomer.phone === value ? selectedCustomer.full_name : prev.customerName
+      }));
+      
+      // Reset selected customer if phone changes
+      if (selectedCustomer && selectedCustomer.phone !== value) {
+        setSelectedCustomer(null);
+      }
+      
+      // Search customers when phone number is entered
+      if (value.trim().length >= 2) {
+        searchCustomers(value);
+      } else {
+        setCustomerSuggestions([]);
+        setShowCustomerDropdown(false);
+      }
+      return;
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -71,7 +165,7 @@ const ChitPlan = ({ onBack, onNavigate, userRole = 'admin' }) => {
     setError('');
     setSuccessMessage('');
 
-    if (!formData.fullName || !formData.phone || !formData.chitPlanId) {
+    if (!formData.customerName || !formData.phone || !formData.chitPlanId || !formData.duration || !formData.startDate) {
       setError('Please fill in all required fields');
       setIsLoading(false);
       return;
@@ -81,7 +175,7 @@ const ChitPlan = ({ onBack, onNavigate, userRole = 'admin' }) => {
     
     setConfirmState({
       open: true,
-      message: `Create chit plan customer for ${formData.fullName}?`,
+      message: `Create chit plan for ${formData.customerName}?`,
       onConfirm: async () => {
         setIsLoading(true);
         setError('');
@@ -89,45 +183,40 @@ const ChitPlan = ({ onBack, onNavigate, userRole = 'admin' }) => {
 
         try {
           const response = await customersAPI.createChitPlanCustomer({
-            fullName: formData.fullName.trim(),
+            fullName: formData.customerName.trim(),
             phone: formData.phone.trim(),
-            address: formData.address.trim() || null,
-            city: formData.city.trim() || null,
-            state: formData.state.trim() || null,
-            pincode: formData.pincode.trim() || null,
-            whatsapp: formData.whatsapp.trim() || null,
             chitPlanId: parseInt(formData.chitPlanId),
-            duration: formData.duration.trim() || null,
+            duration: formData.duration.trim(),
+            startDate: formData.startDate,
+            endDate: formData.endDate,
             createdBy: createdBy
           });
 
           if (response.success) {
             setGeneratedChitNumber(response.chitNumber || '');
-            setSuccessMessage(`Customer created successfully! Chit Number: ${response.chitNumber || 'N/A'}`);
+            setSuccessMessage(`Chit plan created successfully! Chit ID: ${response.chitNumber || 'N/A'}`);
             setTimeout(() => {
               setFormData({
-                fullName: '',
-                phone: '',
-                address: '',
-                city: '',
-                state: '',
-                pincode: '',
-                whatsapp: '',
                 chitPlanId: '',
-                duration: ''
+                duration: '',
+                startDate: new Date().toISOString().split('T')[0],
+                endDate: '',
+                customerName: '',
+                phone: ''
               });
-            setGeneratedChitNumber('');
-            setSuccessMessage('');
-            if (onNavigate) {
-              onNavigate('chitPlanList');
-            }
+              setSelectedCustomer(null);
+              setGeneratedChitNumber('');
+              setSuccessMessage('');
+              if (onNavigate) {
+                onNavigate('chitPlanList');
+              }
             }, 3000);
           } else {
-            setError(response.error || 'Failed to create customer');
+            setError(response.error || 'Failed to create chit plan');
           }
         } catch (err) {
-          console.error('Create chit plan customer error:', err);
-          setError(err.message || 'Failed to create customer. Please try again.');
+          console.error('Create chit plan error:', err);
+          setError(err.message || 'Failed to create chit plan. Please try again.');
         } finally {
           setIsLoading(false);
           setConfirmState({ open: false, message: '', onConfirm: null });
@@ -176,127 +265,90 @@ const ChitPlan = ({ onBack, onNavigate, userRole = 'admin' }) => {
           )}
 
           <div className="form-section">
-            <div className="form-grid four-col">
-              {/* Row 1: Name, Phone, WhatsApp, Address */}
+            {/* First Row: Customer Name, Phone Number, Type, Duration */}
+            <div className="form-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: '4px' }}>
               <div className="form-group">
-                <label htmlFor="fullName">Customer Name *</label>
+                <label htmlFor="customerName">Customer Name *</label>
                 <div className="input-wrapper">
                   <i className="fas fa-user input-icon"></i>
                   <input
                     type="text"
-                    id="fullName"
-                    name="fullName"
+                    id="customerName"
+                    name="customerName"
                     className="form-input"
                     placeholder="Enter customer name"
-                    value={formData.fullName}
+                    value={formData.customerName}
                     onChange={handleInputChange}
                     required
-                    autoFocus
                   />
                 </div>
               </div>
 
-              <div className="form-group">
+              {/* Phone Number with Autocomplete */}
+              <div className="form-group" style={{ position: 'relative' }}>
                 <label htmlFor="phone">Phone Number *</label>
-                <div className="input-wrapper">
+                <div className="input-wrapper" ref={phoneInputRef}>
                   <i className="fas fa-phone input-icon"></i>
                   <input
                     type="tel"
                     id="phone"
                     name="phone"
                     className="form-input"
-                    placeholder="Enter phone number"
+                    placeholder="Type phone number to search"
                     value={formData.phone}
                     onChange={handleInputChange}
                     required
                   />
                 </div>
+                {showCustomerDropdown && customerSuggestions.length > 0 && (
+                  <div 
+                    ref={customerDropdownRef}
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      background: '#fff',
+                      border: '1px solid #e0e0e0',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      zIndex: 10000,
+                      maxHeight: '200px',
+                      overflowY: 'auto',
+                      marginTop: '4px'
+                    }}
+                  >
+                    {isLoadingCustomers ? (
+                      <div style={{ padding: '12px 16px', textAlign: 'center', color: '#666' }}>
+                        <i className="fas fa-spinner fa-spin"></i> Searching...
+                      </div>
+                    ) : (
+                      customerSuggestions.map((customer, index) => (
+                        <div
+                          key={index}
+                          onClick={() => handleCustomerSelect(customer)}
+                          style={{
+                            padding: '12px 16px',
+                            cursor: 'pointer',
+                            borderBottom: index < customerSuggestions.length - 1 ? '1px solid #f0f0f0' : 'none',
+                            background: selectedCustomer && selectedCustomer.phone === customer.phone ? '#f0f7ff' : '#fff',
+                            color: selectedCustomer && selectedCustomer.phone === customer.phone ? '#007bff' : '#333'
+                          }}
+                          onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
+                          onMouseLeave={(e) => e.target.style.background = selectedCustomer && selectedCustomer.phone === customer.phone ? '#f0f7ff' : '#fff'}
+                        >
+                          <div style={{ fontWeight: '600' }}>{customer.full_name}</div>
+                          <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>{customer.phone}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
 
+              {/* Chit Plan Type */}
               <div className="form-group">
-                <label htmlFor="whatsapp">WhatsApp Number</label>
-                <div className="input-wrapper">
-                  <i className="fab fa-whatsapp input-icon"></i>
-                  <input
-                    type="tel"
-                    id="whatsapp"
-                    name="whatsapp"
-                    className="form-input"
-                    placeholder="Enter WhatsApp number"
-                    value={formData.whatsapp}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="address">Address</label>
-                <div className="input-wrapper">
-                  <i className="fas fa-map-marker-alt input-icon"></i>
-                  <input
-                    type="text"
-                    id="address"
-                    name="address"
-                    className="form-input"
-                    placeholder="Enter address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
-
-              {/* Row 2: City, State, Pincode, Chit Plan */}
-              <div className="form-group">
-                <label htmlFor="city">City</label>
-                <div className="input-wrapper">
-                  <i className="fas fa-city input-icon"></i>
-                  <input
-                    type="text"
-                    id="city"
-                    name="city"
-                    className="form-input"
-                    placeholder="Enter city"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="state">State</label>
-                <div className="input-wrapper">
-                  <i className="fas fa-map input-icon"></i>
-                  <input
-                    type="text"
-                    id="state"
-                    name="state"
-                    className="form-input"
-                    placeholder="Enter state"
-                    value={formData.state}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="pincode">Pincode</label>
-                <div className="input-wrapper">
-                  <i className="fas fa-mail-bulk input-icon"></i>
-                  <input
-                    type="text"
-                    id="pincode"
-                    name="pincode"
-                    className="form-input"
-                    placeholder="Enter pincode"
-                    value={formData.pincode}
-                    onChange={handleInputChange}
-                    maxLength="10"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="chitPlanId">Chit Plan *</label>
+                <label htmlFor="chitPlanId">Type *</label>
                 <div className="input-wrapper">
                   <i className="fas fa-file-invoice-dollar input-icon"></i>
                   <select
@@ -306,7 +358,7 @@ const ChitPlan = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     value={formData.chitPlanId}
                     onChange={handleInputChange}
                     required
-                    style={{ paddingLeft: '30px', appearance: 'auto', cursor: 'pointer' }}
+                    style={{ paddingLeft: '50px', appearance: 'auto', cursor: 'pointer' }}
                   >
                     <option value="">Select Chit Plan</option>
                     {chitPlans.map((plan) => (
@@ -319,20 +371,64 @@ const ChitPlan = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 </div>
               </div>
 
-              {/* Row 3: Duration */}
+              {/* Duration (Predefined dropdown) */}
               <div className="form-group">
-                <label htmlFor="duration">Duration (Months)</label>
+                <label htmlFor="duration">Duration *</label>
                 <div className="input-wrapper">
                   <i className="fas fa-calendar-alt input-icon"></i>
-                  <input
-                    type="number"
+                  <select
                     id="duration"
                     name="duration"
                     className="form-input"
-                    placeholder="Enter duration in months"
                     value={formData.duration}
                     onChange={handleInputChange}
-                    min="1"
+                    required
+                    style={{ paddingLeft: '50px', appearance: 'auto', cursor: 'pointer' }}
+                  >
+                    <option value="">Select Duration</option>
+                    <option value="3">3 Months</option>
+                    <option value="4">4 Months</option>
+                    <option value="5">5 Months</option>
+                    <option value="6">6 Months</option>
+                    <option value="7">7 Months</option>
+                  </select>
+                  <i className="fas fa-chevron-down dropdown-icon"></i>
+                </div>
+              </div>
+            </div>
+
+            {/* Second Row: Start Date, End Date (same width as above fields) */}
+            <div className="form-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginTop: '0' }}>
+              <div className="form-group">
+                <label htmlFor="startDate">Start Date *</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-calendar input-icon"></i>
+                  <input
+                    type="date"
+                    id="startDate"
+                    name="startDate"
+                    className="form-input"
+                    value={formData.startDate}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* End Date (Auto-calculated) */}
+              <div className="form-group">
+                <label htmlFor="endDate">End Date</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-calendar-check input-icon"></i>
+                  <input
+                    type="date"
+                    id="endDate"
+                    name="endDate"
+                    className="form-input"
+                    value={formData.endDate}
+                    readOnly
+                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                    title="Automatically calculated based on start date and duration"
                   />
                 </div>
               </div>
@@ -343,19 +439,19 @@ const ChitPlan = ({ onBack, onNavigate, userRole = 'admin' }) => {
           <div className="form-actions" style={{ marginTop: '40px', paddingTop: '20px' }}>
             <button
               type="submit"
-              disabled={isLoading || !formData.fullName || !formData.phone || !formData.chitPlanId}
+              disabled={isLoading || !formData.customerName || !formData.phone || !formData.chitPlanId || !formData.duration || !formData.startDate}
               className="submit-btn"
               style={{
                 width: '200px',
                 margin: '0 auto',
                 padding: '12px 24px',
-                background: (isLoading || !formData.fullName || !formData.phone || !formData.chitPlanId) ? '#ccc' : '#dc3545',
+                background: (isLoading || !formData.customerName || !formData.phone || !formData.chitPlanId || !formData.duration || !formData.startDate) ? '#ccc' : '#dc3545',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '8px',
                 fontSize: '16px',
                 fontWeight: '600',
-                cursor: (isLoading || !formData.fullName || !formData.phone || !formData.chitPlanId) ? 'not-allowed' : 'pointer',
+                cursor: (isLoading || !formData.customerName || !formData.phone || !formData.chitPlanId || !formData.duration || !formData.startDate) ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -370,7 +466,7 @@ const ChitPlan = ({ onBack, onNavigate, userRole = 'admin' }) => {
               ) : (
                 <>
                   <i className="fas fa-user-plus"></i>
-                  Create Customer
+                  Create Chit Plan
                 </>
               )}
             </button>
@@ -382,4 +478,3 @@ const ChitPlan = ({ onBack, onNavigate, userRole = 'admin' }) => {
 };
 
 export default ChitPlan;
-

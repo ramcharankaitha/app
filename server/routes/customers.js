@@ -582,53 +582,64 @@ router.post('/chit-plan', async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    const { fullName, phone, address, city, state, pincode, whatsapp, chitPlanId, duration, createdBy } = req.body;
+    const { fullName, phone, address, city, state, pincode, whatsapp, chitPlanId, duration, startDate, endDate, createdBy } = req.body;
 
     if (!fullName || !phone || !chitPlanId) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Full name, phone, and chit plan are required' });
     }
 
-    // Check if phone number already exists
+    // Check if this phone number already has a chit plan (not just if customer exists)
     if (phone && phone.trim() !== '') {
-      const existingCustomer = await client.query(
-        'SELECT id, full_name FROM customers WHERE phone = $1 LIMIT 1',
+      const existingChitCustomer = await client.query(
+        'SELECT id, customer_name, chit_number FROM chit_customers WHERE phone = $1 LIMIT 1',
         [phone.trim()]
       );
       
-      if (existingCustomer.rows.length > 0) {
+      if (existingChitCustomer.rows.length > 0) {
         await client.query('ROLLBACK');
-        const existing = existingCustomer.rows[0];
+        const existing = existingChitCustomer.rows[0];
         return res.status(400).json({ 
-          error: `Mobile number already exists! This number is registered with customer: ${existing.full_name}` 
+          error: `This phone number already has a chit plan! Customer: ${existing.customer_name}, Chit Number: ${existing.chit_number || 'N/A'}` 
         });
       }
     }
 
-    // Create customer record
-    const customerResult = await client.query(
-      `INSERT INTO customers (full_name, email, phone, address, city, state, pincode, whatsapp, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       RETURNING *`,
-      [
-        fullName.trim(), 
-        null, // email
-        phone.trim(), 
-        address ? address.trim() : null,
-        city ? city.trim() : null,
-        state ? state.trim() : null,
-        pincode ? pincode.trim() : null,
-        whatsapp ? whatsapp.trim() : null,
-        createdBy || 'system'
-      ]
+    // Check if customer already exists, if not create one
+    let customer;
+    const existingCustomerCheck = await client.query(
+      'SELECT id, full_name, email, phone, address, city, state, pincode, whatsapp FROM customers WHERE phone = $1 LIMIT 1',
+      [phone.trim()]
     );
-
-    const customer = customerResult.rows[0];
+    
+    if (existingCustomerCheck.rows.length > 0) {
+      // Customer already exists, use existing customer
+      customer = existingCustomerCheck.rows[0];
+    } else {
+      // Create new customer record
+      const customerResult = await client.query(
+        `INSERT INTO customers (full_name, email, phone, address, city, state, pincode, whatsapp, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING *`,
+        [
+          fullName.trim(), 
+          null, // email
+          phone.trim(), 
+          address ? address.trim() : null,
+          city ? city.trim() : null,
+          state ? state.trim() : null,
+          pincode ? pincode.trim() : null,
+          whatsapp ? whatsapp.trim() : null,
+          createdBy || 'system'
+        ]
+      );
+      customer = customerResult.rows[0];
+    }
 
     // Generate unique chit number
     const chitNumber = await generateChitNumber();
 
-    // Ensure duration column exists
+    // Ensure duration, start_date, and end_date columns exist
     await client.query(`
       DO $$ 
       BEGIN
@@ -639,13 +650,29 @@ router.post('/chit-plan', async (req, res) => {
           ALTER TABLE chit_customers ADD COLUMN duration INTEGER;
           RAISE NOTICE 'Added duration column to chit_customers';
         END IF;
+        
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'chit_customers' AND column_name = 'start_date'
+        ) THEN
+          ALTER TABLE chit_customers ADD COLUMN start_date DATE;
+          RAISE NOTICE 'Added start_date column to chit_customers';
+        END IF;
+        
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'chit_customers' AND column_name = 'end_date'
+        ) THEN
+          ALTER TABLE chit_customers ADD COLUMN end_date DATE;
+          RAISE NOTICE 'Added end_date column to chit_customers';
+        END IF;
       END $$;
     `);
 
     // Create chit customer entry with chit number
     const chitCustomerResult = await client.query(
-      `INSERT INTO chit_customers (customer_name, phone, address, city, state, pincode, email, chit_plan_id, chit_number, duration, enrollment_date)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_DATE)
+      `INSERT INTO chit_customers (customer_name, phone, address, city, state, pincode, email, chit_plan_id, chit_number, duration, start_date, end_date, enrollment_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, COALESCE($11, CURRENT_DATE))
        RETURNING *`,
       [
         fullName.trim(),
@@ -657,7 +684,9 @@ router.post('/chit-plan', async (req, res) => {
         null, // email
         parseInt(chitPlanId),
         chitNumber,
-        duration ? parseInt(duration) : null
+        duration ? parseInt(duration) : null,
+        startDate || null,
+        endDate || null
       ]
     );
 
@@ -733,6 +762,8 @@ router.get('/chit-number/:chitNumber', async (req, res) => {
         chitPlanName: chitCustomer.plan_name,
         chitPlanAmount: chitCustomer.plan_amount,
         duration: chitCustomer.duration,
+        startDate: chitCustomer.start_date,
+        endDate: chitCustomer.end_date,
         enrollmentDate: chitCustomer.enrollment_date
       }
     });

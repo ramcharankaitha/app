@@ -503,6 +503,11 @@ export const transportAPI = {
     if (pincode && pincode.trim() !== '') params.append('pincode', pincode.trim());
     return apiCall(`/transport/by-address?${params.toString()}`);
   },
+  getCities: async (search = '') => {
+    const params = new URLSearchParams();
+    if (search && search.trim() !== '') params.append('search', search.trim());
+    return apiCall(`/transport/cities?${params.toString()}`);
+  },
   create: async (transportData) => {
     return apiCall('/transport', {
       method: 'POST',

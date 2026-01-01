@@ -14,7 +14,10 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     supplierName: '',
     category: '',
     mrp: '',
+    discount1: '',
+    discount2: '',
     sellRate: '',
+    purchaseRate: '',
     points: '',
     image: ''
   });
@@ -169,10 +172,133 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        [name]: value
+      };
+      
+      // Calculate based on what changed
+      return calculateRatesAndDiscounts(updated, name);
+    });
+  };
+
+  // Calculate rates and discounts automatically
+  const calculateRatesAndDiscounts = (data, changedField) => {
+    const updated = { ...data };
+    const mrp = parseFloat(data.mrp) || 0;
+    const discount1 = parseFloat(data.discount1) || 0;
+    const discount2 = parseFloat(data.discount2) || 0;
+    const sellRate = parseFloat(data.sellRate) || 0;
+    const purchaseRate = parseFloat(data.purchaseRate) || 0;
+    
+    // Track if we should calculate discount1 or sellRate
+    let shouldCalculateSellRate = false;
+    let shouldCalculateDiscount1 = false;
+    
+    // Track if we should calculate discount2 or purchaseRate
+    let shouldCalculatePurchaseRate = false;
+    let shouldCalculateDiscount2 = false;
+    
+    // Determine calculation direction based on what changed
+    if (changedField === 'mrp') {
+      // If MRP changed and discount1 exists, calculate sell rate
+      if (mrp > 0 && discount1 > 0) {
+        shouldCalculateSellRate = true;
+      }
+      // If MRP changed and sell rate exists, calculate discount1
+      else if (mrp > 0 && sellRate > 0) {
+        shouldCalculateDiscount1 = true;
+      }
+      
+      // If MRP changed and discount2 exists, calculate purchase rate
+      if (mrp > 0 && discount2 > 0) {
+        shouldCalculatePurchaseRate = true;
+      }
+      // If MRP changed and purchase rate exists, calculate discount2
+      else if (mrp > 0 && purchaseRate > 0) {
+        shouldCalculateDiscount2 = true;
+      }
+    } else if (changedField === 'discount1') {
+      // If discount1 changed and MRP exists, calculate sell rate
+      if (mrp > 0 && discount1 > 0) {
+        shouldCalculateSellRate = true;
+      }
+      // If discount1 is cleared, don't auto-calculate sell rate
+      else if (!data.discount1 || data.discount1 === '') {
+        // Keep sell rate as is (user might have entered it manually)
+      }
+    } else if (changedField === 'sellRate') {
+      // If sell rate changed and MRP exists, calculate discount1
+      if (mrp > 0 && sellRate > 0) {
+        shouldCalculateDiscount1 = true;
+      }
+    } else if (changedField === 'discount2') {
+      // If discount2 changed and MRP exists, calculate purchase rate
+      if (mrp > 0 && discount2 > 0) {
+        shouldCalculatePurchaseRate = true;
+      }
+      // If discount2 is cleared, don't auto-calculate purchase rate
+      else if (!data.discount2 || data.discount2 === '') {
+        // Keep purchase rate as is (user might have entered it manually)
+      }
+    } else if (changedField === 'purchaseRate') {
+      // If purchase rate changed and MRP exists, calculate discount2
+      if (mrp > 0 && purchaseRate > 0) {
+        shouldCalculateDiscount2 = true;
+      }
+    }
+    
+    // Calculate sell rate from discount1
+    if (shouldCalculateSellRate && mrp > 0 && discount1 > 0) {
+      const calculatedSellRate = mrp - (mrp * discount1 / 100);
+      updated.sellRate = calculatedSellRate.toFixed(2);
+    }
+    
+    // Calculate discount1 from sell rate
+    if (shouldCalculateDiscount1 && mrp > 0 && sellRate > 0) {
+      const calculatedDiscount1 = ((mrp - sellRate) / mrp) * 100;
+      if (calculatedDiscount1 >= 0 && calculatedDiscount1 <= 100) {
+        updated.discount1 = calculatedDiscount1.toFixed(2);
+      }
+    }
+    
+    // Calculate purchase rate from discount2
+    if (shouldCalculatePurchaseRate && mrp > 0 && discount2 > 0) {
+      const calculatedPurchaseRate = mrp - (mrp * discount2 / 100);
+      updated.purchaseRate = calculatedPurchaseRate.toFixed(2);
+    }
+    
+    // Calculate discount2 from purchase rate
+    if (shouldCalculateDiscount2 && mrp > 0 && purchaseRate > 0) {
+      const calculatedDiscount2 = ((mrp - purchaseRate) / mrp) * 100;
+      if (calculatedDiscount2 >= 0 && calculatedDiscount2 <= 100) {
+        updated.discount2 = calculatedDiscount2.toFixed(2);
+      }
+    }
+    
+    // Calculate points based on sell rate (sales amount)
+    // For every 1000 of sales/purchase, 0.5 points are given
+    const currentSellRate = parseFloat(updated.sellRate) || 0;
+    const currentPurchaseRate = parseFloat(updated.purchaseRate) || 0;
+    
+    // Priority: Use sell rate if available, otherwise use purchase rate
+    if (currentSellRate > 0 && (changedField === 'sellRate' || changedField === 'mrp' || changedField === 'discount1' || changedField === 'purchaseRate' || changedField === 'discount2')) {
+      const calculatedPoints = (currentSellRate / 1000) * 0.5;
+      updated.points = calculatedPoints.toFixed(2);
+    }
+    // If sell rate is not available, calculate from purchase rate
+    else if (currentSellRate === 0 && currentPurchaseRate > 0 && (changedField === 'purchaseRate' || changedField === 'mrp' || changedField === 'discount2')) {
+      const calculatedPoints = (currentPurchaseRate / 1000) * 0.5;
+      updated.points = calculatedPoints.toFixed(2);
+    }
+    // If both are cleared, clear points
+    else if (currentSellRate === 0 && currentPurchaseRate === 0 && (changedField === 'sellRate' || changedField === 'purchaseRate')) {
+      updated.points = '';
+    }
+    
+    return updated;
   };
 
   // Filter categories based on search term
@@ -272,7 +398,10 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
         supplierName: formData.supplierName?.trim() || null,
         category: formData.category?.trim() || null,
         mrp: parseNumericValue(formData.mrp),
+        discount1: parseNumericValue(formData.discount1),
+        discount2: parseNumericValue(formData.discount2),
         sellRate: parseNumericValue(formData.sellRate),
+        purchaseRate: parseNumericValue(formData.purchaseRate),
         points: formData.points ? parseInt(formData.points) : 0,
         imageUrl: formData.image?.trim() || null
       });
@@ -604,9 +733,9 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       </div>
                     </div>
 
-                    {/* 4. SKV (SKU Code) */}
+                    {/* 4. SKU Code */}
                     <div className="form-group">
-                      <label htmlFor="skuCode">SKV</label>
+                      <label htmlFor="skuCode">SKU Code</label>
                       <div className="input-wrapper">
                         <i className="fas fa-boxes input-icon"></i>
                         <input
@@ -657,22 +786,6 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       </div>
                     </div>
 
-                    {/* Supplier Name - kept for backward compatibility */}
-                    <div className="form-group">
-                      <label htmlFor="supplierName">Supplier Name</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-truck input-icon"></i>
-                        <input
-                          type="text"
-                          id="supplierName"
-                          name="supplierName"
-                          className="form-input"
-                          placeholder="Enter supplier name"
-                          value={formData.supplierName}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    </div>
 
                     {/* Row 4: Maintaining Quantity, Minimum Quantity, MRP */}
                     <div className="form-group">
@@ -709,6 +822,23 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       </div>
                     </div>
 
+                    {/* Supplier Name - moved after minimum quantity */}
+                    <div className="form-group">
+                      <label htmlFor="supplierName">Supplier Name</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-truck input-icon"></i>
+                        <input
+                          type="text"
+                          id="supplierName"
+                          name="supplierName"
+                          className="form-input"
+                          placeholder="Enter supplier name"
+                          value={formData.supplierName}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+
                     <div className="form-group">
                       <label htmlFor="mrp">MRP</label>
                       <div className="input-wrapper">
@@ -727,7 +857,45 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       </div>
                     </div>
 
-                    {/* Row 5: Sell Rate, Points, Upload Image Button */}
+                    {/* Discount 1 */}
+                    <div className="form-group">
+                      <label htmlFor="discount1">Discount 1</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-percent input-icon"></i>
+                        <input
+                          type="number"
+                          id="discount1"
+                          name="discount1"
+                          className="form-input"
+                          placeholder="Enter discount 1"
+                          value={formData.discount1}
+                          onChange={handleInputChange}
+                          min="0"
+                          step="0.01"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Discount 2 */}
+                    <div className="form-group">
+                      <label htmlFor="discount2">Discount 2</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-percent input-icon"></i>
+                        <input
+                          type="number"
+                          id="discount2"
+                          name="discount2"
+                          className="form-input"
+                          placeholder="Enter discount 2"
+                          value={formData.discount2}
+                          onChange={handleInputChange}
+                          min="0"
+                          step="0.01"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Row 5: Sell Rate, Purchase Rate, Points, Upload Image Button */}
                     <div className="form-group">
                       <label htmlFor="sellRate">Sell Rate</label>
                       <div className="input-wrapper">
@@ -746,6 +914,25 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       </div>
                     </div>
 
+                    {/* Purchase Rate */}
+                    <div className="form-group">
+                      <label htmlFor="purchaseRate">Purchase Rate</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-shopping-cart input-icon"></i>
+                        <input
+                          type="number"
+                          id="purchaseRate"
+                          name="purchaseRate"
+                          className="form-input"
+                          placeholder="Enter purchase rate"
+                          value={formData.purchaseRate}
+                          onChange={handleInputChange}
+                          min="0"
+                          step="0.01"
+                        />
+                      </div>
+                    </div>
+
                     <div className="form-group">
                       <label htmlFor="points">Points</label>
                       <div className="input-wrapper">
@@ -755,10 +942,14 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           id="points"
                           name="points"
                           className="form-input"
-                          placeholder="Enter points"
+                          placeholder="Auto-calculated (0.5 per ₹1000)"
                           value={formData.points}
                           onChange={handleInputChange}
                           min="0"
+                          step="0.01"
+                          readOnly
+                          style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                          title="Points are automatically calculated: 0.5 points for every ₹1000 of sales/purchase"
                         />
                       </div>
                     </div>
@@ -773,15 +964,23 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       }}>
                         <div className="upload-placeholder" style={{
                           cursor: 'pointer',
-                          padding: '12px',
+                          padding: '8px 12px',
                           border: '2px dashed #dc3545',
                           borderRadius: '8px',
                           textAlign: 'center',
                           background: '#fff',
-                          transition: 'all 0.3s ease'
+                          transition: 'all 0.3s ease',
+                          minHeight: '38px',
+                          height: '38px',
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          fontSize: '12px'
                         }}>
-                          <i className="fas fa-plus" style={{ marginRight: '8px' }}></i>
-                          <span>Tap to upload image</span>
+                          <i className="fas fa-plus" style={{ fontSize: '14px' }}></i>
+                          <span>Tap to upload</span>
                         </div>
                       </div>
                     </div>

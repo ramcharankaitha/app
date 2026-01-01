@@ -7,16 +7,18 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
     customer: '',
     phone: '',
     address: '',
+    area: '',
     city: '',
-    state: '',
-    pincode: '',
+    material: '',
+    packaging: '',
+    bookingToCity: '',
+    bookingCityNumber: '',
     transportName: '',
     transportPhone: '',
-    packaging: '',
+    estimatedDate: '',
     llrNumber: ''
   });
   const [llrFile, setLlrFile] = useState(null);
-  const [dispatchItems, setDispatchItems] = useState([]);
   const [matchingTransports, setMatchingTransports] = useState([]);
   const [isLoadingTransports, setIsLoadingTransports] = useState(false);
   const [customerSuggestions, setCustomerSuggestions] = useState([]);
@@ -25,6 +27,13 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const customerInputRef = useRef(null);
   const customerDropdownRef = useRef(null);
+  
+  // Booking city autocomplete states
+  const [citySuggestions, setCitySuggestions] = useState([]);
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
+  const [isLoadingCities, setIsLoadingCities] = useState(false);
+  const cityDropdownRef = useRef(null);
+  const cityInputRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -120,10 +129,92 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
       return;
     }
     
+    // Handle booking city search
+    if (name === 'bookingToCity') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        bookingCityNumber: '' // Clear booking city number when city changes
+      }));
+      
+      if (value.trim().length >= 1) {
+        setShowCityDropdown(true);
+        searchCities(value);
+      } else {
+        setShowCityDropdown(false);
+        setCitySuggestions([]);
+      }
+      
+      // If city is manually entered and not from dropdown, try to fetch phone number
+      if (value.trim().length > 0 && !citySuggestions.includes(value)) {
+        fetchBookingCityNumber(value);
+      }
+      return;
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+  };
+
+  // Search cities from transport master
+  const searchCities = async (searchTerm) => {
+    if (!searchTerm || searchTerm.trim().length < 1) {
+      setCitySuggestions([]);
+      return;
+    }
+
+    try {
+      setIsLoadingCities(true);
+      const response = await transportAPI.getCities(searchTerm);
+      if (response.success) {
+        setCitySuggestions(response.cities || []);
+      }
+    } catch (err) {
+      console.error('Error searching cities:', err);
+      setCitySuggestions([]);
+    } finally {
+      setIsLoadingCities(false);
+    }
+  };
+
+  // Fetch booking city number from transport master
+  const fetchBookingCityNumber = async (cityName) => {
+    try {
+      const response = await transportAPI.getByAddress(cityName, null, null);
+      if (response.success && response.transports && response.transports.length > 0) {
+        // Find the city in the addresses array and get its phone number
+        for (const transport of response.transports) {
+          if (transport.addresses && Array.isArray(transport.addresses)) {
+            const cityAddress = transport.addresses.find(addr => 
+              addr.city && addr.city.toLowerCase() === cityName.toLowerCase()
+            );
+            if (cityAddress && cityAddress.phoneNumber) {
+              setFormData(prev => ({
+                ...prev,
+                bookingCityNumber: cityAddress.phoneNumber
+              }));
+              return;
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching booking city number:', err);
+    }
+  };
+
+  // Handle city selection from dropdown
+  const handleCitySelect = (city) => {
+    setFormData(prev => ({
+      ...prev,
+      bookingToCity: city
+    }));
+    setShowCityDropdown(false);
+    setCitySuggestions([]);
+    // Fetch phone number for selected city
+    fetchBookingCityNumber(city);
   };
 
   // Search customers by name
@@ -153,25 +244,23 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
       phone: customer.phone || '',
       address: customer.address || '',
       city: customer.city || '',
-      state: customer.state || '',
-      pincode: customer.pincode || ''
+      area: customer.state || ''
     }));
     setShowCustomerDropdown(false);
     setCustomerSuggestions([]);
 
     // If address fields are available, immediately trigger transport fetch (don't wait for debounce)
-    if (customer.city || customer.state || customer.pincode) {
+    if (customer.city || customer.state) {
       try {
         setIsLoadingTransports(true);
         console.log('Auto-fetching transports for customer address:', { 
           city: customer.city, 
-          state: customer.state, 
-          pincode: customer.pincode 
+          state: customer.state
         });
         const transportResponse = await transportAPI.getByAddress(
           customer.city || null,
           customer.state || null,
-          customer.pincode || null
+          null
         );
         
         if (transportResponse.success) {
@@ -185,41 +274,9 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
       }
     }
 
-    // Fetch customer products
-    try {
-      console.log('Fetching products for customer:', customer.full_name);
-      const productsResponse = await customersAPI.getProducts(customer.full_name);
-      console.log('Products response:', productsResponse);
-      
-      if (productsResponse.success && productsResponse.products && productsResponse.products.length > 0) {
-        // Populate dispatch items with customer's products
-        // Include products that have either item_code or product_name
-        const productItems = productsResponse.products
-          .filter(p => p.item_code || p.product_name) // Include if has item_code OR product_name
-          .map((product, index) => ({
-            id: index + 1,
-            name: product.product_name || product.item_code || 'Unknown Product'
-          }));
-        
-        console.log('Populating dispatch items with products:', productItems);
-        
-        if (productItems.length > 0) {
-          setDispatchItems(productItems);
-        } else {
-          console.warn('No valid products found for customer');
-          setDispatchItems([]);
-        }
-      } else {
-        console.warn('No products returned for customer or response failed');
-        setDispatchItems([]);
-      }
-    } catch (err) {
-      console.error('Error fetching customer products:', err);
-      setDispatchItems([]);
-    }
   };
 
-  // Close customer dropdown when clicking outside
+  // Close customer and city dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -230,16 +287,25 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
       ) {
         setShowCustomerDropdown(false);
       }
+      
+      if (
+        cityInputRef.current && 
+        !cityInputRef.current.contains(event.target) &&
+        cityDropdownRef.current &&
+        !cityDropdownRef.current.contains(event.target)
+      ) {
+        setShowCityDropdown(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch matching transports when city, state, or pincode changes
+  // Fetch matching transports when city or area changes
   useEffect(() => {
     // Only fetch if at least one address field is provided
-    if (!formData.city && !formData.state && !formData.pincode) {
+    if (!formData.city && !formData.area) {
       setMatchingTransports([]);
       return;
     }
@@ -248,11 +314,11 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
     const timer = setTimeout(async () => {
       try {
         setIsLoadingTransports(true);
-        console.log('Fetching transports for:', { city: formData.city, state: formData.state, pincode: formData.pincode });
+        console.log('Fetching transports for:', { city: formData.city, area: formData.area });
         const response = await transportAPI.getByAddress(
           formData.city || null,
-          formData.state || null,
-          formData.pincode || null
+          formData.area || null,
+          null
         );
         
         console.log('Transport API response:', response);
@@ -269,28 +335,7 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
     }, 500); // 500ms debounce
 
     return () => clearTimeout(timer);
-  }, [formData.city, formData.state, formData.pincode]);
-
-  const handleItemChange = (id, value) => {
-    setDispatchItems(prev => 
-      prev.map(item => 
-        item.id === id ? { ...item, name: value } : item
-      )
-    );
-  };
-
-  const addDispatchItem = () => {
-    const newId = dispatchItems.length > 0 
-      ? Math.max(...dispatchItems.map(item => item.id)) + 1 
-      : 1;
-    setDispatchItems(prev => [...prev, { id: newId, name: '' }]);
-  };
-
-  const removeDispatchItem = (id) => {
-    if (dispatchItems.length > 1) {
-      setDispatchItems(prev => prev.filter(item => item.id !== id));
-    }
-  };
+  }, [formData.city, formData.area]);
 
   const submitDispatch = async () => {
     setIsLoading(true);
@@ -298,58 +343,53 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
     setSuccessMessage('');
 
     try {
-      // Filter out empty items
-      const validItems = dispatchItems.filter(item => item.name.trim() !== '');
-      
-      if (validItems.length === 0) {
-        setError('Please add at least one product to dispatch.');
+      if (!formData.customer || !formData.customer.trim()) {
+        setError('Please enter a customer name.');
         setIsLoading(false);
         return;
       }
 
-      // Create a dispatch record for each item
-      const promises = validItems.map(item => {
-        const dispatchData = {
-          customer: formData.customer,
-          name: item.name,
-          phone: formData.phone,
-          address: formData.address,
-          city: formData.city,
-          state: formData.state,
-          pincode: formData.pincode,
-          transportName: formData.transportName,
-          transportPhone: formData.transportPhone,
-          packaging: formData.packaging,
-          llrNumber: formData.llrNumber
-        };
-        
-        // If file exists, send with FormData, otherwise send as JSON
-        if (llrFile) {
-          const itemFormData = new FormData();
-          Object.keys(dispatchData).forEach(key => {
-            itemFormData.append(key, dispatchData[key]);
-          });
-          itemFormData.append('llrCopy', llrFile);
-          return dispatchAPI.createWithFile(itemFormData);
-        } else {
-          return dispatchAPI.create(dispatchData);
-        }
-      });
+      const dispatchData = {
+        customer: formData.customer,
+        name: formData.customer, // Use customer name as the name field
+        phone: formData.phone,
+        address: formData.address,
+        area: formData.area,
+        city: formData.city,
+        material: formData.material,
+        packaging: formData.packaging,
+        bookingToCity: formData.bookingToCity,
+        bookingCityNumber: formData.bookingCityNumber,
+        transportName: formData.transportName,
+        transportPhone: formData.transportPhone,
+        estimatedDate: formData.estimatedDate,
+        llrNumber: formData.llrNumber
+      };
+      
+      // If file exists, send with FormData, otherwise send as JSON
+      let response;
+      if (llrFile) {
+        const itemFormData = new FormData();
+        Object.keys(dispatchData).forEach(key => {
+          itemFormData.append(key, dispatchData[key]);
+        });
+        itemFormData.append('llrCopy', llrFile);
+        response = await dispatchAPI.createWithFile(itemFormData);
+      } else {
+        response = await dispatchAPI.create(dispatchData);
+      }
 
-      const results = await Promise.all(promises);
-      const allSuccess = results.every(result => result.success);
-
-      if (allSuccess) {
-        setSuccessMessage('Save changes are done');
+      if (response.success) {
+        setSuccessMessage('Dispatch record created successfully');
         setTimeout(() => {
           setSuccessMessage('');
           handleCancel();
         }, 2000);
       } else {
-        setError('Some dispatch records failed to create. Please try again.');
+        setError(response.error || 'Failed to create dispatch record. Please try again.');
       }
     } catch (err) {
-      setError(err.message || 'Failed to create dispatch records. Please try again.');
+      setError(err.message || 'Failed to create dispatch record. Please try again.');
       console.error('Create dispatch error:', err);
     } finally {
       setIsLoading(false);
@@ -427,9 +467,9 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                 {/* All fields in 3-column grid without section titles */}
                 <div className="form-section">
                   <div className="form-grid four-col">
-                    {/* Row 1: Name, Customer Phone Number, Transport Phone Number, Street */}
+                    {/* Row 1: Customer Name, Customer Phone Number, Street, Area */}
                       <div className="form-group" style={{ position: 'relative' }}>
-                      <label htmlFor="customer">Name</label>
+                      <label htmlFor="customer">Customer Name</label>
                         <div className="input-wrapper" ref={customerInputRef}>
                           <i className="fas fa-user input-icon"></i>
                           <input
@@ -529,22 +569,6 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                         </div>
                       </div>
 
-                      <div className="form-group">
-                      <label htmlFor="transportPhone">Transport Phone Number</label>
-                        <div className="input-wrapper">
-                        <i className="fas fa-phone input-icon"></i>
-                          <input
-                          type="tel"
-                          id="transportPhone"
-                          name="transportPhone"
-                            className="form-input"
-                          placeholder="Enter transport phone number"
-                          value={formData.transportPhone}
-                            onChange={handleInputChange}
-                          />
-                  </div>
-                </div>
-
                     <div className="form-group">
                       <label htmlFor="address">Street</label>
                       <div className="input-wrapper">
@@ -561,7 +585,23 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                       </div>
                     </div>
 
-                    {/* Row 2: City, State, Pincode, Transport Name */}
+                    <div className="form-group">
+                      <label htmlFor="area">Area</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-map input-icon"></i>
+                        <input
+                          type="text"
+                          id="area"
+                          name="area"
+                          className="form-input"
+                          placeholder="Enter area"
+                          value={formData.area}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Row 2: City, Material, Packaging, Booking to City */}
                     <div className="form-group">
                       <label htmlFor="city">City</label>
                       <div className="input-wrapper">
@@ -579,38 +619,106 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="state">State</label>
+                      <label htmlFor="material">Material</label>
                       <div className="input-wrapper">
-                        <i className="fas fa-map input-icon"></i>
+                        <i className="fas fa-box input-icon"></i>
                         <input
                           type="text"
-                          id="state"
-                          name="state"
+                          id="material"
+                          name="material"
                           className="form-input"
-                          placeholder="Enter state"
-                          value={formData.state}
+                          placeholder="Enter material"
+                          value={formData.material}
                           onChange={handleInputChange}
                         />
                       </div>
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="pincode">Pincode</label>
+                      <label htmlFor="packaging">Packaging</label>
                       <div className="input-wrapper">
-                        <i className="fas fa-mail-bulk input-icon"></i>
+                        <i className="fas fa-archive input-icon"></i>
                         <input
                           type="text"
-                          id="pincode"
-                          name="pincode"
+                          id="packaging"
+                          name="packaging"
                           className="form-input"
-                          placeholder="Enter pincode"
-                          value={formData.pincode}
+                          placeholder="Enter packaging"
+                          value={formData.packaging}
                           onChange={handleInputChange}
-                          maxLength="10"
                         />
-                  </div>
-                </div>
+                      </div>
+                    </div>
 
+                    <div className="form-group" style={{ position: 'relative' }}>
+                      <label htmlFor="bookingToCity">Booking to City</label>
+                      <div className="input-wrapper" ref={cityInputRef}>
+                        <i className="fas fa-city input-icon"></i>
+                        <input
+                          type="text"
+                          id="bookingToCity"
+                          name="bookingToCity"
+                          className="form-input"
+                          placeholder="Enter or select city"
+                          value={formData.bookingToCity}
+                          onChange={handleInputChange}
+                          onFocus={() => {
+                            if (formData.bookingToCity.trim().length >= 1) {
+                              setShowCityDropdown(true);
+                            }
+                          }}
+                        />
+                        {isLoadingCities && (
+                          <div style={{ 
+                            position: 'absolute', 
+                            right: '10px', 
+                            top: '50%', 
+                            transform: 'translateY(-50%)',
+                            color: '#999'
+                          }}>
+                            <i className="fas fa-spinner fa-spin"></i>
+                          </div>
+                        )}
+                      </div>
+                      {showCityDropdown && citySuggestions.length > 0 && (
+                        <div 
+                          ref={cityDropdownRef}
+                          style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            right: 0,
+                            backgroundColor: '#fff',
+                            border: '1px solid #ddd',
+                            borderRadius: '8px',
+                            marginTop: '4px',
+                            maxHeight: '200px',
+                            overflowY: 'auto',
+                            zIndex: 1000,
+                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                          }}
+                        >
+                          {citySuggestions.map((city, index) => (
+                            <div
+                              key={index}
+                              onClick={() => handleCitySelect(city)}
+                              style={{
+                                padding: '12px 16px',
+                                cursor: 'pointer',
+                                borderBottom: index < citySuggestions.length - 1 ? '1px solid #eee' : 'none',
+                                transition: 'background-color 0.2s'
+                              }}
+                              onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                              onMouseLeave={(e) => e.target.style.backgroundColor = '#fff'}
+                            >
+                              {city}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Row 3: Transport Name, Transport Contact Number, Estimated Date, LR Number */}
                     <div className="form-group">
                       <label htmlFor="transportName">Transport Name</label>
                       <div className="input-wrapper" style={{ position: 'relative' }}>
@@ -676,9 +784,40 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                         )}
                     </div>
 
-                    {/* Row 3: LLR Number, Packaging, Products to Dispatch */}
                     <div className="form-group">
-                      <label htmlFor="llrNumber">LLR Number</label>
+                      <label htmlFor="transportPhone">Transport Contact Number</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-phone input-icon"></i>
+                        <input
+                          type="tel"
+                          id="transportPhone"
+                          name="transportPhone"
+                          className="form-input"
+                          placeholder="Enter transport contact number"
+                          value={formData.transportPhone}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="estimatedDate">Estimated Date</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-calendar-alt input-icon"></i>
+                        <input
+                          type="date"
+                          id="estimatedDate"
+                          name="estimatedDate"
+                          className="form-input"
+                          placeholder="Select estimated date"
+                          value={formData.estimatedDate}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="llrNumber">LR Number</label>
                       <div className="input-wrapper" style={{ position: 'relative' }}>
                         <i className="fas fa-file-alt input-icon"></i>
                         <input
@@ -686,7 +825,7 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                           id="llrNumber"
                           name="llrNumber"
                           className="form-input"
-                          placeholder="Enter LLR number"
+                          placeholder="Enter LR number"
                           value={formData.llrNumber}
                           onChange={handleInputChange}
                           style={{ paddingRight: '50px' }}
@@ -762,166 +901,6 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                       )}
                     </div>
 
-                    <div className="form-group">
-                      <label htmlFor="packaging">Packaging</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-box-open input-icon"></i>
-                        <input
-                          type="text"
-                          id="packaging"
-                          name="packaging"
-                          className="form-input"
-                          placeholder="Enter packaging details"
-                          value={formData.packaging}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Products to Dispatch - Spans remaining 2 columns in row 3 */}
-                    <div className="form-group" style={{ gridColumn: '3 / -1', marginBottom: '30px' }}>
-                      <label>Products to Dispatch</label>
-                      {/* Input field to add new product */}
-                      <div className="input-wrapper" style={{ marginBottom: '12px' }}>
-                        <i className="fas fa-box input-icon"></i>
-                        <input
-                          type="text"
-                          className="form-input"
-                          placeholder="Enter product name and press Enter..."
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              const value = e.target.value.trim();
-                              if (value) {
-                                const newId = dispatchItems.length > 0 
-                                  ? Math.max(...dispatchItems.map(item => item.id)) + 1 
-                                  : 1;
-                                setDispatchItems(prev => [...prev, { id: newId, name: value }]);
-                                e.target.value = '';
-                              }
-                            }
-                          }}
-                        />
-                      </div>
-                      {/* Display Added Products - 4 Column Grid */}
-                      {(() => {
-                        const validItems = dispatchItems.filter(item => item.name && item.name.trim() !== '');
-                        return validItems.length > 0 ? (
-                          <div style={{ 
-                            marginTop: '12px',
-                            maxHeight: '140px', // Reduced height to prevent overlap
-                            overflowY: 'auto',
-                            overflowX: 'hidden',
-                            padding: '12px',
-                            border: '1px solid #dee2e6',
-                            borderRadius: '8px',
-                            background: '#fff',
-                            position: 'relative',
-                            zIndex: 1,
-                            marginBottom: '0'
-                          }}>
-                            <div style={{
-                              display: 'grid',
-                              gridTemplateColumns: 'repeat(4, 1fr)',
-                              gap: '12px',
-                              width: '100%',
-                              minHeight: 'min-content'
-                            }}>
-                              {validItems.map((item, index) => (
-                                <div
-                                  key={item.id}
-                                  style={{
-                                    padding: '14px',
-                                    background: '#f8f9fa',
-                                    border: '1px solid #dee2e6',
-                                    borderRadius: '8px',
-                                    position: 'relative',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '10px',
-                                    transition: 'all 0.2s ease',
-                                    minHeight: '100px',
-                                    boxSizing: 'border-box'
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = '#e9ecef';
-                                    e.currentTarget.style.borderColor = '#dc3545';
-                                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(220, 53, 69, 0.15)';
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = '#f8f9fa';
-                                    e.currentTarget.style.borderColor = '#dee2e6';
-                                    e.currentTarget.style.boxShadow = 'none';
-                                  }}
-                                >
-                                  <div style={{ 
-                                    display: 'flex', 
-                                    justifyContent: 'space-between', 
-                                    alignItems: 'flex-start',
-                                    marginBottom: '4px'
-                                  }}>
-                                    <span style={{ 
-                                      fontSize: '11px', 
-                                      fontWeight: '600', 
-                                      color: '#dc3545',
-                                      background: '#fff',
-                                      padding: '4px 10px',
-                                      borderRadius: '4px',
-                                      border: '1px solid #dc3545'
-                                    }}>
-                                      #{index + 1}
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={() => removeDispatchItem(item.id)}
-                                      style={{
-                                        background: '#dc3545',
-                                        color: '#fff',
-                                        border: 'none',
-                                        borderRadius: '50%',
-                                        width: '26px',
-                                        height: '26px',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: '11px',
-                                        padding: 0,
-                                        transition: 'all 0.2s ease',
-                                        flexShrink: 0
-                                      }}
-                                      onMouseEnter={(e) => {
-                                        e.target.style.background = '#c82333';
-                                        e.target.style.transform = 'scale(1.15)';
-                                      }}
-                                      onMouseLeave={(e) => {
-                                        e.target.style.background = '#dc3545';
-                                        e.target.style.transform = 'scale(1)';
-                                      }}
-                                      title="Remove this product"
-                                    >
-                                      <i className="fas fa-times"></i>
-                                    </button>
-                                  </div>
-                                  <div style={{ 
-                                    fontSize: '13px', 
-                                    fontWeight: '500', 
-                                    color: '#333',
-                                    wordBreak: 'break-word',
-                                    lineHeight: '1.5',
-                                    flex: 1,
-                                    display: 'flex',
-                                    alignItems: 'center'
-                                  }}>
-                                    {item.name}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ) : null;
-                      })()}
-                    </div>
                   </div>
                 </div>
 
