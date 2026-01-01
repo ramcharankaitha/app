@@ -222,12 +222,16 @@
     overflow: visible;
     margin-top: 20px;
     padding-top: 0;
+    align-items: start;
+    align-content: start;
 }
 
 /* Three column grid for forms with many fields */
 .form-grid.three-col {
     grid-template-columns: repeat(3, 1fr);
     gap: 10px 12px;
+    align-items: start;
+    align-content: start;
 }
 
 /* Four column grid for forms with many fields */
@@ -564,6 +568,20 @@
     position: relative;
     overflow: visible;
     padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    min-height: fit-content;
+    height: auto;
+}
+
+/* Ensure all form-groups in the same row have identical structure */
+.form-grid > .form-group {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
 }
 
 .form-group label {
@@ -571,17 +589,22 @@
     font-size: 11px;
     font-weight: 600;
     color: var(--text-primary);
-    margin-bottom: 4px;
+    margin: 0 0 4px 0;
+    padding: 0;
     text-transform: capitalize;
     letter-spacing: 0.2px;
     transition: color 0.3s ease;
     line-height: 1.2;
+    height: 16px;
+    min-height: 16px;
+    max-height: 16px;
+    flex-shrink: 0;
 }
 
 .form-input {
     width: 100%;
-    padding: 7px 10px;
-    border: 2px solid var(--input-border);
+    padding: 8px 12px;
+    border: 2px solid #e0e0e0;
     border-radius: 5px;
     background: var(--input-bg);
     font-size: 12px;
@@ -592,6 +615,10 @@
     box-sizing: border-box;
     line-height: 1.5;
     text-indent: 0;
+    min-height: 38px;
+    height: 38px;
+    margin: 0;
+    flex-shrink: 0;
 }
 
 .form-input:hover {
@@ -600,10 +627,10 @@
 }
 
 .form-input:focus {
-    border-color: var(--input-focus-border);
+    border-color: #e0e0e0;
     background: var(--input-bg);
-    box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.1);
-    transform: translateY(-1px);
+    box-shadow: none;
+    transform: none;
 }
 
 .form-input::placeholder {
@@ -625,6 +652,11 @@
     position: relative;
     display: flex;
     align-items: center;
+    width: 100%;
+    min-height: 38px;
+    height: 38px;
+    margin: 0;
+    flex-shrink: 0;
 }
 
 .input-icon {
@@ -653,12 +685,92 @@
     padding: 8px 12px 8px 50px !important;
     text-indent: 0;
     background: var(--input-bg) !important;
+    border: 2px solid #e0e0e0 !important;
+    min-height: 38px;
+    height: 38px;
+    margin: 0;
+}
+
+.input-wrapper .form-input:hover {
+    border-color: #e0e0e0 !important;
+}
+
+.input-wrapper .form-input:focus {
+    border-color: #e0e0e0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+/* First field in forms without input-wrapper - align text with other fields */
+/* Give it same left padding as fields with icons so text aligns properly */
+/* Target direct child form-input in first form-group (not inside input-wrapper) */
+.add-user-form .form-section .form-grid > .form-group:first-child > .form-input,
+.add-user-form .form-grid > .form-group:first-child > .form-input,
+.add-customer-form .form-section .form-grid > .form-group:first-child > .form-input,
+.add-customer-form .form-grid > .form-group:first-child > .form-input,
+.form-section .form-grid > .form-group:first-child > .form-input,
+form.add-user-form .form-grid > .form-group:first-child > .form-input {
+    padding: 8px 12px 8px 50px !important;
+    text-indent: 0;
+    background: var(--input-bg) !important;
+    border: 2px solid #e0e0e0 !important;
+    min-height: 38px;
+    height: 38px;
+    margin: 0;
+}
+
+.add-user-form .form-section .form-grid > .form-group:first-child > .form-input:focus,
+.add-user-form .form-grid > .form-group:first-child > .form-input:focus,
+.add-customer-form .form-section .form-grid > .form-group:first-child > .form-input:focus,
+.add-customer-form .form-grid > .form-group:first-child > .form-input:focus,
+.form-section .form-grid > .form-group:first-child > .form-input:focus,
+form.add-user-form .form-grid > .form-group:first-child > .form-input:focus {
+    border-color: #e0e0e0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+/* Move first field (Supervisor Name) up to align with other fields */
+.add-user-form .form-section .form-grid > .form-group:first-child,
+.add-user-form .form-grid > .form-group:first-child,
+.add-customer-form .form-section .form-grid > .form-group:first-child,
+.add-customer-form .form-grid > .form-group:first-child,
+.form-section .form-grid > .form-group:first-child,
+form.add-user-form .form-grid > .form-group:first-child {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    transform: translateY(-2px);
+}
+
+.add-user-form .form-section .form-grid > .form-group:first-child > label,
+.add-user-form .form-grid > .form-group:first-child > label,
+.add-customer-form .form-section .form-grid > .form-group:first-child > label,
+.add-customer-form .form-grid > .form-group:first-child > label,
+.form-section .form-grid > .form-group:first-child > label,
+form.add-user-form .form-grid > .form-group:first-child > label {
+    margin-top: 0 !important;
+    margin-bottom: 4px !important;
+    padding-top: 0 !important;
+    line-height: 1.2 !important;
+}
+
+/* Ensure this doesn't override fields inside input-wrapper */
+.add-user-form .form-section .form-grid > .form-group:first-child > .input-wrapper .form-input,
+.add-user-form .form-grid > .form-group:first-child > .input-wrapper .form-input {
+    padding: 8px 12px 8px 50px !important;
 }
 
 /* Password field needs extra right padding for toggle button */
 .input-wrapper.password-wrapper .form-input {
     padding: 8px 44px 8px 50px !important;
     background: var(--input-bg) !important;
+    border: 2px solid #e0e0e0 !important;
+}
+
+.input-wrapper.password-wrapper .form-input:focus {
+    border-color: #e0e0e0 !important;
+    box-shadow: none !important;
+    transform: none !important;
 }
 
 .input-wrapper select.form-input {
@@ -666,6 +778,13 @@
     appearance: none;
     cursor: pointer;
     background: var(--input-bg) !important;
+    border: 2px solid #e0e0e0 !important;
+}
+
+.input-wrapper select.form-input:focus {
+    border-color: #e0e0e0 !important;
+    box-shadow: none !important;
+    transform: none !important;
 }
 
 .dropdown-icon {
@@ -886,6 +1005,23 @@
     .input-wrapper.password-wrapper .form-input {
         padding: 7px 40px 7px 46px !important;
         background: var(--input-bg) !important;
+    }
+
+    /* First field without input-wrapper - match mobile padding for alignment */
+    .add-user-form .form-section .form-grid > .form-group:first-child > .form-input,
+    .add-user-form .form-grid > .form-group:first-child > .form-input,
+    .add-customer-form .form-section .form-grid > .form-group:first-child > .form-input,
+    .add-customer-form .form-grid > .form-group:first-child > .form-input,
+    .form-section .form-grid > .form-group:first-child > .form-input,
+    form.add-user-form .form-grid > .form-group:first-child > .form-input {
+        padding: 7px 10px 7px 46px !important;
+        background: var(--input-bg) !important;
+    }
+
+    /* Ensure this doesn't override fields inside input-wrapper on mobile */
+    .add-user-form .form-section .form-grid > .form-group:first-child > .input-wrapper .form-input,
+    .add-user-form .form-grid > .form-group:first-child > .input-wrapper .form-input {
+        padding: 7px 10px 7px 46px !important;
     }
 
     .input-icon {
