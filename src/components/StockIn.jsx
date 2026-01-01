@@ -5,13 +5,14 @@ import ConfirmDialog from './ConfirmDialog';
 const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
     supplierName: '',
-    category: '',
     itemCode: '',
     productName: '',
     skuCode: '',
-    modelNumber: '',
     quantity: '', // Current stock in store (display only)
     stockInQuantity: '', // New quantity to add
+    minQuantity: '', // Minimum quantity from product
+    mrp: '', // MRP from product
+    totalAfterAdding: '', // Calculated total
     notes: ''
   });
   const [productInfo, setProductInfo] = useState(null);
@@ -55,15 +56,28 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
       setProductInfo(null);
       setFormData(prev => ({
         ...prev,
-        category: '',
         productName: '',
         skuCode: '',
-        modelNumber: '',
         quantity: '',
-        stockInQuantity: ''
+        stockInQuantity: '',
+        minQuantity: '',
+        mrp: '',
+        totalAfterAdding: ''
       }));
       setError('');
       setSuccessMessage('');
+    }
+
+    // Calculate total after adding when stockInQuantity changes
+    if (name === 'stockInQuantity') {
+      const currentQty = parseInt(formData.quantity) || 0;
+      const newQty = parseInt(value) || 0;
+      const total = currentQty + newQty;
+      setFormData(prev => ({
+        ...prev,
+        stockInQuantity: value,
+        totalAfterAdding: total.toString()
+      }));
     }
   };
 
@@ -90,11 +104,13 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
       id: Date.now(),
       itemCode: formData.itemCode.trim(),
       productName: formData.productName,
-      category: formData.category,
       skuCode: formData.skuCode,
-      modelNumber: formData.modelNumber,
+      supplierName: formData.supplierName,
       currentQuantity: parseInt(formData.quantity) || 0,
       stockInQuantity: parseInt(formData.stockInQuantity),
+      totalAfterAdding: parseInt(formData.totalAfterAdding) || 0,
+      mrp: parseFloat(formData.mrp) || 0,
+      amount: (parseInt(formData.stockInQuantity) || 0) * (parseFloat(formData.mrp) || 0),
       productInfo: productInfo
     };
 
@@ -104,12 +120,13 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
     setFormData(prev => ({
       ...prev,
       itemCode: '',
-      category: '',
       productName: '',
       skuCode: '',
-      modelNumber: '',
       quantity: '',
-      stockInQuantity: ''
+      stockInQuantity: '',
+      minQuantity: '',
+      mrp: '',
+      totalAfterAdding: ''
     }));
     setProductInfo(null);
     setError('');
@@ -155,19 +172,24 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
           itemCode: product.item_code || product.itemCode || '',
           skuCode: product.sku_code || product.skuCode || '',
           currentQuantity: product.current_quantity || 0,
-          category: product.category || '',
-          modelNumber: product.model_number || product.modelNumber || ''
+          minQuantity: product.min_quantity || product.minQuantity || 0,
+          mrp: product.mrp || 0
         };
         setProductInfo(productData);
         
         // Auto-populate form fields
+        const currentQty = productData.currentQuantity;
+        const stockInQty = parseInt(formData.stockInQuantity) || 0;
+        const totalAfter = currentQty + stockInQty;
+        
         setFormData(prev => ({
           ...prev,
-          category: productData.category || '',
           productName: productData.productName,
           skuCode: productData.skuCode || '',
-          modelNumber: productData.modelNumber || '',
-          quantity: productData.currentQuantity.toString()
+          quantity: currentQty.toString(),
+          minQuantity: productData.minQuantity.toString(),
+          mrp: productData.mrp.toString(),
+          totalAfterAdding: totalAfter.toString()
         }));
         
         setSuccessMessage('');
@@ -220,13 +242,14 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
             // Reset form
             setFormData({
               supplierName: '',
-              category: '',
               itemCode: '',
               productName: '',
               skuCode: '',
-              modelNumber: '',
               quantity: '',
               stockInQuantity: '',
+              minQuantity: '',
+              mrp: '',
+              totalAfterAdding: '',
               notes: ''
             });
             setProductInfo(null);
@@ -270,10 +293,10 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
       {/* Main Content */}
       <main className="add-user-content">
         <form onSubmit={handleSubmit} className="add-user-form add-stock-in-form">
-          {/* All fields in 4-column grid without section titles */}
+          {/* Form Fields */}
           <div className="form-section">
+            {/* First Row: Item Code, SKU Code, Product Name, Supplier Name */}
             <div className="form-grid four-col">
-              {/* Row 1: Item Code, Category, Product Name */}
               <div className="form-group">
                 <label htmlFor="itemCode">Item Code *</label>
                 <div className="input-wrapper" style={{ position: 'relative' }}>
@@ -333,16 +356,16 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="category">Category</label>
+                <label htmlFor="skuCode">SKU Code</label>
                 <div className="input-wrapper">
-                  <i className="fas fa-tags input-icon"></i>
+                  <i className="fas fa-boxes input-icon"></i>
                   <input
                     type="text"
-                    id="category"
-                    name="category"
+                    id="skuCode"
+                    name="skuCode"
                     className="form-input"
-                    placeholder="Category"
-                    value={formData.category}
+                    placeholder="SKU Code"
+                    value={formData.skuCode}
                     readOnly
                     style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
                   />
@@ -366,18 +389,56 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 </div>
               </div>
 
-              {/* Row 2: SKV Code, Model Number, Quantity in the Store */}
               <div className="form-group">
-                <label htmlFor="skuCode">SKV Code</label>
+                <label htmlFor="supplierName">Supplier Name</label>
                 <div className="input-wrapper">
-                  <i className="fas fa-boxes input-icon"></i>
+                  <i className="fas fa-truck input-icon"></i>
                   <input
                     type="text"
-                    id="skuCode"
-                    name="skuCode"
+                    id="supplierName"
+                    name="supplierName"
                     className="form-input"
-                    placeholder="SKV Code"
-                    value={formData.skuCode}
+                    placeholder="Enter supplier name"
+                    value={formData.supplierName}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Second Row: Quantity to Add, Min Quantity, Current Stock, MRP */}
+            <div className="form-grid four-col" style={{ marginTop: '12px' }}>
+              <div className="form-group">
+                <label htmlFor="stockInQuantity">Quantity to Add *</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-plus-circle input-icon"></i>
+                  <input
+                    type="number"
+                    id="stockInQuantity"
+                    name="stockInQuantity"
+                    className="form-input"
+                    placeholder="Enter quantity to add"
+                    value={formData.stockInQuantity}
+                    onChange={handleInputChange}
+                    min="1"
+                    step="1"
+                    disabled={!productInfo}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="minQuantity">Min Quantity</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-exclamation-triangle input-icon"></i>
+                  <input
+                    type="number"
+                    id="minQuantity"
+                    name="minQuantity"
+                    className="form-input"
+                    placeholder="Min Quantity"
+                    value={formData.minQuantity}
                     readOnly
                     style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
                   />
@@ -385,24 +446,7 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="modelNumber">Model Number</label>
-                <div className="input-wrapper">
-                  <i className="fas fa-tag input-icon"></i>
-                  <input
-                    type="text"
-                    id="modelNumber"
-                    name="modelNumber"
-                    className="form-input"
-                    placeholder="Model Number"
-                    value={formData.modelNumber}
-                    readOnly
-                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="quantity">Quantity in the Store</label>
+                <label htmlFor="quantity">Current Stock</label>
                 <div className="input-wrapper">
                   <i className="fas fa-warehouse input-icon"></i>
                   <input
@@ -423,22 +467,44 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 </div>
               </div>
 
-              {/* Row 3: Stock In Quantity, Add Product Button */}
               <div className="form-group">
-                <label htmlFor="stockInQuantity">Stock In Quantity *</label>
+                <label htmlFor="mrp">MRP</label>
                 <div className="input-wrapper">
-                  <i className="fas fa-plus-circle input-icon"></i>
+                  <i className="fas fa-rupee-sign input-icon"></i>
                   <input
                     type="number"
-                    id="stockInQuantity"
-                    name="stockInQuantity"
+                    id="mrp"
+                    name="mrp"
                     className="form-input"
-                    placeholder="Enter quantity to add"
-                    value={formData.stockInQuantity}
-                    onChange={handleInputChange}
-                    min="1"
-                    step="1"
-                    disabled={!productInfo}
+                    placeholder="MRP"
+                    value={formData.mrp}
+                    readOnly
+                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Third Row: Total After Adding, Add Product Button */}
+            <div className="form-grid four-col" style={{ marginTop: '12px' }}>
+              <div className="form-group">
+                <label htmlFor="totalAfterAdding">Total After Adding</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-calculator input-icon"></i>
+                  <input
+                    type="number"
+                    id="totalAfterAdding"
+                    name="totalAfterAdding"
+                    className="form-input"
+                    placeholder="Total quantity"
+                    value={formData.totalAfterAdding}
+                    readOnly
+                    style={{ 
+                      background: '#e7f3ff', 
+                      cursor: 'not-allowed',
+                      fontWeight: 'bold',
+                      color: '#0066cc'
+                    }}
                   />
                 </div>
               </div>
@@ -480,40 +546,25 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                   Add Product
                 </button>
               </div>
-
-              {/* Row 4: Supplier Name */}
-              <div className="form-group" style={{ gridColumn: '1' }}>
-                <label htmlFor="supplierName">Supplier Name</label>
-                <div className="input-wrapper">
-                  <i className="fas fa-truck input-icon"></i>
-                  <input
-                    type="text"
-                    id="supplierName"
-                    name="supplierName"
-                    className="form-input"
-                    placeholder="Enter supplier name"
-                    value={formData.supplierName}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
             </div>
           </div>
 
-          {/* Display Added Products - Billing Summary Table */}
+          {/* Display Added Products - Summary Table */}
           {addedProducts.length > 0 && (
-            <div className="form-section" style={{ marginTop: '60px', clear: 'both', paddingTop: '20px' }}>
+            <div className="form-section" style={{ marginTop: '40px', clear: 'both', paddingTop: '20px' }}>
               <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: '30px' }}>
-                <div className="attendance-table-container" style={{ marginTop: '0', maxHeight: '200px' }}>
+                <h3 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600', color: '#333' }}>Summary</h3>
+                <div className="attendance-table-container" style={{ marginTop: '0', maxHeight: '400px' }}>
                   <table className="attendance-table">
                     <thead>
                       <tr>
                         <th style={{ width: '60px', textAlign: 'center' }}>#</th>
-                        <th>Item Code</th>
-                        <th>Product Name</th>
-                        <th style={{ width: '100px', textAlign: 'center' }}>Current Stock</th>
-                        <th style={{ width: '120px', textAlign: 'center' }}>Stock In Qty</th>
-                        <th style={{ width: '120px', textAlign: 'center' }}>New Stock</th>
+                        <th>ITEM CODE</th>
+                        <th>ITEM NAME</th>
+                        <th style={{ width: '100px', textAlign: 'center' }}>QTY</th>
+                        <th>SUPPLIER NAME</th>
+                        <th style={{ width: '120px', textAlign: 'center' }}>MRP</th>
+                        <th style={{ width: '150px', textAlign: 'center' }}>Amount</th>
                         <th style={{ width: '100px', textAlign: 'center' }}>Action</th>
                       </tr>
                     </thead>
@@ -529,14 +580,17 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                           <td style={{ fontWeight: '500', color: '#333' }}>
                             {product.productName}
                           </td>
-                          <td style={{ textAlign: 'center', color: '#666' }}>
-                            {product.currentQuantity}
-                          </td>
                           <td style={{ textAlign: 'center', color: '#28a745', fontWeight: '600' }}>
-                            +{product.stockInQuantity}
+                            {product.stockInQuantity}
                           </td>
-                          <td style={{ textAlign: 'center', fontWeight: '600', color: '#333' }}>
-                            {product.currentQuantity + product.stockInQuantity}
+                          <td style={{ fontWeight: '500', color: '#333' }}>
+                            {product.supplierName || '-'}
+                          </td>
+                          <td style={{ textAlign: 'center', fontWeight: '500', color: '#333' }}>
+                            ₹{parseFloat(product.mrp || 0).toFixed(2)}
+                          </td>
+                          <td style={{ textAlign: 'center', fontWeight: '600', color: '#0066cc' }}>
+                            ₹{parseFloat(product.amount || 0).toFixed(2)}
                           </td>
                           <td style={{ textAlign: 'center' }}>
                             <button
@@ -572,6 +626,25 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                           </td>
                         </tr>
                       ))}
+                      {/* Total Row */}
+                      <tr style={{ 
+                        background: '#f8f9fa', 
+                        borderTop: '2px solid #dc3545',
+                        fontWeight: 'bold'
+                      }}>
+                        <td colSpan="6" style={{ textAlign: 'right', padding: '12px 16px', color: '#333' }}>
+                          TOTAL AMOUNT:
+                        </td>
+                        <td style={{ 
+                          textAlign: 'center', 
+                          padding: '12px 16px',
+                          color: '#dc3545',
+                          fontSize: '16px'
+                        }}>
+                          ₹{addedProducts.reduce((sum, product) => sum + (parseFloat(product.amount) || 0), 0).toFixed(2)}
+                        </td>
+                        <td></td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>

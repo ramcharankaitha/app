@@ -1122,6 +1122,76 @@ form.add-user-form .form-grid > .form-group:first-child > label {
     margin-bottom: 0;
 }
 
+.add-transport-form .form-grid.two-col {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 12px;
+    margin-bottom: 8px;
+    align-items: start;
+}
+
+.add-transport-form .form-grid.two-col:last-child {
+    margin-bottom: 0;
+}
+
+.add-transport-form .form-grid.two-col .form-group {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+}
+
+.add-transport-form .form-grid.two-col .form-group label {
+    margin-bottom: 3px;
+    font-size: 11px;
+    height: 14px;
+    line-height: 1.2;
+}
+
+.add-transport-form .form-grid.two-col .form-input {
+    padding: 6px 10px;
+    font-size: 11px;
+    min-height: 32px;
+    height: 32px;
+}
+
+.add-transport-form .form-grid.two-col .input-wrapper .form-input {
+    padding: 6px 10px 6px 46px;
+    min-height: 32px;
+    height: 32px;
+}
+
+.add-transport-form .form-grid.two-col .input-icon {
+    left: 12px;
+    font-size: 12px;
+    width: 14px;
+}
+
+/* Scrollable cities section */
+.add-transport-form .cities-scrollable-container {
+    scrollbar-width: thin;
+    scrollbar-color: #dc3545 #f0f0f0;
+}
+
+.add-transport-form .cities-scrollable-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.add-transport-form .cities-scrollable-container::-webkit-scrollbar-track {
+    background: #f0f0f0;
+    border-radius: 4px;
+}
+
+.add-transport-form .cities-scrollable-container::-webkit-scrollbar-thumb {
+    background: #dc3545;
+    border-radius: 4px;
+}
+
+.add-transport-form .cities-scrollable-container::-webkit-scrollbar-thumb:hover {
+    background: #c82333;
+}
+
 .add-transport-form .form-group {
     margin: 0;
     padding: 0;

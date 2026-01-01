@@ -876,6 +876,25 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       </div>
                     </div>
 
+                    {/* Sell Rate */}
+                    <div className="form-group">
+                      <label htmlFor="sellRate">Sell Rate</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-rupee-sign input-icon"></i>
+                        <input
+                          type="number"
+                          id="sellRate"
+                          name="sellRate"
+                          className="form-input"
+                          placeholder="Enter sell rate"
+                          value={formData.sellRate}
+                          onChange={handleInputChange}
+                          min="0"
+                          step="0.01"
+                        />
+                      </div>
+                    </div>
+
                     {/* Discount 2 */}
                     <div className="form-group">
                       <label htmlFor="discount2">Discount 2</label>
@@ -888,25 +907,6 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           className="form-input"
                           placeholder="Enter discount 2"
                           value={formData.discount2}
-                          onChange={handleInputChange}
-                          min="0"
-                          step="0.01"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Row 5: Sell Rate, Purchase Rate, Points, Upload Image Button */}
-                    <div className="form-group">
-                      <label htmlFor="sellRate">Sell Rate</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-rupee-sign input-icon"></i>
-                        <input
-                          type="number"
-                          id="sellRate"
-                          name="sellRate"
-                          className="form-input"
-                          placeholder="Enter sell rate"
-                          value={formData.sellRate}
                           onChange={handleInputChange}
                           min="0"
                           step="0.01"

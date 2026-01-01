@@ -14,10 +14,13 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
     startDate: '',
     endDate: '',
     paymentMode: '',
+    month: '',
+    chitAmountToPay: '',
     notes: ''
   });
   const [isSearchingChit, setIsSearchingChit] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [paidMonths, setPaidMonths] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
@@ -66,6 +69,7 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
       if (response.success && response.customer) {
         const customer = response.customer;
         setSelectedCustomer(customer);
+        setPaidMonths(customer.paidMonths || []);
         setFormData(prev => ({
           ...prev,
           customerName: customer.customerName,
@@ -75,17 +79,21 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
           chitPlanAmount: customer.chitPlanAmount || '',
           duration: customer.duration || '',
           startDate: customer.startDate || customer.start_date || '',
-          endDate: customer.endDate || customer.end_date || ''
+          endDate: customer.endDate || customer.end_date || '',
+          chitAmountToPay: customer.chitPlanAmount || '', // Set the chit amount to pay
+          month: '' // Reset month when customer changes
         }));
       } else {
         setError('Chit number not found');
         setSelectedCustomer(null);
+        setPaidMonths([]);
         resetForm();
       }
     } catch (err) {
       console.error('Error fetching customer by chit number:', err);
       setError('Chit number not found');
       setSelectedCustomer(null);
+      setPaidMonths([]);
       resetForm();
     } finally {
       setIsSearchingChit(false);
@@ -104,9 +112,12 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
       startDate: '',
       endDate: '',
       paymentMode: '',
+      month: '',
+      chitAmountToPay: '',
       notes: ''
     });
     setSelectedCustomer(null);
+    setPaidMonths([]);
     setError('');
   };
 
@@ -129,6 +140,18 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
       return;
     }
 
+    if (!formData.month || !formData.month.trim()) {
+      setError('Please select a month');
+      return;
+    }
+
+    // Check if selected month is already paid
+    const selectedMonth = parseInt(formData.month);
+    if (paidMonths.includes(selectedMonth)) {
+      setError(`Month ${selectedMonth} has already been paid. Please select a different month.`);
+      return;
+    }
+
     const confirmMessage = `Record payment for ${formData.customerName} - ${formData.chitPlanName}?`;
     
     setConfirmState({
@@ -143,6 +166,7 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
             customerId: selectedCustomer.id,
             chitPlanId: formData.chitPlanId,
             paymentMode: formData.paymentMode,
+            month: formData.month,
             notes: formData.notes || null,
             createdBy: createdBy
           });
@@ -281,9 +305,79 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
               </div>
             </div>
 
-            {/* Second Row: Payment Mode (only after Chit ID is entered) */}
+            {/* Second Row: Month, Chit Amount to Pay, Payment Mode (only after Chit ID is entered) */}
             {formData.chitNumber && formData.chitNumber.trim() !== '' && (
               <div className="form-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginTop: '0' }}>
+                <div className="form-group">
+                  <label htmlFor="month">Month *</label>
+                  <div className="input-wrapper">
+                    <i className="fas fa-calendar-alt input-icon"></i>
+                    <select
+                      id="month"
+                      name="month"
+                      className="form-input"
+                      value={formData.month}
+                      onChange={handleInputChange}
+                      required
+                      disabled={!selectedCustomer || paidMonths.length >= 12}
+                      style={{ 
+                        paddingLeft: '50px',
+                        appearance: 'auto',
+                        cursor: (!selectedCustomer || paidMonths.length >= 12) ? 'not-allowed' : 'pointer',
+                        background: (!selectedCustomer || paidMonths.length >= 12) ? '#f8f9fa' : '#fff'
+                      }}
+                    >
+                      <option value="">
+                        {paidMonths.length >= 12 ? 'All months paid' : 'Select month'}
+                      </option>
+                      {Array.from({ length: 12 }, (_, i) => {
+                        const monthNumber = i + 1;
+                        const isPaid = paidMonths.includes(monthNumber);
+                        // Don't show paid months in the dropdown
+                        if (isPaid) {
+                          return null;
+                        }
+                        return (
+                          <option 
+                            key={monthNumber} 
+                            value={monthNumber}
+                          >
+                            Month {monthNumber}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <i className="fas fa-chevron-down dropdown-icon"></i>
+                  </div>
+                  {paidMonths.length > 0 && paidMonths.length < 12 && (
+                    <small style={{ color: '#666', fontSize: '11px', marginTop: '4px', display: 'block' }}>
+                      Paid months: {paidMonths.sort((a, b) => a - b).join(', ')}
+                    </small>
+                  )}
+                  {paidMonths.length >= 12 && (
+                    <small style={{ color: '#dc3545', fontSize: '11px', marginTop: '4px', display: 'block' }}>
+                      All 12 months have been paid
+                    </small>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="chitAmountToPay">Chit Amount to Pay</label>
+                  <div className="input-wrapper">
+                    <i className="fas fa-rupee-sign input-icon"></i>
+                    <input
+                      type="text"
+                      id="chitAmountToPay"
+                      name="chitAmountToPay"
+                      className="form-input"
+                      placeholder="Chit amount"
+                      value={formData.chitAmountToPay ? `₹${parseFloat(formData.chitAmountToPay || 0).toLocaleString('en-IN')}` : ''}
+                      readOnly
+                      style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                    />
+                  </div>
+                </div>
+
                 <div className="form-group">
                   <label htmlFor="paymentMode">Payment *</label>
                   <div className="input-wrapper">
@@ -329,7 +423,7 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
             <button
               type="submit"
               className="btn-primary"
-              disabled={isLoading || !selectedCustomer || !formData.paymentMode}
+              disabled={isLoading || !selectedCustomer || !formData.paymentMode || !formData.month}
               style={{
                 width: '200px',
                 maxWidth: '200px',
@@ -337,7 +431,7 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
-                cursor: (isLoading || !selectedCustomer || !formData.paymentMode) ? 'not-allowed' : 'pointer'
+                cursor: (isLoading || !selectedCustomer || !formData.paymentMode || !formData.month) ? 'not-allowed' : 'pointer'
               }}
             >
               {isLoading ? (

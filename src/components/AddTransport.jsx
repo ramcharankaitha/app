@@ -348,181 +348,103 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                     </div>
                   </div>
 
-                  {/* Cities Section - 5 rows, each with 4 fields (2 cities with their phone numbers) */}
+                  {/* Cities Section - 10 rows, each with 2 fields (city and phone number) */}
                   <div className="form-section" style={{ marginTop: '8px', marginBottom: '0' }}>
-                    {Array.from({ length: 5 }, (_, rowIndex) => (
-                      <div key={rowIndex} className="form-grid four-col" style={{ marginBottom: rowIndex === 4 ? '0' : '6px' }}>
-                        {/* City 1 of this row */}
-                        <div className="form-group" style={{ position: 'relative' }}>
-                          <label htmlFor={`city${rowIndex * 2 + 1}`}>
-                            City {rowIndex * 2 + 1} <span style={{ color: '#dc3545' }}>*</span>
-                          </label>
-                          <div className="input-wrapper" ref={el => cityInputRefs.current[rowIndex * 2] = el}>
-                            <i className="fas fa-city input-icon"></i>
-                            <input
-                              type="text"
-                              id={`city${rowIndex * 2 + 1}`}
-                              className="form-input"
-                              placeholder={`Enter city ${rowIndex * 2 + 1}`}
-                              value={formData.cities[rowIndex * 2].city}
-                              onChange={(e) => handleCityChange(rowIndex * 2, 'city', e.target.value)}
-                              onFocus={() => {
-                                if (formData.cities[rowIndex * 2].city) {
-                                  searchCities(formData.cities[rowIndex * 2].city, rowIndex * 2);
-                                }
-                              }}
-                              required
-                            />
-                          </div>
-                          {showCityDropdown[rowIndex * 2] && citySuggestions[rowIndex * 2] && citySuggestions[rowIndex * 2].length > 0 && (
-                            <div 
-                              ref={el => cityDropdownRefs.current[rowIndex * 2] = el}
-                              style={{
-                                position: 'absolute',
-                                top: '100%',
-                                left: 0,
-                                right: 0,
-                                background: '#fff',
-                                border: '1px solid #e0e0e0',
-                                borderRadius: '8px',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                zIndex: 10000,
-                                maxHeight: '200px',
-                                overflowY: 'auto',
-                                marginTop: '4px'
-                              }}
-                            >
-                              {isLoadingCities[rowIndex * 2] ? (
-                                <div style={{ padding: '12px 16px', textAlign: 'center', color: '#666' }}>
-                                  <i className="fas fa-spinner fa-spin"></i> Searching...
-                                </div>
-                              ) : (
-                                citySuggestions[rowIndex * 2].map((city, idx) => (
-                                  <div
-                                    key={idx}
-                                    onClick={() => handleCitySelect(city, rowIndex * 2)}
-                                    style={{
-                                      padding: '12px 16px',
-                                      cursor: 'pointer',
-                                      borderBottom: idx < citySuggestions[rowIndex * 2].length - 1 ? '1px solid #f0f0f0' : 'none',
-                                      background: '#fff',
-                                      color: '#333'
-                                    }}
-                                    onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                                    onMouseLeave={(e) => e.target.style.background = '#fff'}
-                                  >
-                                    {city}
-                                  </div>
-                                ))
-                              )}
+                    <div className="cities-scrollable-container" style={{ 
+                      maxHeight: '400px', 
+                      overflowY: 'auto', 
+                      overflowX: 'hidden',
+                      paddingRight: '8px',
+                      marginTop: '8px'
+                    }}>
+                      {Array.from({ length: 10 }, (_, cityIndex) => (
+                        <div key={cityIndex} className="form-grid two-col" style={{ marginBottom: cityIndex === 9 ? '0' : '8px' }}>
+                          <div className="form-group" style={{ position: 'relative' }}>
+                            <label htmlFor={`city${cityIndex + 1}`}>
+                              City {cityIndex + 1} <span style={{ color: '#dc3545' }}>*</span>
+                            </label>
+                            <div className="input-wrapper" ref={el => cityInputRefs.current[cityIndex] = el}>
+                              <i className="fas fa-city input-icon"></i>
+                              <input
+                                type="text"
+                                id={`city${cityIndex + 1}`}
+                                className="form-input"
+                                placeholder={`Enter city ${cityIndex + 1}`}
+                                value={formData.cities[cityIndex].city}
+                                onChange={(e) => handleCityChange(cityIndex, 'city', e.target.value)}
+                                onFocus={() => {
+                                  if (formData.cities[cityIndex].city) {
+                                    searchCities(formData.cities[cityIndex].city, cityIndex);
+                                  }
+                                }}
+                                required
+                              />
                             </div>
-                          )}
-                        </div>
-
-                        <div className="form-group">
-                          <label htmlFor={`cityPhone${rowIndex * 2 + 1}`}>
-                            City {rowIndex * 2 + 1} Phone Number <span style={{ color: '#dc3545' }}>*</span>
-                          </label>
-                          <div className="input-wrapper">
-                            <i className="fas fa-phone input-icon"></i>
-                            <input
-                              type="tel"
-                              id={`cityPhone${rowIndex * 2 + 1}`}
-                              className="form-input"
-                              placeholder={`Enter phone number for city ${rowIndex * 2 + 1}`}
-                              value={formData.cities[rowIndex * 2].phoneNumber}
-                              onChange={(e) => handleCityChange(rowIndex * 2, 'phoneNumber', e.target.value)}
-                              required
-                            />
-                          </div>
-                        </div>
-
-                        {/* City 2 of this row */}
-                        <div className="form-group" style={{ position: 'relative' }}>
-                          <label htmlFor={`city${rowIndex * 2 + 2}`}>
-                            City {rowIndex * 2 + 2} <span style={{ color: '#dc3545' }}>*</span>
-                          </label>
-                          <div className="input-wrapper" ref={el => cityInputRefs.current[rowIndex * 2 + 1] = el}>
-                            <i className="fas fa-city input-icon"></i>
-                            <input
-                              type="text"
-                              id={`city${rowIndex * 2 + 2}`}
-                              className="form-input"
-                              placeholder={`Enter city ${rowIndex * 2 + 2}`}
-                              value={formData.cities[rowIndex * 2 + 1].city}
-                              onChange={(e) => handleCityChange(rowIndex * 2 + 1, 'city', e.target.value)}
-                              onFocus={() => {
-                                if (formData.cities[rowIndex * 2 + 1].city) {
-                                  searchCities(formData.cities[rowIndex * 2 + 1].city, rowIndex * 2 + 1);
-                                }
-                              }}
-                              required
-                            />
-                          </div>
-                          {showCityDropdown[rowIndex * 2 + 1] && citySuggestions[rowIndex * 2 + 1] && citySuggestions[rowIndex * 2 + 1].length > 0 && (
-                            <div 
-                              ref={el => cityDropdownRefs.current[rowIndex * 2 + 1] = el}
-                              style={{
-                                position: 'absolute',
-                                top: '100%',
-                                left: 0,
-                                right: 0,
-                                background: '#fff',
-                                border: '1px solid #e0e0e0',
-                                borderRadius: '8px',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                zIndex: 10000,
-                                maxHeight: '200px',
-                                overflowY: 'auto',
-                                marginTop: '4px'
-                              }}
-                            >
-                              {isLoadingCities[rowIndex * 2 + 1] ? (
-                                <div style={{ padding: '12px 16px', textAlign: 'center', color: '#666' }}>
-                                  <i className="fas fa-spinner fa-spin"></i> Searching...
-                                </div>
-                              ) : (
-                                citySuggestions[rowIndex * 2 + 1].map((city, idx) => (
-                                  <div
-                                    key={idx}
-                                    onClick={() => handleCitySelect(city, rowIndex * 2 + 1)}
-                                    style={{
-                                      padding: '12px 16px',
-                                      cursor: 'pointer',
-                                      borderBottom: idx < citySuggestions[rowIndex * 2 + 1].length - 1 ? '1px solid #f0f0f0' : 'none',
-                                      background: '#fff',
-                                      color: '#333'
-                                    }}
-                                    onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                                    onMouseLeave={(e) => e.target.style.background = '#fff'}
-                                  >
-                                    {city}
+                            {showCityDropdown[cityIndex] && citySuggestions[cityIndex] && citySuggestions[cityIndex].length > 0 && (
+                              <div 
+                                ref={el => cityDropdownRefs.current[cityIndex] = el}
+                                style={{
+                                  position: 'absolute',
+                                  top: '100%',
+                                  left: 0,
+                                  right: 0,
+                                  background: '#fff',
+                                  border: '1px solid #e0e0e0',
+                                  borderRadius: '8px',
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                  zIndex: 10000,
+                                  maxHeight: '200px',
+                                  overflowY: 'auto',
+                                  marginTop: '4px'
+                                }}
+                              >
+                                {isLoadingCities[cityIndex] ? (
+                                  <div style={{ padding: '12px 16px', textAlign: 'center', color: '#666' }}>
+                                    <i className="fas fa-spinner fa-spin"></i> Searching...
                                   </div>
-                                ))
-                              )}
-                            </div>
-                          )}
-                        </div>
+                                ) : (
+                                  citySuggestions[cityIndex].map((city, idx) => (
+                                    <div
+                                      key={idx}
+                                      onClick={() => handleCitySelect(city, cityIndex)}
+                                      style={{
+                                        padding: '12px 16px',
+                                        cursor: 'pointer',
+                                        borderBottom: idx < citySuggestions[cityIndex].length - 1 ? '1px solid #f0f0f0' : 'none',
+                                        background: '#fff',
+                                        color: '#333'
+                                      }}
+                                      onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
+                                      onMouseLeave={(e) => e.target.style.background = '#fff'}
+                                    >
+                                      {city}
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+                            )}
+                          </div>
 
-                        <div className="form-group">
-                          <label htmlFor={`cityPhone${rowIndex * 2 + 2}`}>
-                            City {rowIndex * 2 + 2} Phone Number <span style={{ color: '#dc3545' }}>*</span>
-                          </label>
-                          <div className="input-wrapper">
-                            <i className="fas fa-phone input-icon"></i>
-                            <input
-                              type="tel"
-                              id={`cityPhone${rowIndex * 2 + 2}`}
-                              className="form-input"
-                              placeholder={`Enter phone number for city ${rowIndex * 2 + 2}`}
-                              value={formData.cities[rowIndex * 2 + 1].phoneNumber}
-                              onChange={(e) => handleCityChange(rowIndex * 2 + 1, 'phoneNumber', e.target.value)}
-                              required
-                            />
+                          <div className="form-group">
+                            <label htmlFor={`cityPhone${cityIndex + 1}`}>
+                              City {cityIndex + 1} Phone Number <span style={{ color: '#dc3545' }}>*</span>
+                            </label>
+                            <div className="input-wrapper">
+                              <i className="fas fa-phone input-icon"></i>
+                              <input
+                                type="tel"
+                                id={`cityPhone${cityIndex + 1}`}
+                                className="form-input"
+                                placeholder={`Enter phone number for city ${cityIndex + 1}`}
+                                value={formData.cities[cityIndex].phoneNumber}
+                                onChange={(e) => handleCityChange(cityIndex, 'phoneNumber', e.target.value)}
+                                required
+                              />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </div>
 

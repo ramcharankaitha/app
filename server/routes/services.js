@@ -221,11 +221,22 @@ router.post('/', async (req, res) => {
       handlerId,
       handlerName,
       handlerPhone,
+      productComplaint,
+      estimatedDate,
       createdBy
     } = req.body;
 
-    if (!customerName || !serviceDate) {
-      return res.status(400).json({ error: 'Customer name and service date are required' });
+    if (!customerName) {
+      return res.status(400).json({ error: 'Customer name is required' });
+    }
+
+    // Validate based on warranty status
+    if (warranty && (!itemCode || !serialNumber || !handlerId || !estimatedDate)) {
+      return res.status(400).json({ error: 'For warranty services: Item Code, Serial Number, Handler Name, and Estimate Date are required' });
+    }
+
+    if (unwarranty && (!productComplaint || !estimatedDate)) {
+      return res.status(400).json({ error: 'For unwarranty services: Product Complaint and Estimated Date are required' });
     }
 
     // Ensure handler_id is set if handlerName is provided but handlerId is not
@@ -245,11 +256,34 @@ router.post('/', async (req, res) => {
       }
     }
 
+    // Ensure product_complaint and estimated_date columns exist
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'services' AND column_name = 'product_complaint'
+        ) THEN
+          ALTER TABLE services ADD COLUMN product_complaint TEXT;
+          RAISE NOTICE 'Added product_complaint column to services';
+        END IF;
+        
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'services' AND column_name = 'estimated_date'
+        ) THEN
+          ALTER TABLE services ADD COLUMN estimated_date DATE;
+          RAISE NOTICE 'Added estimated_date column to services';
+        END IF;
+      END $$;
+    `);
+
     const result = await pool.query(
       `INSERT INTO services (
         customer_name, warranty, unwarranty, item_code, brand_name, product_name, 
-        serial_number, service_date, handler_id, handler_name, handler_phone, created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        serial_number, service_date, handler_id, handler_name, handler_phone, 
+        product_complaint, estimated_date, created_by
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       RETURNING *`,
       [
         customerName,
@@ -259,10 +293,12 @@ router.post('/', async (req, res) => {
         brandName || null,
         productName || null,
         serialNumber || null,
-        serviceDate,
+        estimatedDate || serviceDate || null,
         finalHandlerId ? parseInt(finalHandlerId) : null,
         handlerName || null,
         handlerPhone || null,
+        productComplaint || null,
+        estimatedDate || null,
         createdBy || 'system'
       ]
     );

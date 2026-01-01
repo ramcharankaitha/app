@@ -14,17 +14,19 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
     customerName: '',
     customerPhone: '',
-    customerEmail: '',
     warrantyStatus: '',
     itemCode: '',
     category: '',
     productName: '',
+    product: '',
     brandName: '',
     serialNumber: '',
     serviceDate: '',
     handlerId: '',
     handlerName: '',
-    handlerPhone: ''
+    handlerPhone: '',
+    productComplaint: '',
+    estimatedDate: ''
   });
   const [handlers, setHandlers] = useState([]);
   const [isFetchingProduct, setIsFetchingProduct] = useState(false);
@@ -231,14 +233,16 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
         customerName: formData.customerName,
         warranty: formData.warrantyStatus === 'Warranty',
         unwarranty: formData.warrantyStatus === 'Unwarranty',
-        itemCode: formData.itemCode,
-        brandName: formData.brandName,
-        productName: formData.productName,
-        serialNumber: formData.serialNumber,
-        serviceDate: formData.serviceDate,
+        itemCode: formData.itemCode || null,
+        brandName: formData.brandName || null,
+        productName: formData.productName || formData.product || null,
+        serialNumber: formData.serialNumber || null,
+        serviceDate: formData.estimatedDate || formData.serviceDate,
         handlerId: formData.handlerId ? parseInt(formData.handlerId) : null,
-        handlerName: formData.handlerName,
+        handlerName: formData.handlerName || null,
         handlerPhone: null,
+        productComplaint: formData.productComplaint || null,
+        estimatedDate: formData.estimatedDate || null,
         createdBy: createdBy
       });
 
@@ -333,30 +337,30 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
           {/* Main Content */}
           <main className="add-user-content">
             <form onSubmit={handleSubmit} className="add-user-form">
-              <div className="form-grid three-col">
-                {/* Row 1: Name, Phone, Email, Warranty Status */}
-                  <div className="form-group">
-                  <label htmlFor="customerName">Name *</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-user input-icon"></i>
-                      <input
-                        type="text"
-                        id="customerName"
-                        name="customerName"
-                        className="form-input"
-                        placeholder="Enter customer name"
-                        value={formData.customerName}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
+              {/* First Row: Customer Name, Phone Number, Warranty, Item Code (Warranty) or Product (Unwarranty) */}
+              <div className="form-grid four-col">
+                <div className="form-group">
+                  <label htmlFor="customerName">Customer Name *</label>
+                  <div className="input-wrapper">
+                    <i className="fas fa-user input-icon"></i>
+                    <input
+                      type="text"
+                      id="customerName"
+                      name="customerName"
+                      className="form-input"
+                      placeholder="Enter customer name"
+                      value={formData.customerName}
+                      onChange={handleInputChange}
+                      required
+                    />
                   </div>
+                </div>
 
-                  <div className="form-group">
+                <div className="form-group">
                   <label htmlFor="customerPhone">Phone Number</label>
                   <div className="input-wrapper">
                     <i className="fas fa-phone input-icon"></i>
-                        <input
+                    <input
                       type="tel"
                       id="customerPhone"
                       name="customerPhone"
@@ -364,28 +368,12 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       placeholder="Enter phone number"
                       value={formData.customerPhone}
                       onChange={handleInputChange}
-                        />
+                    />
                   </div>
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="customerEmail">Email</label>
-                  <div className="input-wrapper">
-                    <i className="fas fa-envelope input-icon"></i>
-                        <input
-                      type="email"
-                      id="customerEmail"
-                      name="customerEmail"
-                      className="form-input"
-                      placeholder="Enter email address"
-                      value={formData.customerEmail}
-                      onChange={handleInputChange}
-                    />
-                </div>
-              </div>
-
-                <div className="form-group">
-                  <label htmlFor="warrantyStatus">Warranty Status</label>
+                  <label htmlFor="warrantyStatus">Warranty *</label>
                   <div className="input-wrapper">
                     <i className="fas fa-shield-alt input-icon"></i>
                     <select
@@ -393,8 +381,33 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       name="warrantyStatus"
                       className="form-input"
                       value={formData.warrantyStatus}
-                      onChange={handleInputChange}
-                      style={{ paddingLeft: '40px', appearance: 'auto', cursor: 'pointer' }}
+                      onChange={(e) => {
+                        handleInputChange(e);
+                        // Clear fields when warranty status changes
+                        if (e.target.value === 'Warranty') {
+                          setFormData(prev => ({
+                            ...prev,
+                            warrantyStatus: e.target.value,
+                            product: '',
+                            productComplaint: '',
+                            estimatedDate: ''
+                          }));
+                        } else if (e.target.value === 'Unwarranty') {
+                          setFormData(prev => ({
+                            ...prev,
+                            warrantyStatus: e.target.value,
+                            itemCode: '',
+                            category: '',
+                            productName: '',
+                            brandName: '',
+                            serialNumber: '',
+                            handlerId: '',
+                            handlerName: ''
+                          }));
+                        }
+                      }}
+                      required
+                      style={{ paddingLeft: '50px', appearance: 'auto', cursor: 'pointer' }}
                     >
                       <option value="">Select warranty status</option>
                       <option value="Warranty">Warranty</option>
@@ -404,7 +417,7 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                   </div>
                 </div>
 
-                {/* Row 2: Item Code, Category, Product Name */}
+                {formData.warrantyStatus === 'Warranty' && (
                   <div className="form-group">
                     <label htmlFor="itemCode">Item Code *</label>
                     <div className="input-wrapper">
@@ -425,60 +438,33 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       )}
                     </div>
                   </div>
+                )}
 
+                {formData.warrantyStatus === 'Unwarranty' && (
                   <div className="form-group">
-                  <label htmlFor="category">Category</label>
-                    <div className="input-wrapper">
-                    <i className="fas fa-tags input-icon"></i>
-                      <input
-                        type="text"
-                      id="category"
-                      name="category"
-                        className="form-input"
-                      placeholder="Category (auto-filled)"
-                      value={formData.category}
-                      readOnly
-                      style={{ background: '#f5f5f5' }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="productName">Product Name</label>
+                    <label htmlFor="product">Product *</label>
                     <div className="input-wrapper">
                       <i className="fas fa-box input-icon"></i>
                       <input
                         type="text"
-                        id="productName"
-                        name="productName"
+                        id="product"
+                        name="product"
                         className="form-input"
-                      placeholder="Product name (auto-filled)"
-                        value={formData.productName}
-                        readOnly
-                        style={{ background: '#f5f5f5' }}
+                        placeholder="Enter product name"
+                        value={formData.product}
+                        onChange={handleInputChange}
+                        required
                       />
                     </div>
                   </div>
+                )}
+              </div>
 
-                {/* Row 3: Brand Name, Serial Number, Service Date */}
-                <div className="form-group">
-                  <label htmlFor="brandName">Brand Name</label>
-                  <div className="input-wrapper">
-                    <i className="fas fa-tag input-icon"></i>
-                    <input
-                      type="text"
-                      id="brandName"
-                      name="brandName"
-                      className="form-input"
-                      placeholder="Brand name"
-                      value={formData.brandName}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </div>
-
+              {/* Conditional Fields based on Warranty Status */}
+              {formData.warrantyStatus === 'Warranty' && (
+                <div className="form-grid four-col" style={{ marginTop: '12px' }}>
                   <div className="form-group">
-                    <label htmlFor="serialNumber">Serial Number</label>
+                    <label htmlFor="serialNumber">Serial Number *</label>
                     <div className="input-wrapper">
                       <i className="fas fa-hashtag input-icon"></i>
                       <input
@@ -486,31 +472,14 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                         id="serialNumber"
                         name="serialNumber"
                         className="form-input"
-                      placeholder="Serial number"
+                        placeholder="Enter serial number"
                         value={formData.serialNumber}
                         onChange={handleInputChange}
-                      />
-                </div>
-              </div>
-
-                  <div className="form-group">
-                    <label htmlFor="serviceDate">Service Date *</label>
-                    <div className="input-wrapper">
-                      <i className="fas fa-calendar input-icon"></i>
-                      <input
-                        type="date"
-                        id="serviceDate"
-                        name="serviceDate"
-                        className="form-input"
-                        value={formData.serviceDate}
-                        onChange={handleInputChange}
-                        min={minServiceDate}
                         required
                       />
-                </div>
-              </div>
+                    </div>
+                  </div>
 
-                {/* Row 4: Handler Name */}
                   <div className="form-group">
                     <label htmlFor="handlerName">Handler Name *</label>
                     <div className="input-wrapper">
@@ -522,7 +491,7 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                         value={formData.handlerId}
                         onChange={handleHandlerChange}
                         required
-                        style={{ paddingLeft: '40px', appearance: 'auto', cursor: 'pointer' }}
+                        style={{ paddingLeft: '50px', appearance: 'auto', cursor: 'pointer' }}
                       >
                         <option value="">Select handler</option>
                         {handlers.map((handler) => (
@@ -534,7 +503,63 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       <i className="fas fa-chevron-down dropdown-icon"></i>
                     </div>
                   </div>
-              </div>
+
+                  <div className="form-group">
+                    <label htmlFor="estimatedDate">Estimate Date *</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-calendar input-icon"></i>
+                      <input
+                        type="date"
+                        id="estimatedDate"
+                        name="estimatedDate"
+                        className="form-input"
+                        value={formData.estimatedDate}
+                        onChange={handleInputChange}
+                        min={minServiceDate}
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {formData.warrantyStatus === 'Unwarranty' && (
+                <div className="form-grid four-col" style={{ marginTop: '12px' }}>
+                  <div className="form-group">
+                    <label htmlFor="productComplaint">Product Complaint *</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-comment-alt input-icon"></i>
+                      <input
+                        type="text"
+                        id="productComplaint"
+                        name="productComplaint"
+                        className="form-input"
+                        placeholder="Enter product complaint"
+                        value={formData.productComplaint}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="estimatedDate">Estimated Date *</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-calendar input-icon"></i>
+                      <input
+                        type="date"
+                        id="estimatedDate"
+                        name="estimatedDate"
+                        className="form-input"
+                        value={formData.estimatedDate}
+                        onChange={handleInputChange}
+                        min={minServiceDate}
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
 
               {/* Error Message */}

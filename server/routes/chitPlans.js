@@ -335,19 +335,37 @@ router.get('/entries/:id', async (req, res) => {
 
 router.post('/entries', async (req, res) => {
   try {
-    const { customerId, chitPlanId, paymentMode, notes, createdBy } = req.body;
+    const { customerId, chitPlanId, paymentMode, month, notes, createdBy } = req.body;
 
     if (!customerId || !chitPlanId || !paymentMode) {
       return res.status(400).json({ error: 'Customer ID, Chit Plan ID, and Payment Mode are required' });
     }
 
+    if (!month) {
+      return res.status(400).json({ error: 'Month is required' });
+    }
+
+    // Ensure month column exists
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'chit_entries' AND column_name = 'month'
+        ) THEN
+          ALTER TABLE chit_entries ADD COLUMN month INTEGER;
+          RAISE NOTICE 'Added month column to chit_entries';
+        END IF;
+      END $$;
+    `);
+
     let result;
     try {
       result = await pool.query(
-        `INSERT INTO chit_entries (customer_id, chit_plan_id, payment_mode, notes, created_by)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO chit_entries (customer_id, chit_plan_id, payment_mode, month, notes, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
-        [customerId, chitPlanId, paymentMode, notes || null, createdBy || 'system']
+        [customerId, chitPlanId, paymentMode, parseInt(month) || null, notes || null, createdBy || 'system']
       );
     } catch (colError) {
       if (colError.code === '42P01') {
@@ -358,6 +376,7 @@ router.post('/entries', async (req, res) => {
             customer_id INTEGER REFERENCES chit_customers(id),
             chit_plan_id INTEGER REFERENCES chit_plans(id),
             payment_mode VARCHAR(50) NOT NULL,
+            month INTEGER,
             notes TEXT,
             created_by VARCHAR(255),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -366,10 +385,10 @@ router.post('/entries', async (req, res) => {
         `);
         // Retry insert
         result = await pool.query(
-          `INSERT INTO chit_entries (customer_id, chit_plan_id, payment_mode, notes, created_by)
-           VALUES ($1, $2, $3, $4, $5)
+          `INSERT INTO chit_entries (customer_id, chit_plan_id, payment_mode, month, notes, created_by)
+           VALUES ($1, $2, $3, $4, $5, $6)
            RETURNING *`,
-          [customerId, chitPlanId, paymentMode, notes || null, createdBy || 'system']
+          [customerId, chitPlanId, paymentMode, parseInt(month) || null, notes || null, createdBy || 'system']
         );
       } else {
         throw colError;

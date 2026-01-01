@@ -27,6 +27,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
       mrp: '',
       sellRate: '',
       discount: '',
+      points: '', // Auto-calculated points
       productInfo: null,
       isFetching: false
   });
@@ -191,10 +192,28 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
           updated.mrp = '';
           updated.sellRate = '';
           updated.discount = '';
+          updated.points = '';
         }
         
         return updated;
     });
+    
+    // Calculate points when sellRate or stockOutQuantity changes (after state update)
+    if (field === 'sellRate' || field === 'stockOutQuantity') {
+      setTimeout(() => {
+        setCurrentProduct(prev => {
+          const sellRate = parseFloat(prev.sellRate) || 0;
+          const qty = parseInt(prev.stockOutQuantity) || 0;
+          const totalAmount = sellRate * qty;
+          // For every 1000 of sales, 0.5 points
+          const calculatedPoints = (totalAmount / 1000) * 0.5;
+          return {
+            ...prev,
+            points: calculatedPoints.toFixed(2)
+          };
+        });
+      }, 0);
+    }
   };
 
   const fetchProductByItemCode = async () => {
@@ -218,11 +237,17 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
           modelNumber: product.model_number || product.modelNumber || '',
           mrp: product.mrp || 0,
           sellRate: product.sell_rate || product.sellRate || 0,
-          discount: product.discount || 0
+          discount: product.discount_1 || product.discount || 0 // Use discount_1 for sell rate calculation
         };
         
-        setCurrentProduct(prev => ({
-          ...prev,
+        setCurrentProduct(prev => {
+          const sellRate = parseFloat(productData.sellRate) || 0;
+          const qty = parseInt(prev.stockOutQuantity) || 0;
+          const totalAmount = sellRate * qty;
+          const calculatedPoints = (totalAmount / 1000) * 0.5;
+          
+          return {
+            ...prev,
             productInfo: productData,
             productName: productData.productName,
             skuCode: productData.skuCode,
@@ -231,8 +256,10 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
             mrp: productData.mrp.toString(),
             sellRate: productData.sellRate.toString(),
             discount: productData.discount.toString(),
+            points: calculatedPoints.toFixed(2),
             isFetching: false
-        }));
+          };
+        });
       } else {
         setCurrentProduct(prev => ({ ...prev, productInfo: null, isFetching: false }));
       }
@@ -289,11 +316,18 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
       ? Math.max(...addedProducts.map(p => p.id)) + 1 
       : 1;
     
+    // Calculate amount and points for the product
+    const sellRate = parseFloat(currentProduct.sellRate) || 0;
+    const amount = sellRate * stockOutQty;
+    const points = (amount / 1000) * 0.5;
+    
     // Add product to the list
     setAddedProducts(prev => [...prev, {
       id: newId, 
       ...currentProduct,
-      stockOutQuantity: stockOutQty
+      stockOutQuantity: stockOutQty,
+      amount: amount,
+      points: parseFloat(points.toFixed(2))
     }]);
     
     // Clear current product form
@@ -307,6 +341,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
       mrp: '',
       sellRate: '',
       discount: '',
+      points: '',
       productInfo: null,
       isFetching: false
     });
@@ -414,6 +449,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
               mrp: '',
               sellRate: '',
               discount: '',
+              points: '',
               productInfo: null,
               isFetching: false
             });
@@ -658,6 +694,79 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     </div>
                   </div>
 
+                  <div className="form-group">
+                <label htmlFor="mrp">MRP</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-rupee-sign input-icon"></i>
+                      <input
+                        type="number"
+                    id="mrp"
+                        className="form-input"
+                        placeholder="MRP"
+                    value={currentProduct.mrp}
+                        readOnly
+                        style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                      />
+                    </div>
+                  </div>
+            </div>
+
+            {/* Third Row: Discount, Sell Rate, Points */}
+            <div className="form-grid four-col" style={{ marginTop: '12px' }}>
+                  <div className="form-group">
+                <label htmlFor="discount">Discount</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-percent input-icon"></i>
+                      <input
+                        type="number"
+                    id="discount"
+                        className="form-input"
+                        placeholder="Discount"
+                    value={currentProduct.discount}
+                        readOnly
+                        style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                <label htmlFor="sellRate">Sell Rate</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-rupee-sign input-icon"></i>
+                      <input
+                        type="number"
+                    id="sellRate"
+                        className="form-input"
+                        placeholder="Sell Rate"
+                    value={currentProduct.sellRate}
+                        readOnly
+                        style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                <label htmlFor="points">Points</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-star input-icon"></i>
+                      <input
+                        type="number"
+                    id="points"
+                        className="form-input"
+                        placeholder="Points"
+                    value={currentProduct.points}
+                        readOnly
+                        style={{ 
+                          background: '#e7f3ff', 
+                          cursor: 'not-allowed',
+                          fontWeight: 'bold',
+                          color: '#0066cc'
+                        }}
+                        title="Auto-calculated (0.5 per ₹1000)"
+                      />
+                    </div>
+                  </div>
+
                 {/* Add Product button in 4th column */}
                 <div className="form-group">
                   <label style={{ visibility: 'hidden' }}>Add Product</label>
@@ -689,91 +798,97 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
               </div>
             </div>
 
-          {/* Display Added Products - Billing Summary Table */}
+          {/* Display Added Products - Summary Table */}
           {addedProducts.length > 0 && (
-            <div className="form-section" style={{ marginTop: '60px', clear: 'both', paddingTop: '30px', marginBottom: '30px', width: '100%' }}>
-              <div className="form-group" style={{ gridColumn: '1 / -1', width: '100%', marginBottom: '0' }}>
-                <div className="attendance-table-container" style={{ 
-                  marginTop: '0', 
-                  maxHeight: '140px', 
-                  overflowY: 'auto', 
-                  overflowX: 'auto',
-                  width: '100%',
-                  border: '1px solid #dee2e6',
-                  borderRadius: '8px'
-                }}>
-                  <table className="attendance-table" style={{ width: '100%', tableLayout: 'auto' }}>
-                    <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: '#fff' }}>
+            <div className="form-section" style={{ marginTop: '250px', clear: 'both', paddingTop: '20px', marginBottom: '30px' }}>
+              <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: '0' }}>
+                <div className="attendance-table-container" style={{ marginTop: '0', maxHeight: addedProducts.length > 2 ? '300px' : 'none', overflowY: addedProducts.length > 2 ? 'auto' : 'visible' }}>
+                  <table className="attendance-table">
+                    <thead>
                       <tr>
-                        <th style={{ width: '60px', textAlign: 'center', minWidth: '50px' }}>#</th>
-                        <th style={{ minWidth: '120px' }}>Item Code</th>
-                        <th style={{ minWidth: '200px' }}>Product Name</th>
-                        <th style={{ width: '100px', textAlign: 'center', minWidth: '100px' }}>Current Stock</th>
-                        <th style={{ width: '120px', textAlign: 'center', minWidth: '110px' }}>Stock Out Qty</th>
-                        <th style={{ width: '120px', textAlign: 'center', minWidth: '110px' }}>Remaining Stock</th>
-                        <th style={{ width: '100px', textAlign: 'center', minWidth: '90px' }}>Action</th>
+                        <th style={{ width: '60px', textAlign: 'center' }}>#</th>
+                        <th>ITEM CODE</th>
+                        <th>ITEM NAME</th>
+                        <th style={{ width: '100px', textAlign: 'center' }}>QTY</th>
+                        <th style={{ width: '120px', textAlign: 'center' }}>MRP</th>
+                        <th style={{ width: '150px', textAlign: 'center' }}>Amount</th>
+                        <th style={{ width: '100px', textAlign: 'center' }}>Action</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {addedProducts.map((product, index) => {
-                        const currentStock = parseInt(product.quantity) || 0;
-                        const stockOutQty = parseInt(product.stockOutQuantity) || 0;
-                        const remainingStock = currentStock - stockOutQty;
-                        return (
-                          <tr key={product.id}>
-                            <td style={{ textAlign: 'center', color: '#666', fontWeight: '500' }}>
-                              {index + 1}
-                            </td>
-                            <td style={{ fontWeight: '500', color: '#333' }}>
-                              {product.itemCode}
-                            </td>
-                            <td style={{ fontWeight: '500', color: '#333' }}>
-                              {product.productName}
-                            </td>
-                            <td style={{ textAlign: 'center', color: '#666' }}>
-                              {currentStock}
-                            </td>
-                            <td style={{ textAlign: 'center', color: '#dc3545', fontWeight: '600' }}>
-                              -{stockOutQty}
-                            </td>
-                            <td style={{ textAlign: 'center', fontWeight: '600', color: '#333' }}>
-                              {remainingStock}
-                            </td>
-                            <td style={{ textAlign: 'center' }}>
-                              <button
-                                type="button"
-                                onClick={() => removeProduct(product.id)}
-                                style={{
-                                  background: '#dc3545',
-                                  color: '#fff',
-                                  border: 'none',
-                                  borderRadius: '6px',
-                                  padding: '6px 12px',
-                                  cursor: 'pointer',
-                                  fontSize: '12px',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '6px',
-                                  transition: 'all 0.2s ease',
-                                  whiteSpace: 'nowrap'
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.target.style.background = '#c82333';
-                                  e.target.style.transform = 'scale(1.05)';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.target.style.background = '#dc3545';
-                                  e.target.style.transform = 'scale(1)';
-                                }}
-                                title="Remove this product"
-                              >
-                                <i className="fas fa-trash"></i>
-                                Remove
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
+                      {addedProducts.map((product, index) => (
+                        <tr key={product.id}>
+                          <td style={{ textAlign: 'center', color: '#666', fontWeight: '500' }}>
+                            {index + 1}
+                          </td>
+                          <td style={{ fontWeight: '500', color: '#333' }}>
+                            {product.itemCode}
+                          </td>
+                          <td style={{ fontWeight: '500', color: '#333' }}>
+                            {product.productName}
+                          </td>
+                          <td style={{ textAlign: 'center', color: '#28a745', fontWeight: '600' }}>
+                            {product.stockOutQuantity}
+                          </td>
+                          <td style={{ textAlign: 'center', fontWeight: '500', color: '#333' }}>
+                            ₹{parseFloat(product.mrp || 0).toFixed(2)}
+                          </td>
+                          <td style={{ textAlign: 'center', fontWeight: '600', color: '#0066cc' }}>
+                            ₹{parseFloat(product.amount || 0).toFixed(2)}
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            <button
+                              type="button"
+                              onClick={() => removeProduct(product.id)}
+                              style={{
+                                background: '#dc3545',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s ease',
+                                whiteSpace: 'nowrap'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#c82333';
+                                e.target.style.transform = 'scale(1.05)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#dc3545';
+                                e.target.style.transform = 'scale(1)';
+                              }}
+                              title="Remove this product"
+                            >
+                              <i className="fas fa-trash"></i>
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {/* Total Row */}
+                      <tr style={{ 
+                        background: '#f8f9fa', 
+                        borderTop: '2px solid #dc3545',
+                        fontWeight: 'bold'
+                      }}>
+                        <td colSpan="5" style={{ textAlign: 'right', padding: '12px 16px', color: '#333' }}>
+                          TOTAL AMOUNT:
+                        </td>
+                        <td style={{ 
+                          textAlign: 'center', 
+                          padding: '12px 16px',
+                          color: '#dc3545',
+                          fontSize: '16px'
+                        }}>
+                          ₹{addedProducts.reduce((sum, product) => sum + (parseFloat(product.amount) || 0), 0).toFixed(2)}
+                        </td>
+                        <td></td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
@@ -781,9 +896,9 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
             </div>
           )}
 
-          {/* Payment Mode - Only appears after adding products */}
+          {/* Payment Mode and Remove Stock Button - Same row */}
           {addedProducts.length > 0 && (
-            <div className="form-section">
+            <div className="form-section" style={{ marginTop: '30px', paddingTop: '20px' }}>
               <div className="form-grid four-col">
                 <div className="form-group">
                   <label htmlFor="paymentMode">Payment Mode *</label>
@@ -813,50 +928,46 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     <i className="fas fa-chevron-down dropdown-icon"></i>
                   </div>
                 </div>
+
+                <div className="form-group" style={{ gridColumn: '2 / 4' }}>
+                  <label>&nbsp;</label>
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    <button
+                      type="submit"
+                      className="btn-primary"
+                      disabled={isLoading || !customerVerified || !formData.paymentMode || addedProducts.length === 0}
+                      style={{
+                        width: '200px',
+                        maxWidth: '200px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        cursor: (isLoading || !customerVerified || !formData.paymentMode || addedProducts.length === 0) ? 'not-allowed' : 'pointer'
+                      }}
+                      onClick={(e) => {
+                        // Additional validation before submit
+                        if (!customerVerified || !formData.paymentMode || addedProducts.length === 0) {
+                          e.preventDefault();
+                          return;
+                        }
+                      }}
+                    >
+                      {isLoading ? (
+                        <>
+                          <i className="fas fa-spinner fa-spin"></i> Removing Stock...
+                        </>
+                      ) : (
+                        <>
+                          <i className="fas fa-minus"></i> Remove Stock
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
-
-          {/* Remove Stock Button - Centered below in the middle, same as Stock In button */}
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center',
-            marginTop: '40px',
-            paddingTop: '20px'
-          }}>
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={isLoading || !customerVerified || !formData.paymentMode || addedProducts.length === 0}
-              style={{
-                width: '200px',
-                maxWidth: '200px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                cursor: (isLoading || !customerVerified || !formData.paymentMode || addedProducts.length === 0) ? 'not-allowed' : 'pointer'
-              }}
-              onClick={(e) => {
-                // Additional validation before submit
-                if (!customerVerified || !formData.paymentMode || addedProducts.length === 0) {
-                  e.preventDefault();
-                  return;
-                }
-              }}
-            >
-              {isLoading ? (
-                <>
-                  <i className="fas fa-spinner fa-spin"></i> Removing Stock...
-                </>
-              ) : (
-                <>
-                  <i className="fas fa-minus"></i> Remove Stock
-                </>
-              )}
-            </button>
-          </div>
         </form>
       </main>
     </div>

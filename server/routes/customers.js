@@ -746,6 +746,22 @@ router.get('/chit-number/:chitNumber', async (req, res) => {
 
     const chitCustomer = result.rows[0];
     
+    // Fetch paid months for this chit customer
+    let paidMonths = [];
+    try {
+      const paidMonthsResult = await pool.query(
+        `SELECT DISTINCT month 
+         FROM chit_entries 
+         WHERE customer_id = $1 AND month IS NOT NULL
+         ORDER BY month ASC`,
+        [chitCustomer.id]
+      );
+      paidMonths = paidMonthsResult.rows.map(row => row.month);
+    } catch (err) {
+      console.error('Error fetching paid months:', err);
+      // Continue even if this fails - just means no months are paid yet
+    }
+    
     res.json({
       success: true,
       customer: {
@@ -764,7 +780,8 @@ router.get('/chit-number/:chitNumber', async (req, res) => {
         duration: chitCustomer.duration,
         startDate: chitCustomer.start_date,
         endDate: chitCustomer.end_date,
-        enrollmentDate: chitCustomer.enrollment_date
+        enrollmentDate: chitCustomer.enrollment_date,
+        paidMonths: paidMonths
       }
     });
   } catch (error) {
