@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
+const { ensureVerificationColumn, shouldBeVerified, notifyStaffCreation } = require('../utils/verification');
 
 router.get('/', async (req, res) => {
   try {
@@ -32,18 +33,24 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { supplierName, phone, phone2, phone3, address, city, state, pincode, brand, notifications } = req.body;
+    const { supplierName, phone, phone2, phone3, address, city, state, pincode, brand, notifications, userRole, createdBy } = req.body;
 
     if (!supplierName) {
       return res.status(400).json({ error: 'Supplier name is required' });
     }
 
+    // Ensure verification columns exist
+    await ensureVerificationColumn('suppliers');
+    
+    // Determine verification status based on user role
+    const isVerified = shouldBeVerified(userRole || 'staff');
+
     // Try with new fields first, fallback to old structure if columns don't exist
     let result;
     try {
       result = await pool.query(
-        `INSERT INTO suppliers (supplier_name, phone, phone_2, phone_3, address, city, state, pincode, brand, notifications)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        `INSERT INTO suppliers (supplier_name, phone, phone_2, phone_3, address, city, state, pincode, brand, notifications, is_verified, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
          RETURNING *`,
         [
           supplierName,
@@ -55,15 +62,17 @@ router.post('/', async (req, res) => {
           state || null,
           pincode || null,
           brand || null,
-          notifications || null
+          notifications || null,
+          isVerified,
+          createdBy || null
         ]
       );
     } catch (colError) {
       // If new columns don't exist, use old structure
       if (colError.code === '42703') { // undefined_column error
         result = await pool.query(
-          `INSERT INTO suppliers (supplier_name, phone, address, city, state, pincode, email)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)
+          `INSERT INTO suppliers (supplier_name, phone, address, city, state, pincode, email, is_verified, created_by)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
            RETURNING *`,
           [
             supplierName,
@@ -72,12 +81,19 @@ router.post('/', async (req, res) => {
             city || null,
             state || null,
             pincode || null,
-            null // email removed
+            null, // email removed
+            isVerified,
+            createdBy || null
           ]
         );
       } else {
         throw colError;
       }
+    }
+
+    // Send notification if created by staff
+    if (!isVerified) {
+      await notifyStaffCreation('Supplier', supplierName, result.rows[0].id);
     }
 
     res.status(201).json({
@@ -105,6 +121,32 @@ router.post('/', async (req, res) => {
       error: 'Internal server error',
       message: process.env.NODE_ENV === 'development' ? error.message : 'Please check server logs'
     });
+  }
+});
+
+// Verify supplier (admin/supervisor only)
+router.put('/:id/verify', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await ensureVerificationColumn('suppliers');
+    
+    const result = await pool.query(
+      'UPDATE suppliers SET is_verified = true WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Supplier not found' });
+    }
+    
+    res.json({ 
+      success: true, 
+      supplier: result.rows[0],
+      message: 'Supplier verified successfully' 
+    });
+  } catch (error) {
+    console.error('Verify supplier error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

@@ -205,11 +205,14 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     if (handlerId) {
       const selectedHandler = handlers.find(h => h.id === parseInt(handlerId));
       if (selectedHandler) {
+        console.log('Handler selected - ID:', handlerId, 'Name:', selectedHandler.name);
         setFormData(prev => ({
           ...prev,
           handlerId: handlerId,
           handlerName: selectedHandler.name
         }));
+      } else {
+        console.warn('Handler not found for ID:', handlerId);
       }
     } else {
       setFormData(prev => ({
@@ -229,7 +232,7 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
       const userData = JSON.parse(localStorage.getItem('userData') || '{}');
       const createdBy = userData.username || userData.email || 'system';
 
-      const response = await servicesAPI.create({
+      const serviceData = {
         customerName: formData.customerName,
         warranty: formData.warrantyStatus === 'Warranty',
         unwarranty: formData.warrantyStatus === 'Unwarranty',
@@ -244,7 +247,11 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
         productComplaint: formData.productComplaint || null,
         estimatedDate: formData.estimatedDate || null,
         createdBy: createdBy
-      });
+      };
+      
+      console.log('Creating service with handler - ID:', serviceData.handlerId, 'Name:', serviceData.handlerName);
+      
+      const response = await servicesAPI.create(serviceData);
 
       if (response.success) {
         setSuccessMessage('Service created successfully');

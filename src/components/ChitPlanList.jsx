@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { chitPlansAPI } from '../services/api';
+import ConfirmDialog from './ConfirmDialog';
 import './staff.css';
 
 const ChitPlanList = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [chitCustomers, setChitCustomers] = useState([]);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
   const [viewModal, setViewModal] = useState(null);
+  const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
   const menuRefs = useRef({});
 
   // Fetch chit plan customers from database
@@ -78,6 +81,41 @@ const ChitPlanList = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' })
     setOpenMenuId(null);
   };
 
+  const handleEdit = (customer) => {
+    setOpenMenuId(null);
+    if (onNavigate) {
+      onNavigate('addChitPlanCustomer', { editId: customer.id });
+    }
+  };
+
+  const handleDelete = (customer) => {
+    setOpenMenuId(null);
+    setConfirmState({
+      open: true,
+      message: `Are you sure you want to delete chit plan customer "${customer.customer_name}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          setError('');
+          // Note: You may need to add a delete endpoint to chitPlansAPI
+          // For now, this is a placeholder
+          setError('Delete functionality to be implemented');
+          setTimeout(() => setError(''), 3000);
+          // const response = await chitPlansAPI.deleteCustomer(customer.id);
+          // if (response.success) {
+          //   await fetchChitCustomers();
+          // } else {
+          //   setError(response.error || 'Failed to delete customer');
+          // }
+        } catch (err) {
+          console.error('Delete customer error:', err);
+          setError(err.message || 'Failed to delete customer');
+        } finally {
+          setConfirmState({ open: false, message: '', onConfirm: null });
+        }
+      }
+    });
+  };
+
   const closeViewModal = () => {
     setViewModal(null);
   };
@@ -89,6 +127,12 @@ const ChitPlanList = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' })
 
   return (
     <div className="dashboard-container">
+      <ConfirmDialog
+        open={confirmState.open}
+        message={confirmState.message}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
+      />
       {/* Sidebar */}
       <nav className="sidebar-nav">
         <div className="nav-item" onClick={handleBack}>
@@ -179,6 +223,11 @@ const ChitPlanList = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' })
             </div>
 
             {/* Messages */}
+            {successMessage && (
+              <div style={{ padding: '12px', background: '#d4edda', color: '#155724', borderRadius: '8px', marginBottom: '20px' }}>
+                <i className="fas fa-check-circle"></i> {successMessage}
+              </div>
+            )}
             {error && (
               <div style={{ padding: '12px', background: '#ffe0e0', color: '#dc3545', borderRadius: '8px', marginBottom: '20px' }}>
                 <i className="fas fa-exclamation-circle"></i> {error}
@@ -204,111 +253,258 @@ const ChitPlanList = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' })
                   <p>No customers found matching your search</p>
                 </div>
               ) : (
-                <div className="premium-cards-grid">
-                  {filteredCustomers.map((customer) => (
-                    <div
-                      key={customer.id}
-                      className="premium-identity-card"
-                    >
-                      {/* Card Header */}
-                      <div className="premium-card-header">
-                        <div className="premium-header-content">
-                          <div className="premium-avatar">
-                            <span>{getInitials(customer.customer_name)}</span>
-                          </div>
-                          <div>
-                            <h3 className="premium-worker-name">{customer.customer_name || 'N/A'}</h3>
-                            <span className="premium-role-badge" style={{ background: '#dc3545', color: '#fff' }}>Chit Plan</span>
-                          </div>
-                        </div>
-                        {/* Floating Three-Dot Menu */}
-                        <div 
-                          className="premium-card-menu" 
-                          ref={el => menuRefs.current[customer.id] = el}
-                        >
-                          <button 
-                            className="premium-menu-trigger"
-                            onClick={(e) => toggleMenu(customer.id, e)}
-                          >
-                            <i className="fas fa-ellipsis-v"></i>
-                          </button>
-                          {openMenuId === customer.id && (
-                            <div className="premium-menu-dropdown">
-                              <div className="premium-menu-item" onClick={() => handleView(customer)}>
-                                <i className="fas fa-eye"></i>
-                                <span>View</span>
+                <div className="attendance-table-container" style={{ 
+                  marginTop: '0', 
+                  maxHeight: 'none',
+                  overflowX: 'auto',
+                  width: '100%'
+                }}>
+                  <table className="attendance-table" style={{ width: '100%' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '60px' }}>
+                          #
+                        </th>
+                        <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          Customer Name
+                        </th>
+                        <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          Chit Number
+                        </th>
+                        <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          Phone
+                        </th>
+                        <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          Plan Name
+                        </th>
+                        <th style={{ textAlign: 'right', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          Plan Amount
+                        </th>
+                        <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          Duration
+                        </th>
+                        <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          Status
+                        </th>
+                        <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '250px' }}>
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredCustomers.map((customer, index) => (
+                        <tr key={customer.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                          <td style={{ 
+                            textAlign: 'center', 
+                            color: '#666',
+                            padding: '12px 8px',
+                            fontSize: '14px'
+                          }}>
+                            {index + 1}
+                          </td>
+                          <td style={{ 
+                            padding: '12px 8px',
+                            fontSize: '14px'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <div style={{
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '50%',
+                                background: '#dc3545',
+                                color: '#fff',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: '600',
+                                fontSize: '14px',
+                                flexShrink: 0
+                              }}>
+                                {getInitials(customer.customer_name)}
                               </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Card Body */}
-                      <div className="premium-card-body">
-                        <div className="premium-info-row">
-                          <div className="premium-info-item">
-                            <div className="premium-info-icon">
-                              <i className="fas fa-hashtag"></i>
-                            </div>
-                            <div className="premium-info-content">
-                              <span className="premium-info-label">Chit Number</span>
-                              <span className="premium-info-value" style={{ color: '#dc3545', fontWeight: '600' }}>
-                                {customer.chit_number || 'N/A'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="premium-info-row">
-                          <div className="premium-info-item">
-                            <div className="premium-info-icon">
-                              <i className="fas fa-phone"></i>
-                            </div>
-                            <div className="premium-info-content">
-                              <span className="premium-info-label">Phone</span>
-                              <span className="premium-info-value">{customer.phone || 'N/A'}</span>
-                            </div>
-                          </div>
-                          <div className="premium-info-item">
-                            <div className="premium-info-icon">
-                              <i className="fas fa-file-invoice-dollar"></i>
-                            </div>
-                            <div className="premium-info-content">
-                              <span className="premium-info-label">Plan</span>
-                              <span className="premium-info-value">{customer.plan_name || 'N/A'}</span>
-                            </div>
-                          </div>
-                        </div>
-                        {customer.plan_amount && (
-                          <div className="premium-info-row">
-                            <div className="premium-info-item" style={{ gridColumn: '1 / -1' }}>
-                              <div className="premium-info-icon">
-                                <i className="fas fa-rupee-sign"></i>
-                              </div>
-                              <div className="premium-info-content">
-                                <span className="premium-info-label">Plan Amount</span>
-                                <span className="premium-info-value" style={{ fontSize: '18px', color: '#dc3545', fontWeight: '700' }}>
-                                  ₹{parseFloat(customer.plan_amount || 0).toLocaleString('en-IN')}
+                              <div>
+                                <div style={{ fontWeight: '500', color: '#333' }}>
+                                  {customer.customer_name || 'N/A'}
+                                </div>
+                                <span style={{ 
+                                  backgroundColor: '#dc3545', 
+                                  color: '#fff',
+                                  fontSize: '10px',
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  marginTop: '4px',
+                                  display: 'inline-block'
+                                }}>
+                                  Chit Plan
                                 </span>
                               </div>
                             </div>
-                          </div>
-                        )}
-                        {customer.duration && (
-                          <div className="premium-info-row">
-                            <div className="premium-info-item">
-                              <div className="premium-info-icon">
-                                <i className="fas fa-calendar-alt"></i>
-                              </div>
-                              <div className="premium-info-content">
-                                <span className="premium-info-label">Duration</span>
-                                <span className="premium-info-value">{customer.duration} months</span>
-                              </div>
+                          </td>
+                          <td style={{ 
+                            padding: '12px 8px',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            color: '#dc3545'
+                          }}>
+                            {customer.chit_number || 'N/A'}
+                          </td>
+                          <td style={{ 
+                            padding: '12px 8px',
+                            fontSize: '14px',
+                            color: '#666'
+                          }}>
+                            {customer.phone || 'N/A'}
+                          </td>
+                          <td style={{ 
+                            padding: '12px 8px',
+                            fontSize: '14px',
+                            color: '#666'
+                          }}>
+                            {customer.plan_name || 'N/A'}
+                          </td>
+                          <td style={{ 
+                            textAlign: 'right',
+                            padding: '12px 8px',
+                            fontSize: '14px',
+                            fontWeight: '700',
+                            color: '#dc3545'
+                          }}>
+                            {customer.plan_amount ? `₹${parseFloat(customer.plan_amount || 0).toLocaleString('en-IN')}` : 'N/A'}
+                          </td>
+                          <td style={{ 
+                            textAlign: 'center',
+                            padding: '12px 8px',
+                            fontSize: '14px',
+                            color: '#666'
+                          }}>
+                            {customer.duration ? `${customer.duration} months` : 'N/A'}
+                          </td>
+                          <td style={{ 
+                            textAlign: 'center',
+                            padding: '12px 8px',
+                            fontSize: '14px'
+                          }}>
+                            {customer.is_verified === false ? (
+                              <span style={{ 
+                                fontSize: '12px', 
+                                color: '#dc3545', 
+                                fontWeight: '600',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}>
+                                <i className="fas fa-exclamation-circle"></i> Not Verified
+                              </span>
+                            ) : customer.is_verified === true ? (
+                              <span style={{ 
+                                fontSize: '12px', 
+                                color: '#28a745', 
+                                fontWeight: '600',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}>
+                                <i className="fas fa-check-circle"></i> Verified
+                              </span>
+                            ) : (
+                              <span style={{ 
+                                fontSize: '12px', 
+                                color: '#666', 
+                                fontWeight: '500'
+                              }}>
+                                N/A
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ 
+                            textAlign: 'center',
+                            padding: '12px 8px'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                              <button
+                                onClick={() => handleView(customer)}
+                                style={{
+                                  background: '#007bff',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  padding: '6px 12px',
+                                  cursor: 'pointer',
+                                  fontSize: '13px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  transition: 'all 0.2s ease',
+                                  fontWeight: '500'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.background = '#0056b3';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.background = '#007bff';
+                                }}
+                              >
+                                <i className="fas fa-eye"></i>
+                                View
+                              </button>
+                              <button
+                                onClick={() => handleEdit(customer)}
+                                style={{
+                                  background: '#28a745',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  padding: '6px 12px',
+                                  cursor: 'pointer',
+                                  fontSize: '13px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  transition: 'all 0.2s ease',
+                                  fontWeight: '500'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.background = '#218838';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.background = '#28a745';
+                                }}
+                              >
+                                <i className="fas fa-edit"></i>
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDelete(customer)}
+                                style={{
+                                  background: '#dc3545',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  padding: '6px 12px',
+                                  cursor: 'pointer',
+                                  fontSize: '13px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  transition: 'all 0.2s ease',
+                                  fontWeight: '500'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.background = '#c82333';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.background = '#dc3545';
+                                }}
+                              >
+                                <i className="fas fa-trash"></i>
+                                Delete
+                              </button>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
@@ -397,7 +593,44 @@ const ChitPlanList = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' })
                 </div>
               </div>
             </div>
-            <div className="modal-footer">
+            <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {(userRole === 'admin' || userRole === 'supervisor') && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
+                    <input
+                      type="checkbox"
+                      checked={viewModal.is_verified === true}
+                      onChange={async (e) => {
+                        console.log('Checkbox clicked:', e.target.checked, 'Current verified status:', viewModal.is_verified);
+                        if (e.target.checked) {
+                          try {
+                            console.log('Calling verify API for chit customer ID:', viewModal.id);
+                            const response = await chitPlansAPI.verifyCustomer(viewModal.id);
+                            console.log('Verify API response:', response);
+                            if (response.success) {
+                              setViewModal({ ...viewModal, is_verified: true });
+                              setSuccessMessage('Chit plan customer verified successfully');
+                              setTimeout(() => setSuccessMessage(''), 3000);
+                              // Refresh from server to update the list
+                              await fetchChitCustomers();
+                            } else {
+                              setError(response.error || 'Failed to verify chit plan customer');
+                              setTimeout(() => setError(''), 3000);
+                            }
+                          } catch (err) {
+                            console.error('Error verifying chit plan customer:', err);
+                            setError(err.message || 'Failed to verify chit plan customer');
+                            setTimeout(() => setError(''), 3000);
+                          }
+                        }
+                      }}
+                      disabled={viewModal.is_verified === true}
+                      style={{ width: '18px', height: '18px', cursor: viewModal.is_verified === true ? 'not-allowed' : 'pointer' }}
+                    />
+                    <span>Mark as Verified</span>
+                  </label>
+                )}
+              </div>
               <button className="modal-close-button" onClick={closeViewModal}>
                 Close
               </button>

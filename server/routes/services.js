@@ -46,9 +46,27 @@ router.get('/handler/:handlerName', async (req, res) => {
     // First, let's check what handler names exist in the database for debugging
     try {
       const allHandlers = await pool.query(
-        `SELECT DISTINCT handler_name, handler_id FROM services WHERE handler_name IS NOT NULL LIMIT 10`
+        `SELECT DISTINCT handler_name, handler_id, COUNT(*) as service_count 
+         FROM services 
+         WHERE handler_name IS NOT NULL OR handler_id IS NOT NULL 
+         GROUP BY handler_name, handler_id 
+         ORDER BY service_count DESC 
+         LIMIT 20`
       );
-      console.log('Available handlers in database:', allHandlers.rows.map(r => ({ name: r.handler_name, id: r.handler_id })));
+      console.log('Available handlers in database:', JSON.stringify(allHandlers.rows, null, 2));
+      
+      // Also check specifically for the handler we're looking for
+      if (handlerId) {
+        const specificHandler = await pool.query(
+          `SELECT id, customer_name, handler_id, handler_name, created_at 
+           FROM services 
+           WHERE handler_id = $1 
+           ORDER BY created_at DESC 
+           LIMIT 5`,
+          [parseInt(handlerId)]
+        );
+        console.log(`Services with handler_id ${handlerId}:`, JSON.stringify(specificHandler.rows, null, 2));
+      }
     } catch (debugError) {
       console.error('Error fetching handler list:', debugError);
     }
@@ -58,7 +76,11 @@ router.get('/handler/:handlerName', async (req, res) => {
     // PRIORITY 1: If handlerId is provided, use it first (most reliable)
     if (handlerId) {
       try {
-        // First, check what handler_ids exist in services table
+        // Convert handlerId to integer for comparison
+        const handlerIdInt = parseInt(handlerId);
+        console.log('Searching for handler_id (as integer):', handlerIdInt, 'original:', handlerId);
+        
+        // First, check what handler_ids exist in services table for debugging
         const handlerIdsCheck = await pool.query(
           `SELECT DISTINCT handler_id, handler_name, COUNT(*) as count 
            FROM services 
@@ -69,48 +91,73 @@ router.get('/handler/:handlerName', async (req, res) => {
         );
         console.log('All handler_ids in services table:', JSON.stringify(handlerIdsCheck.rows, null, 2));
         
-        // Also check services with the handler name (exact and similar)
-        const handlerNameCheck = await pool.query(
-          `SELECT id, handler_id, handler_name, customer_name 
-           FROM services 
-           WHERE handler_name IS NOT NULL 
-             AND (
-               LOWER(TRIM(handler_name)) = LOWER(TRIM($1))
-               OR LOWER(TRIM(handler_name)) LIKE '%' || LOWER(TRIM($1)) || '%'
-               OR LOWER(TRIM($1)) LIKE '%' || LOWER(TRIM(handler_name)) || '%'
-             )
-           ORDER BY created_at DESC 
-           LIMIT 10`,
-          [decodedHandlerName]
-        );
-        console.log(`Services with handler_name matching "${decodedHandlerName}":`, JSON.stringify(handlerNameCheck.rows, null, 2));
-        
         // Check what staff member matches this handler
         const staffCheck = await pool.query(
           `SELECT id, full_name, username, is_handler 
            FROM staff 
-           WHERE id = $1 OR LOWER(TRIM(full_name)) = LOWER(TRIM($2)) 
-           LIMIT 5`,
-          [handlerId, decodedHandlerName]
-        );
-        console.log('Matching staff members:', JSON.stringify(staffCheck.rows, null, 2));
-        
-        // Convert handlerId to integer for comparison
-        const handlerIdInt = parseInt(handlerId);
-        console.log('Searching for handler_id (as integer):', handlerIdInt, 'original:', handlerId);
-        
-        const resultById = await pool.query(
-          `SELECT s.*, 
-                  COALESCE(s.customer_phone, c.phone) as customer_phone 
-           FROM services s 
-           LEFT JOIN customers c ON LOWER(TRIM(s.customer_name)) = LOWER(TRIM(c.name))
-           WHERE s.handler_id = $1::integer
-           ORDER BY s.created_at DESC`,
+           WHERE id = $1 
+           LIMIT 1`,
           [handlerIdInt]
         );
-        console.log(`Query for handler_id ${handlerIdInt} returned ${resultById.rows.length} services`);
-        if (resultById.rows.length > 0) {
-          return res.json({ success: true, services: resultById.rows });
+        console.log('Matching staff member:', JSON.stringify(staffCheck.rows, null, 2));
+        
+        // Query by handler_id (most reliable)
+        // First check if handler_id column exists
+        const idColumnCheck = await pool.query(`
+          SELECT column_name 
+          FROM information_schema.columns 
+          WHERE table_name='services' AND column_name='handler_id'
+        `);
+        
+        if (idColumnCheck.rows.length > 0) {
+          // First, let's check what services exist with this handler_id
+          const debugQuery = await pool.query(
+            `SELECT id, customer_name, handler_id, handler_name, created_at 
+             FROM services 
+             WHERE handler_id = $1 
+             ORDER BY created_at DESC 
+             LIMIT 5`,
+            [handlerIdInt]
+          );
+          console.log(`DEBUG: Services with handler_id ${handlerIdInt}:`, JSON.stringify(debugQuery.rows, null, 2));
+          
+          const resultById = await pool.query(
+            `SELECT s.*, 
+                    COALESCE(s.customer_phone, c.phone) as customer_phone 
+             FROM services s 
+             LEFT JOIN customers c ON LOWER(TRIM(s.customer_name)) = LOWER(TRIM(c.name))
+             WHERE s.handler_id = $1
+             ORDER BY s.created_at DESC`,
+            [handlerIdInt]
+          );
+          console.log(`Query for handler_id ${handlerIdInt} returned ${resultById.rows.length} services`);
+          if (resultById.rows.length > 0) {
+            return res.json({ success: true, services: resultById.rows });
+          }
+        } else {
+          console.log('handler_id column does not exist, will try by name');
+        }
+        
+        // If no results by ID, also try by name (in case handler_id wasn't set but handler_name was)
+        if (decodedHandlerName) {
+          const staffName = staffCheck.rows.length > 0 ? staffCheck.rows[0].full_name : decodedHandlerName;
+          const resultByName = await pool.query(
+            `SELECT s.*, 
+                    COALESCE(s.customer_phone, c.phone) as customer_phone 
+             FROM services s 
+             LEFT JOIN customers c ON LOWER(TRIM(s.customer_name)) = LOWER(TRIM(c.name))
+             WHERE s.handler_name IS NOT NULL 
+               AND (
+                 LOWER(TRIM(s.handler_name)) = LOWER(TRIM($1))
+                 OR LOWER(TRIM(s.handler_name)) LIKE '%' || LOWER(TRIM($1)) || '%'
+               )
+             ORDER BY s.created_at DESC`,
+            [staffName]
+          );
+          console.log(`Query for handler_name "${staffName}" returned ${resultByName.rows.length} services`);
+          if (resultByName.rows.length > 0) {
+            return res.json({ success: true, services: resultByName.rows });
+          }
         }
       } catch (idError) {
         console.error('Error querying by handler_id:', idError);
@@ -159,24 +206,97 @@ router.get('/handler/:handlerName', async (req, res) => {
       }
     }
     
-    // PRIORITY 3: Fallback to name matching (less reliable due to potential name variations)
+    // PRIORITY 3: Fallback to name matching with multiple strategies
     let result;
     try {
+      // Try multiple matching strategies for name
+      const searchName = decodedHandlerName.trim();
+      const searchNameLower = searchName.toLowerCase();
+      
+      // Strategy 1: Exact match (case-insensitive, trimmed)
       result = await pool.query(
         `SELECT s.*, 
                 COALESCE(s.customer_phone, c.phone) as customer_phone 
          FROM services s 
          LEFT JOIN customers c ON LOWER(TRIM(s.customer_name)) = LOWER(TRIM(c.name))
          WHERE s.handler_name IS NOT NULL 
-           AND (
-             LOWER(TRIM(s.handler_name)) = LOWER(TRIM($1))
-             OR LOWER(TRIM(s.handler_name)) LIKE LOWER(TRIM($1)) || '%'
-             OR LOWER(TRIM($1)) LIKE LOWER(TRIM(s.handler_name)) || '%'
-           )
+           AND LOWER(TRIM(s.handler_name)) = $1
          ORDER BY s.created_at DESC`,
-        [decodedHandlerName]
+        [searchNameLower]
       );
-      console.log(`Found ${result.rows.length} services for handler name: ${decodedHandlerName}`);
+      console.log(`Exact match for "${searchNameLower}" returned ${result.rows.length} services`);
+      
+      // Strategy 2: Partial match if exact match fails
+      if (result.rows.length === 0) {
+        result = await pool.query(
+          `SELECT s.*, 
+                  COALESCE(s.customer_phone, c.phone) as customer_phone 
+           FROM services s 
+           LEFT JOIN customers c ON LOWER(TRIM(s.customer_name)) = LOWER(TRIM(c.name))
+           WHERE s.handler_name IS NOT NULL 
+             AND (
+               LOWER(TRIM(s.handler_name)) LIKE '%' || $1 || '%'
+               OR $1 LIKE '%' || LOWER(TRIM(s.handler_name)) || '%'
+             )
+           ORDER BY s.created_at DESC`,
+          [searchNameLower]
+        );
+        console.log(`Partial match for "${searchNameLower}" returned ${result.rows.length} services`);
+      }
+      
+      // Strategy 3: Try matching with staff table to get all variations
+      if (result.rows.length === 0) {
+        const staffVariations = await pool.query(
+          `SELECT id, full_name FROM staff 
+           WHERE LOWER(TRIM(full_name)) LIKE '%' || $1 || '%'
+              OR $1 LIKE '%' || LOWER(TRIM(full_name)) || '%'`,
+          [searchNameLower]
+        );
+        console.log(`Found ${staffVariations.rows.length} staff members matching "${searchNameLower}"`);
+        
+        if (staffVariations.rows.length > 0) {
+          // Try matching services by any of these staff names
+          const staffNames = staffVariations.rows.map(s => s.full_name.toLowerCase().trim());
+          const staffIds = staffVariations.rows.map(s => s.id);
+          
+          // Try by handler_id first
+          if (staffIds.length > 0) {
+            const resultByIds = await pool.query(
+              `SELECT s.*, 
+                      COALESCE(s.customer_phone, c.phone) as customer_phone 
+               FROM services s 
+               LEFT JOIN customers c ON LOWER(TRIM(s.customer_name)) = LOWER(TRIM(c.name))
+               WHERE s.handler_id = ANY($1::int[])
+               ORDER BY s.created_at DESC`,
+              [staffIds]
+            );
+            console.log(`Found ${resultByIds.rows.length} services by staff IDs:`, staffIds);
+            if (resultByIds.rows.length > 0) {
+              return res.json({ success: true, services: resultByIds.rows });
+            }
+          }
+          
+          // Try by handler_name variations
+          for (const staffName of staffNames) {
+            const resultByName = await pool.query(
+              `SELECT s.*, 
+                      COALESCE(s.customer_phone, c.phone) as customer_phone 
+               FROM services s 
+               LEFT JOIN customers c ON LOWER(TRIM(s.customer_name)) = LOWER(TRIM(c.name))
+               WHERE s.handler_name IS NOT NULL 
+                 AND LOWER(TRIM(s.handler_name)) = $1
+               ORDER BY s.created_at DESC`,
+              [staffName]
+            );
+            if (resultByName.rows.length > 0) {
+              console.log(`Found ${resultByName.rows.length} services by staff name: "${staffName}"`);
+              return res.json({ success: true, services: resultByName.rows });
+            }
+          }
+        }
+      }
+      
+      console.log(`Final result: ${result.rows.length} services for handler name: ${decodedHandlerName}`);
     } catch (queryError) {
       console.error('Query error:', queryError);
       return res.json({ success: true, services: [] });
@@ -239,22 +359,53 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'For unwarranty services: Product Complaint and Estimated Date are required' });
     }
 
-    // Ensure handler_id is set if handlerName is provided but handlerId is not
-    let finalHandlerId = handlerId;
+    // Ensure handler_id is ALWAYS set if handlerName is provided
+    let finalHandlerId = handlerId ? parseInt(handlerId) : null;
+    let finalHandlerName = handlerName;
+    
+    // If handlerId is provided, verify it and get the correct name
+    if (finalHandlerId) {
+      try {
+        const staffResult = await pool.query(
+          `SELECT id, full_name FROM staff WHERE id = $1 LIMIT 1`,
+          [finalHandlerId]
+        );
+        if (staffResult.rows.length > 0) {
+          // Use the actual full_name from database to ensure consistency
+          finalHandlerName = staffResult.rows[0].full_name;
+          console.log('Verified handler_id:', finalHandlerId, 'with name:', finalHandlerName);
+        } else {
+          console.warn('Handler ID', finalHandlerId, 'not found in staff table');
+        }
+      } catch (staffError) {
+        console.error('Error verifying handler_id:', staffError);
+      }
+    }
+    
+    // If handlerId is not provided but handlerName is, try to find the ID
     if (!finalHandlerId && handlerName) {
       try {
         const staffResult = await pool.query(
-          `SELECT id FROM staff WHERE LOWER(TRIM(full_name)) = LOWER(TRIM($1)) LIMIT 1`,
+          `SELECT id, full_name FROM staff 
+           WHERE LOWER(TRIM(full_name)) = LOWER(TRIM($1)) 
+              OR LOWER(TRIM(full_name)) LIKE '%' || LOWER(TRIM($1)) || '%'
+              OR LOWER(TRIM($1)) LIKE '%' || LOWER(TRIM(full_name)) || '%'
+           LIMIT 1`,
           [handlerName]
         );
         if (staffResult.rows.length > 0) {
           finalHandlerId = staffResult.rows[0].id;
-          console.log('Auto-resolved handler_id:', finalHandlerId, 'for handler_name:', handlerName);
+          finalHandlerName = staffResult.rows[0].full_name; // Use exact name from DB
+          console.log('Auto-resolved handler_id:', finalHandlerId, 'for handler_name:', handlerName, '-> using:', finalHandlerName);
+        } else {
+          console.warn('Could not find handler_id for handler_name:', handlerName);
         }
       } catch (staffError) {
         console.error('Error resolving handler_id:', staffError);
       }
     }
+    
+    console.log('Final handler values - ID:', finalHandlerId, 'Name:', finalHandlerName);
 
     // Ensure product_complaint and estimated_date columns exist
     await pool.query(`
@@ -278,6 +429,8 @@ router.post('/', async (req, res) => {
       END $$;
     `);
 
+    console.log('Inserting service with handler - ID:', finalHandlerId, 'Name:', finalHandlerName);
+    
     const result = await pool.query(
       `INSERT INTO services (
         customer_name, warranty, unwarranty, item_code, brand_name, product_name, 
@@ -294,8 +447,8 @@ router.post('/', async (req, res) => {
         productName || null,
         serialNumber || null,
         estimatedDate || serviceDate || null,
-        finalHandlerId ? parseInt(finalHandlerId) : null,
-        handlerName || null,
+        finalHandlerId,
+        finalHandlerName || null,
         handlerPhone || null,
         productComplaint || null,
         estimatedDate || null,
@@ -303,14 +456,27 @@ router.post('/', async (req, res) => {
       ]
     );
     
+    const createdService = result.rows[0];
     console.log('=== SERVICE CREATED ===');
-    console.log('Service ID:', result.rows[0].id);
-    console.log('Handler ID stored:', result.rows[0].handler_id, 'Type:', typeof result.rows[0].handler_id);
-    console.log('Handler Name stored:', result.rows[0].handler_name);
-    console.log('Expected handler_id:', finalHandlerId);
-    console.log('======================');
+    console.log('Service ID:', createdService.id);
+    console.log('Handler ID stored:', createdService.handler_id, 'Type:', typeof createdService.handler_id);
+    console.log('Handler Name stored:', createdService.handler_name);
+    console.log('Expected handler_id:', finalHandlerId, 'Type:', typeof finalHandlerId);
+    console.log('Expected handler_name:', finalHandlerName);
     
-    console.log('Service created with handler_id:', finalHandlerId, 'handler_name:', handlerName);
+    // Verify the service was stored correctly by querying it back
+    try {
+      const verifyQuery = await pool.query(
+        `SELECT id, customer_name, handler_id, handler_name 
+         FROM services 
+         WHERE id = $1`,
+        [createdService.id]
+      );
+      console.log('Verification query result:', JSON.stringify(verifyQuery.rows[0], null, 2));
+    } catch (verifyError) {
+      console.error('Error verifying service:', verifyError);
+    }
+    console.log('======================');
 
     res.status(201).json({
       success: true,

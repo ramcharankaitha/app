@@ -67,18 +67,18 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
   };
 
   // Fetch customers from database
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        const response = await customersAPI.getAll();
-        if (response.success) {
-          setCustomers(response.customers || []);
-        }
-      } catch (err) {
-        console.error('Error fetching customers:', err);
+  const fetchCustomers = async () => {
+    try {
+      const response = await customersAPI.getAll();
+      if (response.success) {
+        setCustomers(response.customers || []);
       }
-    };
+    } catch (err) {
+      console.error('Error fetching customers:', err);
+    }
+  };
 
+  useEffect(() => {
     fetchCustomers();
   }, []);
 
@@ -127,6 +127,14 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
 
   const closeViewModal = () => {
     setViewCustomerModal(null);
+  };
+
+  // Handle edit customer
+  const handleEditCustomer = (customer) => {
+    setOpenMenuId(null);
+    if (onNavigate) {
+      onNavigate('addCustomer', { editId: customer.id });
+    }
   };
 
   // Handle delete customer
@@ -291,87 +299,199 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
               <p>No customers found matching your search</p>
             </div>
           ) : (
-            <div className="premium-cards-grid">
-              {filteredCustomers.map((customer) => (
-                <div
-                  key={customer.id}
-                  className="premium-identity-card"
-                >
-                  {/* Card Header */}
-                  <div className="premium-card-header">
-                    <div className="premium-header-content">
-                      <h3 className="premium-worker-name">{customer.full_name || customer.name || 'N/A'}</h3>
-                    </div>
-                    {/* Floating Three-Dot Menu */}
-                    <div 
-                      className="premium-card-menu" 
-                      ref={el => menuRefs.current[customer.id] = el}
-                    >
-                      <button 
-                        className="premium-menu-trigger"
-                        onClick={(e) => toggleMenu(customer.id, e)}
-                      >
-                        <i className="fas fa-ellipsis-v"></i>
-                      </button>
-                      {openMenuId === customer.id && (
-                        <div className="premium-menu-dropdown">
-                          <div className="premium-menu-item" onClick={() => handleViewCustomerDetails(customer)}>
-                            <i className="fas fa-eye"></i>
-                            <span>View</span>
-                          </div>
-                          <div className="premium-menu-item premium-menu-item-danger" onClick={() => handleDeleteCustomer(customer)}>
-                            <i className="fas fa-trash"></i>
-                            <span>Delete</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Card Body - Two Column Layout */}
-                  <div className="premium-card-body">
-                    <div className="premium-info-row">
-                      <div className="premium-info-item">
-                        <div className="premium-info-icon">
-                          <i className="fas fa-phone"></i>
-                        </div>
-                        <div className="premium-info-content">
-                          <span className="premium-info-label">Phone</span>
-                          <span className="premium-info-value">{customer.phone || 'N/A'}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="premium-info-row" style={{ marginTop: '16px' }}>
-                      <div className="premium-info-item">
-                        <div className="premium-info-icon">
-                          <i className="fas fa-user-tag"></i>
-                        </div>
-                        <div className="premium-info-content">
-                          <span className="premium-info-label">Customer Type</span>
-                          <span className="premium-info-value" style={{ 
-                            textTransform: 'uppercase',
+            <div className="attendance-table-container" style={{ 
+              marginTop: '0', 
+              maxHeight: 'none',
+              overflowX: 'auto',
+              width: '100%'
+            }}>
+              <table className="attendance-table" style={{ width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '60px' }}>
+                      #
+                    </th>
+                    <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                      Customer Name
+                    </th>
+                    <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                      Phone
+                    </th>
+                    <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                      Customer Type
+                    </th>
+                    <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                      Address
+                    </th>
+                    <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                      Status
+                    </th>
+                    <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '250px' }}>
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredCustomers.map((customer, index) => (
+                    <tr key={customer.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                      <td style={{ 
+                        textAlign: 'center', 
+                        color: '#666',
+                        padding: '12px 8px',
+                        fontSize: '14px'
+                      }}>
+                        {index + 1}
+                      </td>
+                      <td style={{ 
+                        padding: '12px 8px',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#333'
+                      }}>
+                        {customer.full_name || customer.name || 'N/A'}
+                      </td>
+                      <td style={{ 
+                        padding: '12px 8px',
+                        fontSize: '14px',
+                        color: '#666'
+                      }}>
+                        {customer.phone || 'N/A'}
+                      </td>
+                      <td style={{ 
+                        padding: '12px 8px',
+                        fontSize: '14px',
+                        color: customer.customer_type === 'chitplan' ? '#dc3545' : '#64748b',
+                        fontWeight: '600',
+                        textTransform: 'uppercase'
+                      }}>
+                        {customer.customer_type === 'chitplan' ? 'Chit Plan' : 'Walk-in'}
+                      </td>
+                      <td style={{ 
+                        padding: '12px 8px',
+                        fontSize: '14px',
+                        color: '#666'
+                      }}>
+                        {customer.address || 'N/A'}
+                      </td>
+                      <td style={{ 
+                        textAlign: 'center',
+                        padding: '12px 8px'
+                      }}>
+                        {customer.is_verified === true ? (
+                          <span style={{ 
+                            fontSize: '12px', 
+                            color: '#28a745', 
                             fontWeight: '600',
-                            color: customer.customer_type === 'chitplan' ? '#dc3545' : '#64748b'
+                            padding: '4px 8px',
+                            background: '#d4edda',
+                            borderRadius: '4px',
+                            display: 'inline-block'
                           }}>
-                            {customer.customer_type === 'chitplan' ? 'Chit Plan' : 'Walk-in'}
+                            <i className="fas fa-check-circle"></i> Verified
                           </span>
+                        ) : (
+                          <span style={{ 
+                            fontSize: '12px', 
+                            color: '#dc3545', 
+                            fontWeight: '600',
+                            padding: '4px 8px',
+                            background: '#f8d7da',
+                            borderRadius: '4px',
+                            display: 'inline-block'
+                          }}>
+                            <i className="fas fa-times-circle"></i> Not Verified
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ 
+                        textAlign: 'center',
+                        padding: '12px 8px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                          <button
+                            onClick={() => handleViewCustomerDetails(customer)}
+                            style={{
+                              background: '#007bff',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '6px',
+                              padding: '6px 12px',
+                              cursor: 'pointer',
+                              fontSize: '13px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              transition: 'all 0.2s ease',
+                              fontWeight: '500'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.target.style.background = '#0056b3';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.background = '#007bff';
+                            }}
+                          >
+                            <i className="fas fa-eye"></i>
+                            View
+                          </button>
+                          <button
+                            onClick={() => handleEditCustomer(customer)}
+                            style={{
+                              background: '#28a745',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '6px',
+                              padding: '6px 12px',
+                              cursor: 'pointer',
+                              fontSize: '13px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              transition: 'all 0.2s ease',
+                              fontWeight: '500'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.target.style.background = '#218838';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.background = '#28a745';
+                            }}
+                          >
+                            <i className="fas fa-edit"></i>
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCustomer(customer)}
+                            style={{
+                              background: '#dc3545',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '6px',
+                              padding: '6px 12px',
+                              cursor: 'pointer',
+                              fontSize: '13px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              transition: 'all 0.2s ease',
+                              fontWeight: '500'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.target.style.background = '#c82333';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.background = '#dc3545';
+                            }}
+                          >
+                            <i className="fas fa-trash"></i>
+                            Delete
+                          </button>
                         </div>
-                      </div>
-                      {customer.address && (
-                        <div className="premium-info-item">
-                          <div className="premium-info-icon">
-                            <i className="fas fa-map-marker-alt"></i>
-                          </div>
-                          <div className="premium-info-content">
-                            <span className="premium-info-label">Address</span>
-                            <span className="premium-info-value">{customer.address || 'N/A'}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
@@ -409,8 +529,6 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
                   <div className="detail-row">
                     <span className="detail-label">Name:</span>
                     <span className="detail-value">{viewCustomerModal.full_name || 'N/A'}</span>
-                  </div>
-                  <div className="detail-row">
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">Phone:</span>
@@ -498,7 +616,44 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
                 </div>
               </div>
             </div>
-            <div className="modal-footer">
+            <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {(userRole === 'admin' || userRole === 'supervisor') && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
+                    <input
+                      type="checkbox"
+                      checked={viewCustomerModal.is_verified === true}
+                      onChange={async (e) => {
+                        console.log('Checkbox clicked:', e.target.checked, 'Current verified status:', viewCustomerModal.is_verified);
+                        if (e.target.checked) {
+                          try {
+                            console.log('Calling verify API for customer ID:', viewCustomerModal.id);
+                            const response = await customersAPI.verify(viewCustomerModal.id);
+                            console.log('Verify API response:', response);
+                            if (response.success) {
+                              setViewCustomerModal({ ...viewCustomerModal, is_verified: true });
+                              setSuccessMessage('Customer verified successfully');
+                              setTimeout(() => setSuccessMessage(''), 3000);
+                              // Refresh from server to update the list
+                              await fetchCustomers();
+                            } else {
+                              setError(response.error || 'Failed to verify customer');
+                              setTimeout(() => setError(''), 3000);
+                            }
+                          } catch (err) {
+                            console.error('Error verifying customer:', err);
+                            setError(err.message || 'Failed to verify customer');
+                            setTimeout(() => setError(''), 3000);
+                          }
+                        }
+                      }}
+                      disabled={viewCustomerModal.is_verified === true}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                    />
+                    <span>Mark as Verified</span>
+                  </label>
+                )}
+              </div>
               <button className="modal-close-button" onClick={closeViewModal}>
                 Close
               </button>

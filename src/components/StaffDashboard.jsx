@@ -464,8 +464,6 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
                 { title: 'Dispatch Department', desc: 'Manage dispatch workflows', icon: 'fa-shipping-fast', target: 'dispatch' },
                 { title: 'Stock In', desc: 'Record stock entries', icon: 'fa-box-open', target: 'stockInMaster' },
                 { title: 'Stock Out', desc: 'Record stock exits', icon: 'fa-box', target: 'stockOutMaster' },
-                { title: 'Supplier Transaction', desc: 'Record products from supplier', icon: 'fa-truck', target: 'supplierTransactionMaster' },
-                { title: 'Products', desc: 'Manage product pricing', icon: 'fa-tags', target: 'transactionProducts' },
                 { title: 'Services', desc: 'Manage service transactions', icon: 'fa-cog', target: 'services' },
                 { title: 'Sales Order', desc: 'View and manage sales orders', icon: 'fa-chart-line', target: 'salesOrder' },
                 { title: 'Chit Receipt', desc: 'Record chit payments', icon: 'fa-file-invoice-dollar', target: 'chitEntryMaster' },

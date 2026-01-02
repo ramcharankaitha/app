@@ -57,6 +57,13 @@ const ChitPlanMaster = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' 
     setOpenMenuId(null);
   };
 
+  const handleEditPlan = (plan) => {
+    setOpenMenuId(null);
+    if (onNavigate) {
+      onNavigate('addChitPlan', { editId: plan.id });
+    }
+  };
+
   const handleDeletePlan = (plan) => {
     setOpenMenuId(null);
     setConfirmState({
@@ -249,76 +256,159 @@ const ChitPlanMaster = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' 
                   <p>No plans found matching your search</p>
                 </div>
               ) : (
-                <div className="premium-cards-grid">
-                  {filtered.map((plan) => (
-                    <div
-                      key={plan.id}
-                      className="premium-identity-card"
-                    >
-                      {/* Card Header */}
-                      <div className="premium-card-header">
-                        <div className="premium-header-content">
-                          <h3 className="premium-worker-name">{plan.plan_name || 'N/A'}</h3>
-                        </div>
-                        {/* Floating Three-Dot Menu */}
-                        <div 
-                          className="premium-card-menu" 
-                          ref={el => menuRefs.current[plan.id] = el}
-                        >
-                          <button 
-                            className="premium-menu-trigger"
-                            onClick={(e) => toggleMenu(plan.id, e)}
-                          >
-                            <i className="fas fa-ellipsis-v"></i>
-                          </button>
-                          {openMenuId === plan.id && (
-                            <div className="premium-menu-dropdown">
-                              <div className="premium-menu-item" onClick={() => handleViewPlan(plan)}>
+                <div className="attendance-table-container" style={{ 
+                  marginTop: '0', 
+                  maxHeight: 'none',
+                  overflowX: 'auto',
+                  width: '100%'
+                }}>
+                  <table className="attendance-table" style={{ width: '100%' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '60px' }}>
+                          #
+                        </th>
+                        <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          Plan Name
+                        </th>
+                        <th style={{ textAlign: 'right', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          Amount
+                        </th>
+                        <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          Description
+                        </th>
+                        <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          Status
+                        </th>
+                        <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '250px' }}>
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map((plan, index) => (
+                        <tr key={plan.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                          <td style={{ 
+                            textAlign: 'center', 
+                            color: '#666',
+                            padding: '12px 8px',
+                            fontSize: '14px'
+                          }}>
+                            {index + 1}
+                          </td>
+                          <td style={{ 
+                            padding: '12px 8px',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            color: '#333'
+                          }}>
+                            {plan.plan_name || 'N/A'}
+                          </td>
+                          <td style={{ 
+                            textAlign: 'right',
+                            padding: '12px 8px',
+                            fontSize: '16px',
+                            fontWeight: '700',
+                            color: '#dc3545'
+                          }}>
+                            ₹{parseFloat(plan.plan_amount || 0).toLocaleString('en-IN')}
+                          </td>
+                          <td style={{ 
+                            padding: '12px 8px',
+                            fontSize: '14px',
+                            color: '#666'
+                          }}>
+                            {plan.description || 'N/A'}
+                          </td>
+                          <td style={{ 
+                            textAlign: 'center',
+                            padding: '12px 8px'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                              <button
+                                onClick={() => handleViewPlan(plan)}
+                                style={{
+                                  background: '#007bff',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  padding: '6px 12px',
+                                  cursor: 'pointer',
+                                  fontSize: '13px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  transition: 'all 0.2s ease',
+                                  fontWeight: '500'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.background = '#0056b3';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.background = '#007bff';
+                                }}
+                              >
                                 <i className="fas fa-eye"></i>
-                                <span>View</span>
-                              </div>
-                              <div className="premium-menu-item premium-menu-item-danger" onClick={() => handleDeletePlan(plan)}>
+                                View
+                              </button>
+                              <button
+                                onClick={() => handleEditPlan(plan)}
+                                style={{
+                                  background: '#28a745',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  padding: '6px 12px',
+                                  cursor: 'pointer',
+                                  fontSize: '13px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  transition: 'all 0.2s ease',
+                                  fontWeight: '500'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.background = '#218838';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.background = '#28a745';
+                                }}
+                              >
+                                <i className="fas fa-edit"></i>
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeletePlan(plan)}
+                                style={{
+                                  background: '#dc3545',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  padding: '6px 12px',
+                                  cursor: 'pointer',
+                                  fontSize: '13px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  transition: 'all 0.2s ease',
+                                  fontWeight: '500'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.background = '#c82333';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.background = '#dc3545';
+                                }}
+                              >
                                 <i className="fas fa-trash"></i>
-                                <span>Delete</span>
-                              </div>
+                                Delete
+                              </button>
                             </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Card Body */}
-                      <div className="premium-card-body">
-                        <div className="premium-info-row">
-                          <div className="premium-info-item" style={{ gridColumn: '1 / -1' }}>
-                            <div className="premium-info-icon">
-                              <i className="fas fa-rupee-sign"></i>
-                            </div>
-                            <div className="premium-info-content">
-                              <span className="premium-info-label">Amount</span>
-                              <span className="premium-info-value" style={{ fontSize: '20px', color: '#dc3545', fontWeight: '700' }}>
-                                ₹{parseFloat(plan.plan_amount || 0).toLocaleString('en-IN')}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        {plan.description && (
-                          <div className="premium-info-row" style={{ marginTop: '16px' }}>
-                            <div className="premium-info-item" style={{ gridColumn: '1 / -1' }}>
-                              <div className="premium-info-icon">
-                                <i className="fas fa-file-alt"></i>
-                              </div>
-                              <div className="premium-info-content">
-                                <span className="premium-info-label">Description</span>
-                                <span className="premium-info-value" style={{ fontSize: '13px', color: '#64748b' }}>
-                                  {plan.description}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
@@ -380,7 +470,44 @@ const ChitPlanMaster = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' 
                 </div>
               </div>
             </div>
-            <div className="modal-footer">
+            <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {(userRole === 'admin' || userRole === 'supervisor') && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedPlan.is_verified === true}
+                      onChange={async (e) => {
+                        console.log('Checkbox clicked:', e.target.checked, 'Current verified status:', selectedPlan.is_verified);
+                        if (e.target.checked) {
+                          try {
+                            console.log('Calling verify API for chit plan ID:', selectedPlan.id);
+                            const response = await chitPlansAPI.verifyPlan(selectedPlan.id);
+                            console.log('Verify API response:', response);
+                            if (response.success) {
+                              setSelectedPlan({ ...selectedPlan, is_verified: true });
+                              setSuccessMessage('Chit plan verified successfully');
+                              setTimeout(() => setSuccessMessage(''), 3000);
+                              // Refresh from server to update the list
+                              await fetchPlans();
+                            } else {
+                              setError(response.error || 'Failed to verify chit plan');
+                              setTimeout(() => setError(''), 3000);
+                            }
+                          } catch (err) {
+                            console.error('Error verifying chit plan:', err);
+                            setError(err.message || 'Failed to verify chit plan');
+                            setTimeout(() => setError(''), 3000);
+                          }
+                        }
+                      }}
+                      disabled={selectedPlan.is_verified === true}
+                      style={{ width: '18px', height: '18px', cursor: selectedPlan.is_verified === true ? 'not-allowed' : 'pointer' }}
+                    />
+                    <span>Mark as Verified</span>
+                  </label>
+                )}
+              </div>
               <button className="modal-close-button" onClick={() => setShowViewModal(false)}>
                 Close
               </button>

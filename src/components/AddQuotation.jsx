@@ -5,8 +5,8 @@ import './addUser.css';
 
 const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
-    gstNumber: '',
-    quotationDate: new Date().toISOString().split('T')[0]
+    customerName: '',
+    customerNumber: ''
   });
   
   // Product input fields
@@ -14,7 +14,9 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     itemCode: '',
     productName: '',
     quantity: '',
+    weight: '',
     price: '',
+    gst: '',
     isFetching: false,
     productInfo: null
   });
@@ -155,7 +157,9 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     }
     
     const quantity = parseFloat(currentProduct.quantity) || 0;
+    const weight = parseFloat(currentProduct.weight) || 0;
     const price = parseFloat(currentProduct.price) || 0;
+    const gst = parseFloat(currentProduct.gst) || 0;
     const totalPrice = quantity * price;
     
     const newId = addedProducts.length > 0 
@@ -167,7 +171,9 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
       itemCode: currentProduct.itemCode.trim(),
       productName: currentProduct.productName,
       quantity: quantity,
+      weight: weight,
       price: price,
+      gst: gst,
       totalPrice: totalPrice
     }]);
     
@@ -176,7 +182,9 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
       itemCode: '',
       productName: '',
       quantity: '',
+      weight: '',
       price: '',
+      gst: '',
       isFetching: false,
       productInfo: null
     });
@@ -201,14 +209,14 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     setSuccessMessage('');
 
     // Validation
-    if (!formData.gstNumber || !formData.gstNumber.trim()) {
-      setError('GST number is required');
+    if (!formData.customerName || !formData.customerName.trim()) {
+      setError('Customer name is required');
       setIsLoading(false);
       return;
     }
 
-    if (!formData.quotationDate) {
-      setError('Date of quotation is required');
+    if (!formData.customerNumber || !formData.customerNumber.trim()) {
+      setError('Customer number is required');
       setIsLoading(false);
       return;
     }
@@ -235,6 +243,7 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     };
 
     const createdBy = getUserIdentifier();
+    const userRoleFromStorage = localStorage.getItem('userRole') || userRole || 'staff';
 
     const confirmMessage = `Create quotation with ${addedProducts.length} product(s) and Total Price: ₹${totalPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}?`;
     
@@ -252,28 +261,33 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
             itemCode: p.itemCode,
             productName: p.productName,
             quantity: p.quantity,
+            weight: p.weight || 0,
             price: p.price,
+            gst: p.gst || 0,
             totalPrice: p.totalPrice
           }));
 
           const response = await quotationsAPI.create({
             items: items,
-            gstNumber: formData.gstNumber.trim(),
-            quotationDate: formData.quotationDate,
+            customerName: formData.customerName.trim(),
+            customerNumber: formData.customerNumber.trim(),
             totalPrice: totalPrice,
-            createdBy: createdBy
+            createdBy: createdBy,
+            userRole: userRoleFromStorage
           });
 
           if (response.success) {
             setFormData({
-              gstNumber: '',
-              quotationDate: new Date().toISOString().split('T')[0]
+              customerName: '',
+              customerNumber: ''
             });
             setCurrentProduct({
               itemCode: '',
               productName: '',
               quantity: '',
+              weight: '',
               price: '',
+              gst: '',
               isFetching: false,
               productInfo: null
             });
@@ -337,8 +351,43 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
           )}
 
           <div className="form-section">
+            {/* Row 1: Customer Name, Customer Number, Item Code, Product Name */}
             <div className="form-grid four-col">
-              {/* Row 1: Item Code, Product Name, Quantity, Price */}
+              <div className="form-group">
+                <label htmlFor="customerName">Customer Name *</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-user input-icon"></i>
+                  <input
+                    type="text"
+                    id="customerName"
+                    name="customerName"
+                    className="form-input"
+                    placeholder="Enter customer name"
+                    value={formData.customerName}
+                    onChange={handleInputChange}
+                    required
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="customerNumber">Customer Number *</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-phone input-icon"></i>
+                  <input
+                    type="tel"
+                    id="customerNumber"
+                    name="customerNumber"
+                    className="form-input"
+                    placeholder="Enter customer number"
+                    value={formData.customerNumber}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+              </div>
+
               <div className="form-group" style={{ position: 'relative' }}>
                 <label htmlFor="itemCode">Item Code *</label>
                 <div className="input-wrapper" style={{ position: 'relative' }}>
@@ -352,7 +401,6 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                     onChange={(e) => handleProductChange('itemCode', e.target.value)}
                     onKeyPress={handleItemCodeKeyPress}
                     style={{ paddingRight: currentProduct.isFetching ? '40px' : '50px' }}
-                    autoFocus
                   />
                   {currentProduct.isFetching ? (
                     <div style={{ 
@@ -394,7 +442,6 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                 </div>
               </div>
 
-              {/* Product Name */}
               <div className="form-group">
                 <label htmlFor="productName">Product Name</label>
                 <div className="input-wrapper">
@@ -410,8 +457,10 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                   />
                 </div>
               </div>
+            </div>
 
-              {/* Quantity */}
+            {/* Row 2: Quantity, Weight, Price, GST (optional) */}
+            <div className="form-grid four-col" style={{ marginTop: '12px' }}>
               <div className="form-group">
                 <label htmlFor="quantity">Quantity *</label>
                 <div className="input-wrapper">
@@ -430,7 +479,24 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                 </div>
               </div>
 
-              {/* Price */}
+              <div className="form-group">
+                <label htmlFor="weight">Weight</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-weight input-icon"></i>
+                  <input
+                    type="number"
+                    id="weight"
+                    className="form-input"
+                    placeholder="Enter weight"
+                    value={currentProduct.weight}
+                    onChange={(e) => handleProductChange('weight', e.target.value)}
+                    min="0"
+                    step="0.01"
+                    disabled={!currentProduct.productInfo}
+                  />
+                </div>
+              </div>
+
               <div className="form-group">
                 <label htmlFor="price">Price (Rs) *</label>
                 <div className="input-wrapper">
@@ -449,78 +515,61 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                 </div>
               </div>
 
-              {/* Row 2: GST Number, Date of Quotation, Add Product Button */}
               <div className="form-group">
-                <label htmlFor="gstNumber">GST Number *</label>
+                <label htmlFor="gst">GST (Optional)</label>
                 <div className="input-wrapper">
-                  <i className="fas fa-file-invoice input-icon"></i>
+                  <i className="fas fa-percent input-icon"></i>
                   <input
-                    type="text"
-                    id="gstNumber"
-                    name="gstNumber"
+                    type="number"
+                    id="gst"
                     className="form-input"
-                    placeholder="Enter GST number"
-                    value={formData.gstNumber}
-                    onChange={handleInputChange}
-                    required
+                    placeholder="Enter GST %"
+                    value={currentProduct.gst}
+                    onChange={(e) => handleProductChange('gst', e.target.value)}
+                    min="0"
+                    step="0.01"
+                    disabled={!currentProduct.productInfo}
                   />
                 </div>
               </div>
+            </div>
 
-              <div className="form-group">
-                <label htmlFor="quotationDate">Date of Quotation *</label>
-                <div className="input-wrapper">
-                  <i className="fas fa-calendar-alt input-icon"></i>
-                  <input
-                    type="date"
-                    id="quotationDate"
-                    name="quotationDate"
-                    className="form-input"
-                    value={formData.quotationDate}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Add Product Button */}
-              <div className="form-group">
-                <label>&nbsp;</label>
-                <button
-                  type="button"
-                  onClick={addProduct}
-                  disabled={!currentProduct.productInfo || !currentProduct.quantity || !currentProduct.price || parseFloat(currentProduct.quantity) <= 0 || parseFloat(currentProduct.price) <= 0}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    background: (currentProduct.productInfo && currentProduct.quantity && currentProduct.price && parseFloat(currentProduct.quantity) > 0 && parseFloat(currentProduct.price) > 0) ? '#dc3545' : '#ccc',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: (currentProduct.productInfo && currentProduct.quantity && currentProduct.price && parseFloat(currentProduct.quantity) > 0 && parseFloat(currentProduct.price) > 0) ? 'pointer' : 'not-allowed',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (currentProduct.productInfo && currentProduct.quantity && currentProduct.price && parseFloat(currentProduct.quantity) > 0 && parseFloat(currentProduct.price) > 0) {
-                      e.target.style.background = '#c82333';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (currentProduct.productInfo && currentProduct.quantity && currentProduct.price && parseFloat(currentProduct.quantity) > 0 && parseFloat(currentProduct.price) > 0) {
-                      e.target.style.background = '#dc3545';
-                    }
-                  }}
-                >
-                  <i className="fas fa-plus"></i>
-                  Add Product
-                </button>
-              </div>
+            {/* Add Product Button */}
+            <div className="form-group" style={{ marginTop: '12px' }}>
+              <button
+                type="button"
+                onClick={addProduct}
+                disabled={!currentProduct.productInfo || !currentProduct.quantity || !currentProduct.price || parseFloat(currentProduct.quantity) <= 0 || parseFloat(currentProduct.price) <= 0}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  background: (currentProduct.productInfo && currentProduct.quantity && currentProduct.price && parseFloat(currentProduct.quantity) > 0 && parseFloat(currentProduct.price) > 0) ? '#dc3545' : '#ccc',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: (currentProduct.productInfo && currentProduct.quantity && currentProduct.price && parseFloat(currentProduct.quantity) > 0 && parseFloat(currentProduct.price) > 0) ? 'pointer' : 'not-allowed',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (currentProduct.productInfo && currentProduct.quantity && currentProduct.price && parseFloat(currentProduct.quantity) > 0 && parseFloat(currentProduct.price) > 0) {
+                    e.target.style.background = '#c82333';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (currentProduct.productInfo && currentProduct.quantity && currentProduct.price && parseFloat(currentProduct.quantity) > 0 && parseFloat(currentProduct.price) > 0) {
+                    e.target.style.background = '#dc3545';
+                  }
+                }}
+              >
+                <i className="fas fa-plus"></i>
+                Add Product
+              </button>
             </div>
           </div>
 
@@ -546,6 +595,31 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                   width: '100%'
                 }}>
                   <table className="attendance-table" style={{ width: '100%' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          #
+                        </th>
+                        <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          Item ID
+                        </th>
+                        <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          Product Name
+                        </th>
+                        <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          Quantity
+                        </th>
+                        <th style={{ textAlign: 'right', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          Unit Price
+                        </th>
+                        <th style={{ textAlign: 'right', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          Total Price
+                        </th>
+                        <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          Action
+                        </th>
+                      </tr>
+                    </thead>
                     <tbody>
                       {addedProducts.map((product, index) => (
                         <tr key={product.id}>
@@ -651,19 +725,19 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
           <div className="form-actions" style={{ marginTop: '10px' }}>
             <button
               type="submit"
-              disabled={isLoading || !formData.gstNumber || !formData.quotationDate || addedProducts.length === 0}
+              disabled={isLoading || !formData.customerName || !formData.customerNumber || addedProducts.length === 0}
               className="submit-btn"
               style={{
                 width: '200px',
                 margin: '0 auto',
                 padding: '12px 24px',
-                background: (isLoading || !formData.gstNumber || !formData.quotationDate || addedProducts.length === 0) ? '#ccc' : '#dc3545',
+                background: (isLoading || !formData.customerName || !formData.customerNumber || addedProducts.length === 0) ? '#ccc' : '#dc3545',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '8px',
                 fontSize: '16px',
                 fontWeight: '600',
-                cursor: (isLoading || !formData.gstNumber || !formData.quotationDate || addedProducts.length === 0) ? 'not-allowed' : 'pointer',
+                cursor: (isLoading || !formData.customerName || !formData.customerNumber || addedProducts.length === 0) ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

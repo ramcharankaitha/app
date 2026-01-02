@@ -184,15 +184,22 @@ router.get('/customers/:id', async (req, res) => {
 
 router.post('/customers', async (req, res) => {
   try {
-    const { customerName, phone, address, city, state, pincode, email, chitPlanId, paymentMode } = req.body;
+    const { customerName, phone, address, city, state, pincode, email, chitPlanId, paymentMode, userRole, createdBy } = req.body;
 
     if (!customerName || !chitPlanId) {
       return res.status(400).json({ error: 'Customer name and chit plan are required' });
     }
 
+    // Ensure verification columns exist
+    const { ensureVerificationColumn, shouldBeVerified, notifyStaffCreation } = require('../utils/verification');
+    await ensureVerificationColumn('chit_customers');
+    
+    // Determine verification status based on user role
+    const isVerified = shouldBeVerified(userRole || 'staff');
+
     const result = await pool.query(
-      `INSERT INTO chit_customers (customer_name, phone, address, city, state, pincode, email, chit_plan_id, payment_mode, enrollment_date)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_DATE)
+      `INSERT INTO chit_customers (customer_name, phone, address, city, state, pincode, email, chit_plan_id, payment_mode, enrollment_date, is_verified, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_DATE, $10, $11)
        RETURNING *`,
       [
         customerName,
@@ -203,9 +210,16 @@ router.post('/customers', async (req, res) => {
         pincode || null,
         email || null,
         chitPlanId,
-        paymentMode || null
+        paymentMode || null,
+        isVerified,
+        createdBy || null
       ]
     );
+
+    // Send notification if created by staff
+    if (!isVerified) {
+      await notifyStaffCreation('Chit Plan Customer', customerName, result.rows[0].id);
+    }
 
     res.status(201).json({
       success: true,
@@ -217,6 +231,33 @@ router.post('/customers', async (req, res) => {
     if (error.code === '23503') { // Foreign key violation
       return res.status(400).json({ error: 'Invalid chit plan selected' });
     }
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Verify chit plan customer (admin/supervisor only) - MUST come before /customers/:id
+router.put('/customers/:id/verify', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { ensureVerificationColumn } = require('../utils/verification');
+    await ensureVerificationColumn('chit_customers');
+    
+    const result = await pool.query(
+      'UPDATE chit_customers SET is_verified = true WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Chit plan customer not found' });
+    }
+    
+    res.json({ 
+      success: true, 
+      customer: result.rows[0],
+      message: 'Chit plan customer verified successfully' 
+    });
+  } catch (error) {
+    console.error('Verify chit plan customer error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

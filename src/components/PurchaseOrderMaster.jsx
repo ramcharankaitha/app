@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { purchaseOrdersAPI } from '../services/api';
+import ConfirmDialog from './ConfirmDialog';
 import './products.css';
-import './staff.css';
 import './staff.css';
 
 const PurchaseOrderMaster = ({ onBack, onAddPurchaseOrder, onNavigate, userRole = 'admin' }) => {
@@ -16,6 +16,7 @@ const PurchaseOrderMaster = ({ onBack, onAddPurchaseOrder, onNavigate, userRole 
   const [openMenuId, setOpenMenuId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
   const menuRefs = useRef({});
 
   const handleBack = () => {
@@ -142,6 +143,33 @@ const PurchaseOrderMaster = ({ onBack, onAddPurchaseOrder, onNavigate, userRole 
     }
   };
 
+  const handleDeleteOrder = (order) => {
+    setOpenMenuId(null);
+    setConfirmState({
+      open: true,
+      message: `Are you sure you want to delete purchase order "${order.order_number || `PO-${order.id}`}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          setError('');
+          // Note: You may need to add a delete endpoint to purchaseOrdersAPI
+          setError('Delete functionality to be implemented');
+          setTimeout(() => setError(''), 3000);
+          // const response = await purchaseOrdersAPI.delete(order.id);
+          // if (response.success) {
+          //   await fetchPurchaseOrders();
+          // } else {
+          //   setError(response.error || 'Failed to delete purchase order');
+          // }
+        } catch (err) {
+          console.error('Delete purchase order error:', err);
+          setError(err.message || 'Failed to delete purchase order');
+        } finally {
+          setConfirmState({ open: false, message: '', onConfirm: null });
+        }
+      }
+    });
+  };
+
   const closeEditModal = () => {
     setEditOrderModal(null);
   };
@@ -225,6 +253,12 @@ const PurchaseOrderMaster = ({ onBack, onAddPurchaseOrder, onNavigate, userRole 
 
   return (
     <div className="dashboard-container">
+      <ConfirmDialog
+        open={confirmState.open}
+        message={confirmState.message}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
+      />
       {/* Left Sidebar Navigation */}
       <nav className="sidebar-nav">
         <div className="nav-item" onClick={handleBack}>
@@ -346,175 +380,217 @@ const PurchaseOrderMaster = ({ onBack, onAddPurchaseOrder, onNavigate, userRole 
                 )}
               </div>
             ) : (
-              <div className="products-grid">
-                {filteredOrders.map((order) => (
-                  <div
-                    key={order.id}
-                    className="product-card stock-in-card"
-                    style={{ position: 'relative' }}
-                  >
-                    <div className="product-header" style={{ 
-                      display: 'grid', 
-                      gridTemplateColumns: '1fr auto 1fr',
-                      alignItems: 'center',
-                      width: '100%',
-                      gap: '12px'
-                    }}>
-                      {/* Left: PO Number with # */}
-                      <div className="product-title" style={{ 
-                        justifySelf: 'start',
-                        fontWeight: '600',
-                        fontSize: '16px',
-                        color: '#333'
-                      }}>
-                        #{order.order_number || `PO-${order.id}`}
-                      </div>
-                      
-                      {/* Center: Status Badge */}
-                      <div style={{ 
-                        justifySelf: 'center'
-                      }}>
-                        <div className="product-badge" style={{ 
-                          background: order.status === 'completed' ? '#28a745' : 
-                                     order.status === 'pending' ? '#ffc107' : '#dc3545', 
-                          color: '#fff',
-                          padding: '4px 12px',
-                          borderRadius: '4px',
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          whiteSpace: 'nowrap'
+              <div className="attendance-table-container" style={{ 
+                marginTop: '0', 
+                maxHeight: 'none',
+                overflowX: 'auto',
+                width: '100%'
+              }}>
+                <table className="attendance-table" style={{ width: '100%' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '60px' }}>
+                        #
+                      </th>
+                      <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                        PO Number
+                      </th>
+                      <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                        Supplier
+                      </th>
+                      <th style={{ textAlign: 'right', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                        Total Amount
+                      </th>
+                      <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                        Items
+                      </th>
+                      <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                        Date
+                      </th>
+                      <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                        Status
+                      </th>
+                      <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '250px' }}>
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredOrders.map((order, index) => (
+                      <tr key={order.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                        <td style={{ 
+                          textAlign: 'center', 
+                          color: '#666',
+                          padding: '12px 8px',
+                          fontSize: '14px'
                         }}>
-                          {order.status || 'Pending'}
-                        </div>
-                      </div>
-                      
-                      {/* Right: Three Dots Menu */}
-                      <div 
-                        className="staff-options-container" 
-                        ref={el => menuRefs.current[order.id] = el}
-                        style={{ 
-                          position: 'relative', 
-                          justifySelf: 'end'
-                        }}
-                      >
-                        <button 
-                          className="staff-options"
-                          onClick={(e) => toggleMenu(order.id, e)}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#dc3545',
-                            fontSize: '16px',
-                            cursor: 'pointer',
-                            padding: '6px 8px',
-                            borderRadius: '4px',
-                            transition: 'all 0.2s ease',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: '32px',
-                            height: '32px'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.target.style.background = '#f8f9fa';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.target.style.background = 'none';
-                          }}
-                        >
-                          <i className="fas fa-ellipsis-v"></i>
-                        </button>
-                        {openMenuId === order.id && (
-                          <div className="staff-menu-dropdown" style={{
-                            position: 'absolute',
-                            top: '100%',
-                            right: 0,
-                            background: '#fff',
-                            borderRadius: '8px',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                            border: '1px solid #e0e0e0',
-                            minWidth: '180px',
-                            zIndex: 1000,
-                            marginTop: '4px',
-                            overflow: 'hidden'
-                          }}>
-                            <div className="menu-item" onClick={() => handleViewOrder(order)}>
-                              <i className="fas fa-eye"></i>
-                              <span>View Details</span>
-                            </div>
-                            <div className="menu-item" onClick={() => handleEditOrder(order)}>
-                              <i className="fas fa-edit"></i>
-                              <span>Edit Details</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="product-details">
-                      <div className="detail-row">
-                        <span className="detail-label">Supplier:</span>
-                        <span className="detail-value">{order.supplier_name || 'N/A'}</span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Total Amount:</span>
-                        <span className="detail-value" style={{ fontWeight: 'bold' }}>
+                          {index + 1}
+                        </td>
+                        <td style={{ 
+                          padding: '12px 8px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: '#333'
+                        }}>
+                          #{order.order_number || `PO-${order.id}`}
+                        </td>
+                        <td style={{ 
+                          padding: '12px 8px',
+                          fontSize: '14px',
+                          color: '#666'
+                        }}>
+                          {order.supplier_name || 'N/A'}
+                        </td>
+                        <td style={{ 
+                          textAlign: 'right',
+                          padding: '12px 8px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: '#333'
+                        }}>
                           ₹{parseFloat(order.total_amount || 0).toLocaleString('en-IN')}
-                        </span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Items:</span>
-                        <span className="detail-value">{order.items_count || 0} items</span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Created By:</span>
-                        <span className="detail-value">{order.created_by || 'System'}</span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Date:</span>
-                        <span className="detail-value">{formatDate(order.created_at)}</span>
-                      </div>
-                    </div>
-                    <div style={{ 
-                      marginTop: '12px', 
-                      paddingTop: '12px', 
-                      borderTop: '1px solid #e0e0e0',
-                      display: 'flex',
-                      justifyContent: 'flex-end'
-                    }}>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSendSMS(order);
-                        }}
-                        style={{
-                          padding: '8px 16px',
-                          background: '#28a745',
-                          color: '#fff',
-                          border: 'none',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          fontSize: '13px',
-                          fontWeight: '500',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.background = '#218838';
-                          e.target.style.transform = 'scale(1.02)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.background = '#28a745';
-                          e.target.style.transform = 'scale(1)';
-                        }}
-                      >
-                        <i className="fas fa-sms"></i>
-                        Send SMS
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                        </td>
+                        <td style={{ 
+                          textAlign: 'center',
+                          padding: '12px 8px',
+                          fontSize: '14px',
+                          color: '#666'
+                        }}>
+                          {order.items_count || 0} items
+                        </td>
+                        <td style={{ 
+                          padding: '12px 8px',
+                          fontSize: '14px',
+                          color: '#666'
+                        }}>
+                          {formatDate(order.created_at)}
+                        </td>
+                        <td style={{ 
+                          textAlign: 'center',
+                          padding: '12px 8px',
+                          fontSize: '14px'
+                        }}>
+                          {order.is_verified === false ? (
+                            <span style={{ 
+                              fontSize: '12px', 
+                              color: '#dc3545', 
+                              fontWeight: '600',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}>
+                              <i className="fas fa-exclamation-circle"></i> Not Verified
+                            </span>
+                          ) : order.is_verified === true ? (
+                            <span style={{ 
+                              fontSize: '12px', 
+                              color: '#28a745', 
+                              fontWeight: '600',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}>
+                              <i className="fas fa-check-circle"></i> Verified
+                            </span>
+                          ) : (
+                            <span style={{ 
+                              fontSize: '12px', 
+                              color: '#666', 
+                              fontWeight: '500'
+                            }}>
+                              N/A
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ 
+                          textAlign: 'center',
+                          padding: '12px 8px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                            <button
+                              onClick={() => handleViewOrder(order)}
+                              style={{
+                                background: '#007bff',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s ease',
+                                fontWeight: '500'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#0056b3';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#007bff';
+                              }}
+                            >
+                              <i className="fas fa-eye"></i>
+                              View
+                            </button>
+                            <button
+                              onClick={() => handleEditOrder(order)}
+                              style={{
+                                background: '#28a745',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s ease',
+                                fontWeight: '500'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#218838';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#28a745';
+                              }}
+                            >
+                              <i className="fas fa-edit"></i>
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteOrder(order)}
+                              style={{
+                                background: '#dc3545',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s ease',
+                                fontWeight: '500'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#c82333';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#dc3545';
+                              }}
+                            >
+                              <i className="fas fa-trash"></i>
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
@@ -844,6 +920,72 @@ const PurchaseOrderMaster = ({ onBack, onAddPurchaseOrder, onNavigate, userRole 
                   <strong>Date & Time:</strong> {formatDate(selectedOrder.created_at)}
                 </div>
               </div>
+            </div>
+            <div style={{ 
+              padding: '20px 24px', 
+              borderTop: '1px solid #e0e0e0', 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              gap: '12px',
+              background: '#f8f9fa',
+              borderRadius: '0 0 16px 16px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {(userRole === 'admin' || userRole === 'supervisor') && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedOrder.is_verified === true}
+                      onChange={async (e) => {
+                        if (e.target.checked && selectedOrder.is_verified === false) {
+                          try {
+                            const response = await purchaseOrdersAPI.verify(selectedOrder.id);
+                            if (response.success) {
+                              setSelectedOrder({ ...selectedOrder, is_verified: true });
+                              setSuccessMessage('Purchase order verified successfully');
+                              setTimeout(() => setSuccessMessage(''), 3000);
+                              await fetchPurchaseOrders();
+                            } else {
+                              setError('Failed to verify purchase order');
+                              setTimeout(() => setError(''), 3000);
+                            }
+                          } catch (err) {
+                            console.error('Error verifying purchase order:', err);
+                            setError('Failed to verify purchase order');
+                            setTimeout(() => setError(''), 3000);
+                          }
+                        }
+                      }}
+                      disabled={selectedOrder.is_verified === true}
+                      style={{ width: '18px', height: '18px', cursor: selectedOrder.is_verified === true ? 'not-allowed' : 'pointer' }}
+                    />
+                    <span>Mark as Verified</span>
+                  </label>
+                )}
+              </div>
+              <button 
+                onClick={closeViewModal}
+                style={{
+                  padding: '10px 20px',
+                  background: '#6c757d',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = '#5a6268';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = '#6c757d';
+                }}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

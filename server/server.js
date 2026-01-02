@@ -29,6 +29,7 @@ const salesOrdersRoutes = require('./routes/salesOrders');
 const purchaseOrdersRoutes = require('./routes/purchaseOrders');
 const smsRoutes = require('./routes/sms');
 const quotationsRoutes = require('./routes/quotations');
+const paymentsRoutes = require('./routes/payments');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -149,6 +150,88 @@ app.use('/api/sales-orders', salesOrdersRoutes);
 app.use('/api/purchase-orders', purchaseOrdersRoutes);
 app.use('/api/sms', smsRoutes);
 app.use('/api/quotations', quotationsRoutes);
+app.use('/api/payments', paymentsRoutes);
+
+// Schedule daily check for upcoming payments
+const schedulePaymentNotifications = () => {
+  const checkUpcomingPayments = async () => {
+    try {
+      const { pool } = require('./config/database');
+      const { createNotificationForUserType } = require('./services/notificationService');
+      
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+      // Find payments due tomorrow
+      const result = await pool.query(
+        `SELECT * FROM payments 
+         WHERE date_to_be_paid = $1 
+         AND id NOT IN (
+           SELECT DISTINCT related_id 
+           FROM notifications 
+           WHERE notification_type = 'warning' 
+           AND title LIKE '%Payment Due%'
+           AND created_at::date = CURRENT_DATE
+         )`,
+        [tomorrowStr]
+      );
+
+      let notificationCount = 0;
+
+      for (const payment of result.rows) {
+        try {
+          // Send notification to admin
+          await createNotificationForUserType(
+            'admin',
+            'warning',
+            'Payment Due Tomorrow',
+            `Payment of ₹${parseFloat(payment.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })} for ${payment.supplier_name} is due tomorrow. Please make sure to pay the bill.`,
+            true,
+            payment.id
+          );
+
+          // Send notification to supervisor
+          await createNotificationForUserType(
+            'supervisor',
+            'warning',
+            'Payment Due Tomorrow',
+            `Payment of ₹${parseFloat(payment.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })} for ${payment.supplier_name} is due tomorrow. Please make sure to pay the bill.`,
+            true,
+            payment.id
+          );
+
+          notificationCount++;
+        } catch (err) {
+          console.error(`❌ Error creating notification for payment ${payment.id}:`, err);
+        }
+      }
+
+      console.log(`✅ Payment notification check completed: Sent ${notificationCount} notification(s)`);
+    } catch (error) {
+      console.error('❌ Error checking upcoming payments:', error.message);
+    }
+  };
+
+  // Run immediately on server start
+  checkUpcomingPayments();
+
+  // Then run daily at 9 AM
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(9, 0, 0, 0);
+  
+  const msUntilTomorrow = tomorrow.getTime() - now.getTime();
+  
+  setTimeout(() => {
+    checkUpcomingPayments();
+    // Run every 24 hours
+    setInterval(checkUpcomingPayments, 24 * 60 * 60 * 1000);
+  }, msUntilTomorrow);
+
+  console.log('📅 Payment notification scheduler initialized');
+};
 
 const startServer = async () => {
   try {
@@ -160,6 +243,9 @@ const startServer = async () => {
       app.listen(PORT, () => {
         console.log(`🚀 Server is running on http://localhost:${PORT}`);
         console.log(`📡 API endpoints available at http://localhost:${PORT}/api`);
+        
+        // Start payment notification scheduler
+        schedulePaymentNotifications();
       });
     } else {
       console.error('❌ Failed to connect to database. Please check your configuration.');

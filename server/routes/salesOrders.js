@@ -176,6 +176,44 @@ createTableIfNotExists().catch(err => {
   console.error('Initial table creation failed:', err.message);
 });
 
+// Get sales orders by handler - MUST come before GET /
+router.get('/handler/:handlerName', async (req, res) => {
+  try {
+    const { handlerName } = req.params;
+    const handlerId = req.query.handlerId ? parseInt(req.query.handlerId) : null;
+    const decodedHandlerName = decodeURIComponent(handlerName);
+    
+    console.log('Fetching sales orders for handler:', decodedHandlerName, 'handlerId:', handlerId);
+    
+    let query;
+    let params;
+    
+    if (handlerId) {
+      query = `SELECT * FROM sales_records WHERE handler_id = $1 ORDER BY created_at DESC`;
+      params = [handlerId];
+    } else {
+      query = `SELECT * FROM sales_records 
+               WHERE handler_name IS NOT NULL 
+                 AND (
+                   LOWER(TRIM(handler_name)) = LOWER(TRIM($1))
+                   OR LOWER(TRIM(handler_name)) LIKE '%' || LOWER(TRIM($1)) || '%'
+                 )
+               ORDER BY created_at DESC`;
+      params = [decodedHandlerName];
+    }
+    
+    const result = await pool.query(query, params);
+    
+    res.json({ 
+      success: true, 
+      salesOrders: result.rows 
+    });
+  } catch (error) {
+    console.error('Get sales orders by handler error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get all sales orders
 router.get('/', async (req, res) => {
   try {

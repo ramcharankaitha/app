@@ -277,7 +277,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     } else if (currentPage === 'customers' || currentPage === 'addCustomer') {
       // Customers is part of masterMenu, not a separate nav item
       setActiveNav('masterMenu');
-    } else if (currentPage === 'transactionMenu' || currentPage === 'stockIn' || currentPage === 'stockInMaster' || currentPage === 'stockOut' || currentPage === 'stockOutMaster' || currentPage === 'createSupplier' || currentPage === 'services' || currentPage === 'addService' || currentPage === 'salesOrder' || currentPage === 'addSalesOrder' || currentPage === 'purchaseBillAlert' || currentPage === 'transactionProducts' || currentPage === 'addProductPricing' || currentPage === 'dispatch' || currentPage === 'addDispatch') {
+    } else if (currentPage === 'transactionMenu' || currentPage === 'stockIn' || currentPage === 'stockInMaster' || currentPage === 'stockOut' || currentPage === 'stockOutMaster' || currentPage === 'createSupplier' || currentPage === 'services' || currentPage === 'addService' || currentPage === 'salesOrder' || currentPage === 'addSalesOrder' || currentPage === 'purchaseBillAlert' || currentPage === 'transactionProducts' || currentPage === 'addProductPricing' || currentPage === 'dispatch' || currentPage === 'addDispatch' || currentPage === 'paymentMaster' || currentPage === 'addPayment' || currentPage === 'purchaseOrderMaster' || currentPage === 'addPurchaseOrder') {
       setActiveNav('transactionMenu');
     } else if (currentPage === 'settings' || currentPage === 'profile' || currentPage === 'editProfile') {
       setActiveNav('settings');
@@ -393,12 +393,11 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     { title: 'Dispatch Department', desc: 'Manage dispatch workflows', icon: 'fa-shipping-fast', target: 'dispatch' },
     { title: 'Stock In', desc: 'Record stock entries', icon: 'fa-box-open', target: 'stockInMaster' },
     { title: 'Stock Out', desc: 'Record stock exits', icon: 'fa-box', target: 'stockOutMaster' },
-    { title: 'Create Supplier', desc: 'Record products from supplier', icon: 'fa-truck', target: 'createSupplier' },
-    { title: 'Products', desc: 'Manage product pricing', icon: 'fa-tags', target: 'transactionProducts' },
     { title: 'Services', desc: 'Manage service transactions', icon: 'fa-cog', target: 'services' },
     { title: 'Sales Order', desc: 'View and manage sales orders', icon: 'fa-chart-line', target: 'salesOrder' },
     { title: 'Chit Receipt', desc: 'Record chit payments', icon: 'fa-file-invoice-dollar', target: 'chitEntryMaster' },
     { title: 'Purchase Order', desc: 'Create and manage purchase orders', icon: 'fa-shopping-cart', target: 'purchaseOrderMaster' },
+    { title: 'Payment Menu', desc: 'Manage payment records', icon: 'fa-money-bill-wave', target: 'paymentMaster' },
     { title: 'Quotations', desc: 'Create and manage quotations', icon: 'fa-file-invoice', target: 'quotationMaster' },
   ];
 

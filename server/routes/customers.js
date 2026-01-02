@@ -248,7 +248,14 @@ router.post('/', async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    const { fullName, phone, address, city, state, pincode, whatsapp, itemCode, quantity, mrp, sellRate, discount, paymentMode, tokensUsed, tokensEarned, totalAmount, createdBy, chitPlanId } = req.body;
+    const { fullName, phone, address, city, state, pincode, whatsapp, itemCode, quantity, mrp, sellRate, discount, paymentMode, tokensUsed, tokensEarned, totalAmount, createdBy, chitPlanId, userRole } = req.body;
+    
+    // Ensure verification columns exist
+    const { ensureVerificationColumn, shouldBeVerified, notifyStaffCreation } = require('../utils/verification');
+    await ensureVerificationColumn('customers');
+    
+    // Determine verification status based on user role
+    const isVerified = shouldBeVerified(userRole || 'staff');
 
     if (!fullName) {
       await client.query('ROLLBACK');
@@ -308,8 +315,8 @@ router.post('/', async (req, res) => {
     }
 
     const result = await client.query(
-      `INSERT INTO customers (full_name, email, phone, address, city, state, pincode, whatsapp, item_code, quantity, mrp, sell_rate, discount, payment_mode, tokens_used, tokens_earned, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+      `INSERT INTO customers (full_name, email, phone, address, city, state, pincode, whatsapp, item_code, quantity, mrp, sell_rate, discount, payment_mode, tokens_used, tokens_earned, created_by, is_verified)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
        RETURNING *`,
       [
         fullName, 
@@ -328,7 +335,8 @@ router.post('/', async (req, res) => {
         paymentMode || null,
         tokensToRedeem,
         tokensToEarn,
-        createdBy || null
+        createdBy || null,
+        isVerified
       ]
     );
 
@@ -416,6 +424,11 @@ router.post('/', async (req, res) => {
     await client.query('COMMIT');
 
     const customer = result.rows[0];
+    
+    // Send notification if created by staff
+    if (!isVerified) {
+      await notifyStaffCreation('Customer', fullName, customer.id);
+    }
 
     let whatsappResult = null;
     if (phone && phone.trim()) {
@@ -466,6 +479,33 @@ router.post('/', async (req, res) => {
     });
   } finally {
     client.release();
+  }
+});
+
+// Verify customer (admin/supervisor only)
+router.put('/:id/verify', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { ensureVerificationColumn } = require('../utils/verification');
+    await ensureVerificationColumn('customers');
+    
+    const result = await pool.query(
+      'UPDATE customers SET is_verified = true WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
+    
+    res.json({ 
+      success: true, 
+      customer: result.rows[0],
+      message: 'Customer verified successfully' 
+    });
+  } catch (error) {
+    console.error('Verify customer error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

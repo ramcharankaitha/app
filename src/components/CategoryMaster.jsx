@@ -321,85 +321,204 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
                   <p style={{ fontSize: '14px', color: '#666' }}>Categories will appear here once created.</p>
                 </div>
               ) : (
-                <div className="premium-cards-grid">
-                  {filtered.map((category) => (
-                    <div
-                      key={category.id}
-                      className="premium-identity-card"
-                    >
-                      {/* Card Header */}
-                      <div className="premium-card-header">
-                        <div className="premium-header-content">
-                          <h3 className="premium-worker-name">{category.main || 'N/A'}</h3>
-                        </div>
-                        {/* Floating Three-Dot Menu */}
-                        <div 
-                          className="premium-card-menu" 
-                          ref={el => menuRefs.current[category.id] = el}
-                        >
-                          <button 
-                            className="premium-menu-trigger"
-                            onClick={(e) => toggleMenu(category.id, e)}
-                          >
-                            <i className="fas fa-ellipsis-v"></i>
-                          </button>
-                          {openMenuId === category.id && (
-                            <div className="premium-menu-dropdown">
-                              <div className="premium-menu-item" onClick={() => handleViewCategory(category)}>
+                <div className="attendance-table-container" style={{ 
+                  marginTop: '0', 
+                  maxHeight: 'none',
+                  overflowX: 'auto',
+                  width: '100%'
+                }}>
+                  <table className="attendance-table" style={{ width: '100%' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '60px' }}>
+                          #
+                        </th>
+                        <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          Main Category
+                        </th>
+                        <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          Sub Category
+                        </th>
+                        <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          Common Category
+                        </th>
+                        <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          City
+                        </th>
+                        <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                          Status
+                        </th>
+                        <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '250px' }}>
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map((category, index) => (
+                        <tr key={category.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                          <td style={{ 
+                            textAlign: 'center', 
+                            color: '#666',
+                            padding: '12px 8px',
+                            fontSize: '14px'
+                          }}>
+                            {index + 1}
+                          </td>
+                          <td style={{ 
+                            padding: '12px 8px',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            color: '#333'
+                          }}>
+                            {category.main || 'N/A'}
+                          </td>
+                          <td style={{ 
+                            padding: '12px 8px',
+                            fontSize: '14px',
+                            color: '#666'
+                          }}>
+                            {category.sub || 'N/A'}
+                          </td>
+                          <td style={{ 
+                            padding: '12px 8px',
+                            fontSize: '14px',
+                            color: '#666'
+                          }}>
+                            {category.common || 'N/A'}
+                          </td>
+                          <td style={{ 
+                            padding: '12px 8px',
+                            fontSize: '14px',
+                            color: '#666'
+                          }}>
+                            {category.city || 'N/A'}
+                          </td>
+                          <td style={{ 
+                            textAlign: 'center',
+                            padding: '12px 8px',
+                            fontSize: '14px'
+                          }}>
+                            {category.is_verified === false ? (
+                              <span style={{ 
+                                fontSize: '12px', 
+                                color: '#dc3545', 
+                                fontWeight: '600',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}>
+                                <i className="fas fa-exclamation-circle"></i> Not Verified
+                              </span>
+                            ) : category.is_verified === true ? (
+                              <span style={{ 
+                                fontSize: '12px', 
+                                color: '#28a745', 
+                                fontWeight: '600',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}>
+                                <i className="fas fa-check-circle"></i> Verified
+                              </span>
+                            ) : (
+                              <span style={{ 
+                                fontSize: '12px', 
+                                color: '#666', 
+                                fontWeight: '500'
+                              }}>
+                                N/A
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ 
+                            textAlign: 'center',
+                            padding: '12px 8px'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                              <button
+                                onClick={() => handleViewCategory(category)}
+                                style={{
+                                  background: '#007bff',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  padding: '6px 12px',
+                                  cursor: 'pointer',
+                                  fontSize: '13px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  transition: 'all 0.2s ease',
+                                  fontWeight: '500'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.background = '#0056b3';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.background = '#007bff';
+                                }}
+                              >
                                 <i className="fas fa-eye"></i>
-                                <span>View</span>
-                              </div>
-                              <div className="premium-menu-item" onClick={() => handleEditCategory(category)}>
+                                View
+                              </button>
+                              <button
+                                onClick={() => handleEditCategory(category)}
+                                style={{
+                                  background: '#28a745',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  padding: '6px 12px',
+                                  cursor: 'pointer',
+                                  fontSize: '13px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  transition: 'all 0.2s ease',
+                                  fontWeight: '500'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.background = '#218838';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.background = '#28a745';
+                                }}
+                              >
                                 <i className="fas fa-edit"></i>
-                                <span>Edit</span>
-                              </div>
-                              <div className="premium-menu-item premium-menu-item-danger" onClick={() => handleDeleteCategory(category)}>
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteCategory(category)}
+                                style={{
+                                  background: '#dc3545',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  padding: '6px 12px',
+                                  cursor: 'pointer',
+                                  fontSize: '13px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  transition: 'all 0.2s ease',
+                                  fontWeight: '500'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.background = '#c82333';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.background = '#dc3545';
+                                }}
+                              >
                                 <i className="fas fa-trash"></i>
-                                <span>Delete</span>
-                              </div>
+                                Delete
+                              </button>
                             </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Card Body - Two Column Layout */}
-                      <div className="premium-card-body">
-                        <div className="premium-info-row">
-                          <div className="premium-info-item">
-                            <div className="premium-info-icon">
-                              <i className="fas fa-layer-group"></i>
-                            </div>
-                            <div className="premium-info-content">
-                              <span className="premium-info-label">Sub Category</span>
-                              <span className="premium-info-value">{category.sub || 'N/A'}</span>
-                            </div>
-                          </div>
-                          <div className="premium-info-item">
-                            <div className="premium-info-icon">
-                              <i className="fas fa-tags"></i>
-                            </div>
-                            <div className="premium-info-content">
-                              <span className="premium-info-label">Common Category</span>
-                              <span className="premium-info-value">{category.common || 'N/A'}</span>
-                            </div>
-                          </div>
-                        </div>
-                        {category.city && (
-                          <div className="premium-info-row" style={{ marginTop: '16px' }}>
-                            <div className="premium-info-item">
-                              <div className="premium-info-icon">
-                                <i className="fas fa-map-marker-alt"></i>
-                              </div>
-                              <div className="premium-info-content">
-                                <span className="premium-info-label">City</span>
-                                <span className="premium-info-value">{category.city || 'N/A'}</span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
@@ -559,7 +678,44 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
                 </div>
               </div>
             </div>
-            <div className="modal-footer">
+            <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {(userRole === 'admin' || userRole === 'supervisor') && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedCategory.is_verified === true}
+                      onChange={async (e) => {
+                        console.log('Checkbox clicked:', e.target.checked, 'Current verified status:', selectedCategory.is_verified);
+                        if (e.target.checked) {
+                          try {
+                            console.log('Calling verify API for category ID:', selectedCategory.id);
+                            const response = await categoriesAPI.verify(selectedCategory.id);
+                            console.log('Verify API response:', response);
+                            if (response.success) {
+                              setSelectedCategory({ ...selectedCategory, is_verified: true });
+                              setSuccessMessage('Category verified successfully');
+                              setTimeout(() => setSuccessMessage(''), 3000);
+                              // Refresh from server to update the list
+                              await fetchCategories();
+                            } else {
+                              setError(response.error || 'Failed to verify category');
+                              setTimeout(() => setError(''), 3000);
+                            }
+                          } catch (err) {
+                            console.error('Error verifying category:', err);
+                            setError(err.message || 'Failed to verify category');
+                            setTimeout(() => setError(''), 3000);
+                          }
+                        }
+                      }}
+                      disabled={selectedCategory.is_verified === true}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                    />
+                    <span>Mark as Verified</span>
+                  </label>
+                )}
+              </div>
               <button className="modal-close-button" onClick={() => setShowViewModal(false)}>
                 Close
               </button>

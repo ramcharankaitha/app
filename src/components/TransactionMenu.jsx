@@ -5,14 +5,13 @@ const TransactionMenu = ({ onNavigate, onBack }) => {
     { title: 'Dispatch Department', desc: 'Manage dispatch workflows', target: 'dispatch', icon: 'fa-shipping-fast' },
     { title: 'Stock In', desc: 'Record stock entries', target: 'stockInMaster', icon: 'fa-box-open' },
     { title: 'Stock Out', desc: 'Record stock exits', target: 'stockOutMaster', icon: 'fa-box' },
-    { title: 'Supplier Transaction', desc: 'Record products from supplier', target: 'supplierTransactionMaster', icon: 'fa-truck' },
-    { title: 'Products', desc: 'Manage product pricing', target: 'transactionProducts', icon: 'fa-tags' },
     { title: 'Services', desc: 'Manage service transactions', target: 'services', icon: 'fa-cog' },
     { title: 'Sales Order', desc: 'View and manage sales orders', target: 'salesOrder', icon: 'fa-chart-line' },
     { title: 'Chit Receipt', desc: 'Record chit payments', target: 'chitEntryMaster', icon: 'fa-file-invoice-dollar' },
     { title: 'Purchase Order', desc: 'Create and manage purchase orders', target: 'purchaseOrderMaster', icon: 'fa-shopping-cart' },
     { title: 'Purchase Bill Alert', desc: 'Monitor purchase bill alerts', target: 'purchaseBillAlert', icon: 'fa-bell' },
     { title: 'Quotations', desc: 'Create and manage quotations', target: 'quotationMaster', icon: 'fa-file-invoice' },
+    { title: 'Payment Menu', desc: 'Manage payment records', target: 'paymentMaster', icon: 'fa-money-bill-wave' },
   ];
 
   const handleOpen = (target) => {

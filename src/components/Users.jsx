@@ -410,83 +410,151 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
               <p>No supervisors found matching your search</p>
             </div>
           ) : (
-            <div className="premium-cards-grid">
-              {filteredUsers.map((user) => {
-                // Determine role badge color - Red theme
-                const getRoleBadgeColor = (role) => {
-                  const roleLower = (role || '').toLowerCase();
-                  if (roleLower.includes('supervisor')) return '#dc3545'; // Red
-                  if (roleLower.includes('admin')) return '#dc3545'; // Red
-                  return '#dc3545'; // Red for all roles
-                };
-
-                return (
-                  <div
-                    key={user.id}
-                    className="premium-identity-card"
-                  >
-
-                    {/* Card Header */}
-                    <div className="premium-card-header">
-                      <div className="premium-avatar">
-                        <span>{user.initials || 'SP'}</span>
-                      </div>
-                      <div className="premium-header-content">
-                        <h3 className="premium-worker-name">{user.name || 'N/A'}</h3>
-                        <div 
-                          className="premium-role-badge"
-                          style={{ backgroundColor: getRoleBadgeColor(user.role) }}
-                        >
-                          {user.role || 'Supervisor'}
-                        </div>
-                      </div>
-                      {/* Move menu to header to prevent overlap */}
-                      <div 
-                        className="premium-card-menu" 
-                        ref={el => menuRefs.current[user.id] = el}
-                      >
-                        <button 
-                          className="premium-menu-trigger"
-                          onClick={(e) => toggleMenu(user.id, e)}
-                        >
-                          <i className="fas fa-ellipsis-v"></i>
-                        </button>
-                        {openMenuId === user.id && (
-                          <div className="premium-menu-dropdown">
-                            <div className="premium-menu-item" onClick={() => handleViewSupervisorDetails(user)}>
+            <div className="attendance-table-container" style={{ 
+              marginTop: '0', 
+              maxHeight: 'none',
+              overflowX: 'auto',
+              width: '100%'
+            }}>
+              <table className="attendance-table" style={{ width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '60px' }}>
+                      #
+                    </th>
+                    <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                      Name
+                    </th>
+                    <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '250px' }}>
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.map((user, index) => {
+                    return (
+                      <tr key={user.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                        <td style={{ 
+                          textAlign: 'center', 
+                          color: '#666',
+                          padding: '12px 8px',
+                          fontSize: '14px'
+                        }}>
+                          {index + 1}
+                        </td>
+                        <td style={{ 
+                          padding: '12px 8px',
+                          fontSize: '14px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{
+                              width: '40px',
+                              height: '40px',
+                              borderRadius: '50%',
+                              background: '#dc3545',
+                              color: '#fff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: '600',
+                              fontSize: '14px',
+                              flexShrink: 0
+                            }}>
+                              {user.initials || 'SP'}
+                            </div>
+                            <span style={{ fontWeight: '500', color: '#333' }}>{user.name || 'N/A'}</span>
+                          </div>
+                        </td>
+                        <td style={{ 
+                          textAlign: 'center',
+                          padding: '12px 8px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                            <button
+                              onClick={() => handleViewSupervisorDetails(user)}
+                              style={{
+                                background: '#007bff',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s ease',
+                                fontWeight: '500'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#0056b3';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#007bff';
+                              }}
+                            >
                               <i className="fas fa-eye"></i>
-                              <span>View</span>
-                            </div>
-                            <div className="premium-menu-item" onClick={() => handleEditSupervisor(user)}>
+                              View
+                            </button>
+                            <button
+                              onClick={() => handleEditSupervisor(user)}
+                              style={{
+                                background: '#28a745',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s ease',
+                                fontWeight: '500'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#218838';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#28a745';
+                              }}
+                            >
                               <i className="fas fa-edit"></i>
-                              <span>Edit</span>
-                            </div>
-                            <div className="premium-menu-item premium-menu-item-danger" onClick={() => handleDisableSupervisor(user)}>
-                              <i className="fas fa-ban"></i>
-                              <span>Disable</span>
-                            </div>
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDisableSupervisor(user)}
+                              style={{
+                                background: '#dc3545',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s ease',
+                                fontWeight: '500'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#c82333';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#dc3545';
+                              }}
+                            >
+                              <i className="fas fa-trash"></i>
+                              Delete
+                            </button>
                           </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Card Body - Two Column Layout */}
-                    <div className="premium-card-body">
-                      <div className="premium-info-row">
-                        <div className="premium-info-item">
-                          <div className="premium-info-icon">
-                            <i className="fas fa-store"></i>
-                          </div>
-                          <div className="premium-info-content">
-                            <span className="premium-info-label">Store</span>
-                            <span className="premium-info-value">{user.store || 'Not Assigned'}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

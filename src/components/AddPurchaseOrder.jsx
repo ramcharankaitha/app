@@ -25,6 +25,7 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
   const [currentProduct, setCurrentProduct] = useState({
     itemCode: '',
     productName: '',
+    skuCode: '',
     quantity: '',
     unitPrice: '',
     isFetching: false,
@@ -150,6 +151,7 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
       if (field === 'itemCode') {
         updated.productInfo = null;
         updated.productName = '';
+        updated.skuCode = '';
         updated.unitPrice = '';
       }
       
@@ -176,6 +178,7 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
           id: product.id,
           productName: product.product_name || product.productName || '',
           itemCode: product.item_code || product.itemCode || '',
+          skuCode: product.sku_code || product.skuCode || '',
           mrp: product.mrp || 0,
           sellRate: product.sell_rate || product.sellRate || 0
         };
@@ -184,7 +187,8 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
           ...prev,
           productInfo: productData,
           productName: productData.productName,
-          unitPrice: (productData.sellRate > 0 ? productData.sellRate : productData.mrp).toString(),
+          skuCode: product.sku_code || product.skuCode || '',
+          unitPrice: (productData.mrp > 0 ? productData.mrp : 0).toString(),
           isFetching: false
         }));
       } else {
@@ -193,6 +197,7 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
           ...prev, 
           productInfo: null, 
           productName: '',
+          skuCode: '',
           unitPrice: '',
           isFetching: false 
         }));
@@ -204,6 +209,7 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
         ...prev, 
         productInfo: null, 
         productName: '',
+        skuCode: '',
         unitPrice: '',
         isFetching: false 
       }));
@@ -256,6 +262,7 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
       id: newId,
       itemCode: currentProduct.itemCode.trim(),
       productName: currentProduct.productName,
+      skuCode: currentProduct.skuCode,
       quantity: quantity,
       unitPrice: unitPrice,
       totalPrice: totalPrice
@@ -265,6 +272,7 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
     setCurrentProduct({
       itemCode: '',
       productName: '',
+      skuCode: '',
       quantity: '',
       unitPrice: '',
       isFetching: false,
@@ -392,6 +400,7 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
           const items = addedProducts.map(product => ({
             itemCode: product.itemCode,
             productName: product.productName,
+            skuCode: product.skuCode || '',
             quantity: product.quantity,
             unitPrice: product.unitPrice,
             totalPrice: product.totalPrice
@@ -426,6 +435,7 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
             setCurrentProduct({
               itemCode: '',
               productName: '',
+              skuCode: '',
               quantity: '',
               unitPrice: '',
               isFetching: false,
@@ -493,7 +503,7 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
 
           <div className="form-section">
             <div className="form-grid four-col">
-              {/* Row 1: Supplier Name, Supplier Number, Handler Name, PO */}
+              {/* Row 1: Supplier Name, Supplier Number, Handler Name, PO Number */}
               <div className="form-group" style={{ position: 'relative' }}>
                 <label htmlFor="supplierName">Supplier Name *</label>
                 <div className="input-wrapper">
@@ -595,40 +605,10 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 </div>
               </div>
 
-              {/* Row 2: Order Date, Expected Delivery Date, Item Code, Product Name */}
-              <div className="form-group">
-                <label htmlFor="orderDate">Order Date *</label>
-                <div className="input-wrapper">
-                  <i className="fas fa-calendar input-icon"></i>
-                  <input
-                    type="date"
-                    id="orderDate"
-                    name="orderDate"
-                    className="form-input"
-                    value={formData.orderDate}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
+            </div>
 
-              <div className="form-group">
-                <label htmlFor="expectedDeliveryDate">Expected Delivery Date</label>
-                <div className="input-wrapper">
-                  <i className="fas fa-calendar-check input-icon"></i>
-                  <input
-                    type="date"
-                    id="expectedDeliveryDate"
-                    name="expectedDeliveryDate"
-                    className="form-input"
-                    value={formData.expectedDeliveryDate}
-                    onChange={handleInputChange}
-                    min={formData.orderDate}
-                  />
-                </div>
-              </div>
-
-              {/* Item Code */}
+            {/* Row 2: Item Code, Product Name, SKU Code, MRP */}
+            <div className="form-grid four-col" style={{ marginTop: '12px' }}>
               <div className="form-group" style={{ position: 'relative' }}>
                 <label htmlFor="itemCode">Item Code *</label>
                 <div className="input-wrapper" style={{ position: 'relative' }}>
@@ -683,7 +663,6 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 </div>
               </div>
 
-              {/* Product Name */}
               <div className="form-group">
                 <label htmlFor="productName">Product Name</label>
                 <div className="input-wrapper">
@@ -700,8 +679,43 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 </div>
               </div>
 
-              {/* Row 3: Quantity */}
-              {/* Quantity */}
+              <div className="form-group">
+                <label htmlFor="skuCode">SKU Code</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-boxes input-icon"></i>
+                  <input
+                    type="text"
+                    id="skuCode"
+                    className="form-input"
+                    placeholder="SKU Code (auto-filled)"
+                    value={currentProduct.skuCode}
+                    readOnly
+                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="unitPrice">MRP (Rs) *</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-rupee-sign input-icon"></i>
+                  <input
+                    type="number"
+                    id="unitPrice"
+                    className="form-input"
+                    placeholder="Enter MRP"
+                    value={currentProduct.unitPrice}
+                    onChange={(e) => handleProductChange('unitPrice', e.target.value)}
+                    min="0"
+                    step="0.01"
+                    disabled={!currentProduct.productInfo}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Row 3: Quantity, Order Date, Expected Delivery Date, Add Product Button */}
+            <div className="form-grid four-col" style={{ marginTop: '12px' }}>
               <div className="form-group">
                 <label htmlFor="quantity">Quantity *</label>
                 <div className="input-wrapper">
@@ -720,21 +734,34 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 </div>
               </div>
 
-              {/* Sell Rate */}
               <div className="form-group">
-                <label htmlFor="unitPrice">Sell Rate (Rs) *</label>
+                <label htmlFor="orderDate">Order Date *</label>
                 <div className="input-wrapper">
-                  <i className="fas fa-rupee-sign input-icon"></i>
+                  <i className="fas fa-calendar input-icon"></i>
                   <input
-                    type="number"
-                    id="unitPrice"
+                    type="date"
+                    id="orderDate"
+                    name="orderDate"
                     className="form-input"
-                    placeholder="Enter sell rate"
-                    value={currentProduct.unitPrice}
-                    onChange={(e) => handleProductChange('unitPrice', e.target.value)}
-                    min="0"
-                    step="0.01"
-                    disabled={!currentProduct.productInfo}
+                    value={formData.orderDate}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="expectedDeliveryDate">Expected Delivery Date</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-calendar-check input-icon"></i>
+                  <input
+                    type="date"
+                    id="expectedDeliveryDate"
+                    name="expectedDeliveryDate"
+                    className="form-input"
+                    value={formData.expectedDeliveryDate}
+                    onChange={handleInputChange}
+                    min={formData.orderDate}
                   />
                 </div>
               </div>
@@ -781,131 +808,137 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
             </div>
           </div>
 
-          {/* Product Summary Section */}
+          {/* Product Summary Section - Single Card */}
           {addedProducts.length > 0 && (
             <div className="form-section" style={{ 
               clear: 'both', 
-              marginTop: '80px', 
-              marginBottom: '20px',
-              paddingTop: '40px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '20px',
-              width: '100%'
+              marginTop: '240px', 
+              marginBottom: '130px',
+              paddingTop: '20px',
+              paddingBottom: '20px'
             }}>
-              {/* Product List Container */}
               <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: '0', width: '100%' }}>
-                <div className="attendance-table-container" style={{ 
-                  marginTop: '0', 
-                  maxHeight: '250px', 
-                  overflowY: 'auto', 
-                  marginBottom: '0',
-                  width: '100%'
-                }}>
-                  <table className="attendance-table" style={{ width: '100%' }}>
-                    <tbody>
-                      {addedProducts.map((product, index) => (
-                        <tr key={product.id}>
-                          <td style={{ textAlign: 'center', color: '#666', fontWeight: '500' }}>
-                            {index + 1}
-                          </td>
-                          <td style={{ fontWeight: '500', color: '#333' }}>
-                            {product.itemCode}
-                          </td>
-                          <td style={{ fontWeight: '500', color: '#333' }}>
-                            {product.productName}
-                          </td>
-                          <td style={{ textAlign: 'center', color: '#666' }}>
-                            {product.quantity}
-                          </td>
-                          <td style={{ textAlign: 'right', color: '#666' }}>
-                            ₹{parseFloat(product.unitPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </td>
-                          <td style={{ textAlign: 'right', fontWeight: '600', color: '#28a745' }}>
-                            ₹{parseFloat(product.totalPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </td>
-                          <td style={{ textAlign: 'center' }}>
-                            <button
-                              type="button"
-                              onClick={() => removeProduct(product.id)}
-                              style={{
-                                background: '#dc3545',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: '6px',
-                                padding: '6px 12px',
-                                cursor: 'pointer',
-                                fontSize: '12px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                transition: 'all 0.2s ease',
-                                whiteSpace: 'nowrap'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.target.style.background = '#c82333';
-                                e.target.style.transform = 'scale(1.05)';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.target.style.background = '#dc3545';
-                                e.target.style.transform = 'scale(1)';
-                              }}
-                              title="Remove this product"
-                            >
-                              <i className="fas fa-trash"></i>
-                              Remove
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Total Amount Summary Container */}
-              <div className="form-group" style={{ 
-                gridColumn: '1 / -1', 
-                marginTop: '0',
-                marginBottom: '0',
-                width: '100%',
-                paddingTop: '16px',
-                borderTop: '2px solid #e9ecef'
-              }}>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                  alignItems: 'center',
-                  gap: '16px',
-                  padding: '12px 16px',
-                  background: '#f8f9fa',
-                  borderRadius: '8px',
+                <div style={{ 
                   width: '100%',
-                  boxSizing: 'border-box'
+                  border: '1px solid #dee2e6',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  background: '#fff'
                 }}>
-                  <span style={{ 
-                    fontSize: '16px', 
-                    fontWeight: '700', 
-                    color: '#333'
+                  {/* Scrollable Product Table */}
+                  <div className="attendance-table-container" style={{ 
+                    marginTop: '0', 
+                    maxHeight: addedProducts.length > 2 ? '300px' : 'auto',
+                    overflowY: addedProducts.length > 2 ? 'auto' : 'visible',
+                    overflowX: 'auto',
+                    width: '100%',
+                    paddingRight: '8px'
                   }}>
-                    Total Amount:
-                  </span>
-                  <span style={{ 
-                    fontSize: '18px', 
-                    fontWeight: '700', 
-                    color: '#28a745',
-                    minWidth: '120px',
-                    textAlign: 'right'
+                    <table className="attendance-table" style={{ width: '100%', tableLayout: 'auto' }}>
+                      <thead>
+                        <tr>
+                          <th style={{ width: '60px', textAlign: 'center' }}>#</th>
+                          <th>ITEM CODE</th>
+                          <th>ITEM NAME</th>
+                          <th style={{ width: '100px', textAlign: 'center' }}>QTY</th>
+                          <th style={{ width: '120px', textAlign: 'center' }}>UNIT PRICE</th>
+                          <th style={{ width: '150px', textAlign: 'center' }}>TOTAL PRICE</th>
+                          <th style={{ width: '100px', textAlign: 'center' }}>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {addedProducts.map((product, index) => (
+                          <tr key={product.id}>
+                            <td style={{ textAlign: 'center', color: '#666', fontWeight: '500' }}>
+                              {index + 1}
+                            </td>
+                            <td style={{ fontWeight: '500', color: '#333' }}>
+                              {product.itemCode}
+                            </td>
+                            <td style={{ fontWeight: '500', color: '#333' }}>
+                              {product.productName}
+                            </td>
+                            <td style={{ textAlign: 'center', color: '#28a745', fontWeight: '600' }}>
+                              {product.quantity}
+                            </td>
+                            <td style={{ textAlign: 'center', fontWeight: '500', color: '#333' }}>
+                              ₹{parseFloat(product.unitPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td style={{ textAlign: 'center', fontWeight: '600', color: '#28a745' }}>
+                              ₹{parseFloat(product.totalPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              <button
+                                type="button"
+                                onClick={() => removeProduct(product.id)}
+                                style={{
+                                  background: '#dc3545',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  padding: '6px 12px',
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  transition: 'all 0.2s ease',
+                                  whiteSpace: 'nowrap'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.background = '#c82333';
+                                  e.target.style.transform = 'scale(1.05)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.background = '#dc3545';
+                                  e.target.style.transform = 'scale(1)';
+                                }}
+                                title="Remove this product"
+                              >
+                                <i className="fas fa-trash"></i>
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {/* Total Amount Row - Always Visible at Bottom of Card */}
+                  <div style={{ 
+                    background: '#f8f9fa', 
+                    borderTop: '2px solid #dc3545',
+                    padding: '12px 16px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    fontWeight: 'bold'
                   }}>
-                    ₹{calculateTotalAmount().toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </span>
+                    <div style={{ flex: 1, textAlign: 'right', color: '#333', marginRight: '20px', fontSize: '16px' }}>
+                      TOTAL AMOUNT:
+                    </div>
+                    <div style={{ 
+                      textAlign: 'center',
+                      color: '#28a745',
+                      fontSize: '18px',
+                      fontWeight: 'bold',
+                      minWidth: '150px'
+                    }}>
+                      ₹{calculateTotalAmount().toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </div>
+                    <div style={{ minWidth: '100px' }}></div>
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
           {/* Submit Button */}
-          <div className="form-actions" style={{ marginTop: '20px' }}>
+          <div className="form-actions" style={{ 
+            marginTop: addedProducts.length > 0 ? '130px' : '20px',
+            clear: 'both',
+            paddingTop: '20px'
+          }}>
             <button
               type="submit"
               disabled={isLoading || !formData.supplierName || formData.supplierName.trim() === '' || addedProducts.length === 0}

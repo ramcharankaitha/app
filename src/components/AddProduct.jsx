@@ -994,7 +994,13 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                     background: '#ffe0e0', 
                     color: '#dc3545', 
                     borderRadius: '8px', 
-                    marginBottom: '20px' 
+                    marginBottom: '20px',
+                    marginLeft: 'auto',
+                    marginRight: '0',
+                    textAlign: 'right',
+                    maxWidth: '50%',
+                    float: 'right',
+                    clear: 'both'
                   }}>
                     <i className="fas fa-exclamation-circle"></i> {error}
                   </div>

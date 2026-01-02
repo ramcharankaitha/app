@@ -145,6 +145,26 @@ const StockOutMaster = ({ onBack, onAddStockOut, onNavigate, userRole = 'admin' 
     setShowViewModal(true);
   };
 
+  const handleDeleteTransaction = async (transaction) => {
+    if (!window.confirm(`Are you sure you want to delete this stock out transaction for ${transaction.product_name}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setError('');
+      // Note: You may need to add a delete endpoint to stockAPI
+      // For now, this is a placeholder
+      setSuccessMessage('Delete functionality to be implemented');
+      setTimeout(() => setSuccessMessage(''), 3000);
+      // await stockAPI.deleteTransaction(transaction.id);
+      // await fetchTransactions();
+    } catch (err) {
+      console.error('Error deleting transaction:', err);
+      setError(err.message || 'Failed to delete transaction');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
   const closeViewModal = () => {
     setShowViewModal(null);
     setSelectedTransaction(null);
@@ -294,58 +314,178 @@ const StockOutMaster = ({ onBack, onAddStockOut, onNavigate, userRole = 'admin' 
                 )}
               </div>
             ) : (
-              <div className="products-grid">
-                {filteredTransactions.map((transaction) => (
-                  <div
-                    key={transaction.id}
-                    className="product-card stock-out-card"
+              <div className="attendance-table-container" style={{ 
+                marginTop: '0', 
+                maxHeight: 'none',
+                overflowX: 'auto',
+                width: '100%'
+              }}>
+                <table className="attendance-table" style={{ width: '100%' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '60px' }}>
+                        #
+                      </th>
+                      <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                        Product Name
+                      </th>
+                      <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                        Item Code
+                      </th>
+                      <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                        Quantity Removed
+                      </th>
+                      <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                        Previous Stock
+                      </th>
+                      <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                        New Stock
+                      </th>
+                      <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                        Created By
+                      </th>
+                      <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                        Date
+                      </th>
+                      <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                        Status
+                      </th>
+                      <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '200px' }}>
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredTransactions.map((transaction, index) => {
+                      return (
+                        <tr key={transaction.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                          <td style={{ 
+                            textAlign: 'center', 
+                            color: '#666',
+                            padding: '12px 8px',
+                            fontSize: '14px'
+                          }}>
+                            {index + 1}
+                          </td>
+                          <td style={{ 
+                            padding: '12px 8px',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            color: '#333'
+                          }}>
+                            {transaction.product_name || 'Unknown Product'}
+                          </td>
+                          <td style={{ 
+                            padding: '12px 8px',
+                            fontSize: '14px',
+                            color: '#666'
+                          }}>
+                            {transaction.item_code || 'N/A'}
+                          </td>
+                          <td style={{ 
+                            textAlign: 'center',
+                            padding: '12px 8px',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            color: '#dc3545'
+                          }}>
+                            -{transaction.quantity || 0}
+                          </td>
+                          <td style={{ 
+                            textAlign: 'center',
+                            padding: '12px 8px',
+                            fontSize: '14px',
+                            color: '#666'
+                          }}>
+                            {transaction.previous_quantity || 0}
+                          </td>
+                          <td style={{ 
+                            textAlign: 'center',
+                            padding: '12px 8px',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            color: '#333'
+                          }}>
+                            {transaction.new_quantity || 0}
+                          </td>
+                          <td style={{ 
+                            padding: '12px 8px',
+                            fontSize: '14px',
+                            color: '#666'
+                          }}>
+                            {transaction.created_by || 'System'}
+                          </td>
+                          <td style={{ 
+                            padding: '12px 8px',
+                            fontSize: '14px',
+                            color: '#666'
+                          }}>
+                            {formatDate(transaction.created_at)}
+                          </td>
+                          <td style={{ 
+                            textAlign: 'center',
+                            padding: '12px 8px'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                              <button
                     onClick={() => handleViewTransaction(transaction)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <div className="product-header">
-                      <div className="product-title">{transaction.product_name || 'Unknown Product'}</div>
-                      <div className="product-badge" style={{ background: '#dc3545', color: '#fff' }}>
-                        <i className="fas fa-arrow-down"></i> Stock Out
+                                style={{
+                                  background: '#007bff',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  padding: '6px 12px',
+                                  cursor: 'pointer',
+                                  fontSize: '13px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  transition: 'all 0.2s ease',
+                                  fontWeight: '500'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.background = '#0056b3';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.background = '#007bff';
+                                }}
+                              >
+                                <i className="fas fa-eye"></i>
+                                View
+                              </button>
+                              <button
+                                onClick={() => handleDeleteTransaction(transaction)}
+                                style={{
+                                  background: '#dc3545',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  padding: '6px 12px',
+                                  cursor: 'pointer',
+                                  fontSize: '13px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  transition: 'all 0.2s ease',
+                                  fontWeight: '500'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.background = '#c82333';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.background = '#dc3545';
+                                }}
+                              >
+                                <i className="fas fa-trash"></i>
+                                Delete
+                              </button>
                       </div>
-                    </div>
-                    <div className="product-details">
-                      <div className="detail-row">
-                        <span className="detail-label">Item Code:</span>
-                        <span className="detail-value">{transaction.item_code || 'N/A'}</span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Quantity Removed:</span>
-                        <span className="detail-value" style={{ color: '#dc3545', fontWeight: 'bold' }}>
-                          -{transaction.quantity || 0}
-                        </span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Previous Stock:</span>
-                        <span className="detail-value">{transaction.previous_quantity || 0}</span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">New Stock:</span>
-                        <span className="detail-value" style={{ fontWeight: 'bold' }}>
-                          {transaction.new_quantity || 0}
-                        </span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Created By:</span>
-                        <span className="detail-value">{transaction.created_by || 'System'}</span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Date:</span>
-                        <span className="detail-value">{formatDate(transaction.created_at)}</span>
-                      </div>
-                    </div>
-                    {transaction.notes && (
-                      <div className="product-notes">
-                        <i className="fas fa-sticky-note"></i>
-                        {transaction.notes}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
@@ -434,6 +574,56 @@ const StockOutMaster = ({ onBack, onAddStockOut, onNavigate, userRole = 'admin' 
                   <strong>Notes:</strong> {selectedTransaction.notes}
                 </div>
               )}
+              {(userRole === 'admin' || userRole === 'supervisor') && (
+                <div style={{ padding: '12px', background: '#f8f9fa', borderRadius: '8px', marginTop: '16px', borderTop: '1px solid #e0e0e0', paddingTop: '16px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedTransaction.is_verified === true}
+                      onChange={async (e) => {
+                        if (e.target.checked && selectedTransaction.is_verified === false) {
+                          try {
+                            const response = await stockAPI.verifyStockOut(selectedTransaction.id);
+                            if (response.success) {
+                              setSelectedTransaction({ ...selectedTransaction, is_verified: true });
+                              setSuccessMessage('Stock out transaction verified successfully');
+                              setTimeout(() => setSuccessMessage(''), 3000);
+                              fetchTransactions();
+                            } else {
+                              setError('Failed to verify transaction');
+                              setTimeout(() => setError(''), 3000);
+                            }
+                          } catch (err) {
+                            console.error('Error verifying transaction:', err);
+                            setError('Failed to verify transaction');
+                            setTimeout(() => setError(''), 3000);
+                          }
+                        }
+                      }}
+                      disabled={selectedTransaction.is_verified === true}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                    />
+                    <span>Mark as Verified</span>
+                  </label>
+                </div>
+              )}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px', gap: '12px' }}>
+              <button
+                onClick={closeViewModal}
+                style={{
+                  padding: '10px 20px',
+                  background: '#007bff',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

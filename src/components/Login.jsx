@@ -97,11 +97,9 @@ const Login = ({ onLoginSuccess }) => {
     <div className="app-container">
       {/* Header */}
       <header className="header">
-        <button className="back-btn" onClick={handleBack}>
-        </button>
+        <img src="/logo.png" alt="Anitha Stores Logo" className="header-logo" />
         <div className="header-content">
           <div className="header-logo-name">
-            <img src="/logo.png" alt="Anitha Stores Logo" className="header-logo" />
             <h1 className="store-name">Anitha Stores</h1>
           </div>
           <p className="subtitle">Secure login for Admin</p>

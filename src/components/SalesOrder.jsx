@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { salesOrdersAPI } from '../services/api';
+import ConfirmDialog from './ConfirmDialog';
 import './staff.css';
 
 const SalesOrder = ({ onBack, onAddSalesOrder, onNavigate, userRole = 'admin' }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [salesOrders, setSalesOrders] = useState([]);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
   const [viewSalesOrderModal, setViewSalesOrderModal] = useState(null);
+  const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
   const menuRefs = useRef({});
 
   // Fetch sales orders from database
@@ -29,7 +32,8 @@ const SalesOrder = ({ onBack, onAddSalesOrder, onNavigate, userRole = 'admin' })
           totalAmount: parseFloat(record.total_amount || 0) || 0,
           products: record.products || [],
           poNumber: record.po_number || null,
-          created_at: record.created_at
+          created_at: record.created_at,
+          is_verified: record.is_verified
         }));
         setSalesOrders(formattedRecords);
       }
@@ -136,6 +140,39 @@ const SalesOrder = ({ onBack, onAddSalesOrder, onNavigate, userRole = 'admin' })
     setViewSalesOrderModal(record);
   };
 
+  // Handle edit sales order
+  const handleEditSalesOrder = (record) => {
+    setOpenMenuId(null);
+    if (onNavigate) {
+      onNavigate('addSalesOrder', { editId: record.id });
+    }
+  };
+
+  // Handle delete sales order
+  const handleDeleteSalesOrder = (record) => {
+    setOpenMenuId(null);
+    setConfirmState({
+      open: true,
+      message: `Are you sure you want to delete sales order for ${record.name}? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          setError('');
+          const response = await salesOrdersAPI.delete(record.id);
+          if (response.success) {
+            await fetchSalesOrders();
+          } else {
+            setError(response.error || 'Failed to delete sales order');
+          }
+        } catch (err) {
+          console.error('Delete sales order error:', err);
+          setError(err.message || 'Failed to delete sales order');
+        } finally {
+          setConfirmState({ open: false, message: '', onConfirm: null });
+        }
+      }
+    });
+  };
+
   const closeViewModal = () => {
     setViewSalesOrderModal(null);
   };
@@ -188,6 +225,12 @@ const SalesOrder = ({ onBack, onAddSalesOrder, onNavigate, userRole = 'admin' })
 
       {/* Main Content Area */}
       <div className="dashboard-main">
+      <ConfirmDialog
+        open={confirmState.open}
+        message={confirmState.message}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
+      />
       <div className="staff-container">
       {/* Header */}
       <header className="staff-header">
@@ -259,119 +302,223 @@ const SalesOrder = ({ onBack, onAddSalesOrder, onNavigate, userRole = 'admin' })
               <p>No sales orders found matching your search</p>
             </div>
           ) : (
-            <div className="products-grid">
-              {filteredSalesOrders.map((record) => (
-                <div
-                  key={record.id}
-                  className="product-card stock-in-card"
-                  style={{ position: 'relative' }}
-                >
-                  <div className="product-header" style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: '1fr auto',
-                    alignItems: 'center',
-                    width: '100%',
-                    gap: '12px'
-                  }}>
-                    <div className="product-title" style={{ 
-                      fontWeight: '600',
-                      fontSize: '16px',
-                      color: '#333'
-                    }}>
-                      {record.name || 'N/A'}
-                    </div>
-                    <div 
-                      className="staff-options-container" 
-                      ref={el => menuRefs.current[record.id] = el}
-                      style={{ 
-                        position: 'relative'
-                      }}
-                    >
-                      <button 
-                        className="staff-options"
-                        onClick={(e) => toggleMenu(record.id, e)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: '#dc3545',
-                          fontSize: '16px',
-                          cursor: 'pointer',
-                          padding: '6px 8px',
-                          borderRadius: '4px',
-                          transition: 'all 0.2s ease',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          width: '32px',
-                          height: '32px'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.background = '#f8f9fa';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.background = 'none';
-                        }}
-                      >
-                        <i className="fas fa-ellipsis-v"></i>
-                      </button>
-                      {openMenuId === record.id && (
-                        <div className="staff-menu-dropdown" style={{
-                          position: 'absolute',
-                          top: '100%',
-                          right: 0,
-                          background: '#fff',
-                          borderRadius: '8px',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                          border: '1px solid #e0e0e0',
-                          minWidth: '180px',
-                          zIndex: 1000,
-                          marginTop: '4px',
-                          overflow: 'hidden'
+            <div className="attendance-table-container" style={{ 
+              marginTop: '0', 
+              maxHeight: 'none',
+              overflowX: 'auto',
+              width: '100%'
+            }}>
+              <table className="attendance-table" style={{ width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '60px' }}>
+                      #
+                    </th>
+                    <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                      Customer Name
+                    </th>
+                    <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                      Contact
+                    </th>
+                    <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                      Handler
+                    </th>
+                    <th style={{ textAlign: 'right', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                      Total Amount
+                    </th>
+                    <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                      Status
+                    </th>
+                    <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '250px' }}>
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredSalesOrders.map((record, index) => {
+                    return (
+                      <tr key={record.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                        <td style={{ 
+                          textAlign: 'center', 
+                          color: '#666',
+                          padding: '12px 8px',
+                          fontSize: '14px'
                         }}>
-                          <div className="menu-item" onClick={() => handleViewSalesOrderDetails(record)}>
-                            <i className="fas fa-eye"></i>
-                            <span>View Details</span>
+                          {index + 1}
+                        </td>
+                        <td style={{ 
+                          padding: '12px 8px',
+                          fontSize: '14px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{
+                              width: '40px',
+                              height: '40px',
+                              borderRadius: '50%',
+                              background: '#007bff',
+                              color: '#fff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: '600',
+                              fontSize: '14px',
+                              flexShrink: 0
+                            }}>
+                              {record.initials || 'SO'}
+                            </div>
+                            <span style={{ fontWeight: '500', color: '#333' }}>{record.name || 'N/A'}</span>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="product-details">
-                    <div className="detail-row">
-                      <span className="detail-label">Contact:</span>
-                      <span className="detail-value">{record.customerContact || 'N/A'}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Handler:</span>
-                      <span className="detail-value">{record.handlerName || 'N/A'}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Total Amount:</span>
-                      <span className="detail-value" style={{ fontWeight: 'bold', color: '#28a745' }}>
-                        ₹{parseFloat(record.totalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                      </span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Products:</span>
-                      <span className="detail-value">{record.products?.length || 0} items</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Date:</span>
-                      <span className="detail-value">{record.dateOfDuration ? new Date(record.dateOfDuration).toLocaleDateString('en-IN') : 'N/A'}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">PO Number:</span>
-                      <span className="detail-value" style={{ fontWeight: '600', color: '#dc3545' }}>
-                        {record.poNumber || 'N/A'}
-                      </span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Created:</span>
-                      <span className="detail-value">{record.created_at ? new Date(record.created_at).toLocaleDateString('en-IN') : 'N/A'}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                        </td>
+                        <td style={{ 
+                          padding: '12px 8px',
+                          fontSize: '14px',
+                          color: '#666'
+                        }}>
+                          {record.customerContact || 'N/A'}
+                        </td>
+                        <td style={{ 
+                          padding: '12px 8px',
+                          fontSize: '14px',
+                          color: '#666'
+                        }}>
+                          {record.handlerName || 'N/A'}
+                        </td>
+                        <td style={{ 
+                          textAlign: 'right',
+                          padding: '12px 8px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: '#28a745'
+                        }}>
+                            ₹{parseFloat(record.totalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          </td>
+                          <td style={{ 
+                            textAlign: 'center',
+                            padding: '12px 8px',
+                            fontSize: '14px'
+                          }}>
+                            {record.is_verified === false ? (
+                              <span style={{ 
+                                fontSize: '12px', 
+                                color: '#dc3545', 
+                                fontWeight: '600',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}>
+                                <i className="fas fa-exclamation-circle"></i> Not Verified
+                              </span>
+                            ) : record.is_verified === true ? (
+                              <span style={{ 
+                                fontSize: '12px', 
+                                color: '#28a745', 
+                                fontWeight: '600',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}>
+                                <i className="fas fa-check-circle"></i> Verified
+                              </span>
+                            ) : (
+                              <span style={{ 
+                                fontSize: '12px', 
+                                color: '#666', 
+                                fontWeight: '500'
+                              }}>
+                                N/A
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ 
+                            textAlign: 'center',
+                            padding: '12px 8px'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                            <button
+                              onClick={() => handleViewSalesOrderDetails(record)}
+                              style={{
+                                background: '#007bff',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s ease',
+                                fontWeight: '500'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#0056b3';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#007bff';
+                              }}
+                            >
+                              <i className="fas fa-eye"></i>
+                              View
+                            </button>
+                            <button
+                              onClick={() => handleEditSalesOrder(record)}
+                              style={{
+                                background: '#28a745',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s ease',
+                                fontWeight: '500'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#218838';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#28a745';
+                              }}
+                            >
+                              <i className="fas fa-edit"></i>
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteSalesOrder(record)}
+                              style={{
+                                background: '#dc3545',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s ease',
+                                fontWeight: '500'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#c82333';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#dc3545';
+                              }}
+                            >
+                              <i className="fas fa-trash"></i>
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
@@ -420,25 +567,133 @@ const SalesOrder = ({ onBack, onAddSalesOrder, onNavigate, userRole = 'admin' })
                     <span className="detail-value" style={{ color: '#28a745', fontWeight: '600' }}>₹{parseFloat(viewSalesOrderModal.totalAmount || 0).toFixed(2)}</span>
                   </div>
                   {viewSalesOrderModal.products && viewSalesOrderModal.products.length > 0 && (
-                    <div className="detail-row" style={{ marginTop: '20px', paddingTop: '20px', borderTop: '2px solid #e9ecef' }}>
-                      <span className="detail-label" style={{ fontSize: '16px', fontWeight: '700', color: '#000' }}>Products:</span>
-                      <div style={{ marginTop: '12px' }}>
-                        {viewSalesOrderModal.products.map((product, index) => (
-                          <div key={index} style={{ 
-                            padding: '12px', 
-                            marginBottom: '8px', 
-                            background: '#f8f9fa', 
-                            borderRadius: '8px',
-                            border: '1px solid #e9ecef'
-                          }}>
-                            <div style={{ fontWeight: '600', fontSize: '13px', marginBottom: '4px' }}>
-                              {product.productName || product.itemCode || `Product ${index + 1}`}
-                            </div>
-                            <div style={{ fontSize: '12px', color: '#666' }}>
-                              Item Code: {product.itemCode || 'N/A'} | Qty: {product.quantity || 0}
-                            </div>
-                          </div>
-                        ))}
+                    <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '2px solid #e9ecef' }}>
+                      <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#000', marginBottom: '16px' }}>Products</h3>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ 
+                          width: '100%', 
+                          borderCollapse: 'collapse',
+                          background: '#fff'
+                        }}>
+                          <thead>
+                            <tr style={{ 
+                              background: '#f8f9fa', 
+                              borderBottom: '2px solid #dee2e6' 
+                            }}>
+                              <th style={{ 
+                                padding: '12px 8px', 
+                                textAlign: 'left', 
+                                fontSize: '13px', 
+                                fontWeight: '600', 
+                                color: '#333',
+                                borderBottom: '2px solid #dee2e6'
+                              }}>#</th>
+                              <th style={{ 
+                                padding: '12px 8px', 
+                                textAlign: 'left', 
+                                fontSize: '13px', 
+                                fontWeight: '600', 
+                                color: '#333',
+                                borderBottom: '2px solid #dee2e6'
+                              }}>Item Code</th>
+                              <th style={{ 
+                                padding: '12px 8px', 
+                                textAlign: 'left', 
+                                fontSize: '13px', 
+                                fontWeight: '600', 
+                                color: '#333',
+                                borderBottom: '2px solid #dee2e6'
+                              }}>Product Name</th>
+                              <th style={{ 
+                                padding: '12px 8px', 
+                                textAlign: 'center', 
+                                fontSize: '13px', 
+                                fontWeight: '600', 
+                                color: '#333',
+                                borderBottom: '2px solid #dee2e6'
+                              }}>Qty</th>
+                              <th style={{ 
+                                padding: '12px 8px', 
+                                textAlign: 'right', 
+                                fontSize: '13px', 
+                                fontWeight: '600', 
+                                color: '#333',
+                                borderBottom: '2px solid #dee2e6'
+                              }}>Unit Price</th>
+                              <th style={{ 
+                                padding: '12px 8px', 
+                                textAlign: 'right', 
+                                fontSize: '13px', 
+                                fontWeight: '600', 
+                                color: '#333',
+                                borderBottom: '2px solid #dee2e6'
+                              }}>Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(() => {
+                              let products = [];
+                              if (viewSalesOrderModal.products) {
+                                if (typeof viewSalesOrderModal.products === 'string') {
+                                  try {
+                                    products = JSON.parse(viewSalesOrderModal.products);
+                                  } catch (e) {
+                                    console.error('Error parsing products:', e);
+                                  }
+                                } else if (Array.isArray(viewSalesOrderModal.products)) {
+                                  products = viewSalesOrderModal.products;
+                                }
+                              }
+                              return products.map((product, index) => {
+                                const quantity = parseFloat(product.quantity) || 0;
+                                const unitPrice = parseFloat(product.sellRate) || parseFloat(product.sell_rate) || parseFloat(product.mrp) || parseFloat(product.price) || 0;
+                                const total = quantity * unitPrice;
+                                
+                                return (
+                                  <tr key={index} style={{ 
+                                    borderBottom: '1px solid #f0f0f0' 
+                                  }}>
+                                    <td style={{ 
+                                      padding: '12px 8px', 
+                                      color: '#666',
+                                      fontSize: '14px'
+                                    }}>{index + 1}</td>
+                                    <td style={{ 
+                                      padding: '12px 8px', 
+                                      fontWeight: '500', 
+                                      color: '#333',
+                                      fontSize: '14px'
+                                    }}>{product.itemCode || 'N/A'}</td>
+                                    <td style={{ 
+                                      padding: '12px 8px', 
+                                      color: '#333',
+                                      fontSize: '14px'
+                                    }}>{product.productName || 'N/A'}</td>
+                                    <td style={{ 
+                                      padding: '12px 8px', 
+                                      textAlign: 'center', 
+                                      color: '#666',
+                                      fontSize: '14px'
+                                    }}>{quantity}</td>
+                                    <td style={{ 
+                                      padding: '12px 8px', 
+                                      textAlign: 'right', 
+                                      color: '#666',
+                                      fontSize: '14px'
+                                    }}>₹{unitPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                                    <td style={{ 
+                                      padding: '12px 8px', 
+                                      textAlign: 'right', 
+                                      fontWeight: '600', 
+                                      color: '#333',
+                                      fontSize: '14px'
+                                    }}>₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                                  </tr>
+                                );
+                              });
+                            })()}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   )}
@@ -451,7 +706,40 @@ const SalesOrder = ({ onBack, onAddSalesOrder, onNavigate, userRole = 'admin' })
                 </div>
               </div>
             </div>
-            <div className="modal-footer">
+            <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {(userRole === 'admin' || userRole === 'supervisor') && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
+                    <input
+                      type="checkbox"
+                      checked={viewSalesOrderModal.is_verified === true}
+                      onChange={async (e) => {
+                        if (e.target.checked && viewSalesOrderModal.is_verified === false) {
+                          try {
+                            const response = await salesOrdersAPI.verify(viewSalesOrderModal.id);
+                            if (response.success) {
+                              setViewSalesOrderModal({ ...viewSalesOrderModal, is_verified: true });
+                              setSuccessMessage('Sales order verified successfully');
+                              setTimeout(() => setSuccessMessage(''), 3000);
+                              await fetchSalesOrders();
+                            } else {
+                              setError('Failed to verify sales order');
+                              setTimeout(() => setError(''), 3000);
+                            }
+                          } catch (err) {
+                            console.error('Error verifying sales order:', err);
+                            setError('Failed to verify sales order');
+                            setTimeout(() => setError(''), 3000);
+                          }
+                        }
+                      }}
+                      disabled={viewSalesOrderModal.is_verified === true}
+                      style={{ width: '18px', height: '18px', cursor: viewSalesOrderModal.is_verified === true ? 'not-allowed' : 'pointer' }}
+                    />
+                    <span>Mark as Verified</span>
+                  </label>
+                )}
+              </div>
               <button className="modal-close-button" onClick={closeViewModal}>
                 Close
               </button>

@@ -7,6 +7,7 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
   const [searchQuery, setSearchQuery] = useState('');
   const [transports, setTransports] = useState([]);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
   const [viewTransportModal, setViewTransportModal] = useState(null);
   const [editTransportModal, setEditTransportModal] = useState(null);
@@ -96,7 +97,8 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
             initials: transport.name 
               ? transport.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
               : 'TM',
-            created_at: transport.created_at
+            created_at: transport.created_at,
+            is_verified: transport.is_verified
           };
         });
         setTransports(formattedTransports);
@@ -258,6 +260,29 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
   };
 
   // Handle disable transport
+  const handleVerifyTransport = async (transport) => {
+    setOpenMenuId(null);
+    if (!window.confirm(`Mark "${transport.travelsName || transport.name}" as verified?`)) {
+      return;
+    }
+
+    try {
+      const response = await transportAPI.verify(transport.id);
+      if (response.success) {
+        await fetchTransports();
+        setSuccessMessage('Transport verified successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        setError('Failed to verify transport');
+        setTimeout(() => setError(''), 3000);
+      }
+    } catch (err) {
+      console.error('Error verifying transport:', err);
+      setError('Failed to verify transport. Please try again.');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
   const handleDisableTransport = (transport) => {
     setOpenMenuId(null);
     setConfirmState({
@@ -393,6 +418,13 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
           {`Showing ${filteredTransports.length} of ${transports.length} transports`}
         </div>
 
+        {/* Success Message */}
+        {successMessage && (
+          <div style={{ padding: '12px', background: '#d4edda', color: '#155724', borderRadius: '8px', marginBottom: '20px', margin: '0 24px 20px' }}>
+            <i className="fas fa-check-circle"></i> {successMessage}
+          </div>
+        )}
+
         {/* Error Message */}
         {error && (
           <div style={{ padding: '12px', background: '#ffe0e0', color: '#dc3545', borderRadius: '8px', marginBottom: '20px' }}>
@@ -414,97 +446,265 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
               <p>No transport records found matching your search</p>
             </div>
           ) : (
-            <div className="premium-cards-grid">
-              {filteredTransports.map((transport) => {
-                // Format cities display: "2 Cities • Sundarapaly" or just city name if one
-                const getCitiesDisplay = () => {
-                  if (transport.addresses && transport.addresses.length > 0) {
-                    const cities = transport.addresses.map(a => a.city).filter(Boolean);
-                    if (cities.length === 0) return 'N/A';
-                    if (cities.length === 1) return cities[0];
-                    return `${cities.length} Cities • ${cities[0]}`;
-                  }
-                  if (transport.city) return transport.city;
-                  return 'N/A';
-                };
+            <div className="attendance-table-container" style={{ 
+              marginTop: '0', 
+              maxHeight: 'none',
+              overflowX: 'auto',
+              width: '100%'
+            }}>
+              <table className="attendance-table" style={{ width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '60px' }}>
+                      #
+                    </th>
+                    <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                      Name
+                    </th>
+                    <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                      Travels Name
+                    </th>
+                    <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                      Locations
+                    </th>
+                    <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                      Vehicle Number
+                    </th>
+                    <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                      Status
+                    </th>
+                    <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '300px' }}>
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTransports.map((transport, index) => {
+                    // Format cities display: "2 Cities • Sundarapaly" or just city name if one
+                    const getCitiesDisplay = () => {
+                      if (transport.addresses && transport.addresses.length > 0) {
+                        const cities = transport.addresses.map(a => a.city).filter(Boolean);
+                        if (cities.length === 0) return 'N/A';
+                        if (cities.length === 1) return cities[0];
+                        return `${cities.length} Cities • ${cities[0]}`;
+                      }
+                      if (transport.city) return transport.city;
+                      return 'N/A';
+                    };
 
-                return (
-                  <div
-                    key={transport.id}
-                    className="premium-identity-card"
-                  >
-                    {/* Card Header */}
-                    <div className="premium-card-header">
-                      <div className="premium-avatar">
-                        <span>{transport.initials || 'TM'}</span>
-                      </div>
-                      <div className="premium-header-content">
-                        <h3 className="premium-worker-name">{transport.name || 'N/A'}</h3>
-                        {transport.travelsName && (
-                          <div 
-                            className="premium-role-badge"
-                            style={{ backgroundColor: '#dc3545' }}
-                          >
-                            {transport.travelsName}
+                    return (
+                      <tr key={transport.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                        <td style={{ 
+                          textAlign: 'center', 
+                          color: '#666',
+                          padding: '12px 8px',
+                          fontSize: '14px'
+                        }}>
+                          {index + 1}
+                        </td>
+                        <td style={{ 
+                          padding: '12px 8px',
+                          fontSize: '14px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{
+                              width: '40px',
+                              height: '40px',
+                              borderRadius: '50%',
+                              background: '#007bff',
+                              color: '#fff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: '600',
+                              fontSize: '14px',
+                              flexShrink: 0
+                            }}>
+                              {transport.initials || 'TM'}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: '500', color: '#333' }}>
+                                {transport.name || 'N/A'}
+                              </div>
+                            </div>
                           </div>
-                        )}
-                      </div>
-                      {/* Floating Three-Dot Menu */}
-                      <div 
-                        className="premium-card-menu" 
-                        ref={el => menuRefs.current[transport.id] = el}
-                      >
-                        <button 
-                          className="premium-menu-trigger"
-                          onClick={(e) => toggleMenu(transport.id, e)}
-                        >
-                          <i className="fas fa-ellipsis-v"></i>
-                        </button>
-                        {openMenuId === transport.id && (
-                          <div className="premium-menu-dropdown">
-                            <div className="premium-menu-item" onClick={() => handleViewTransportDetails(transport)}>
+                        </td>
+                        <td style={{ 
+                          padding: '12px 8px',
+                          fontSize: '14px',
+                          color: '#666'
+                        }}>
+                          {transport.travelsName || 'N/A'}
+                        </td>
+                        <td style={{ 
+                          padding: '12px 8px',
+                          fontSize: '14px',
+                          color: '#666'
+                        }}>
+                          {getCitiesDisplay()}
+                        </td>
+                        <td style={{ 
+                          padding: '12px 8px',
+                          fontSize: '14px',
+                          color: '#666'
+                        }}>
+                          {transport.vehicleNumber || 'N/A'}
+                        </td>
+                        <td style={{ 
+                          textAlign: 'center',
+                          padding: '12px 8px',
+                          fontSize: '14px'
+                        }}>
+                          {transport.is_verified === false ? (
+                            <span style={{ 
+                              fontSize: '12px', 
+                              color: '#dc3545', 
+                              fontWeight: '600',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}>
+                              <i className="fas fa-exclamation-circle"></i> Not Verified
+                            </span>
+                          ) : transport.is_verified === true ? (
+                            <span style={{ 
+                              fontSize: '12px', 
+                              color: '#28a745', 
+                              fontWeight: '600',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}>
+                              <i className="fas fa-check-circle"></i> Verified
+                            </span>
+                          ) : (
+                            <span style={{ 
+                              fontSize: '12px', 
+                              color: '#666', 
+                              fontWeight: '500'
+                            }}>
+                              N/A
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ 
+                          textAlign: 'center',
+                          padding: '12px 8px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <button
+                              onClick={() => handleViewTransportDetails(transport)}
+                              style={{
+                                background: '#007bff',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s ease',
+                                fontWeight: '500'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#0056b3';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#007bff';
+                              }}
+                            >
                               <i className="fas fa-eye"></i>
-                              <span>View</span>
-                            </div>
-                            <div className="premium-menu-item" onClick={() => handleEditTransport(transport)}>
+                              View
+                            </button>
+                            <button
+                              onClick={() => handleEditTransport(transport)}
+                              style={{
+                                background: '#28a745',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s ease',
+                                fontWeight: '500'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#218838';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#28a745';
+                              }}
+                            >
                               <i className="fas fa-edit"></i>
-                              <span>Edit</span>
-                            </div>
-                            <div className="premium-menu-item premium-menu-item-danger" onClick={() => handleDisableTransport(transport)}>
-                              <i className="fas fa-ban"></i>
-                              <span>Disable</span>
-                            </div>
+                              Edit
+                            </button>
+                            {(userRole === 'admin' || userRole === 'supervisor') && transport.is_verified === false && (
+                              <button
+                                onClick={() => handleVerifyTransport(transport)}
+                                style={{
+                                  background: '#ff9800',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  padding: '6px 12px',
+                                  cursor: 'pointer',
+                                  fontSize: '13px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  transition: 'all 0.2s ease',
+                                  fontWeight: '500'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.background = '#f57c00';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.background = '#ff9800';
+                                }}
+                              >
+                                <i className="fas fa-check-circle"></i>
+                                Verify
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDisableTransport(transport)}
+                              style={{
+                                background: '#dc3545',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s ease',
+                                fontWeight: '500'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#c82333';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#dc3545';
+                              }}
+                            >
+                              <i className="fas fa-trash"></i>
+                              Delete
+                            </button>
                           </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Card Body - Two Column Layout */}
-                    <div className="premium-card-body">
-                      <div className="premium-info-row">
-                        <div className="premium-info-item">
-                          <div className="premium-info-icon">
-                            <i className="fas fa-map-marker-alt"></i>
-                          </div>
-                          <div className="premium-info-content">
-                            <span className="premium-info-label">Locations</span>
-                            <span className="premium-info-value">{getCitiesDisplay()}</span>
-                          </div>
-                        </div>
-                        <div className="premium-info-item">
-                          <div className="premium-info-icon">
-                            <i className="fas fa-truck"></i>
-                          </div>
-                          <div className="premium-info-content">
-                            <span className="premium-info-label">Vehicle</span>
-                            <span className="premium-info-value">{transport.vehicleNumber || 'N/A'}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
@@ -769,10 +969,59 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
                       <span className="detail-value">{new Date(viewTransportModal.created_at).toLocaleString()}</span>
                     </div>
                   )}
+                  <div className="detail-row">
+                    <span className="detail-label">Status:</span>
+                    <span className="detail-value">
+                      {viewTransportModal.is_verified === false ? (
+                        <span style={{ color: '#ff9800', fontWeight: '600' }}>Not Verified</span>
+                      ) : viewTransportModal.is_verified === true ? (
+                        <span style={{ color: '#28a745', fontWeight: '600' }}>Verified</span>
+                      ) : (
+                        <span style={{ color: '#28a745', fontWeight: '600' }}>Verified</span>
+                      )}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="modal-footer">
+            <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {(userRole === 'admin' || userRole === 'supervisor') && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
+                    <input
+                      type="checkbox"
+                      checked={viewTransportModal.is_verified === true}
+                      onChange={async (e) => {
+                        console.log('Checkbox clicked:', e.target.checked, 'Current verified status:', viewTransportModal.is_verified);
+                        if (e.target.checked) {
+                          try {
+                            console.log('Calling verify API for transport ID:', viewTransportModal.id);
+                            const response = await transportAPI.verify(viewTransportModal.id);
+                            console.log('Verify API response:', response);
+                            if (response.success) {
+                              setViewTransportModal({ ...viewTransportModal, is_verified: true });
+                              setSuccessMessage('Transport verified successfully');
+                              setTimeout(() => setSuccessMessage(''), 3000);
+                              // Refresh from server to update the list
+                              await fetchTransports();
+                            } else {
+                              setError(response.error || 'Failed to verify transport');
+                              setTimeout(() => setError(''), 3000);
+                            }
+                          } catch (err) {
+                            console.error('Error verifying transport:', err);
+                            setError(err.message || 'Failed to verify transport');
+                            setTimeout(() => setError(''), 3000);
+                          }
+                        }
+                      }}
+                      disabled={viewTransportModal.is_verified === true}
+                      style={{ width: '18px', height: '18px', cursor: viewTransportModal.is_verified === true ? 'not-allowed' : 'pointer' }}
+                    />
+                    <span>Mark as Verified</span>
+                  </label>
+                )}
+              </div>
               <button className="modal-close-button" onClick={closeViewModal}>
                 Close
               </button>

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
+const { ensureVerificationColumn, shouldBeVerified, notifyStaffCreation } = require('../utils/verification');
 
 router.get('/', async (req, res) => {
   try {
@@ -111,7 +112,13 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { travelsName, phoneNumber1, phoneNumber2, address, addresses } = req.body;
+    const { travelsName, phoneNumber1, phoneNumber2, address, addresses, userRole, createdBy } = req.body;
+    
+    // Ensure is_verified and created_by columns exist
+    await ensureVerificationColumn('transport');
+    
+    // Determine verification status based on user role
+    const isVerified = shouldBeVerified(userRole || 'staff');
 
     if (!travelsName) {
       return res.status(400).json({ error: 'Required fields: travelsName' });
@@ -168,8 +175,8 @@ router.post('/', async (req, res) => {
     const addressesJson = JSON.stringify(addresses);
 
     const result = await pool.query(
-      `INSERT INTO transport (name, travels_name, phone_number, address, city, state, pincode, service, vehicle_number, addresses)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO transport (name, travels_name, phone_number, address, city, state, pincode, service, vehicle_number, addresses, is_verified, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
         '', // name - removed (empty string instead of null for NOT NULL constraint)
@@ -181,9 +188,16 @@ router.post('/', async (req, res) => {
         null, // pincode - removed
         '', // service - removed (empty string instead of null for NOT NULL constraint)
         null, // vehicleNumber - removed
-        addressesJson
+        addressesJson,
+        isVerified,
+        createdBy || null
       ]
     );
+    
+    // Send notification if created by staff
+    if (!isVerified) {
+      await notifyStaffCreation('Transport', travelsName.trim(), result.rows[0].id);
+    }
 
     res.status(201).json({
       success: true,
@@ -204,6 +218,32 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Duplicate entry detected. Please check transport name and phone numbers.' });
     }
     
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Verify transport record (admin/supervisor only)
+router.put('/:id/verify', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await ensureVerificationColumn('transport');
+    
+    const result = await pool.query(
+      'UPDATE transport SET is_verified = true WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Transport record not found' });
+    }
+    
+    res.json({ 
+      success: true, 
+      transport: result.rows[0],
+      message: 'Transport record verified successfully' 
+    });
+  } catch (error) {
+    console.error('Verify transport error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -29,6 +29,8 @@ import ChitEntryMaster from './components/ChitEntryMaster';
 import AddChitEntry from './components/AddChitEntry';
 import PurchaseOrderMaster from './components/PurchaseOrderMaster';
 import AddPurchaseOrder from './components/AddPurchaseOrder';
+import PaymentMaster from './components/PaymentMaster';
+import AddPayment from './components/AddPayment';
 import QuotationMaster from './components/QuotationMaster';
 import AddQuotation from './components/AddQuotation';
 import StockIn from './components/StockIn';
@@ -740,6 +742,34 @@ const AdminRoutes = () => {
           <ProtectedRoute>
             <AddPurchaseOrder
               onBack={() => handleNavigation('purchaseOrderMaster')}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/paymentMaster"
+        element={
+          <ProtectedRoute>
+            <PaymentMaster
+              onBack={() => handleNavigation('transactionMenu')}
+              onAddPayment={() => handleNavigation('addPayment')}
+              onNavigate={handleNavigation}
+              userRole={userRole}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/addPayment"
+        element={
+          <ProtectedRoute>
+            <AddPayment
+              onBack={() => handleNavigation('paymentMaster')}
+              onCancel={() => handleNavigation('paymentMaster')}
               onNavigate={handleNavigation}
               userRole={userRole}
             />

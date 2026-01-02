@@ -129,6 +129,14 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
     setViewSupplierModal(null);
   };
 
+  // Handle edit supplier
+  const handleEditSupplier = (supplier) => {
+    setOpenMenuId(null);
+    if (onNavigate) {
+      onNavigate('addSupplier', { editId: supplier.id });
+    }
+  };
+
   // Handle delete supplier
   const handleDeleteSupplier = (supplier) => {
     setOpenMenuId(null);
@@ -282,72 +290,194 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
               <p>No suppliers found matching your search</p>
             </div>
           ) : (
-            <div className="premium-cards-grid">
-              {filteredSuppliers.map((supplier) => (
-                <div
-                  key={supplier.id}
-                  className="premium-identity-card"
-                >
-                  {/* Card Header */}
-                  <div className="premium-card-header">
-                    <div className="premium-header-content">
-                      <h3 className="premium-worker-name">{supplier.supplier_name || 'N/A'}</h3>
-                    </div>
-                    {/* Floating Three-Dot Menu */}
-                    <div 
-                      className="premium-card-menu" 
-                      ref={el => menuRefs.current[supplier.id] = el}
-                    >
-                      <button 
-                        className="premium-menu-trigger"
-                        onClick={(e) => toggleMenu(supplier.id, e)}
-                      >
-                        <i className="fas fa-ellipsis-v"></i>
-                      </button>
-                      {openMenuId === supplier.id && (
-                        <div className="premium-menu-dropdown">
-                          <div className="premium-menu-item" onClick={() => handleViewSupplierDetails(supplier)}>
+            <div className="attendance-table-container" style={{ 
+              marginTop: '0', 
+              maxHeight: 'none',
+              overflowX: 'auto',
+              width: '100%'
+            }}>
+              <table className="attendance-table" style={{ width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '60px' }}>
+                      #
+                    </th>
+                    <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                      Supplier Name
+                    </th>
+                    <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                      Phone
+                    </th>
+                    <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                      Address
+                    </th>
+                    <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                      Status
+                    </th>
+                    <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '250px' }}>
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredSuppliers.map((supplier, index) => (
+                    <tr key={supplier.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                      <td style={{ 
+                        textAlign: 'center', 
+                        color: '#666',
+                        padding: '12px 8px',
+                        fontSize: '14px'
+                      }}>
+                        {index + 1}
+                      </td>
+                      <td style={{ 
+                        padding: '12px 8px',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#333'
+                      }}>
+                        {supplier.supplier_name || 'N/A'}
+                      </td>
+                      <td style={{ 
+                        padding: '12px 8px',
+                        fontSize: '14px',
+                        color: '#666'
+                      }}>
+                        {supplier.phone || supplier.phone1 || 'N/A'}
+                      </td>
+                      <td style={{ 
+                        padding: '12px 8px',
+                        fontSize: '14px',
+                        color: '#666'
+                      }}>
+                        {supplier.address || 'N/A'}
+                      </td>
+                      <td style={{ 
+                        textAlign: 'center',
+                        padding: '12px 8px',
+                        fontSize: '14px'
+                      }}>
+                        {supplier.is_verified === false ? (
+                          <span style={{ 
+                            fontSize: '12px', 
+                            color: '#dc3545', 
+                            fontWeight: '600',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}>
+                            <i className="fas fa-exclamation-circle"></i> Not Verified
+                          </span>
+                        ) : supplier.is_verified === true ? (
+                          <span style={{ 
+                            fontSize: '12px', 
+                            color: '#28a745', 
+                            fontWeight: '600',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}>
+                            <i className="fas fa-check-circle"></i> Verified
+                          </span>
+                        ) : (
+                          <span style={{ 
+                            fontSize: '12px', 
+                            color: '#666', 
+                            fontWeight: '500'
+                          }}>
+                            N/A
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ 
+                        textAlign: 'center',
+                        padding: '12px 8px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                          <button
+                            onClick={() => handleViewSupplierDetails(supplier)}
+                            style={{
+                              background: '#007bff',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '6px',
+                              padding: '6px 12px',
+                              cursor: 'pointer',
+                              fontSize: '13px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              transition: 'all 0.2s ease',
+                              fontWeight: '500'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.target.style.background = '#0056b3';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.background = '#007bff';
+                            }}
+                          >
                             <i className="fas fa-eye"></i>
-                            <span>View</span>
-                          </div>
-                          <div className="premium-menu-item premium-menu-item-danger" onClick={() => handleDeleteSupplier(supplier)}>
+                            View
+                          </button>
+                          <button
+                            onClick={() => handleEditSupplier(supplier)}
+                            style={{
+                              background: '#28a745',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '6px',
+                              padding: '6px 12px',
+                              cursor: 'pointer',
+                              fontSize: '13px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              transition: 'all 0.2s ease',
+                              fontWeight: '500'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.target.style.background = '#218838';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.background = '#28a745';
+                            }}
+                          >
+                            <i className="fas fa-edit"></i>
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSupplier(supplier)}
+                            style={{
+                              background: '#dc3545',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '6px',
+                              padding: '6px 12px',
+                              cursor: 'pointer',
+                              fontSize: '13px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              transition: 'all 0.2s ease',
+                              fontWeight: '500'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.target.style.background = '#c82333';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.background = '#dc3545';
+                            }}
+                          >
                             <i className="fas fa-trash"></i>
-                            <span>Delete</span>
-                          </div>
+                            Delete
+                          </button>
                         </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Card Body - Two Column Layout */}
-                  <div className="premium-card-body">
-                    <div className="premium-info-row">
-                      <div className="premium-info-item">
-                        <div className="premium-info-icon">
-                          <i className="fas fa-phone"></i>
-                        </div>
-                        <div className="premium-info-content">
-                          <span className="premium-info-label">Phone</span>
-                          <span className="premium-info-value">{supplier.phone || supplier.phone1 || 'N/A'}</span>
-                        </div>
-                      </div>
-                    </div>
-                    {supplier.address && (
-                      <div className="premium-info-row" style={{ marginTop: '16px' }}>
-                        <div className="premium-info-item">
-                          <div className="premium-info-icon">
-                            <i className="fas fa-map-marker-alt"></i>
-                          </div>
-                          <div className="premium-info-content">
-                            <span className="premium-info-label">Address</span>
-                            <span className="premium-info-value">{supplier.address || 'N/A'}</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
@@ -451,7 +581,44 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
                 </div>
               </div>
             </div>
-            <div className="modal-footer">
+            <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {(userRole === 'admin' || userRole === 'supervisor') && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
+                    <input
+                      type="checkbox"
+                      checked={viewSupplierModal.is_verified === true}
+                      onChange={async (e) => {
+                        console.log('Checkbox clicked:', e.target.checked, 'Current verified status:', viewSupplierModal.is_verified);
+                        if (e.target.checked) {
+                          try {
+                            console.log('Calling verify API for supplier ID:', viewSupplierModal.id);
+                            const response = await suppliersAPI.verify(viewSupplierModal.id);
+                            console.log('Verify API response:', response);
+                            if (response.success) {
+                              setViewSupplierModal({ ...viewSupplierModal, is_verified: true });
+                              setSuccessMessage('Supplier verified successfully');
+                              setTimeout(() => setSuccessMessage(''), 3000);
+                              // Refresh from server to update the list
+                              await fetchSuppliers();
+                            } else {
+                              setError(response.error || 'Failed to verify supplier');
+                              setTimeout(() => setError(''), 3000);
+                            }
+                          } catch (err) {
+                            console.error('Error verifying supplier:', err);
+                            setError(err.message || 'Failed to verify supplier');
+                            setTimeout(() => setError(''), 3000);
+                          }
+                        }
+                      }}
+                      disabled={viewSupplierModal.is_verified === true}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                    />
+                    <span>Mark as Verified</span>
+                  </label>
+                )}
+              </div>
               <button className="modal-close-button" onClick={closeViewModal}>
                 Close
               </button>

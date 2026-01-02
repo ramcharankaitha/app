@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { productsAPI, staffAPI, salesOrdersAPI, customersAPI, suppliersAPI } from '../services/api';
+import { productsAPI, staffAPI, salesOrdersAPI, customersAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import './addUser.css';
 
@@ -10,14 +10,11 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
     handlerId: '',
     handlerName: '',
     handlerMobile: '',
-    dateOfDuration: '',
-    supplierName: '',
-    supplierNumber: ''
+    dateOfDuration: ''
   });
   // Current product being entered (single form)
   const [currentProduct, setCurrentProduct] = useState({
     itemCode: '',
-    category: '',
     productName: '',
     quantity: '',
     mrp: '',
@@ -30,11 +27,8 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
   const [addedProducts, setAddedProducts] = useState([]);
   const [handlers, setHandlers] = useState([]);
   const [allCustomers, setAllCustomers] = useState([]);
-  const [allSuppliers, setAllSuppliers] = useState([]);
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
-  const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
   const customerDropdownRef = useRef(null);
-  const supplierDropdownRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -89,35 +83,21 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
     }
   };
 
-  // Fetch all suppliers
-  const fetchAllSuppliers = async () => {
-    try {
-      const response = await suppliersAPI.getAll();
-      if (response.success) {
-        setAllSuppliers(response.suppliers || []);
-      }
-    } catch (err) {
-      console.error('Error fetching suppliers:', err);
-    }
-  };
 
   useEffect(() => {
     fetchHandlers();
     fetchAllCustomers();
-    fetchAllSuppliers();
     
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         fetchHandlers();
         fetchAllCustomers();
-        fetchAllSuppliers();
       }
     };
     
     const handleFocus = () => {
       fetchHandlers();
       fetchAllCustomers();
-      fetchAllSuppliers();
     };
     
     const handleStaffUpdate = () => {
@@ -141,25 +121,16 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
       if (customerDropdownRef.current && !customerDropdownRef.current.contains(event.target)) {
         setShowCustomerDropdown(false);
       }
-      if (supplierDropdownRef.current && !supplierDropdownRef.current.contains(event.target)) {
-        setShowSupplierDropdown(false);
-      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Filter customers, suppliers, and handlers based on search
+  // Filter customers based on search
   const filteredCustomers = allCustomers.filter(customer => {
     const searchTerm = formData.customerName.toLowerCase();
     return customer.name.toLowerCase().includes(searchTerm) || 
            customer.phone.includes(searchTerm);
-  });
-
-  const filteredSuppliers = allSuppliers.filter(supplier => {
-    const searchTerm = formData.supplierName.toLowerCase();
-    return supplier.supplier_name?.toLowerCase().includes(searchTerm) || 
-           supplier.phone?.includes(searchTerm);
   });
 
 
@@ -224,14 +195,6 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
         setShowCustomerDropdown(false);
         setFormData(prev => ({ ...prev, customerContact: '' }));
       }
-    } else if (name === 'supplierName') {
-      if (value.trim().length > 0) {
-        setShowSupplierDropdown(true);
-      } else {
-        // Show all suppliers when field is empty
-        setShowSupplierDropdown(true);
-        setFormData(prev => ({ ...prev, supplierNumber: '' }));
-      }
     }
   };
 
@@ -245,15 +208,6 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
     setShowCustomerDropdown(false);
   };
 
-  // Handle supplier selection
-  const handleSupplierSelect = (supplier) => {
-    setFormData(prev => ({
-      ...prev,
-      supplierName: supplier.supplier_name || '',
-      supplierNumber: supplier.phone || ''
-    }));
-    setShowSupplierDropdown(false);
-  };
 
   // Handle handler selection from dropdown
   const handleHandlerChange = (e) => {
@@ -308,11 +262,9 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
             id: product.id,
             productName: product.product_name || product.productName || '',
             itemCode: product.item_code || product.itemCode || '',
-            category: product.category || '',
             mrp: product.mrp || 0,
             sellRate: product.sell_rate || product.sellRate || 0
           },
-          category: product.category || '',
           productName: product.product_name || product.productName || '',
           mrp: (product.mrp || 0).toString(),
           sellRate: (product.sell_rate || product.sellRate || 0).toString(),
@@ -323,7 +275,6 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
         setCurrentProduct(prev => ({ 
           ...prev, 
           productInfo: null, 
-          category: '',
           productName: '',
           isFetching: false 
         }));
@@ -334,7 +285,6 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
       setCurrentProduct(prev => ({ 
         ...prev, 
         productInfo: null, 
-        category: '',
         productName: '',
         isFetching: false 
       }));
@@ -372,7 +322,6 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
     setAddedProducts(prev => [...prev, {
       id: newId,
       itemCode: currentProduct.itemCode.trim(),
-      category: currentProduct.category,
       productName: currentProduct.productName,
       quantity: parseFloat(currentProduct.quantity) || 0,
       mrp: parseFloat(currentProduct.mrp) || 0,
@@ -383,7 +332,6 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
     // Clear current product form
     setCurrentProduct({
       itemCode: '',
-      category: '',
       productName: '',
       quantity: '',
       mrp: '',
@@ -433,7 +381,6 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
       const products = addedProducts.map(item => ({
         itemCode: item.itemCode.trim(),
         productName: item.productName,
-        category: item.category,
         quantity: item.quantity || 0,
         mrp: item.mrp || 0,
         sellRate: item.sellRate || 0
@@ -456,8 +403,6 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
         handlerName: formData.handlerName,
         handlerMobile: formData.handlerMobile,
         dateOfDuration: formData.dateOfDuration,
-        supplierName: formData.supplierName.trim() || null,
-        supplierNumber: formData.supplierNumber.trim() || null,
         products: products,
         totalAmount: totalAmount,
         createdBy: createdBy
@@ -554,8 +499,8 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
           {/* Main Content */}
           <main className="add-user-content">
             <form onSubmit={handleSubmit} className="add-user-form">
-              <div className="form-grid three-col">
-                {/* Row 1: Customer Name, Number, Supplier Name */}
+              <div className="form-grid four-col">
+                {/* Row 1: Customer Name, Customer Phone Number, Handler Dropdown, Handler Phone Number */}
                 <div className="form-group" ref={customerDropdownRef} style={{ position: 'relative', zIndex: 1000 }}>
                   <label htmlFor="customerName">Customer Name *</label>
                   <div className="input-wrapper">
@@ -619,7 +564,7 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="customerContact">Number *</label>
+                  <label htmlFor="customerContact">Customer Phone Number *</label>
                   <div className="input-wrapper">
                     <i className="fas fa-phone input-icon"></i>
                     <input
@@ -636,75 +581,6 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                   </div>
                 </div>
 
-                <div className="form-group" ref={supplierDropdownRef} style={{ position: 'relative', zIndex: 1000 }}>
-                  <label htmlFor="supplierName">Supplier Name</label>
-                  <div className="input-wrapper">
-                    <i className="fas fa-truck input-icon"></i>
-                    <input
-                      type="text"
-                      id="supplierName"
-                      name="supplierName"
-                      className="form-input"
-                      placeholder="Type supplier name to search..."
-                      value={formData.supplierName}
-                      onChange={handleInputChange}
-                      onFocus={() => {
-                        if (allSuppliers.length > 0) {
-                          setShowSupplierDropdown(true);
-                        }
-                      }}
-                      onClick={() => {
-                        if (allSuppliers.length > 0) {
-                          setShowSupplierDropdown(true);
-                        }
-                      }}
-                      autoComplete="off"
-                    />
-                    <i className="fas fa-chevron-down dropdown-icon"></i>
-                  </div>
-                  {showSupplierDropdown && filteredSuppliers.length > 0 && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '100%',
-                      left: 0,
-                      right: 0,
-                      background: '#fff',
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      zIndex: 10000,
-                      maxHeight: '300px',
-                      overflowY: 'auto',
-                      marginTop: '4px'
-                    }}>
-                      {filteredSuppliers.map((supplier) => (
-                        <div
-                          key={supplier.id}
-                          onClick={() => handleSupplierSelect(supplier)}
-                          style={{
-                            padding: '12px 16px',
-                            cursor: 'pointer',
-                            borderBottom: '1px solid #f0f0f0',
-                            transition: 'background 0.2s'
-                          }}
-                          onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                          onMouseLeave={(e) => e.target.style.background = '#fff'}
-                        >
-                          <div style={{ fontWeight: '600', fontSize: '14px', color: '#333' }}>
-                            {supplier.supplier_name || 'N/A'}
-                          </div>
-                          {supplier.phone && (
-                            <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                              {supplier.phone}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Row 2: Handler Name, Handler Phone Number, Date of Duration */}
                 <div className="form-group">
                   <label htmlFor="handlerId">Handler Name *</label>
                   <div className="input-wrapper">
@@ -746,24 +622,8 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="dateOfDuration">Date of Duration *</label>
-                  <div className="input-wrapper">
-                    <i className="fas fa-calendar input-icon"></i>
-                    <input
-                      type="date"
-                      id="dateOfDuration"
-                      name="dateOfDuration"
-                      className="form-input"
-                      value={formData.dateOfDuration}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Row 3: Item Code, Category, Product Name */}
-                <div className="form-group">
+                {/* Row 2: Item Code, Product Name, Quantity, Date of Duration */}
+                <div className="form-group" style={{ marginTop: '12px' }}>
                   <label htmlFor="itemCode">Item Code *</label>
                   <div className="input-wrapper" style={{ position: 'relative' }}>
                     <i className="fas fa-barcode input-icon"></i>
@@ -817,24 +677,7 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="category">Category</label>
-                  <div className="input-wrapper">
-                    <i className="fas fa-tags input-icon"></i>
-                    <input
-                      type="text"
-                      id="category"
-                      name="category"
-                      className="form-input"
-                      placeholder="Category (auto-filled)"
-                      value={currentProduct.category}
-                      readOnly
-                      style={{ background: '#f5f5f5' }}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
+                <div className="form-group" style={{ marginTop: '12px' }}>
                   <label htmlFor="productName">Product Name</label>
                   <div className="input-wrapper">
                     <i className="fas fa-box input-icon"></i>
@@ -851,8 +694,7 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                   </div>
                 </div>
 
-                {/* Row 4: Quantity */}
-                <div className="form-group">
+                <div className="form-group" style={{ marginTop: '12px' }}>
                   <label htmlFor="quantity">Quantity *</label>
                   <div className="input-wrapper">
                     <i className="fas fa-shopping-cart input-icon"></i>
@@ -871,8 +713,24 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                   </div>
                 </div>
 
-                {/* Add Product Button and Added Products Display */}
-                <div className="form-group">
+                <div className="form-group" style={{ marginTop: '12px' }}>
+                  <label htmlFor="dateOfDuration">Date of Duration *</label>
+                  <div className="input-wrapper">
+                    <i className="fas fa-calendar input-icon"></i>
+                    <input
+                      type="date"
+                      id="dateOfDuration"
+                      name="dateOfDuration"
+                      className="form-input"
+                      value={formData.dateOfDuration}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Add Product Button */}
+                <div className="form-group" style={{ marginTop: '12px' }}>
                   <label>&nbsp;</label>
                   <button
                     type="button"
@@ -880,109 +738,165 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                     disabled={!currentProduct.productInfo || !currentProduct.quantity || parseFloat(currentProduct.quantity) <= 0}
                     style={{
                       width: '100%',
-                      padding: '8px 16px',
-                      background: (currentProduct.productInfo && currentProduct.quantity && parseFloat(currentProduct.quantity) > 0) ? '#28a745' : '#ccc',
+                      padding: '10px',
+                      background: (currentProduct.productInfo && currentProduct.quantity && parseFloat(currentProduct.quantity) > 0) ? '#dc3545' : '#ccc',
                       color: '#fff',
                       border: 'none',
-                      borderRadius: '6px',
+                      borderRadius: '8px',
                       cursor: (currentProduct.productInfo && currentProduct.quantity && parseFloat(currentProduct.quantity) > 0) ? 'pointer' : 'not-allowed',
-                      fontSize: '12px',
+                      fontSize: '14px',
                       fontWeight: '600',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '6px',
-                      marginTop: '4px'
+                      gap: '8px',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (currentProduct.productInfo && currentProduct.quantity && parseFloat(currentProduct.quantity) > 0) {
+                        e.target.style.background = '#c82333';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (currentProduct.productInfo && currentProduct.quantity && parseFloat(currentProduct.quantity) > 0) {
+                        e.target.style.background = '#dc3545';
+                      }
                     }}
                   >
                     <i className="fas fa-plus"></i>
-                    <span>Add Item</span>
+                    Add Item
                   </button>
                 </div>
+              </div>
 
-                {/* Display Added Products - Side by side with Add Item button */}
-                {addedProducts.length > 0 && (
-                  <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                    <label style={{ 
-                      display: 'block', 
-                      marginBottom: '8px', 
-                      fontWeight: '600', 
-                      color: '#333', 
-                      fontSize: '12px' 
-                    }}>
-                      Added Products ({addedProducts.length})
-                    </label>
+              {/* Display Added Products - Summary Table */}
+              {addedProducts.length > 0 && (
+                <div className="form-section" style={{ 
+                  marginTop: '40px', 
+                  clear: 'both', 
+                  paddingTop: '20px', 
+                  marginBottom: '150px',
+                  paddingBottom: '40px',
+                  position: 'relative',
+                  zIndex: 1
+                }}>
+                  <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: '0' }}>
                     <div style={{ 
-                      display: 'flex',
-                      flexDirection: 'row',
-                      gap: '8px',
-                      overflowX: 'auto',
-                      overflowY: 'hidden',
-                      width: '100%'
+                      width: '100%',
+                      border: '1px solid #dee2e6',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      background: '#fff',
+                      position: 'relative',
+                      zIndex: 1
                     }}>
-                      {addedProducts.map((product, index) => (
-                        <div
-                          key={product.id}
-                          style={{
-                            padding: '8px',
-                            background: '#f8f9fa',
-                            border: '2px solid #e0e0e0',
-                            borderRadius: '6px',
-                            position: 'relative',
-                            minWidth: '200px',
-                            maxWidth: '200px',
-                            flexShrink: 0,
-                            boxSizing: 'border-box'
-                          }}
-                        >
-                          <div style={{ marginBottom: '6px', fontWeight: '600', color: '#dc3545', fontSize: '11px' }}>
-                            Product {index + 1}
-                          </div>
-                          <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
-                            <span style={{ fontWeight: '500', color: '#666' }}>Item Code: </span>
-                            <span style={{ color: '#333' }}>{product.itemCode}</span>
-                          </div>
-                          <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
-                            <span style={{ fontWeight: '500', color: '#666' }}>Product: </span>
-                            <span style={{ color: '#333' }}>{product.productName || 'N/A'}</span>
-                          </div>
-                          <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
-                            <span style={{ fontWeight: '500', color: '#666' }}>Category: </span>
-                            <span style={{ color: '#333' }}>{product.category || 'N/A'}</span>
-                          </div>
-                          <div style={{ marginBottom: '4px', fontSize: '10px', lineHeight: '1.3' }}>
-                            <span style={{ fontWeight: '500', color: '#666' }}>Qty: </span>
-                            <span style={{ color: '#333' }}>{product.quantity}</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeProduct(product.id)}
-                            style={{
-                              position: 'absolute',
-                              top: '6px',
-                              right: '6px',
-                              background: '#dc3545',
-                              color: '#fff',
-                              border: 'none',
-                              borderRadius: '50%',
-                              width: '18px',
-                              height: '18px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '9px'
-                            }}
-                            title="Remove this product"
-                          >
-                            <i className="fas fa-times"></i>
-                          </button>
+                      {/* Scrollable Product Table */}
+                      <div className="attendance-table-container" style={{ 
+                        marginTop: '0', 
+                        maxHeight: '400px',
+                        overflowY: 'auto',
+                        overflowX: 'auto',
+                        width: '100%',
+                        paddingRight: '8px'
+                      }}>
+                        <table className="attendance-table" style={{ width: '100%', tableLayout: 'auto' }}>
+                          <thead>
+                            <tr>
+                              <th style={{ width: '60px', textAlign: 'center' }}>#</th>
+                              <th>ITEM CODE</th>
+                              <th>ITEM NAME</th>
+                              <th style={{ width: '100px', textAlign: 'center' }}>QTY</th>
+                              <th style={{ width: '120px', textAlign: 'center' }}>SELL RATE</th>
+                              <th style={{ width: '150px', textAlign: 'center' }}>Amount</th>
+                              <th style={{ width: '100px', textAlign: 'center' }}>Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {addedProducts.map((product, index) => (
+                              <tr key={product.id}>
+                                <td style={{ textAlign: 'center', color: '#666', fontWeight: '500' }}>
+                                  {index + 1}
+                                </td>
+                                <td style={{ fontWeight: '500', color: '#333' }}>
+                                  {product.itemCode}
+                                </td>
+                                <td style={{ fontWeight: '500', color: '#333' }}>
+                                  {product.productName}
+                                </td>
+                                <td style={{ textAlign: 'center', color: '#28a745', fontWeight: '600' }}>
+                                  {product.quantity}
+                                </td>
+                                <td style={{ textAlign: 'center', fontWeight: '500', color: '#333' }}>
+                                  ₹{parseFloat(product.sellRate || 0).toFixed(2)}
+                                </td>
+                                <td style={{ textAlign: 'center', fontWeight: '600', color: '#0066cc' }}>
+                                  ₹{((parseFloat(product.quantity) || 0) * (parseFloat(product.sellRate) || 0)).toFixed(2)}
+                                </td>
+                                <td style={{ textAlign: 'center' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeProduct(product.id)}
+                                    style={{
+                                      background: '#dc3545',
+                                      color: '#fff',
+                                      border: 'none',
+                                      borderRadius: '6px',
+                                      padding: '6px 12px',
+                                      cursor: 'pointer',
+                                      fontSize: '12px',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      transition: 'all 0.2s ease',
+                                      whiteSpace: 'nowrap'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.target.style.background = '#c82333';
+                                      e.target.style.transform = 'scale(1.05)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.target.style.background = '#dc3545';
+                                      e.target.style.transform = 'scale(1)';
+                                    }}
+                                    title="Remove this product"
+                                  >
+                                    <i className="fas fa-trash"></i>
+                                    Remove
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {/* Total Amount Row - Always Visible at Bottom of Card */}
+                      <div style={{ 
+                        background: '#f8f9fa', 
+                        borderTop: '2px solid #dc3545',
+                        padding: '12px 16px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        fontWeight: 'bold'
+                      }}>
+                        <div style={{ flex: 1, textAlign: 'right', color: '#333', marginRight: '20px', fontSize: '16px' }}>
+                          TOTAL AMOUNT:
                         </div>
-                      ))}
+                        <div style={{ 
+                          textAlign: 'center',
+                          color: '#dc3545',
+                          fontSize: '18px',
+                          fontWeight: 'bold',
+                          minWidth: '150px'
+                        }}>
+                          ₹{addedProducts.reduce((sum, product) => sum + ((parseFloat(product.quantity) || 0) * (parseFloat(product.sellRate) || 0)), 0).toFixed(2)}
+                        </div>
+                        <div style={{ minWidth: '100px' }}></div>
+                      </div>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
 
               {/* Error Message */}
@@ -1012,13 +926,25 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
               )}
 
               {/* Action Buttons */}
-              <div className="form-actions">
-                <button type="submit" className="create-user-btn" disabled={isLoading}>
-                  {isLoading ? 'Creating...' : 'Create Sales Order'}
-                </button>
-                <button type="button" className="cancel-btn" onClick={handleCancel}>
-                  Cancel and go back
-                </button>
+              <div style={{ 
+                marginTop: addedProducts.length > 0 ? '120px' : '20px',
+                clear: 'both',
+                paddingTop: '40px',
+                position: 'relative',
+                zIndex: 2,
+                marginBottom: '40px'
+              }}>
+                <div className="form-actions" style={{ 
+                  marginTop: '0',
+                  clear: 'both'
+                }}>
+                  <button type="submit" className="create-user-btn" disabled={isLoading}>
+                    {isLoading ? 'Creating...' : 'Create Sales Order'}
+                  </button>
+                  <button type="button" className="cancel-btn" onClick={handleCancel}>
+                    Cancel and go back
+                  </button>
+                </div>
               </div>
             </form>
           </main>

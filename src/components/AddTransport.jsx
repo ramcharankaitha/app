@@ -181,7 +181,8 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
         phoneNumber1: formData.phoneNumber1,
         phoneNumber2: formData.phoneNumber2,
         address: formData.address,
-        addresses: addresses
+        addresses: addresses,
+        userRole: userRole || 'staff'
       });
 
       if (response.success) {

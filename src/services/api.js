@@ -127,6 +127,11 @@ export const staffAPI = {
       body: JSON.stringify(staffData),
     });
   },
+  delete: async (id) => {
+    return apiCall(`/staff/${id}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 export const productsAPI = {
@@ -157,6 +162,11 @@ export const productsAPI = {
   delete: async (id) => {
     return apiCall(`/products/${id}`, {
       method: 'DELETE',
+    });
+  },
+  verify: async (id) => {
+    return apiCall(`/products/${id}/verify`, {
+      method: 'PUT',
     });
   },
 };
@@ -230,6 +240,11 @@ export const customersAPI = {
   },
   getByChitNumber: async (chitNumber) => {
     return apiCall(`/customers/chit-number/${encodeURIComponent(chitNumber)}`);
+  },
+  verify: async (id) => {
+    return apiCall(`/customers/${id}/verify`, {
+      method: 'PUT',
+    });
   },
 };
 
@@ -361,6 +376,11 @@ export const suppliersAPI = {
       method: 'DELETE',
     });
   },
+  verify: async (id) => {
+    return apiCall(`/suppliers/${id}/verify`, {
+      method: 'PUT',
+    });
+  },
   getTransactions: async () => {
     return apiCall('/suppliers/transactions');
   },
@@ -411,6 +431,21 @@ export const chitPlansAPI = {
   deleteCustomer: async (id) => {
     return apiCall(`/chit-plans/customers/${id}`, {
       method: 'DELETE',
+    });
+  },
+  verifyPlan: async (id) => {
+    return apiCall(`/chit-plans/plans/${id}/verify`, {
+      method: 'PUT',
+    });
+  },
+  verifyCustomer: async (id) => {
+    return apiCall(`/chit-plans/customers/${id}/verify`, {
+      method: 'PUT',
+    });
+  },
+  verifyEntry: async (id) => {
+    return apiCall(`/chit-plans/entries/${id}/verify`, {
+      method: 'PUT',
     });
   },
   getEntries: async () => {
@@ -487,6 +522,11 @@ export const dispatchAPI = {
       method: 'DELETE',
     });
   },
+  verify: async (id) => {
+    return apiCall(`/dispatch/${id}/verify`, {
+      method: 'PUT',
+    });
+  },
 };
 
 export const transportAPI = {
@@ -495,6 +535,11 @@ export const transportAPI = {
   },
   getById: async (id) => {
     return apiCall(`/transport/${id}`);
+  },
+  verify: async (id) => {
+    return apiCall(`/transport/${id}/verify`, {
+      method: 'PUT',
+    });
   },
   getByAddress: async (city, state, pincode) => {
     const params = new URLSearchParams();
@@ -528,6 +573,11 @@ export const transportAPI = {
 };
 
 export const stockAPI = {
+  checkLowStock: async () => {
+    return apiCall('/stock/check-low-stock', {
+      method: 'POST',
+    });
+  },
   stockIn: async (itemCode, quantity, notes, createdBy) => {
     return apiCall('/stock/in', {
       method: 'POST',
@@ -549,6 +599,16 @@ export const stockAPI = {
         sellRate,
         discount
       }),
+    });
+  },
+  verifyStockIn: async (id) => {
+    return apiCall(`/stock/in/${id}/verify`, {
+      method: 'PUT',
+    });
+  },
+  verifyStockOut: async (id) => {
+    return apiCall(`/stock/out/${id}/verify`, {
+      method: 'PUT',
     });
   },
   getTransactions: async (itemCode, productId, type, limit, offset) => {
@@ -597,6 +657,11 @@ export const servicesAPI = {
       body: JSON.stringify(serviceData),
     });
   },
+  verify: async (id) => {
+    return apiCall(`/services/${id}/verify`, {
+      method: 'PUT',
+    });
+  },
 };
 
 export const salesOrdersAPI = {
@@ -606,10 +671,26 @@ export const salesOrdersAPI = {
   getById: async (id) => {
     return apiCall(`/sales-orders/${id}`);
   },
+  getByHandler: async (handlerName, handlerId = null) => {
+    const url = handlerId 
+      ? `/sales-orders/handler/${encodeURIComponent(handlerName)}?handlerId=${handlerId}`
+      : `/sales-orders/handler/${encodeURIComponent(handlerName)}`;
+    return apiCall(url);
+  },
   create: async (salesOrderData) => {
     return apiCall('/sales-orders', {
       method: 'POST',
       body: JSON.stringify(salesOrderData),
+    });
+  },
+  delete: async (id) => {
+    return apiCall(`/sales-orders/${id}`, {
+      method: 'DELETE',
+    });
+  },
+  verify: async (id) => {
+    return apiCall(`/sales-orders/${id}/verify`, {
+      method: 'PUT',
     });
   },
 };
@@ -620,6 +701,12 @@ export const purchaseOrdersAPI = {
   },
   getById: async (id) => {
     return apiCall(`/purchase-orders/${id}`);
+  },
+  getByHandler: async (handlerName, handlerId = null) => {
+    const url = handlerId 
+      ? `/purchase-orders/handler/${encodeURIComponent(handlerName)}?handlerId=${handlerId}`
+      : `/purchase-orders/handler/${encodeURIComponent(handlerName)}`;
+    return apiCall(url);
   },
   create: async (orderData) => {
     return apiCall('/purchase-orders', {
@@ -641,6 +728,11 @@ export const purchaseOrdersAPI = {
   sendSMS: async (id) => {
     return apiCall(`/purchase-orders/${id}/send-sms`, {
       method: 'POST',
+    });
+  },
+  verify: async (id) => {
+    return apiCall(`/purchase-orders/${id}/verify`, {
+      method: 'PUT',
     });
   },
 };
@@ -679,6 +771,11 @@ export const categoriesAPI = {
   delete: async (id) => {
     return apiCall(`/categories/${id}`, {
       method: 'DELETE',
+    });
+  },
+  verify: async (id) => {
+    return apiCall(`/categories/${id}/verify`, {
+      method: 'PUT',
     });
   },
 };
@@ -728,6 +825,16 @@ export const quotationsAPI = {
       method: 'DELETE',
     });
   },
+  approve: async (id) => {
+    return apiCall(`/quotations/${id}/approve`, {
+      method: 'PUT',
+    });
+  },
+  verify: async (id) => {
+    return apiCall(`/quotations/${id}/verify`, {
+      method: 'PUT',
+    });
+  },
 };
 
 export const notificationsAPI = {
@@ -764,6 +871,37 @@ export const notificationsAPI = {
   },
 };
 
+export const paymentsAPI = {
+  getAll: async () => {
+    return apiCall('/payments');
+  },
+  getById: async (id) => {
+    return apiCall(`/payments/${id}`);
+  },
+  create: async (paymentData) => {
+    return apiCall('/payments', {
+      method: 'POST',
+      body: JSON.stringify(paymentData),
+    });
+  },
+  update: async (id, paymentData) => {
+    return apiCall(`/payments/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(paymentData),
+    });
+  },
+  delete: async (id) => {
+    return apiCall(`/payments/${id}`, {
+      method: 'DELETE',
+    });
+  },
+  verify: async (id) => {
+    return apiCall(`/payments/${id}/verify`, {
+      method: 'PUT',
+    });
+  },
+};
+
 export default {
   authAPI,
   usersAPI,
@@ -783,5 +921,6 @@ export default {
   smsAPI,
   quotationsAPI,
   notificationsAPI,
+  paymentsAPI,
 };
 

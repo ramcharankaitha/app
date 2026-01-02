@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 const { createCriticalAlert } = require('../services/notificationService');
+const { ensureVerificationColumn, shouldBeVerified, notifyStaffCreation } = require('../utils/verification');
 
 // Public endpoint for storefront - only returns available products
 router.get('/public', async (req, res) => {
@@ -69,7 +70,13 @@ router.get('/item-code/:itemCode', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { productName, itemCode, skuCode, minimumQuantity, maintainingQuantity, currentQuantity, supplierName, category, mrp, discount, discount1, discount2, sellRate, purchaseRate, points, imageUrl } = req.body;
+    const { productName, itemCode, skuCode, minimumQuantity, maintainingQuantity, currentQuantity, supplierName, category, mrp, discount, discount1, discount2, sellRate, purchaseRate, points, imageUrl, userRole, createdBy } = req.body;
+    
+    // Ensure verification columns exist
+    await ensureVerificationColumn('products');
+    
+    // Determine verification status based on user role
+    const isVerified = shouldBeVerified(userRole || 'staff');
 
     console.log('=== CREATE PRODUCT REQUEST ===');
     console.log('Request body:', JSON.stringify(req.body, null, 2));
@@ -137,8 +144,8 @@ router.post('/', async (req, res) => {
     const hasDiscount2 = existingColumns.includes('discount_2');
     
     // Build query based on existing columns
-    let columns = ['product_name', 'item_code', 'sku_code', 'minimum_quantity', 'current_quantity', 'status', 'mrp', 'discount', 'sell_rate', 'supplier_name', 'category'];
-    let values = [finalProductName, finalItemCode, finalSkuCode, parsedMinQty, parsedCurrentQty, 'STOCK', parsedMrp, parsedDiscount, parsedSellRate, supplierName ? supplierName.trim() : null, category && category.trim() !== '' ? category.trim() : null];
+    let columns = ['product_name', 'item_code', 'sku_code', 'minimum_quantity', 'current_quantity', 'status', 'mrp', 'discount', 'sell_rate', 'supplier_name', 'category', 'is_verified', 'created_by'];
+    let values = [finalProductName, finalItemCode, finalSkuCode, parsedMinQty, parsedCurrentQty, 'STOCK', parsedMrp, parsedDiscount, parsedSellRate, supplierName ? supplierName.trim() : null, category && category.trim() !== '' ? category.trim() : null, isVerified, createdBy || null];
     let paramIndex = values.length + 1;
     
     if (hasMaintainingQty) {
@@ -208,17 +215,22 @@ router.post('/', async (req, res) => {
 
     const newProduct = result.rows[0];
     
-    // Create critical alert for new product
-    try {
-      await createCriticalAlert(
-        'info',
-        'New Product Created',
-        `Product "${newProduct.product_name}" (${newProduct.item_code}) has been added to inventory`,
-        newProduct.id
-      );
-    } catch (notifError) {
-      console.error('Error creating notification:', notifError);
-      // Don't fail the request if notification fails
+    // Send notification if created by staff
+    if (!isVerified) {
+      await notifyStaffCreation('Product', `${newProduct.product_name} (${newProduct.item_code})`, newProduct.id);
+    } else {
+      // Create critical alert for new product (admin/supervisor created)
+      try {
+        await createCriticalAlert(
+          'info',
+          'New Product Created',
+          `Product "${newProduct.product_name}" (${newProduct.item_code}) has been added to inventory`,
+          newProduct.id
+        );
+      } catch (notifError) {
+        console.error('Error creating notification:', notifError);
+        // Don't fail the request if notification fails
+      }
     }
 
     res.status(201).json({
@@ -267,6 +279,32 @@ router.post('/', async (req, res) => {
     }
     
     res.status(500).json(errorResponse);
+  }
+});
+
+// Verify product (admin/supervisor only)
+router.put('/:id/verify', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await ensureVerificationColumn('products');
+    
+    const result = await pool.query(
+      'UPDATE products SET is_verified = true WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    
+    res.json({ 
+      success: true, 
+      product: result.rows[0],
+      message: 'Product verified successfully' 
+    });
+  } catch (error) {
+    console.error('Verify product error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { chitPlansAPI } from '../services/api';
+import ConfirmDialog from './ConfirmDialog';
 import './products.css';
 import './staff.css';
 
@@ -15,6 +16,7 @@ const ChitEntryMaster = ({ onBack, onAddChitEntry, onNavigate, userRole = 'admin
   const [chitPlans, setChitPlans] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
 
   const handleBack = () => {
     if (onNavigate) {
@@ -110,6 +112,32 @@ const ChitEntryMaster = ({ onBack, onAddChitEntry, onNavigate, userRole = 'admin
     }
   };
 
+  const handleDeleteEntry = (entry) => {
+    setConfirmState({
+      open: true,
+      message: `Are you sure you want to delete chit entry for "${entry.customer_name}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          setError('');
+          // Note: You may need to add a delete endpoint to chitPlansAPI
+          setError('Delete functionality to be implemented');
+          setTimeout(() => setError(''), 3000);
+          // const response = await chitPlansAPI.deleteEntry(entry.id);
+          // if (response.success) {
+          //   await fetchEntries();
+          // } else {
+          //   setError(response.error || 'Failed to delete entry');
+          // }
+        } catch (err) {
+          console.error('Delete entry error:', err);
+          setError(err.message || 'Failed to delete entry');
+        } finally {
+          setConfirmState({ open: false, message: '', onConfirm: null });
+        }
+      }
+    });
+  };
+
   const closeViewModal = () => {
     setShowViewModal(false);
     setSelectedEntry(null);
@@ -182,7 +210,13 @@ const ChitEntryMaster = ({ onBack, onAddChitEntry, onNavigate, userRole = 'admin
   };
 
   return (
-    <div className="dashboard-container">
+      <div className="dashboard-container">
+      <ConfirmDialog
+        open={confirmState.open}
+        message={confirmState.message}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
+      />
       {/* Left Sidebar Navigation */}
       <nav className="sidebar-nav">
         <div className="nav-item" onClick={handleBack}>
@@ -298,87 +332,226 @@ const ChitEntryMaster = ({ onBack, onAddChitEntry, onNavigate, userRole = 'admin
                 </p>
               </div>
             ) : (
-              <div className="products-grid">
-                {filteredEntries.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="product-card stock-in-card"
-                    style={{ position: 'relative' }}
-                  >
-                    <div className="product-header" style={{ 
-                      display: 'grid', 
-                      gridTemplateColumns: '1fr auto',
-                      alignItems: 'center',
-                      width: '100%',
-                      gap: '12px'
-                    }}>
-                      <div className="product-title" style={{ 
-                        fontWeight: '600',
-                        fontSize: '16px',
-                        color: '#333',
-                        wordBreak: 'break-word'
-                      }}>
-                        {entry.customer_name || 'N/A'}
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditEntry(entry);
-                        }}
-                        type="button"
-                        style={{
-                          padding: '6px 12px',
-                          background: '#dc3545',
-                          color: '#fff',
-                          border: 'none',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          fontSize: '12px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          transition: 'all 0.2s ease',
-                          whiteSpace: 'nowrap'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.background = '#c82333';
-                          e.target.style.transform = 'scale(1.05)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.background = '#dc3545';
-                          e.target.style.transform = 'scale(1)';
-                        }}
-                      >
-                        <i className="fas fa-edit"></i>
-                        Edit
-                      </button>
-                    </div>
-                    <div className="product-details">
-                      <div className="detail-row">
-                        <span className="detail-label">Phone:</span>
-                        <span className="detail-value">{entry.phone || 'N/A'}</span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Chit Plan:</span>
-                        <span className="detail-value">{entry.plan_name || 'N/A'}</span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Plan Amount:</span>
-                        <span className="detail-value" style={{ fontWeight: 'bold' }}>
-                          ₹{entry.plan_amount ? parseFloat(entry.plan_amount).toLocaleString('en-IN') : '0'}
-                        </span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Payment Mode:</span>
-                        <span className="detail-value">{entry.payment_mode || 'N/A'}</span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Date:</span>
-                        <span className="detail-value">{formatDate(entry.created_at)}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="attendance-table-container" style={{ 
+                marginTop: '0', 
+                maxHeight: 'none',
+                overflowX: 'auto',
+                width: '100%'
+              }}>
+                <table className="attendance-table" style={{ width: '100%' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '60px' }}>
+                        #
+                      </th>
+                      <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                        Customer Name
+                      </th>
+                      <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                        Phone
+                      </th>
+                      <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                        Chit Plan
+                      </th>
+                      <th style={{ textAlign: 'right', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                        Plan Amount
+                      </th>
+                      <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                        Payment Mode
+                      </th>
+                      <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                        Date
+                      </th>
+                      <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                        Status
+                      </th>
+                      <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '250px' }}>
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredEntries.map((entry, index) => (
+                      <tr key={entry.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                        <td style={{ 
+                          textAlign: 'center', 
+                          color: '#666',
+                          padding: '12px 8px',
+                          fontSize: '14px'
+                        }}>
+                          {index + 1}
+                        </td>
+                        <td style={{ 
+                          padding: '12px 8px',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          color: '#333'
+                        }}>
+                          {entry.customer_name || 'N/A'}
+                        </td>
+                        <td style={{ 
+                          padding: '12px 8px',
+                          fontSize: '14px',
+                          color: '#666'
+                        }}>
+                          {entry.phone || 'N/A'}
+                        </td>
+                        <td style={{ 
+                          padding: '12px 8px',
+                          fontSize: '14px',
+                          color: '#666'
+                        }}>
+                          {entry.plan_name || 'N/A'}
+                        </td>
+                        <td style={{ 
+                          textAlign: 'right',
+                          padding: '12px 8px',
+                          fontSize: '14px',
+                          fontWeight: '700',
+                          color: '#dc3545'
+                        }}>
+                          {entry.plan_amount ? `₹${parseFloat(entry.plan_amount).toLocaleString('en-IN')}` : 'N/A'}
+                        </td>
+                        <td style={{ 
+                          padding: '12px 8px',
+                          fontSize: '14px',
+                          color: '#666'
+                        }}>
+                          {entry.payment_mode || 'N/A'}
+                        </td>
+                        <td style={{ 
+                          padding: '12px 8px',
+                          fontSize: '14px',
+                          color: '#666'
+                        }}>
+                          {formatDate(entry.created_at)}
+                        </td>
+                        <td style={{ 
+                          textAlign: 'center',
+                          padding: '12px 8px',
+                          fontSize: '14px'
+                        }}>
+                          {entry.is_verified === false ? (
+                            <span style={{ 
+                              fontSize: '12px', 
+                              color: '#dc3545', 
+                              fontWeight: '600',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}>
+                              <i className="fas fa-exclamation-circle"></i> Not Verified
+                            </span>
+                          ) : entry.is_verified === true ? (
+                            <span style={{ 
+                              fontSize: '12px', 
+                              color: '#28a745', 
+                              fontWeight: '600',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}>
+                              <i className="fas fa-check-circle"></i> Verified
+                            </span>
+                          ) : (
+                            <span style={{ 
+                              fontSize: '12px', 
+                              color: '#666', 
+                              fontWeight: '500'
+                            }}>
+                              N/A
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ 
+                          textAlign: 'center',
+                          padding: '12px 8px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                            <button
+                              onClick={() => handleViewEntry(entry)}
+                              style={{
+                                background: '#007bff',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s ease',
+                                fontWeight: '500'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#0056b3';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#007bff';
+                              }}
+                            >
+                              <i className="fas fa-eye"></i>
+                              View
+                            </button>
+                            <button
+                              onClick={() => handleEditEntry(entry)}
+                              style={{
+                                background: '#28a745',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s ease',
+                                fontWeight: '500'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#218838';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#28a745';
+                              }}
+                            >
+                              <i className="fas fa-edit"></i>
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteEntry(entry)}
+                              style={{
+                                background: '#dc3545',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s ease',
+                                fontWeight: '500'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#c82333';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#dc3545';
+                              }}
+                            >
+                              <i className="fas fa-trash"></i>
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
@@ -484,66 +657,102 @@ const ChitEntryMaster = ({ onBack, onAddChitEntry, onNavigate, userRole = 'admin
               padding: '20px 24px',
               borderTop: '1px solid #e0e0e0',
               display: 'flex',
-              justifyContent: 'flex-end',
+              justifyContent: 'space-between',
+              alignItems: 'center',
               gap: '12px',
               background: '#f8f9fa',
               borderRadius: '0 0 16px 16px'
             }}>
-              <button 
-                onClick={() => {
-                  closeViewModal();
-                  handleEditEntry(selectedEntry);
-                }}
-                style={{
-                  padding: '10px 20px',
-                  background: '#dc3545',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.background = '#c82333';
-                  e.target.style.transform = 'scale(1.02)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.background = '#dc3545';
-                  e.target.style.transform = 'scale(1)';
-                }}
-              >
-                <i className="fas fa-edit"></i>
-                Edit
-              </button>
-              <button 
-                onClick={closeViewModal}
-                style={{
-                  padding: '10px 20px',
-                  background: '#6c757d',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.background = '#5a6268';
-                  e.target.style.transform = 'scale(1.02)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.background = '#6c757d';
-                  e.target.style.transform = 'scale(1)';
-                }}
-              >
-                Close
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {(userRole === 'admin' || userRole === 'supervisor') && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedEntry.is_verified === true}
+                      onChange={async (e) => {
+                        if (e.target.checked && selectedEntry.is_verified === false) {
+                          try {
+                            const response = await chitPlansAPI.verifyEntry(selectedEntry.id);
+                            if (response.success) {
+                              setSelectedEntry({ ...selectedEntry, is_verified: true });
+                              setSuccessMessage('Chit entry verified successfully');
+                              setTimeout(() => setSuccessMessage(''), 3000);
+                              await fetchEntries();
+                            } else {
+                              setError('Failed to verify chit entry');
+                              setTimeout(() => setError(''), 3000);
+                            }
+                          } catch (err) {
+                            console.error('Error verifying chit entry:', err);
+                            setError('Failed to verify chit entry');
+                            setTimeout(() => setError(''), 3000);
+                          }
+                        }
+                      }}
+                      disabled={selectedEntry.is_verified === true}
+                      style={{ width: '18px', height: '18px', cursor: selectedEntry.is_verified === true ? 'not-allowed' : 'pointer' }}
+                    />
+                    <span>Mark as Verified</span>
+                  </label>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button 
+                  onClick={() => {
+                    closeViewModal();
+                    handleEditEntry(selectedEntry);
+                  }}
+                  style={{
+                    padding: '10px 20px',
+                    background: '#dc3545',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = '#c82333';
+                    e.target.style.transform = 'scale(1.02)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = '#dc3545';
+                    e.target.style.transform = 'scale(1)';
+                  }}
+                >
+                  <i className="fas fa-edit"></i>
+                  Edit
+                </button>
+                <button 
+                  onClick={closeViewModal}
+                  style={{
+                    padding: '10px 20px',
+                    background: '#6c757d',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = '#5a6268';
+                    e.target.style.transform = 'scale(1.02)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = '#6c757d';
+                    e.target.style.transform = 'scale(1)';
+                  }}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

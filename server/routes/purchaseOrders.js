@@ -41,6 +41,66 @@ const generateOrderNumber = () => {
   return `${prefix}-${timestamp}-${random}`;
 };
 
+// Get purchase orders by handler - MUST come before GET /
+router.get('/handler/:handlerName', async (req, res) => {
+  try {
+    const { handlerName } = req.params;
+    const handlerId = req.query.handlerId ? parseInt(req.query.handlerId) : null;
+    const decodedHandlerName = decodeURIComponent(handlerName);
+    
+    console.log('Fetching purchase orders for handler:', decodedHandlerName, 'handlerId:', handlerId);
+    
+    let query;
+    let params;
+    
+    // Purchase orders use handler_name field
+    if (handlerId) {
+      // Try to match by finding handler name from staff table first
+      const staffResult = await pool.query(
+        'SELECT full_name FROM staff WHERE id = $1',
+        [handlerId]
+      );
+      
+      if (staffResult.rows.length > 0) {
+        const handlerNameFromStaff = staffResult.rows[0].full_name;
+        query = `SELECT * FROM purchase_orders 
+                 WHERE handler_name IS NOT NULL 
+                   AND (
+                     LOWER(TRIM(handler_name)) = LOWER(TRIM($1))
+                     OR LOWER(TRIM(handler_name)) LIKE '%' || LOWER(TRIM($1)) || '%'
+                   )
+                 ORDER BY created_at DESC`;
+        params = [handlerNameFromStaff];
+      } else {
+        query = `SELECT * FROM purchase_orders 
+                 WHERE handler_name IS NOT NULL 
+                   AND LOWER(TRIM(handler_name)) LIKE '%' || LOWER(TRIM($1)) || '%'
+                 ORDER BY created_at DESC`;
+        params = [decodedHandlerName];
+      }
+    } else {
+      query = `SELECT * FROM purchase_orders 
+               WHERE handler_name IS NOT NULL 
+                 AND (
+                   LOWER(TRIM(handler_name)) = LOWER(TRIM($1))
+                   OR LOWER(TRIM(handler_name)) LIKE '%' || LOWER(TRIM($1)) || '%'
+                 )
+               ORDER BY created_at DESC`;
+      params = [decodedHandlerName];
+    }
+    
+    const result = await pool.query(query, params);
+    
+    res.json({ 
+      success: true, 
+      orders: result.rows 
+    });
+  } catch (error) {
+    console.error('Get purchase orders by handler error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get all purchase orders
 router.get('/', async (req, res) => {
   try {

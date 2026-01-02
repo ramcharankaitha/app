@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { staffAPI } from '../services/api';
+import ConfirmDialog from './ConfirmDialog';
 
 const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -9,6 +10,7 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
   const [viewStaffModal, setViewStaffModal] = useState(null);
   const [editStaffModal, setEditStaffModal] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
   const menuRefs = useRef({});
 
   // Fetch staff from database
@@ -207,8 +209,38 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
     setViewStaffModal(null);
   };
 
+  // Handle delete staff
+  const handleDeleteStaff = (member) => {
+    setConfirmState({
+      open: true,
+      message: `Are you sure you want to delete ${member.name}? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          setError('');
+          const response = await staffAPI.delete(member.id);
+          if (response.success) {
+            await fetchStaff();
+          } else {
+            setError(response.error || 'Failed to delete staff');
+          }
+        } catch (err) {
+          console.error('Delete staff error:', err);
+          setError(err.message || 'Failed to delete staff');
+        } finally {
+          setConfirmState({ open: false, message: '', onConfirm: null });
+        }
+      }
+    });
+  };
+
   return (
     <div className="dashboard-container">
+      <ConfirmDialog
+        open={confirmState.open}
+        message={confirmState.message}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
+      />
       {/* Left Sidebar Navigation */}
       <nav className="sidebar-nav">
         <div className="nav-item" onClick={handleBack}>
@@ -324,70 +356,151 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
               <p>No staff found matching your search</p>
             </div>
           ) : (
-            <div className="premium-cards-grid">
-              {filteredStaff.map((member) => {
-                return (
-                  <div
-                    key={member.id}
-                    className="premium-identity-card"
-                  >
-                    {/* Card Header */}
-                    <div className="premium-card-header">
-                      <div className="premium-avatar">
-                        <span>{member.initials || 'ST'}</span>
-                      </div>
-                      <div className="premium-header-content">
-                        <h3 className="premium-worker-name">{member.name || 'N/A'}</h3>
-                        <div 
-                          className="premium-role-badge"
-                          style={{ backgroundColor: '#dc3545' }}
-                        >
-                          Staff
-                        </div>
-                      </div>
-                      {/* Floating Three-Dot Menu */}
-                      <div 
-                        className="premium-card-menu" 
-                        ref={el => menuRefs.current[member.id] = el}
-                      >
-                        <button 
-                          className="premium-menu-trigger"
-                          onClick={(e) => toggleMenu(member.id, e)}
-                        >
-                          <i className="fas fa-ellipsis-v"></i>
-                        </button>
-                        {openMenuId === member.id && (
-                          <div className="premium-menu-dropdown">
-                            <div className="premium-menu-item" onClick={() => handleViewStaffDetails(member)}>
+            <div className="attendance-table-container" style={{ 
+              marginTop: '0', 
+              maxHeight: 'none',
+              overflowX: 'auto',
+              width: '100%'
+            }}>
+              <table className="attendance-table" style={{ width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '60px' }}>
+                      #
+                    </th>
+                    <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                      Name
+                    </th>
+                    <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6', width: '250px' }}>
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStaff.map((member, index) => {
+                    return (
+                      <tr key={member.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                        <td style={{ 
+                          textAlign: 'center', 
+                          color: '#666',
+                          padding: '12px 8px',
+                          fontSize: '14px'
+                        }}>
+                          {index + 1}
+                        </td>
+                        <td style={{ 
+                          padding: '12px 8px',
+                          fontSize: '14px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{
+                              width: '40px',
+                              height: '40px',
+                              borderRadius: '50%',
+                              background: '#dc3545',
+                              color: '#fff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: '600',
+                              fontSize: '14px',
+                              flexShrink: 0
+                            }}>
+                              {member.initials || 'ST'}
+                            </div>
+                            <span style={{ fontWeight: '500', color: '#333' }}>{member.name || 'N/A'}</span>
+                          </div>
+                        </td>
+                        <td style={{ 
+                          textAlign: 'center',
+                          padding: '12px 8px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                            <button
+                              onClick={() => handleViewStaffDetails(member)}
+                              style={{
+                                background: '#007bff',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s ease',
+                                fontWeight: '500'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#0056b3';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#007bff';
+                              }}
+                            >
                               <i className="fas fa-eye"></i>
-                              <span>View</span>
-                            </div>
-                            <div className="premium-menu-item" onClick={() => handleEditStaff(member)}>
+                              View
+                            </button>
+                            <button
+                              onClick={() => handleEditStaff(member)}
+                              style={{
+                                background: '#28a745',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s ease',
+                                fontWeight: '500'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#218838';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#28a745';
+                              }}
+                            >
                               <i className="fas fa-edit"></i>
-                              <span>Edit</span>
-                            </div>
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteStaff(member)}
+                              style={{
+                                background: '#dc3545',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s ease',
+                                fontWeight: '500'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#c82333';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#dc3545';
+                              }}
+                            >
+                              <i className="fas fa-trash"></i>
+                              Delete
+                            </button>
                           </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Card Body - Two Column Layout */}
-                    <div className="premium-card-body">
-                      <div className="premium-info-row">
-                        <div className="premium-info-item">
-                          <div className="premium-info-icon">
-                            <i className="fas fa-layer-group"></i>
-                          </div>
-                          <div className="premium-info-content">
-                            <span className="premium-info-label">Floor</span>
-                            <span className="premium-info-value">{member.floor || 'Not Assigned'}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

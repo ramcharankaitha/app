@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
+const { ensureVerificationColumn, shouldBeVerified, notifyStaffCreation } = require('../utils/verification');
 
 // Get all categories
 router.get('/', async (req, res) => {
@@ -116,18 +117,30 @@ router.get('/:id', async (req, res) => {
 // Create a new category
 router.post('/', async (req, res) => {
   try {
-    const { main, sub, common, city } = req.body;
+    const { main, sub, common, city, userRole, createdBy } = req.body;
 
     if (!main || !sub || !common) {
       return res.status(400).json({ error: 'Main, Sub, and Common categories are required' });
     }
 
+    // Ensure verification columns exist
+    await ensureVerificationColumn('categories');
+    
+    // Determine verification status based on user role
+    const isVerified = shouldBeVerified(userRole || 'staff');
+    const categoryName = `${main.trim()} - ${sub.trim()} - ${common.trim()}`;
+
     const result = await pool.query(
-      `INSERT INTO categories (main, sub, common, city)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO categories (main, sub, common, city, is_verified, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [main.trim(), sub.trim(), common.trim(), city ? city.trim() : null]
+      [main.trim(), sub.trim(), common.trim(), city ? city.trim() : null, isVerified, createdBy || null]
     );
+
+    // Send notification if created by staff
+    if (!isVerified) {
+      await notifyStaffCreation('Category', categoryName, result.rows[0].id);
+    }
 
     res.status(201).json({
       success: true,
@@ -154,6 +167,32 @@ router.post('/', async (req, res) => {
       error: 'Internal server error',
       message: process.env.NODE_ENV === 'development' ? error.message : 'Please check server logs'
     });
+  }
+});
+
+// Verify category (admin/supervisor only)
+router.put('/:id/verify', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await ensureVerificationColumn('categories');
+    
+    const result = await pool.query(
+      'UPDATE categories SET is_verified = true WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+    
+    res.json({ 
+      success: true, 
+      category: result.rows[0],
+      message: 'Category verified successfully' 
+    });
+  } catch (error) {
+    console.error('Verify category error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
