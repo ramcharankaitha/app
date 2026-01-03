@@ -77,34 +77,23 @@ router.get('/handler/:handlerName', async (req, res) => {
     
     console.log('Fetching purchase orders for handler:', decodedHandlerName, 'handlerId:', handlerId);
     
+    // Ensure handler_id column exists
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'purchase_orders' AND column_name = 'handler_id') THEN
+          ALTER TABLE purchase_orders ADD COLUMN handler_id INTEGER;
+          RAISE NOTICE 'Added handler_id column to purchase_orders';
+        END IF;
+      END $$;
+    `);
+    
     let query;
     let params;
     
-    // Purchase orders use handler_name field
     if (handlerId) {
-      // Try to match by finding handler name from staff table first
-      const staffResult = await pool.query(
-        'SELECT full_name FROM staff WHERE id = $1',
-        [handlerId]
-      );
-      
-      if (staffResult.rows.length > 0) {
-        const handlerNameFromStaff = staffResult.rows[0].full_name;
-        query = `SELECT * FROM purchase_orders 
-                 WHERE handler_name IS NOT NULL 
-                   AND (
-                     LOWER(TRIM(handler_name)) = LOWER(TRIM($1))
-                     OR LOWER(TRIM(handler_name)) LIKE '%' || LOWER(TRIM($1)) || '%'
-                   )
-                 ORDER BY created_at DESC`;
-        params = [handlerNameFromStaff];
-      } else {
-        query = `SELECT * FROM purchase_orders 
-                 WHERE handler_name IS NOT NULL 
-                   AND LOWER(TRIM(handler_name)) LIKE '%' || LOWER(TRIM($1)) || '%'
-                 ORDER BY created_at DESC`;
-        params = [decodedHandlerName];
-      }
+      query = `SELECT * FROM purchase_orders WHERE handler_id = $1 ORDER BY created_at DESC`;
+      params = [handlerId];
     } else {
       query = `SELECT * FROM purchase_orders 
                WHERE handler_name IS NOT NULL 
@@ -416,6 +405,7 @@ router.post('/', async (req, res) => {
       supplierId,
       supplierName,
       supplierNumber,
+      handlerId,
       handlerName,
       poNumber,
       orderDate,
@@ -435,6 +425,37 @@ router.post('/', async (req, res) => {
       items = [];
     }
 
+    // Ensure handler_id column exists
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'purchase_orders' AND column_name = 'handler_id') THEN
+          ALTER TABLE purchase_orders ADD COLUMN handler_id INTEGER;
+          RAISE NOTICE 'Added handler_id column to purchase_orders';
+        END IF;
+      END $$;
+    `);
+
+    // If handlerId is provided, verify it and get the correct name
+    let finalHandlerId = handlerId ? parseInt(handlerId) : null;
+    let finalHandlerName = handlerName;
+
+    if (finalHandlerId) {
+      try {
+        const staffResult = await pool.query(
+          `SELECT id, full_name FROM staff WHERE id = $1 LIMIT 1`,
+          [finalHandlerId]
+        );
+        if (staffResult.rows.length > 0) {
+          finalHandlerName = staffResult.rows[0].full_name;
+        } else {
+          console.warn('Handler ID', finalHandlerId, 'not found in staff table during purchase order creation');
+        }
+      } catch (staffError) {
+        console.error('Error verifying handler_id during purchase order creation:', staffError);
+      }
+    }
+
     const orderNumber = poNumber || generateOrderNumber();
     const itemsJson = JSON.stringify(items);
 
@@ -442,16 +463,17 @@ router.post('/', async (req, res) => {
     try {
       result = await pool.query(
         `INSERT INTO purchase_orders (
-          order_number, supplier_id, supplier_name, supplier_number, handler_name, po_number,
+          order_number, supplier_id, supplier_name, supplier_number, handler_id, handler_name, po_number,
           order_date, expected_delivery_date, items, total_amount, status, notes, created_by
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
         RETURNING *`,
         [
           orderNumber,
           supplierId || null,
           supplierName,
           supplierNumber || null,
-          handlerName || null,
+          finalHandlerId,
+          finalHandlerName || null,
           poNumber || null,
           orderDate,
           expectedDeliveryDate || null,
@@ -464,18 +486,20 @@ router.post('/', async (req, res) => {
       );
     } catch (colError) {
       if (colError.code === '42703') {
-        // Column doesn't exist, try without optional columns
+        // Column doesn't exist, try without handler_id
         result = await pool.query(
           `INSERT INTO purchase_orders (
-            order_number, supplier_id, supplier_name, supplier_number,
+            order_number, supplier_id, supplier_name, supplier_number, handler_name, po_number,
             order_date, expected_delivery_date, items, total_amount, status, notes, created_by
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
           RETURNING *`,
           [
             orderNumber,
             supplierId || null,
             supplierName,
             supplierNumber || null,
+            finalHandlerName || null,
+            poNumber || null,
             orderDate,
             expectedDeliveryDate || null,
             itemsJson,

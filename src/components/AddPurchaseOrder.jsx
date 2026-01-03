@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { suppliersAPI, purchaseOrdersAPI, productsAPI, salesOrdersAPI } from '../services/api';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { suppliersAPI, purchaseOrdersAPI, productsAPI, salesOrdersAPI, staffAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import './addUser.css';
 
@@ -8,6 +9,7 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
     supplierName: '',
     supplierId: '',
     supplierNumber: '',
+    handlerId: '',
     handlerName: '',
     poNumber: '',
     orderDate: new Date().toISOString().split('T')[0],
@@ -16,6 +18,10 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
   const [supplierSearchResults, setSupplierSearchResults] = useState([]);
   const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
   const [isSearchingSupplier, setIsSearchingSupplier] = useState(false);
+  const supplierInputRef = useRef(null);
+  const supplierDropdownRef = useRef(null);
+  const [supplierDropdownPosition, setSupplierDropdownPosition] = useState(null);
+  const [handlers, setHandlers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -34,6 +40,95 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
   
   // Added products list
   const [addedProducts, setAddedProducts] = useState([]);
+
+  // Fetch handlers (staff with is_handler = true)
+  const fetchHandlers = async () => {
+    try {
+      const response = await staffAPI.getAll();
+      if (response.success) {
+        const handlerList = response.staff
+          .filter(staff => staff.is_handler === true)
+          .map(staff => ({
+            id: staff.id,
+            name: staff.full_name,
+            phone: staff.phone || ''
+          }));
+        setHandlers(handlerList);
+      }
+    } catch (err) {
+      console.error('Error fetching handlers:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchHandlers();
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchHandlers();
+      }
+    };
+    
+    const handleFocus = () => {
+      fetchHandlers();
+    };
+    
+    const handleStaffUpdate = () => {
+      fetchHandlers();
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('staffUpdated', handleStaffUpdate);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('staffUpdated', handleStaffUpdate);
+    };
+  }, []);
+
+  // Update supplier dropdown position on scroll/resize
+  useEffect(() => {
+    const updatePosition = () => {
+      if (supplierInputRef.current && showSupplierDropdown) {
+        const rect = supplierInputRef.current.getBoundingClientRect();
+        setSupplierDropdownPosition({
+          top: rect.bottom + 4,
+          left: rect.left,
+          width: rect.width
+        });
+      }
+    };
+
+    const handleScroll = () => updatePosition();
+    const handleResize = () => updatePosition();
+
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleResize);
+    updatePosition();
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [showSupplierDropdown]);
+
+  // Close supplier dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        supplierInputRef.current && 
+        !supplierInputRef.current.contains(event.target) &&
+        supplierDropdownRef.current &&
+        !supplierDropdownRef.current.contains(event.target)
+      ) {
+        setShowSupplierDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const getUserIdentifier = () => {
     const userDataStr = localStorage.getItem('userData');
@@ -65,6 +160,15 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
 
     if (name === 'supplierName') {
       searchSuppliers(value);
+      // Update dropdown position when typing
+      if (supplierInputRef.current) {
+        const rect = supplierInputRef.current.getBoundingClientRect();
+        setSupplierDropdownPosition({
+          top: rect.bottom + 4,
+          left: rect.left,
+          width: rect.width
+        });
+      }
     }
     
     // If PO number is entered, fetch products from sales order
@@ -313,11 +417,42 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
         });
         setSupplierSearchResults(filtered.slice(0, 5));
         setShowSupplierDropdown(filtered.length > 0);
+        
+        // Update dropdown position
+        if (supplierInputRef.current) {
+          const rect = supplierInputRef.current.getBoundingClientRect();
+          setSupplierDropdownPosition({
+            top: rect.bottom + 4,
+            left: rect.left,
+            width: rect.width
+          });
+        }
       }
     } catch (err) {
       console.error('Error searching suppliers:', err);
     } finally {
       setIsSearchingSupplier(false);
+    }
+  };
+
+  // Handle handler selection from dropdown
+  const handleHandlerChange = (e) => {
+    const handlerId = e.target.value;
+    if (handlerId) {
+      const selectedHandler = handlers.find(h => h.id === parseInt(handlerId));
+      if (selectedHandler) {
+        setFormData(prev => ({
+          ...prev,
+          handlerId: handlerId,
+          handlerName: selectedHandler.name
+        }));
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        handlerId: '',
+        handlerName: ''
+      }));
     }
   };
 
@@ -332,7 +467,6 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
     setSupplierSearchResults([]);
     setShowSupplierDropdown(false);
   };
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -380,6 +514,7 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
     const finalSupplierId = supplierId || formData.supplierId;
     const finalSupplierName = formData.supplierName;
     const finalSupplierNumber = formData.supplierNumber;
+    const finalHandlerId = formData.handlerId ? parseInt(formData.handlerId) : null;
     const finalHandlerName = formData.handlerName;
     const finalPoNumber = formData.poNumber;
     const finalOrderDate = formData.orderDate;
@@ -413,6 +548,7 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
             supplierId: finalSupplierId,
             supplierName: finalSupplierName,
             supplierNumber: finalSupplierNumber,
+            handlerId: finalHandlerId,
             handlerName: finalHandlerName,
             poNumber: finalPoNumber,
             orderDate: finalOrderDate,
@@ -427,6 +563,7 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
               supplierName: '',
               supplierId: '',
               supplierNumber: '',
+              handlerId: '',
               handlerName: '',
               poNumber: '',
               orderDate: new Date().toISOString().split('T')[0],
@@ -506,9 +643,10 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
               {/* Row 1: Supplier Name, Supplier Number, Handler Name, PO Number */}
               <div className="form-group" style={{ position: 'relative' }}>
                 <label htmlFor="supplierName">Supplier Name *</label>
-                <div className="input-wrapper">
+                <div className="input-wrapper" style={{ position: 'relative' }}>
                   <i className="fas fa-truck input-icon"></i>
                   <input
+                    ref={supplierInputRef}
                     type="text"
                     id="supplierName"
                     name="supplierName"
@@ -516,46 +654,70 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     placeholder="Enter supplier name"
                     value={formData.supplierName}
                     onChange={handleInputChange}
+                    onFocus={() => {
+                      if (formData.supplierName.trim().length > 0 && supplierSearchResults.length > 0) {
+                        setShowSupplierDropdown(true);
+                      }
+                    }}
                     required
                     autoFocus
+                    autoComplete="off"
                   />
                 </div>
-                {showSupplierDropdown && supplierSearchResults.length > 0 && (
-                  <div className="dropdown-menu" style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    background: '#fff',
-                    border: '1px solid #ddd',
+              </div>
+              {/* Supplier Dropdown using Portal */}
+              {showSupplierDropdown && supplierSearchResults.length > 0 && supplierDropdownPosition && createPortal(
+                <div
+                  ref={supplierDropdownRef}
+                  style={{
+                    position: 'fixed',
+                    top: `${supplierDropdownPosition.top}px`,
+                    left: `${supplierDropdownPosition.left}px`,
+                    width: `${supplierDropdownPosition.width}px`,
+                    backgroundColor: '#fff',
+                    border: '1px solid #e0e0e0',
                     borderRadius: '8px',
-                    marginTop: '4px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    zIndex: 99999,
                     maxHeight: '200px',
                     overflowY: 'auto',
-                    zIndex: 1000,
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                  }}>
-                    {supplierSearchResults.map(supplier => (
+                    marginTop: '0'
+                  }}
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  {isSearchingSupplier ? (
+                    <div style={{ padding: '12px 16px', textAlign: 'center', color: '#666' }}>
+                      <i className="fas fa-spinner fa-spin"></i> Searching...
+                    </div>
+                  ) : (
+                    supplierSearchResults.map((supplier, index) => (
                       <div
-                        key={supplier.id}
+                        key={supplier.id || index}
                         onClick={() => handleSupplierSelect(supplier)}
                         style={{
-                          padding: '12px',
+                          padding: '12px 16px',
                           cursor: 'pointer',
-                          borderBottom: '1px solid #f0f0f0'
+                          borderBottom: index < supplierSearchResults.length - 1 ? '1px solid #f0f0f0' : 'none',
+                          background: '#fff',
+                          color: '#333'
                         }}
                         onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
                         onMouseLeave={(e) => e.target.style.background = '#fff'}
                       >
-                        <div style={{ fontWeight: '600' }}>{supplier.name || supplier.supplier_name}</div>
+                        <div style={{ fontWeight: '500', marginBottom: '4px' }}>
+                          {supplier.name || supplier.supplier_name || 'N/A'}
+                        </div>
                         {(supplier.phone || supplier.phone_number_1) && (
-                          <div style={{ fontSize: '12px', color: '#666' }}>{supplier.phone || supplier.phone_number_1}</div>
+                          <div style={{ fontSize: '12px', color: '#666' }}>
+                            {supplier.phone || supplier.phone_number_1}
+                          </div>
                         )}
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                    ))
+                  )}
+                </div>,
+                document.body
+              )}
 
               <div className="form-group">
                 <label htmlFor="supplierNumber">Supplier Number</label>
@@ -574,18 +736,25 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="handlerName">Handler Name</label>
+                <label htmlFor="handlerId">Handler Name</label>
                 <div className="input-wrapper">
                   <i className="fas fa-user-tie input-icon"></i>
-                  <input
-                    type="text"
-                    id="handlerName"
-                    name="handlerName"
+                  <select
+                    id="handlerId"
+                    name="handlerId"
                     className="form-input"
-                    placeholder="Enter handler name"
-                    value={formData.handlerName}
-                    onChange={handleInputChange}
-                  />
+                    value={formData.handlerId}
+                    onChange={handleHandlerChange}
+                    style={{ paddingLeft: '40px', appearance: 'auto', cursor: 'pointer' }}
+                  >
+                    <option value="">Select handler</option>
+                    {handlers.map((handler) => (
+                      <option key={handler.id} value={handler.id}>
+                        {handler.name}
+                      </option>
+                    ))}
+                  </select>
+                  <i className="fas fa-chevron-down dropdown-icon"></i>
                 </div>
               </div>
 

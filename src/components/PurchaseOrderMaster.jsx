@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { purchaseOrdersAPI } from '../services/api';
-import ConfirmDialog from './ConfirmDialog';
 import './products.css';
 import './staff.css';
 
@@ -16,7 +15,6 @@ const PurchaseOrderMaster = ({ onBack, onAddPurchaseOrder, onNavigate, userRole 
   const [openMenuId, setOpenMenuId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
   const menuRefs = useRef({});
 
   const handleBack = () => {
@@ -165,32 +163,6 @@ const PurchaseOrderMaster = ({ onBack, onAddPurchaseOrder, onNavigate, userRole 
     }
   };
 
-  const handleDeleteOrder = (order) => {
-    setOpenMenuId(null);
-    setConfirmState({
-      open: true,
-      message: `Are you sure you want to delete purchase order "${order.order_number || `PO-${order.id}`}"? This action cannot be undone.`,
-      onConfirm: async () => {
-        try {
-          setError('');
-          // Note: You may need to add a delete endpoint to purchaseOrdersAPI
-          setError('Delete functionality to be implemented');
-          setTimeout(() => setError(''), 3000);
-          // const response = await purchaseOrdersAPI.delete(order.id);
-          // if (response.success) {
-          //   await fetchPurchaseOrders();
-          // } else {
-          //   setError(response.error || 'Failed to delete purchase order');
-          // }
-        } catch (err) {
-          console.error('Delete purchase order error:', err);
-          setError(err.message || 'Failed to delete purchase order');
-        } finally {
-          setConfirmState({ open: false, message: '', onConfirm: null });
-        }
-      }
-    });
-  };
 
   const closeEditModal = () => {
     setEditOrderModal(null);
@@ -275,12 +247,6 @@ const PurchaseOrderMaster = ({ onBack, onAddPurchaseOrder, onNavigate, userRole 
 
   return (
     <div className="dashboard-container">
-      <ConfirmDialog
-        open={confirmState.open}
-        message={confirmState.message}
-        onConfirm={confirmState.onConfirm}
-        onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
-      />
       {/* Left Sidebar Navigation */}
       <nav className="sidebar-nav">
         <div className="nav-item" onClick={handleBack}>
@@ -601,32 +567,6 @@ const PurchaseOrderMaster = ({ onBack, onAddPurchaseOrder, onNavigate, userRole 
                                 Mark as Verified
                               </button>
                             )}
-                            <button
-                              onClick={() => handleDeleteOrder(order)}
-                              style={{
-                                background: '#dc3545',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: '6px',
-                                padding: '6px 12px',
-                                cursor: 'pointer',
-                                fontSize: '13px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                transition: 'all 0.2s ease',
-                                fontWeight: '500'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.target.style.background = '#c82333';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.target.style.background = '#dc3545';
-                              }}
-                            >
-                              <i className="fas fa-trash"></i>
-                              Delete
-                            </button>
                           </div>
                         </td>
                       </tr>
