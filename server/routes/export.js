@@ -298,6 +298,191 @@ router.get('/best-sales-person', async (req, res) => {
   }
 });
 
+// Get all people who made sales today
+router.get('/daily-sales-people', async (req, res) => {
+  try {
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const todayEnd = new Date(todayStart);
+    todayEnd.setDate(todayEnd.getDate() + 1);
+    
+    // Get all people who made sales today from customers table (individual product sales)
+    const customersSalesResult = await pool.query(
+      `SELECT 
+        c.created_by,
+        CASE 
+          WHEN EXISTS (SELECT 1 FROM admin_profile WHERE email = c.created_by OR full_name = c.created_by) THEN 'Admin'
+          WHEN EXISTS (SELECT 1 FROM users WHERE username = c.created_by OR email = c.created_by OR (first_name || ' ' || last_name) = c.created_by) THEN 
+            COALESCE((SELECT first_name || ' ' || last_name FROM users WHERE username = c.created_by OR email = c.created_by OR (first_name || ' ' || last_name) = c.created_by LIMIT 1), c.created_by)
+          WHEN EXISTS (SELECT 1 FROM staff WHERE username = c.created_by OR email = c.created_by OR full_name = c.created_by) THEN 
+            COALESCE((SELECT full_name FROM staff WHERE username = c.created_by OR email = c.created_by OR full_name = c.created_by LIMIT 1), c.created_by)
+          ELSE c.created_by
+        END AS creator_name,
+        CASE 
+          WHEN EXISTS (SELECT 1 FROM admin_profile WHERE email = c.created_by OR full_name = c.created_by) THEN 'Admin'
+          WHEN EXISTS (SELECT 1 FROM users WHERE username = c.created_by OR email = c.created_by OR (first_name || ' ' || last_name) = c.created_by) THEN 'Supervisor'
+          WHEN EXISTS (SELECT 1 FROM staff WHERE username = c.created_by OR email = c.created_by OR full_name = c.created_by) THEN 'Staff'
+          ELSE 'Admin'
+        END AS user_type,
+        COUNT(*) AS total_sales,
+        SUM(c.quantity * c.sell_rate) AS total_revenue,
+        SUM(c.quantity) AS total_quantity
+      FROM customers c
+      WHERE c.item_code IS NOT NULL 
+        AND c.quantity > 0 
+        AND c.created_by IS NOT NULL
+        AND c.created_at >= $1
+        AND c.created_at < $2
+      GROUP BY c.created_by`,
+      [todayStart, todayEnd]
+    );
+
+    // Get all people who made sales today from sales_records table (sales orders)
+    const salesOrdersResult = await pool.query(
+      `SELECT 
+        sr.created_by,
+        CASE 
+          WHEN EXISTS (SELECT 1 FROM admin_profile WHERE email = sr.created_by OR full_name = sr.created_by) THEN 'Admin'
+          WHEN EXISTS (SELECT 1 FROM users WHERE username = sr.created_by OR email = sr.created_by OR (first_name || ' ' || last_name) = sr.created_by) THEN 
+            COALESCE((SELECT first_name || ' ' || last_name FROM users WHERE username = sr.created_by OR email = sr.created_by OR (first_name || ' ' || last_name) = sr.created_by LIMIT 1), sr.created_by)
+          WHEN EXISTS (SELECT 1 FROM staff WHERE username = sr.created_by OR email = sr.created_by OR full_name = sr.created_by) THEN 
+            COALESCE((SELECT full_name FROM staff WHERE username = sr.created_by OR email = sr.created_by OR full_name = sr.created_by LIMIT 1), sr.created_by)
+          ELSE sr.created_by
+        END AS creator_name,
+        CASE 
+          WHEN EXISTS (SELECT 1 FROM admin_profile WHERE email = sr.created_by OR full_name = sr.created_by) THEN 'Admin'
+          WHEN EXISTS (SELECT 1 FROM users WHERE username = sr.created_by OR email = sr.created_by OR (first_name || ' ' || last_name) = sr.created_by) THEN 'Supervisor'
+          WHEN EXISTS (SELECT 1 FROM staff WHERE username = sr.created_by OR email = sr.created_by OR full_name = sr.created_by) THEN 'Staff'
+          ELSE 'Admin'
+        END AS user_type,
+        COUNT(*) AS total_sales,
+        SUM(COALESCE(sr.total_amount, 0)) AS total_revenue,
+        SUM(
+          CASE 
+            WHEN sr.product_details IS NOT NULL AND jsonb_typeof(sr.product_details) = 'array' THEN
+              (SELECT COALESCE(SUM((item->>'quantity')::numeric), 0) FROM jsonb_array_elements(sr.product_details) AS item)
+            WHEN sr.products IS NOT NULL AND jsonb_typeof(sr.products) = 'array' THEN
+              (SELECT COALESCE(SUM((item->>'quantity')::numeric), 0) FROM jsonb_array_elements(sr.products) AS item)
+            ELSE 0
+          END
+        ) AS total_quantity
+      FROM sales_records sr
+      WHERE sr.created_by IS NOT NULL
+        AND sr.created_at >= $1
+        AND sr.created_at < $2
+      GROUP BY sr.created_by`,
+      [todayStart, todayEnd]
+    );
+
+    // Combine results from both tables
+    const salesMap = new Map();
+    
+    // Process customers sales
+    customersSalesResult.rows.forEach(row => {
+      const key = row.created_by;
+      if (!salesMap.has(key)) {
+        salesMap.set(key, {
+          created_by: row.created_by,
+          creator_name: row.creator_name,
+          user_type: row.user_type,
+          total_sales: 0,
+          total_revenue: 0,
+          total_quantity: 0
+        });
+      }
+      const existing = salesMap.get(key);
+      existing.total_sales += parseInt(row.total_sales) || 0;
+      existing.total_revenue += parseFloat(row.total_revenue) || 0;
+      existing.total_quantity += parseInt(row.total_quantity) || 0;
+    });
+
+    // Process sales orders
+    salesOrdersResult.rows.forEach(row => {
+      const key = row.created_by;
+      if (!salesMap.has(key)) {
+        salesMap.set(key, {
+          created_by: row.created_by,
+          creator_name: row.creator_name,
+          user_type: row.user_type,
+          total_sales: 0,
+          total_revenue: 0,
+          total_quantity: 0
+        });
+      }
+      const existing = salesMap.get(key);
+      existing.total_sales += parseInt(row.total_sales) || 0;
+      existing.total_revenue += parseFloat(row.total_revenue) || 0;
+      existing.total_quantity += parseInt(row.total_quantity) || 0;
+    });
+
+    // Convert map to array and sort by revenue
+    const dailySalesResult = Array.from(salesMap.values()).sort((a, b) => b.total_revenue - a.total_revenue);
+
+    // Get user photos and details for each person
+    const salesPeople = await Promise.all(
+      dailySalesResult.map(async (person) => {
+        let userPhoto = null;
+        let userEmail = null;
+        let userName = person.creator_name;
+        
+        // Check if it's admin
+        const adminResult = await pool.query(
+          'SELECT email, avatar_url, full_name FROM admin_profile WHERE email = $1 OR full_name = $1 LIMIT 1',
+          [person.created_by]
+        );
+        
+        if (adminResult.rows.length > 0) {
+          userPhoto = adminResult.rows[0].avatar_url;
+          userEmail = adminResult.rows[0].email;
+          userName = adminResult.rows[0].full_name || userName;
+        } else {
+          // Check if it's supervisor
+          const userResult = await pool.query(
+            'SELECT email, first_name, last_name FROM users WHERE username = $1 OR email = $1 OR (first_name || \' \' || last_name) = $1 LIMIT 1',
+            [person.created_by]
+          );
+          
+          if (userResult.rows.length > 0) {
+            userEmail = userResult.rows[0].email;
+            userName = `${userResult.rows[0].first_name} ${userResult.rows[0].last_name}` || userName;
+          } else {
+            // Check if it's staff
+            const staffResult = await pool.query(
+              'SELECT email, full_name FROM staff WHERE username = $1 OR email = $1 OR full_name = $1 LIMIT 1',
+              [person.created_by]
+            );
+            
+            if (staffResult.rows.length > 0) {
+              userEmail = staffResult.rows[0].email;
+              userName = staffResult.rows[0].full_name || userName;
+            }
+          }
+        }
+
+        return {
+          name: userName,
+          originalIdentifier: person.created_by,
+          totalRevenue: parseFloat(person.total_revenue) || 0,
+          totalSales: parseInt(person.total_sales) || 0,
+          totalQuantity: parseInt(person.total_quantity) || 0,
+          photo: userPhoto,
+          email: userEmail,
+          userType: person.user_type
+        };
+      })
+    );
+
+    res.json({
+      success: true,
+      salesPeople: salesPeople,
+      date: today.toISOString().split('T')[0]
+    });
+  } catch (error) {
+    console.error('Get daily sales people error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get Stock In Report
 router.get('/stock-in', async (req, res) => {
   try {

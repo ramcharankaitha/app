@@ -266,6 +266,9 @@ export const exportAPI = {
     const queryString = params.toString();
     return apiCall(`/export/best-sales-person${queryString ? '?' + queryString : ''}`);
   },
+  getDailySalesPeople: async () => {
+    return apiCall('/export/daily-sales-people');
+  },
   getStockIn: async (startDate, endDate) => {
     const params = new URLSearchParams();
     if (startDate) params.append('startDate', startDate);
