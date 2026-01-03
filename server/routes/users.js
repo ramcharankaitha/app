@@ -347,15 +347,37 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
+    
+    // Check if supervisor exists
+    const userCheck = await pool.query('SELECT id, first_name, last_name FROM users WHERE id = $1', [id]);
+    if (userCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Supervisor not found' });
+    }
+    
+    // Delete the supervisor
+    const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING id, first_name, last_name', [id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Supervisor not found' });
     }
 
-    res.json({ success: true, message: 'User deleted successfully' });
+    console.log('Supervisor deleted successfully:', result.rows[0].first_name, result.rows[0].last_name);
+
+    res.json({ 
+      success: true, 
+      message: 'Supervisor deleted successfully',
+      deletedUser: result.rows[0]
+    });
   } catch (error) {
     console.error('Delete user error:', error);
+    
+    // Handle foreign key constraint violations
+    if (error.code === '23503') {
+      return res.status(400).json({ 
+        error: 'Cannot delete supervisor. This supervisor is referenced in other records. Please remove those references first.' 
+      });
+    }
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });

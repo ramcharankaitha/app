@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { transportAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 
@@ -24,6 +25,7 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [citySuggestions, setCitySuggestions] = useState({});
   const [showCityDropdown, setShowCityDropdown] = useState({});
   const [isLoadingCities, setIsLoadingCities] = useState({});
+  const [dropdownPositions, setDropdownPositions] = useState({});
   const cityDropdownRefs = useRef({});
   const cityInputRefs = useRef({});
 
@@ -106,6 +108,18 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
 
   // Handle city selection from dropdown
   const handleCitySelect = (city, index) => {
+    // Check for duplicate cities (case-insensitive)
+    const isDuplicate = formData.cities.some((c, i) => 
+      i !== index && c.city && c.city.toLowerCase().trim() === city.toLowerCase().trim()
+    );
+    
+    if (isDuplicate) {
+      setError(`City "${city}" is already entered in another field. Please use a different city.`);
+      setShowCityDropdown(prev => ({ ...prev, [index]: false }));
+      setCitySuggestions(prev => ({ ...prev, [index]: [] }));
+      return;
+    }
+    
     setFormData(prev => ({
       ...prev,
       cities: prev.cities.map((c, i) => 
@@ -114,6 +128,7 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     }));
     setShowCityDropdown(prev => ({ ...prev, [index]: false }));
     setCitySuggestions(prev => ({ ...prev, [index]: [] }));
+    setError(''); // Clear any previous errors
   };
 
   const handleCityChange = (index, field, value) => {
@@ -124,8 +139,36 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
       )
     }));
     
-    // If city field is being changed, search for cities
+    // If city field is being changed, search for cities and check for duplicates
     if (field === 'city') {
+      // Calculate dropdown position
+      const inputElement = cityInputRefs.current[index];
+      if (inputElement) {
+        const rect = inputElement.getBoundingClientRect();
+        setDropdownPositions(prev => ({
+          ...prev,
+          [index]: {
+            top: rect.bottom + 4,
+            left: rect.left,
+            width: rect.width
+          }
+        }));
+      }
+      
+      // Check for duplicate cities (case-insensitive) as user types
+      const trimmedValue = value.trim().toLowerCase();
+      if (trimmedValue) {
+        const isDuplicate = formData.cities.some((c, i) => 
+          i !== index && c.city && c.city.toLowerCase().trim() === trimmedValue
+        );
+        if (isDuplicate) {
+          setError(`City "${value.trim()}" is already entered in another field.`);
+        } else {
+          setError(''); // Clear error if not duplicate
+        }
+      } else {
+        setError(''); // Clear error if field is empty
+      }
       searchCities(value, index);
     }
   };
@@ -142,9 +185,34 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
         }
       });
     };
+    // Update dropdown positions on scroll/resize
+    const handleScroll = () => {
+      Object.keys(cityInputRefs.current).forEach(cityIndex => {
+        const inputElement = cityInputRefs.current[cityIndex];
+        if (inputElement && showCityDropdown[cityIndex]) {
+          const rect = inputElement.getBoundingClientRect();
+          setDropdownPositions(prev => ({
+            ...prev,
+            [cityIndex]: {
+              top: rect.bottom + 4,
+              left: rect.left,
+              width: rect.width
+            }
+          }));
+        }
+      });
+    };
+    
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleScroll);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [showCityDropdown]);
 
   const submitTransport = async () => {
     // Prevent double submission
@@ -165,6 +233,24 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
 
       if (emptyCities.length > 0) {
         setError('All 10 cities and their phone numbers are required.');
+        setIsLoading(false);
+        isSubmittingRef.current = false;
+        return;
+      }
+
+      // Check for duplicate cities (case-insensitive)
+      const cityNames = formData.cities
+        .map(c => c.city ? c.city.trim().toLowerCase() : '')
+        .filter(name => name.length > 0);
+      const uniqueCities = new Set(cityNames);
+      
+      if (cityNames.length !== uniqueCities.size) {
+        const duplicates = cityNames.filter((city, index) => cityNames.indexOf(city) !== index);
+        const duplicateNames = [...new Set(duplicates)].map(dup => {
+          const found = formData.cities.find(c => c.city && c.city.toLowerCase().trim() === dup);
+          return found ? found.city : dup;
+        });
+        setError(`Duplicate cities found: ${duplicateNames.join(', ')}. Please use different cities.`);
         setIsLoading(false);
         isSubmittingRef.current = false;
         return;
@@ -373,31 +459,57 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                                 placeholder={`Enter city ${cityIndex + 1}`}
                                 value={formData.cities[cityIndex].city}
                                 onChange={(e) => handleCityChange(cityIndex, 'city', e.target.value)}
-                                onFocus={() => {
+                                onFocus={(e) => {
+                                  // Calculate dropdown position on focus
+                                  const rect = e.target.getBoundingClientRect();
+                                  setDropdownPositions(prev => ({
+                                    ...prev,
+                                    [cityIndex]: {
+                                      top: rect.bottom + 4,
+                                      left: rect.left,
+                                      width: rect.width
+                                    }
+                                  }));
                                   if (formData.cities[cityIndex].city) {
                                     searchCities(formData.cities[cityIndex].city, cityIndex);
+                                  }
+                                }}
+                                onScroll={() => {
+                                  // Update position on scroll
+                                  const inputElement = cityInputRefs.current[cityIndex];
+                                  if (inputElement) {
+                                    const rect = inputElement.getBoundingClientRect();
+                                    setDropdownPositions(prev => ({
+                                      ...prev,
+                                      [cityIndex]: {
+                                        top: rect.bottom + 4,
+                                        left: rect.left,
+                                        width: rect.width
+                                      }
+                                    }));
                                   }
                                 }}
                                 required
                               />
                             </div>
-                            {showCityDropdown[cityIndex] && citySuggestions[cityIndex] && citySuggestions[cityIndex].length > 0 && (
+                            {showCityDropdown[cityIndex] && citySuggestions[cityIndex] && citySuggestions[cityIndex].length > 0 && dropdownPositions[cityIndex] && createPortal(
                               <div 
                                 ref={el => cityDropdownRefs.current[cityIndex] = el}
                                 style={{
-                                  position: 'absolute',
-                                  top: '100%',
-                                  left: 0,
-                                  right: 0,
+                                  position: 'fixed',
+                                  top: `${dropdownPositions[cityIndex].top}px`,
+                                  left: `${dropdownPositions[cityIndex].left}px`,
+                                  width: `${dropdownPositions[cityIndex].width}px`,
                                   background: '#fff',
                                   border: '1px solid #e0e0e0',
                                   borderRadius: '8px',
-                                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                  zIndex: 10000,
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                  zIndex: 99999,
                                   maxHeight: '200px',
                                   overflowY: 'auto',
-                                  marginTop: '4px'
+                                  marginTop: '0'
                                 }}
+                                onMouseDown={(e) => e.preventDefault()}
                               >
                                 {isLoadingCities[cityIndex] ? (
                                   <div style={{ padding: '12px 16px', textAlign: 'center', color: '#666' }}>
@@ -422,7 +534,8 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                                     </div>
                                   ))
                                 )}
-                              </div>
+                              </div>,
+                              document.body
                             )}
                           </div>
 

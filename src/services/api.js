@@ -24,7 +24,10 @@ const getApiBaseUrl = () => {
 
 const API_BASE_URL = getApiBaseUrl();
 
-const apiCall = async (endpoint, options = {}) => {
+const apiCall = async (endpoint, options = {}, retryCount = 0) => {
+  const maxRetries = 3;
+  const baseDelay = 1000; // 1 second base delay
+  
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       headers: {
@@ -43,16 +46,42 @@ const apiCall = async (endpoint, options = {}) => {
       throw new Error(text || `HTTP error! status: ${response.status}`);
     }
 
+    // Handle 429 (Too Many Requests) with retry
+    if (response.status === 429 && retryCount < maxRetries) {
+      const retryAfter = data.retryAfter || Math.pow(2, retryCount) * baseDelay / 1000;
+      const delay = Math.min(retryAfter * 1000, 10000); // Max 10 seconds
+      
+      console.warn(`Rate limit hit (429). Retrying in ${delay / 1000} seconds... (Attempt ${retryCount + 1}/${maxRetries})`);
+      
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return apiCall(endpoint, options, retryCount + 1);
+    }
+
     if (!response.ok) {
-      throw new Error(data.error || `API request failed: ${response.status}`);
+      throw new Error(data.error || data.message || `API request failed: ${response.status}`);
     }
 
     return data;
   } catch (error) {
+    // Retry on network errors (up to maxRetries)
+    if ((error.message === 'Failed to fetch' || error.name === 'TypeError') && retryCount < maxRetries) {
+      const delay = Math.pow(2, retryCount) * baseDelay;
+      console.warn(`Network error. Retrying in ${delay / 1000} seconds... (Attempt ${retryCount + 1}/${maxRetries})`);
+      
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return apiCall(endpoint, options, retryCount + 1);
+    }
+    
     console.error('API Error:', error);
     if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
       throw new Error('Network error: Could not connect to server. Please check if the server is running.');
     }
+    
+    // Check if it's a rate limit error
+    if (error.message && error.message.includes('Too many requests')) {
+      throw new Error('Server is busy. Please wait a moment and try again.');
+    }
+    
     throw error;
   }
 };

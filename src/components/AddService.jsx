@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { productsAPI, staffAPI, servicesAPI } from '../services/api';
+import { productsAPI, staffAPI, servicesAPI, customersAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import './addUser.css';
 
@@ -35,6 +35,8 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [successMessage, setSuccessMessage] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
   const [minServiceDate] = useState(getTomorrowDate());
+  const [isFetchingCustomer, setIsFetchingCustomer] = useState(false);
+  const [customerVerified, setCustomerVerified] = useState(false);
 
   // Fetch handlers (staff with is_handler = true)
   const fetchHandlers = async () => {
@@ -138,7 +140,67 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+    
+    // Reset customer verification when phone changes
+    if (name === 'customerPhone') {
+      setCustomerVerified(false);
+    }
   };
+
+  // Auto-fetch customer details when phone/ID is entered
+  useEffect(() => {
+    const fetchCustomerByPhoneOrId = async () => {
+      // Only proceed if phone/ID is entered (at least 4 characters)
+      if (!formData.customerPhone.trim() || formData.customerPhone.trim().length < 4) {
+        setCustomerVerified(false);
+        return;
+      }
+
+      setIsFetchingCustomer(true);
+      
+      try {
+        // Search by phone or unique ID
+        const searchResponse = await customersAPI.search(formData.customerPhone.trim());
+        
+        if (searchResponse.success && searchResponse.customers && searchResponse.customers.length > 0) {
+          // Find exact match by phone or unique ID
+          const phoneOrId = formData.customerPhone.trim();
+          const matchingCustomer = searchResponse.customers.find(c => 
+            c.phone === phoneOrId || 
+            c.customer_unique_id?.toUpperCase() === phoneOrId.toUpperCase()
+          );
+          
+          // If exact match found, use it; otherwise use first result
+          const customer = matchingCustomer || searchResponse.customers[0];
+          
+          if (customer) {
+            setCustomerVerified(true);
+            // Auto-fill customer name
+            setFormData(prev => ({
+              ...prev,
+              customerName: customer.full_name || prev.customerName
+            }));
+          } else {
+            setCustomerVerified(false);
+          }
+        } else {
+          setCustomerVerified(false);
+        }
+      } catch (err) {
+        console.error('Error fetching customer:', err);
+        setCustomerVerified(false);
+      } finally {
+        setIsFetchingCustomer(false);
+      }
+    };
+
+    // Debounce the check
+    const timer = setTimeout(() => {
+      fetchCustomerByPhoneOrId();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [formData.customerPhone]);
 
 
   // Handle item code change and fetch product details
@@ -364,18 +426,40 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="customerPhone">Phone Number</label>
-                  <div className="input-wrapper">
+                  <label htmlFor="customerPhone">Phone Number or Customer ID</label>
+                  <div className="input-wrapper" style={{ position: 'relative' }}>
                     <i className="fas fa-phone input-icon"></i>
                     <input
-                      type="tel"
+                      type="text"
                       id="customerPhone"
                       name="customerPhone"
                       className="form-input"
-                      placeholder="Enter phone number"
+                      placeholder="Enter phone number or Customer ID (e.g., C-1234)"
                       value={formData.customerPhone}
                       onChange={handleInputChange}
+                      style={{
+                        paddingRight: customerVerified || isFetchingCustomer ? '40px' : '18px',
+                        borderColor: customerVerified ? '#28a745' : undefined
+                      }}
                     />
+                    {isFetchingCustomer && (
+                      <i className="fas fa-spinner fa-spin" style={{ 
+                        position: 'absolute', 
+                        right: '12px', 
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: '#666' 
+                      }}></i>
+                    )}
+                    {!isFetchingCustomer && customerVerified && (
+                      <i className="fas fa-check-circle" style={{ 
+                        position: 'absolute', 
+                        right: '12px', 
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: '#28a745' 
+                      }}></i>
+                    )}
                   </div>
                 </div>
 

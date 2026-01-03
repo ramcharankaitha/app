@@ -32,12 +32,16 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
   const [citySuggestions, setCitySuggestions] = useState([]);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [isLoadingCities, setIsLoadingCities] = useState(false);
+  const [isLoadingCityNumber, setIsLoadingCityNumber] = useState(false);
+  const [cityNumberFound, setCityNumberFound] = useState(false);
   const cityDropdownRef = useRef(null);
   const cityInputRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
+  const [isFetchingCustomerByPhone, setIsFetchingCustomerByPhone] = useState(false);
+  const [customerVerifiedByPhone, setCustomerVerifiedByPhone] = useState(false);
 
   const handleBack = () => {
     if (onNavigate) {
@@ -181,27 +185,60 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
 
   // Fetch booking city number from transport master
   const fetchBookingCityNumber = async (cityName) => {
+    if (!cityName || !cityName.trim()) {
+      return;
+    }
+
     try {
-      const response = await transportAPI.getByAddress(cityName, null, null);
+      setIsLoadingCityNumber(true);
+      const response = await transportAPI.getByAddress(cityName.trim(), null, null);
       if (response.success && response.transports && response.transports.length > 0) {
         // Find the city in the addresses array and get its phone number
         for (const transport of response.transports) {
           if (transport.addresses && Array.isArray(transport.addresses)) {
             const cityAddress = transport.addresses.find(addr => 
-              addr.city && addr.city.toLowerCase() === cityName.toLowerCase()
+              addr.city && addr.city.toLowerCase().trim() === cityName.toLowerCase().trim()
             );
             if (cityAddress && cityAddress.phoneNumber) {
               setFormData(prev => ({
                 ...prev,
                 bookingCityNumber: cityAddress.phoneNumber
               }));
+              setCityNumberFound(true);
+              setIsLoadingCityNumber(false);
+              return;
+            }
+          }
+        }
+        // If no exact match found, try partial match
+        for (const transport of response.transports) {
+          if (transport.addresses && Array.isArray(transport.addresses)) {
+            const cityAddress = transport.addresses.find(addr => 
+              addr.city && addr.city.toLowerCase().trim().includes(cityName.toLowerCase().trim())
+            );
+            if (cityAddress && cityAddress.phoneNumber) {
+              setFormData(prev => ({
+                ...prev,
+                bookingCityNumber: cityAddress.phoneNumber
+              }));
+              setCityNumberFound(true);
+              setIsLoadingCityNumber(false);
               return;
             }
           }
         }
       }
+      // If no phone number found, clear it
+      setFormData(prev => ({
+        ...prev,
+        bookingCityNumber: ''
+      }));
+      setCityNumberFound(false);
     } catch (err) {
       console.error('Error fetching booking city number:', err);
+      setCityNumberFound(false);
+    } finally {
+      setIsLoadingCityNumber(false);
     }
   };
 
@@ -232,6 +269,85 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
       setIsLoadingCustomers(false);
     }
   };
+
+  // Auto-fetch customer details when phone/ID is entered
+  useEffect(() => {
+    const fetchCustomerByPhoneOrId = async () => {
+      // Only proceed if phone/ID is entered (at least 4 characters) and customer name is not already set
+      if (!formData.phone.trim() || formData.phone.trim().length < 4 || formData.customer.trim()) {
+        setCustomerVerifiedByPhone(false);
+        return;
+      }
+
+      setIsFetchingCustomerByPhone(true);
+      
+      try {
+        // Search by phone or unique ID
+        const searchResponse = await customersAPI.search(formData.phone.trim());
+        
+        if (searchResponse.success && searchResponse.customers && searchResponse.customers.length > 0) {
+          // Find exact match by phone or unique ID
+          const phoneOrId = formData.phone.trim();
+          const matchingCustomer = searchResponse.customers.find(c => 
+            c.phone === phoneOrId || 
+            c.customer_unique_id?.toUpperCase() === phoneOrId.toUpperCase()
+          );
+          
+          // If exact match found, use it; otherwise use first result
+          const customer = matchingCustomer || searchResponse.customers[0];
+          
+          if (customer) {
+            setCustomerVerifiedByPhone(true);
+            setSelectedCustomer(customer);
+            // Auto-fill all customer details
+            setFormData(prev => ({
+              ...prev,
+              customer: customer.full_name || '',
+              phone: customer.phone || prev.phone,
+              address: customer.address || '',
+              city: customer.city || '',
+              area: customer.state || ''
+            }));
+            
+            // Trigger transport fetch if city/state available
+            if (customer.city || customer.state) {
+              try {
+                setIsLoadingTransports(true);
+                const transportResponse = await transportAPI.getByAddress(
+                  customer.city || null,
+                  customer.state || null,
+                  null
+                );
+                if (transportResponse.success) {
+                  setMatchingTransports(transportResponse.transports || []);
+                }
+              } catch (err) {
+                console.error('Error fetching transports:', err);
+              } finally {
+                setIsLoadingTransports(false);
+              }
+            }
+          } else {
+            setCustomerVerifiedByPhone(false);
+          }
+        } else {
+          setCustomerVerifiedByPhone(false);
+        }
+      } catch (err) {
+        console.error('Error fetching customer:', err);
+        setCustomerVerifiedByPhone(false);
+      } finally {
+        setIsFetchingCustomerByPhone(false);
+      }
+    };
+
+    // Debounce the check
+    const timer = setTimeout(() => {
+      fetchCustomerByPhoneOrId();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [formData.phone]);
 
   // Handle customer selection
   const handleCustomerSelect = async (customer) => {
@@ -336,6 +452,26 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
 
     return () => clearTimeout(timer);
   }, [formData.city, formData.area]);
+
+  // Auto-fetch booking city phone number when bookingToCity changes
+  useEffect(() => {
+    // Only fetch if city name is entered (at least 2 characters)
+    if (!formData.bookingToCity || formData.bookingToCity.trim().length < 2) {
+      setCityNumberFound(false);
+      setFormData(prev => ({
+        ...prev,
+        bookingCityNumber: ''
+      }));
+      return;
+    }
+
+    // Don't fetch if user is still typing (wait for them to finish)
+    const timer = setTimeout(async () => {
+      await fetchBookingCityNumber(formData.bookingToCity);
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timer);
+  }, [formData.bookingToCity]);
 
   const submitDispatch = async () => {
     setIsLoading(true);
@@ -553,19 +689,41 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                       </div>
 
                       <div className="form-group">
-                      <label htmlFor="phone">Customer Phone Number</label>
-                        <div className="input-wrapper">
+                      <label htmlFor="phone">Customer Phone Number or Customer ID</label>
+                        <div className="input-wrapper" style={{ position: 'relative' }}>
                         <i className="fas fa-phone input-icon"></i>
                           <input
-                          type="tel"
+                          type="text"
                           id="phone"
                           name="phone"
                             className="form-input"
-                          placeholder="Enter phone number"
+                          placeholder="Enter phone number or Customer ID (e.g., C-1234)"
                           value={formData.phone}
                             onChange={handleInputChange}
                           required
+                          style={{
+                            paddingRight: customerVerifiedByPhone || isFetchingCustomerByPhone ? '40px' : '18px',
+                            borderColor: customerVerifiedByPhone ? '#28a745' : undefined
+                          }}
                           />
+                          {isFetchingCustomerByPhone && (
+                            <i className="fas fa-spinner fa-spin" style={{ 
+                              position: 'absolute', 
+                              right: '12px', 
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              color: '#666' 
+                            }}></i>
+                          )}
+                          {!isFetchingCustomerByPhone && customerVerifiedByPhone && (
+                            <i className="fas fa-check-circle" style={{ 
+                              position: 'absolute', 
+                              right: '12px', 
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              color: '#28a745' 
+                            }}></i>
+                          )}
                         </div>
                       </div>
 
@@ -716,6 +874,45 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                           ))}
                         </div>
                       )}
+                    </div>
+
+                    <div className="form-group" style={{ position: 'relative' }}>
+                      <label htmlFor="bookingCityNumber">Booking City Number</label>
+                      <div className="input-wrapper" style={{ position: 'relative' }}>
+                        <i className="fas fa-phone input-icon"></i>
+                        <input
+                          type="tel"
+                          id="bookingCityNumber"
+                          name="bookingCityNumber"
+                          className="form-input"
+                          placeholder="Auto-fetched from transport master"
+                          value={formData.bookingCityNumber}
+                          readOnly
+                          style={{
+                            background: '#f5f5f5',
+                            paddingRight: isLoadingCityNumber || cityNumberFound ? '40px' : '18px',
+                            borderColor: cityNumberFound ? '#28a745' : undefined
+                          }}
+                        />
+                        {isLoadingCityNumber && (
+                          <i className="fas fa-spinner fa-spin" style={{ 
+                            position: 'absolute', 
+                            right: '12px', 
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            color: '#666' 
+                          }}></i>
+                        )}
+                        {!isLoadingCityNumber && cityNumberFound && formData.bookingCityNumber && (
+                          <i className="fas fa-check-circle" style={{ 
+                            position: 'absolute', 
+                            right: '12px', 
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            color: '#28a745' 
+                          }}></i>
+                        )}
+                      </div>
                     </div>
 
                     {/* Row 3: Transport Name, Transport Contact Number, Estimated Date, LR Number */}

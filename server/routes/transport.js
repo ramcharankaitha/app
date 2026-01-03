@@ -117,6 +117,25 @@ router.post('/', async (req, res) => {
     // Ensure is_verified and created_by columns exist
     await ensureVerificationColumn('transport');
     
+    // Ensure phone_number column exists
+    try {
+      await pool.query(`
+        DO $$ 
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'transport' AND column_name = 'phone_number'
+          ) THEN
+            ALTER TABLE transport ADD COLUMN phone_number VARCHAR(100);
+            RAISE NOTICE 'Added phone_number column to transport table';
+          END IF;
+        END $$;
+      `);
+    } catch (colError) {
+      console.error('Error ensuring phone_number column:', colError.message);
+      // Continue anyway - column might already exist
+    }
+    
     // Determine verification status based on user role
     const isVerified = shouldBeVerified(userRole || 'staff');
 
@@ -159,15 +178,22 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Transport name already exists. Please use a different name.' });
     }
 
-    // Check for duplicate phone number combination
+    // Check for duplicate phone number combination (only if phone_number column exists)
     const phoneNumber = `${phoneNumber1.trim()}, ${phoneNumber2.trim()}`;
-    const existingPhone = await pool.query(
-      'SELECT id FROM transport WHERE phone_number = $1',
-      [phoneNumber]
-    );
+    try {
+      const existingPhone = await pool.query(
+        'SELECT id FROM transport WHERE phone_number = $1',
+        [phoneNumber]
+      );
 
-    if (existingPhone.rows.length > 0) {
-      return res.status(400).json({ error: 'This phone number combination already exists. Please use different phone numbers.' });
+      if (existingPhone.rows.length > 0) {
+        return res.status(400).json({ error: 'This phone number combination already exists. Please use different phone numbers.' });
+      }
+    } catch (phoneCheckError) {
+      // If column doesn't exist yet, skip duplicate check (will be created by ensureVerificationColumn)
+      if (phoneCheckError.code !== '42703') { // 42703 = undefined_column
+        throw phoneCheckError; // Re-throw if it's a different error
+      }
     }
 
     // Store addresses as JSONB, also keep first address in legacy fields for backward compatibility
@@ -183,7 +209,7 @@ router.post('/', async (req, res) => {
         travelsName.trim(), 
         phoneNumber, // Combined phone numbers
         address.trim(), // Main address
-        firstAddress.city || '', 
+        (firstAddress && firstAddress.city && firstAddress.city.trim()) ? firstAddress.city.trim() : 'N/A', // Ensure city is not empty for NOT NULL constraint
         null, // state - removed
         null, // pincode - removed
         '', // service - removed (empty string instead of null for NOT NULL constraint)

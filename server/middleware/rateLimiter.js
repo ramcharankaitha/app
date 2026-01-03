@@ -44,8 +44,8 @@ const createRateLimiter = (windowMs, maxRequests) => {
   return rateLimiter(windowMs, maxRequests);
 };
 
-// Standard API rate limiter: 100 requests per 15 minutes
-const apiLimiter = createRateLimiter(15 * 60 * 1000, 100);
+// Standard API rate limiter: 200 requests per 15 minutes (increased for better UX)
+const apiLimiter = createRateLimiter(15 * 60 * 1000, 200);
 
 // Strict limiter for auth endpoints: 5 requests per 15 minutes
 const authLimiter = createRateLimiter(15 * 60 * 1000, 5);

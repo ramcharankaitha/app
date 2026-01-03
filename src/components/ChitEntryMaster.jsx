@@ -34,8 +34,8 @@ const ChitEntryMaster = ({ onBack, onAddChitEntry, onNavigate, userRole = 'admin
     }
   };
 
-  // Fetch chit entries
-  const fetchEntries = async () => {
+  // Fetch chit entries with retry logic
+  const fetchEntries = async (retryCount = 0) => {
     setIsLoading(true);
     try {
       setError('');
@@ -43,10 +43,29 @@ const ChitEntryMaster = ({ onBack, onAddChitEntry, onNavigate, userRole = 'admin
       if (response.success) {
         setEntries(response.entries || []);
         setFilteredEntries(response.entries || []);
+      } else {
+        throw new Error(response.error || 'Failed to fetch entries');
       }
     } catch (err) {
       console.error('Error fetching chit entries:', err);
-      setError('Failed to load chit entries. Please try again.');
+      
+      // Retry once if it's a rate limit or network error
+      if ((err.message.includes('Too many requests') || err.message.includes('Server is busy') || err.message.includes('Network error')) && retryCount < 1) {
+        console.log('Retrying chit entries fetch...');
+        setTimeout(() => {
+          fetchEntries(retryCount + 1);
+        }, 2000); // Wait 2 seconds before retry
+        return;
+      }
+      
+      // Show user-friendly error message
+      if (err.message.includes('Too many requests') || err.message.includes('Server is busy')) {
+        setError('Server is busy. Please wait a moment and refresh the page.');
+      } else if (err.message.includes('Network error')) {
+        setError('Network error. Please check your connection and try again.');
+      } else {
+        setError('Failed to load chit entries. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }

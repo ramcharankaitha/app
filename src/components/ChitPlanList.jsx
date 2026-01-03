@@ -81,12 +81,6 @@ const ChitPlanList = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' })
     setOpenMenuId(null);
   };
 
-  const handleEdit = (customer) => {
-    setOpenMenuId(null);
-    if (onNavigate) {
-      onNavigate('addChitPlanCustomer', { editId: customer.id });
-    }
-  };
 
   const handleDelete = (customer) => {
     setOpenMenuId(null);
@@ -446,32 +440,6 @@ const ChitPlanList = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' })
                               >
                                 <i className="fas fa-eye"></i>
                                 View
-                              </button>
-                              <button
-                                onClick={() => handleEdit(customer)}
-                                style={{
-                                  background: '#28a745',
-                                  color: '#fff',
-                                  border: 'none',
-                                  borderRadius: '6px',
-                                  padding: '6px 12px',
-                                  cursor: 'pointer',
-                                  fontSize: '13px',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '6px',
-                                  transition: 'all 0.2s ease',
-                                  fontWeight: '500'
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.target.style.background = '#218838';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.target.style.background = '#28a745';
-                                }}
-                              >
-                                <i className="fas fa-edit"></i>
-                                Edit
                               </button>
                               <button
                                 onClick={() => handleDelete(customer)}

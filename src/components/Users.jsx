@@ -224,22 +224,17 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
     setEditSupervisorModal(null);
   };
 
-  // Handle disable supervisor
-  const handleDisableSupervisor = (user) => {
+  // Handle delete supervisor
+  const handleDeleteSupervisor = (user) => {
     setOpenMenuId(null);
     setConfirmState({
       open: true,
-      message: `Are you sure you want to disable ${user.name}? This action can be reversed later.`,
+      message: `Are you sure you want to delete ${user.name}? This action cannot be undone.`,
       user: user,
       onConfirm: async () => {
         try {
-          // Note: You may need to add a disable endpoint to usersAPI
-          // For now, this is a placeholder that can be implemented based on your backend
-          const response = await usersAPI.update(user.id, {
-            ...user,
-            is_active: false
-          });
-          
+          setError('');
+          const response = await usersAPI.delete(user.id);
           if (response.success) {
             // Refresh users list
             const fetchUsers = async () => {
@@ -273,12 +268,12 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
             await fetchUsers();
             setConfirmState({ open: false, message: '', onConfirm: null, user: null });
           } else {
-            setError('Failed to disable supervisor');
+            setError(response.error || 'Failed to delete supervisor');
             setConfirmState({ open: false, message: '', onConfirm: null, user: null });
           }
         } catch (err) {
-          console.error('Error disabling supervisor:', err);
-          setError('Failed to disable supervisor');
+          console.error('Delete supervisor error:', err);
+          setError(err.message || 'Failed to delete supervisor');
           setConfirmState({ open: false, message: '', onConfirm: null, user: null });
         }
       }
@@ -290,7 +285,7 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
       {/* Confirmation Dialog */}
       <ConfirmDialog
         open={confirmState.open}
-        title="Disable Supervisor"
+        title="Delete Supervisor"
         message={confirmState.message}
         onConfirm={confirmState.onConfirm}
         onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null, user: null })}
@@ -523,7 +518,7 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
                               Edit
                             </button>
                             <button
-                              onClick={() => handleDisableSupervisor(user)}
+                              onClick={() => handleDeleteSupervisor(user)}
                               style={{
                                 background: '#dc3545',
                                 color: '#fff',

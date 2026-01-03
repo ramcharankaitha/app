@@ -227,11 +227,15 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
       const response = await customersAPI.create(customerData);
 
       if (response.success) {
-        setSuccessMessage('Customer created successfully!');
+        const uniqueId = response.customer?.customer_unique_id;
+        const message = uniqueId 
+          ? `Customer created successfully! Customer ID: ${uniqueId}`
+          : 'Customer created successfully!';
+        setSuccessMessage(message);
         setTimeout(() => {
           setSuccessMessage('');
           handleCancel();
-        }, 3000);
+        }, 4000);
       } else {
         setError('Failed to create customer. Please try again.');
       }

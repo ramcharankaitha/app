@@ -72,7 +72,8 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
               address: customer.address || '',
               city: customer.city || '',
               state: customer.state || '',
-              pincode: customer.pincode || ''
+              pincode: customer.pincode || '',
+              customer_unique_id: customer.customer_unique_id || ''
             });
           }
         });
@@ -126,11 +127,12 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Filter customers based on search
+  // Filter customers based on search (name, phone, or unique ID)
   const filteredCustomers = allCustomers.filter(customer => {
     const searchTerm = formData.customerName.toLowerCase();
     return customer.name.toLowerCase().includes(searchTerm) || 
-           customer.phone.includes(searchTerm);
+           customer.phone.includes(searchTerm) ||
+           (customer.customer_unique_id && customer.customer_unique_id.toLowerCase().includes(searchTerm));
   });
 
 
@@ -510,7 +512,7 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                       id="customerName"
                       name="customerName"
                       className="form-input"
-                      placeholder="Type customer name to search..."
+                      placeholder="Type customer name, phone, or Customer ID to search..."
                       value={formData.customerName}
                       onChange={handleInputChange}
                       onFocus={() => {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { chitPlansAPI } from '../services/api';
+import ConfirmDialog from './ConfirmDialog';
 import './chitPlans.css';
 
 const ChitPlans = ({ onBack, onAddChitCustomer, onNavigate, userRole = 'admin' }) => {
@@ -10,8 +11,7 @@ const ChitPlans = ({ onBack, onAddChitCustomer, onNavigate, userRole = 'admin' }
   const [successMessage, setSuccessMessage] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
   const [viewCustomerModal, setViewCustomerModal] = useState(null);
-  const [editCustomerModal, setEditCustomerModal] = useState(null);
-  const [isSaving, setIsSaving] = useState(false);
+  const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null, customer: null });
   const menuRefs = useRef({});
 
   const handleBack = () => {
@@ -150,92 +150,56 @@ const ChitPlans = ({ onBack, onAddChitCustomer, onNavigate, userRole = 'admin' }
     }
   };
 
-  // Handle edit customer
-  const handleEditCustomer = async (customer) => {
+  // Handle delete customer
+  const handleDeleteCustomer = (customer) => {
     setOpenMenuId(null);
-    try {
-      const response = await chitPlansAPI.getCustomerById(customer.id);
-      if (response.success) {
-        setEditCustomerModal(response.customer);
-      } else {
-        setError('Failed to fetch customer details');
-      }
-    } catch (err) {
-      console.error('Error fetching customer details:', err);
-      setError('Failed to fetch customer details');
-    }
-  };
-
-  // Handle save customer details
-  const handleSaveCustomerDetails = async () => {
-    if (!editCustomerModal) return;
-    
-    setIsSaving(true);
-    setError('');
-    setSuccessMessage('');
-    
-    try {
-      const response = await chitPlansAPI.updateCustomer(editCustomerModal.id, {
-        customerName: editCustomerModal.customer_name,
-        phone: editCustomerModal.phone,
-        address: editCustomerModal.address || '',
-        email: editCustomerModal.email || '',
-        chitPlanId: editCustomerModal.chit_plan_id,
-        paymentMode: editCustomerModal.payment_mode || ''
-      });
-      
-      if (response && response.success) {
-        // Refresh customers list
-        const customersResponse = await chitPlansAPI.getCustomers();
-        if (customersResponse.success) {
-          const formattedCustomers = customersResponse.customers.map(customer => ({
-            id: customer.id,
-            name: customer.customer_name,
-            initials: customer.customer_name 
-              ? customer.customer_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
-              : 'CH',
-            phone: customer.phone,
-            address: customer.address,
-            email: customer.email,
-            planName: customer.plan_name,
-            planAmount: customer.plan_amount,
-            paymentMode: customer.payment_mode,
-            enrollmentDate: customer.enrollment_date,
-            created_at: customer.created_at
-          }));
-          setCustomers(formattedCustomers);
+    setConfirmState({
+      open: true,
+      message: `Are you sure you want to delete "${customer.name}"? This action cannot be undone.`,
+      customer: customer,
+      onConfirm: async () => {
+        try {
+          setError('');
+          const response = await chitPlansAPI.deleteCustomer(customer.id);
+          if (response && response.success) {
+            setSuccessMessage('Chit customer deleted successfully');
+            setTimeout(() => setSuccessMessage(''), 3000);
+            // Refresh customers list
+            const customersResponse = await chitPlansAPI.getCustomers();
+            if (customersResponse.success) {
+              const formattedCustomers = customersResponse.customers.map(customer => ({
+                id: customer.id,
+                name: customer.customer_name,
+                initials: customer.customer_name 
+                  ? customer.customer_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+                  : 'CH',
+                phone: customer.phone,
+                address: customer.address,
+                email: customer.email,
+                planName: customer.plan_name,
+                planAmount: customer.plan_amount,
+                paymentMode: customer.payment_mode,
+                enrollmentDate: customer.enrollment_date,
+                created_at: customer.created_at
+              }));
+              setCustomers(formattedCustomers);
+            }
+            setConfirmState({ open: false, message: '', onConfirm: null, customer: null });
+          } else {
+            setError(response?.error || 'Failed to delete chit customer');
+            setConfirmState({ open: false, message: '', onConfirm: null, customer: null });
+          }
+        } catch (err) {
+          console.error('Delete chit customer error:', err);
+          setError(err.message || 'Failed to delete chit customer');
+          setConfirmState({ open: false, message: '', onConfirm: null, customer: null });
         }
-        setEditCustomerModal(null);
-        setError('');
-        setSuccessMessage('Customer updated successfully');
-        setTimeout(() => setSuccessMessage(''), 3000);
-      } else {
-        setError(response?.error || 'Failed to update customer');
       }
-    } catch (err) {
-      console.error('Error updating customer:', err);
-      setError(err.message || 'Failed to update customer');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // Handle input change in edit modal
-  const handleEditInputChange = (field, value) => {
-    if (editCustomerModal) {
-      setEditCustomerModal({
-        ...editCustomerModal,
-        [field]: value
-      });
-    }
+    });
   };
 
   const closeViewModal = () => {
     setViewCustomerModal(null);
-  };
-
-  const closeEditModal = () => {
-    setEditCustomerModal(null);
   };
 
   return (
@@ -420,13 +384,19 @@ const ChitPlans = ({ onBack, onAddChitCustomer, onNavigate, userRole = 'admin' }
                 </button>
                 {openMenuId === customer.id && (
                   <div className="staff-menu-dropdown">
-                    <div className="menu-item" onClick={() => handleViewCustomerDetails(customer)}>
+                    <div className="menu-item" onClick={(e) => {
+                      e.stopPropagation();
+                      handleViewCustomerDetails(customer);
+                    }}>
                       <i className="fas fa-eye"></i>
                       <span>View Customer Details</span>
                     </div>
-                    <div className="menu-item" onClick={() => handleEditCustomer(customer)}>
-                      <i className="fas fa-edit"></i>
-                      <span>Edit Customer</span>
+                    <div className="menu-item" onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteCustomer(customer);
+                    }}>
+                      <i className="fas fa-trash"></i>
+                      <span>Delete Customer</span>
                     </div>
                   </div>
                 )}
@@ -439,172 +409,16 @@ const ChitPlans = ({ onBack, onAddChitCustomer, onNavigate, userRole = 'admin' }
       </div>
       </div>
 
-      {/* Edit Customer Modal */}
-      {editCustomerModal && (
-        <div className="modal-overlay" onClick={closeEditModal}>
-          <div className="customer-details-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Edit Chit Customer</h2>
-              <button className="modal-close-btn" onClick={closeEditModal}>
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-            <div className="modal-content">
-              {error && (
-                <div style={{ 
-                  padding: '12px', 
-                  background: '#ffe0e0', 
-                  color: '#dc3545', 
-                  borderRadius: '8px', 
-                  marginBottom: '20px' 
-                }}>
-                  <i className="fas fa-exclamation-circle"></i> {error}
-                </div>
-              )}
-              <div className="customer-detail-section">
-                <div className="detail-avatar">
-                  <span>{editCustomerModal.customer_name 
-                    ? editCustomerModal.customer_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
-                    : 'CH'}</span>
-                </div>
-                <div className="detail-info">
-                  <div className="detail-row">
-                    <span className="detail-label">Customer Name:</span>
-                    <input
-                      type="text"
-                      value={editCustomerModal.customer_name || ''}
-                      onChange={(e) => handleEditInputChange('customer_name', e.target.value)}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        width: '100%',
-                        maxWidth: '300px'
-                      }}
-                    />
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Phone:</span>
-                    <input
-                      type="tel"
-                      value={editCustomerModal.phone || ''}
-                      onChange={(e) => handleEditInputChange('phone', e.target.value)}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        width: '100%',
-                        maxWidth: '300px'
-                      }}
-                    />
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Email:</span>
-                    <input
-                      type="email"
-                      value={editCustomerModal.email || ''}
-                      onChange={(e) => handleEditInputChange('email', e.target.value)}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        width: '100%',
-                        maxWidth: '300px'
-                      }}
-                    />
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Address:</span>
-                    <textarea
-                      value={editCustomerModal.address || ''}
-                      onChange={(e) => handleEditInputChange('address', e.target.value)}
-                      rows="3"
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        width: '100%',
-                        maxWidth: '300px',
-                        resize: 'vertical'
-                      }}
-                    />
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Chit Plan:</span>
-                    <select
-                      value={editCustomerModal.chit_plan_id || ''}
-                      onChange={(e) => handleEditInputChange('chit_plan_id', parseInt(e.target.value))}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        width: '100%',
-                        maxWidth: '300px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <option value="">Select Chit Plan</option>
-                      {plans.map((plan) => (
-                        <option key={plan.id} value={plan.id}>
-                          {plan.plan_name} - ₹{parseFloat(plan.plan_amount).toLocaleString('en-IN')}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Payment Mode:</span>
-                    <select
-                      value={editCustomerModal.payment_mode || ''}
-                      onChange={(e) => handleEditInputChange('payment_mode', e.target.value)}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        width: '100%',
-                        maxWidth: '300px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <option value="">Select Payment Mode</option>
-                      <option value="Cash">Cash</option>
-                      <option value="Online">Online</option>
-                      <option value="Cheque">Cheque</option>
-                      <option value="UPI">UPI</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button 
-                className="modal-close-button" 
-                onClick={closeEditModal}
-                disabled={isSaving}
-              >
-                Cancel
-              </button>
-              <button 
-                className="modal-close-button" 
-                onClick={handleSaveCustomerDetails}
-                disabled={isSaving}
-                style={{ 
-                  background: '#28a745', 
-                  color: '#fff', 
-                  marginLeft: '8px' 
-                }}
-              >
-                {isSaving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        open={confirmState.open}
+        title="Delete Chit Customer"
+        message={confirmState.message}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null, customer: null })}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
 
       {/* View Customer Details Modal */}
       {viewCustomerModal && (

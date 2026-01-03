@@ -319,18 +319,18 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
                       value={formData.month}
                       onChange={handleInputChange}
                       required
-                      disabled={!selectedCustomer || paidMonths.length >= 12}
+                      disabled={!selectedCustomer || !formData.duration || paidMonths.length >= parseInt(formData.duration || 0)}
                       style={{ 
                         paddingLeft: '50px',
                         appearance: 'auto',
-                        cursor: (!selectedCustomer || paidMonths.length >= 12) ? 'not-allowed' : 'pointer',
-                        background: (!selectedCustomer || paidMonths.length >= 12) ? '#f8f9fa' : '#fff'
+                        cursor: (!selectedCustomer || !formData.duration || paidMonths.length >= parseInt(formData.duration || 0)) ? 'not-allowed' : 'pointer',
+                        background: (!selectedCustomer || !formData.duration || paidMonths.length >= parseInt(formData.duration || 0)) ? '#f8f9fa' : '#fff'
                       }}
                     >
                       <option value="">
-                        {paidMonths.length >= 12 ? 'All months paid' : 'Select month'}
+                        {!formData.duration ? 'Select duration first' : (paidMonths.length >= parseInt(formData.duration || 0) ? 'All months paid' : 'Select month')}
                       </option>
-                      {Array.from({ length: 12 }, (_, i) => {
+                      {formData.duration && Array.from({ length: parseInt(formData.duration) || 0 }, (_, i) => {
                         const monthNumber = i + 1;
                         const isPaid = paidMonths.includes(monthNumber);
                         // Don't show paid months in the dropdown
@@ -349,14 +349,14 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     </select>
                     <i className="fas fa-chevron-down dropdown-icon"></i>
                   </div>
-                  {paidMonths.length > 0 && paidMonths.length < 12 && (
+                  {formData.duration && paidMonths.length > 0 && paidMonths.length < parseInt(formData.duration) && (
                     <small style={{ color: '#666', fontSize: '11px', marginTop: '4px', display: 'block' }}>
-                      Paid months: {paidMonths.sort((a, b) => a - b).join(', ')}
+                      Paid months: {paidMonths.sort((a, b) => a - b).join(', ')} / {formData.duration} months
                     </small>
                   )}
-                  {paidMonths.length >= 12 && (
+                  {formData.duration && paidMonths.length >= parseInt(formData.duration) && (
                     <small style={{ color: '#dc3545', fontSize: '11px', marginTop: '4px', display: 'block' }}>
-                      All 12 months have been paid
+                      All {formData.duration} months have been paid
                     </small>
                   )}
                 </div>

@@ -100,8 +100,13 @@ router.put('/', async (req, res) => {
       values.push(fullName);
     }
     if (email !== undefined) {
+      // Trim and normalize email
+      const trimmedEmail = email.trim().toLowerCase();
+      if (!trimmedEmail) {
+        return res.status(400).json({ error: 'Email cannot be empty' });
+      }
       updates.push(`email = $${paramCount++}`);
-      values.push(email);
+      values.push(trimmedEmail);
     }
     if (phone !== undefined) {
       updates.push(`phone = $${paramCount++}`);

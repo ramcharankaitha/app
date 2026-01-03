@@ -417,6 +417,13 @@ BEGIN
     ) THEN
         ALTER TABLE transport ADD COLUMN addresses JSONB;
     END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'transport' AND column_name = 'phone_number'
+    ) THEN
+        ALTER TABLE transport ADD COLUMN phone_number VARCHAR(100);
+    END IF;
 END $$;
 
 -- Customer Tokens Table (Loyalty Points System)

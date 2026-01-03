@@ -95,76 +95,57 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
     }
   };
 
-  // Check if customer exists when both name and phone are entered
-  // Only check walk-in customers (not chit plan customers)
+  // Auto-fetch customer details when phone/ID is entered (works with or without name)
   useEffect(() => {
-    const checkCustomer = async () => {
-      if (!formData.customerName.trim() || !formData.customerPhone.trim()) {
+    const fetchCustomerByPhoneOrId = async () => {
+      // Only proceed if phone/ID is entered (at least 4 characters for phone or C- for ID)
+      if (!formData.customerPhone.trim() || formData.customerPhone.trim().length < 4) {
         setCustomerVerified(false);
+        setCustomerDetails(null);
         return;
       }
 
       setIsCheckingCustomer(true);
       
       try {
-        // Get all walk-in customers only
-        const allCustomersResponse = await customersAPI.getAll('walkin');
+        // Search by phone or unique ID
+        const searchResponse = await customersAPI.search(formData.customerPhone.trim());
         
-        if (allCustomersResponse.success && allCustomersResponse.customers && allCustomersResponse.customers.length > 0) {
-          // Check if any walk-in customer matches both name and phone
-          const matchingCustomer = allCustomersResponse.customers.find(c => 
-            c.phone === formData.customerPhone.trim() &&
-            c.full_name.toLowerCase() === formData.customerName.trim().toLowerCase() &&
-            c.customer_type === 'walkin' // Ensure it's a walk-in customer
+        if (searchResponse.success && searchResponse.customers && searchResponse.customers.length > 0) {
+          // Find exact match by phone or unique ID
+          const phoneOrId = formData.customerPhone.trim();
+          const matchingCustomer = searchResponse.customers.find(c => 
+            c.phone === phoneOrId || 
+            c.customer_unique_id?.toUpperCase() === phoneOrId.toUpperCase()
           );
           
-          if (matchingCustomer) {
+          // If exact match found, use it; otherwise use first result
+          const customer = matchingCustomer || searchResponse.customers[0];
+          
+          if (customer) {
             setCustomerVerified(true);
-            setCustomerDetails(matchingCustomer);
-            // Fetch full customer details
+            setCustomerDetails(customer);
+            // Auto-fill all customer details
             setFormData(prev => ({
               ...prev,
-              customerAddress: matchingCustomer.address || '',
-              customerCity: matchingCustomer.city || '',
-              customerState: matchingCustomer.state || '',
-              customerPincode: matchingCustomer.pincode || ''
+              customerName: customer.full_name || prev.customerName, // Don't overwrite if name already entered
+              customerAddress: customer.address || '',
+              customerCity: customer.city || '',
+              customerState: customer.state || '',
+              customerPincode: customer.pincode || ''
             }));
           } else {
-            // Try searching by name in walk-in customers only
-            const nameResponse = await customersAPI.getAll('walkin');
-            if (nameResponse.success && nameResponse.customers && nameResponse.customers.length > 0) {
-              const nameMatch = nameResponse.customers.find(c => 
-                c.full_name.toLowerCase() === formData.customerName.trim().toLowerCase() &&
-                c.phone === formData.customerPhone.trim() &&
-                c.customer_type === 'walkin' // Ensure it's a walk-in customer
-              );
-              
-              if (nameMatch) {
-                setCustomerVerified(true);
-                setCustomerDetails(nameMatch);
-                // Fetch full customer details
-                setFormData(prev => ({
-                  ...prev,
-                  customerAddress: nameMatch.address || '',
-                  customerCity: nameMatch.city || '',
-                  customerState: nameMatch.state || '',
-                  customerPincode: nameMatch.pincode || ''
-                }));
-              } else {
-                setCustomerVerified(false);
-                setCustomerDetails(null);
-              }
-            } else {
-              setCustomerVerified(false);
-              setCustomerDetails(null);
-            }
+            setCustomerVerified(false);
+            setCustomerDetails(null);
           }
         } else {
           setCustomerVerified(false);
+          setCustomerDetails(null);
         }
       } catch (err) {
-        console.error('Error checking customer:', err);
+        console.error('Error fetching customer:', err);
         setCustomerVerified(false);
+        setCustomerDetails(null);
       } finally {
         setIsCheckingCustomer(false);
       }
@@ -172,11 +153,11 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
 
     // Debounce the check
     const timer = setTimeout(() => {
-      checkCustomer();
+      fetchCustomerByPhoneOrId();
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [formData.customerName, formData.customerPhone]);
+  }, [formData.customerPhone]);
 
   const handleProductChange = (field, value) => {
     setCurrentProduct(prev => {
@@ -524,15 +505,15 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="customerPhone">Phone number *</label>
+                <label htmlFor="customerPhone">Phone number or Customer ID *</label>
                 <div className="input-wrapper" style={{ position: 'relative' }}>
                   <i className="fas fa-phone input-icon"></i>
                   <input
-                    type="tel"
+                    type="text"
                     id="customerPhone"
                     name="customerPhone"
                     className="form-input"
-                    placeholder="Enter phone number"
+                    placeholder="Enter phone number or Customer ID (e.g., C-1234)"
                     value={formData.customerPhone}
                     onChange={handleInputChange}
                     required

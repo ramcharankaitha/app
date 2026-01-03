@@ -12,21 +12,34 @@ router.post('/login', async (req, res) => {
     }
 
     if (email) {
+      // Trim and normalize email (case-insensitive)
+      const trimmedEmail = email.trim().toLowerCase();
+      
       const adminResult = await pool.query(
-        'SELECT * FROM admin_profile WHERE email = $1',
-        [email]
+        'SELECT * FROM admin_profile WHERE LOWER(TRIM(email)) = $1',
+        [trimmedEmail]
       );
 
       if (adminResult.rows.length > 0) {
         const admin = adminResult.rows[0];
         
-        if (admin.password_hash) {
-          const isValid = await bcrypt.compare(password, admin.password_hash);
-          if (!isValid) {
-            return res.status(401).json({ error: 'Invalid email or password' });
-          }
+        // Password hash is REQUIRED - reject if missing
+        if (!admin.password_hash) {
+          console.error('Admin has no password hash:', admin.email);
+          return res.status(401).json({ error: 'Invalid email or password' });
         }
         
+        console.log('Attempting login for admin:', admin.email);
+        const isValid = await bcrypt.compare(password, admin.password_hash);
+        console.log('Password comparison result for admin:', isValid);
+        
+        if (!isValid) {
+          console.error('Password mismatch for admin:', admin.email);
+          return res.status(401).json({ error: 'Invalid email or password' });
+        }
+        
+        console.log('Admin login successful:', admin.email);
+
         return res.json({
           success: true,
           user: {
@@ -82,9 +95,11 @@ router.post('/login', async (req, res) => {
         });
       }
 
+      // Trim whitespace from username for staff lookup (same as supervisor)
+      const trimmedStaffUsername = username.trim();
       const staffResult = await pool.query(
-        'SELECT * FROM staff WHERE username = $1',
-        [username]
+        'SELECT * FROM staff WHERE LOWER(TRIM(username)) = LOWER($1)',
+        [trimmedStaffUsername]
       );
 
       if (staffResult.rows.length > 0) {
@@ -95,11 +110,16 @@ router.post('/login', async (req, res) => {
           return res.status(401).json({ error: 'Invalid username or password' });
         }
         
+        console.log('Attempting login for staff:', staff.username);
         const isValid = await bcrypt.compare(password, staff.password_hash);
+        console.log('Password comparison result for staff:', isValid);
+        
         if (!isValid) {
           console.error('Password mismatch for staff:', staff.username);
           return res.status(401).json({ error: 'Invalid username or password' });
         }
+
+        console.log('Staff login successful:', staff.username);
 
         return res.json({
           success: true,

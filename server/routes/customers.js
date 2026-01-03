@@ -3,6 +3,46 @@ const router = express.Router();
 const { pool } = require('../config/database');
 const { sendCustomerWelcomeMessage } = require('../services/smsService');
 
+// Ensure customer_unique_id column exists
+const ensureCustomerUniqueIdColumn = async () => {
+  try {
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'customers' AND column_name = 'customer_unique_id'
+        ) THEN
+          ALTER TABLE customers ADD COLUMN customer_unique_id VARCHAR(50) UNIQUE;
+          RAISE NOTICE 'Added customer_unique_id column to customers';
+        END IF;
+      END $$;
+    `);
+  } catch (error) {
+    console.error('Error ensuring customer_unique_id column:', error);
+  }
+};
+
+// Generate unique customer ID: C-{last 4 digits of phone}
+const generateCustomerUniqueId = (phone) => {
+  if (!phone || phone.trim() === '') {
+    return null;
+  }
+  
+  // Extract only digits from phone number
+  const digits = phone.replace(/\D/g, '');
+  
+  if (digits.length < 4) {
+    // If phone has less than 4 digits, pad with zeros or use all digits
+    const padded = digits.padStart(4, '0');
+    return `C-${padded}`;
+  }
+  
+  // Get last 4 digits
+  const lastFour = digits.slice(-4);
+  return `C-${lastFour}`;
+};
+
 router.get('/', async (req, res) => {
   try {
     const { type } = req.query; // Optional: 'walkin' or 'chitplan'
@@ -56,7 +96,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Search customers by name or phone (for dispatch form and phone validation)
+// Search customers by name, phone, or unique ID (for dispatch form and phone validation)
 router.get('/search', async (req, res) => {
   try {
     const { name } = req.query;
@@ -67,19 +107,45 @@ router.get('/search', async (req, res) => {
 
     const searchTerm = name.trim();
     
+    // Ensure customer_unique_id column exists
+    await ensureCustomerUniqueIdColumn();
+    
     // Check if search term looks like a phone number (contains only digits, spaces, +, -, etc.)
     const isPhoneNumber = /^[\d\s\+\-\(\)]+$/.test(searchTerm);
+    
+    // Check if search term looks like a unique ID (starts with C-)
+    const isUniqueId = /^C-/.test(searchTerm.toUpperCase());
     
     let query;
     let params;
     
-    if (isPhoneNumber) {
-      // Search by phone number (exact match or partial)
+    if (isUniqueId) {
+      // Search by unique ID (exact match)
+      query = `SELECT DISTINCT 
+        full_name, 
+        email, 
+        phone, 
+        customer_unique_id,
+        address, 
+        city, 
+        state, 
+        pincode,
+        MIN(created_at) as first_purchase_date,
+        MAX(created_at) as last_purchase_date
+      FROM customers 
+      WHERE UPPER(customer_unique_id) = UPPER($1)
+      GROUP BY full_name, email, phone, customer_unique_id, address, city, state, pincode
+      ORDER BY full_name ASC
+      LIMIT 20`;
+      params = [searchTerm.toUpperCase()];
+    } else if (isPhoneNumber) {
+      // Search by phone number (exact match or partial) OR unique ID
       const phoneDigits = searchTerm.replace(/\D/g, ''); // Remove non-digits
       query = `SELECT DISTINCT 
         full_name, 
         email, 
         phone, 
+        customer_unique_id,
         address, 
         city, 
         state, 
@@ -89,16 +155,18 @@ router.get('/search', async (req, res) => {
       FROM customers 
       WHERE REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', '') LIKE $1
          OR phone = $2
-      GROUP BY full_name, email, phone, address, city, state, pincode
+         OR UPPER(customer_unique_id) = UPPER($3)
+      GROUP BY full_name, email, phone, customer_unique_id, address, city, state, pincode
       ORDER BY full_name ASC
       LIMIT 20`;
-      params = [`%${phoneDigits}%`, searchTerm];
+      params = [`%${phoneDigits}%`, searchTerm, searchTerm];
     } else {
-      // Search by name
+      // Search by name OR unique ID
       query = `SELECT DISTINCT 
         full_name, 
         email, 
         phone, 
+        customer_unique_id,
         address, 
         city, 
         state, 
@@ -107,10 +175,11 @@ router.get('/search', async (req, res) => {
         MAX(created_at) as last_purchase_date
       FROM customers 
       WHERE LOWER(full_name) LIKE LOWER($1)
-      GROUP BY full_name, email, phone, address, city, state, pincode
+         OR UPPER(customer_unique_id) = UPPER($2)
+      GROUP BY full_name, email, phone, customer_unique_id, address, city, state, pincode
       ORDER BY full_name ASC
       LIMIT 20`;
-      params = [`%${searchTerm}%`];
+      params = [`%${searchTerm}%`, searchTerm];
     }
 
     const result = await pool.query(query, params);
@@ -122,14 +191,17 @@ router.get('/search', async (req, res) => {
   }
 });
 
-// Get all products/purchases for a customer by name, email, or phone
+// Get all products/purchases for a customer by name, phone, or unique ID
 router.get('/products/:identifier', async (req, res) => {
   try {
     const { identifier } = req.params;
     
     console.log('Fetching products for customer identifier:', identifier);
     
-    // Search by name, email, or phone - get all purchases with product details
+    // Ensure customer_unique_id column exists
+    await ensureCustomerUniqueIdColumn();
+    
+    // Search by name, phone, or unique ID - get all purchases with product details
     const result = await pool.query(
       `SELECT DISTINCT
         c.item_code,
@@ -143,7 +215,8 @@ router.get('/products/:identifier', async (req, res) => {
       FROM customers c
       LEFT JOIN products p ON c.item_code = p.item_code
       WHERE (LOWER(c.full_name) = LOWER($1) 
-         OR c.phone = $1)
+         OR c.phone = $1
+         OR UPPER(c.customer_unique_id) = UPPER($1))
          AND (c.item_code IS NOT NULL AND c.item_code != '')
       ORDER BY c.created_at DESC`,
       [identifier]
@@ -157,6 +230,7 @@ router.get('/products/:identifier', async (req, res) => {
         full_name,
         email,
         phone,
+        customer_unique_id,
         address,
         city,
         state,
@@ -164,6 +238,7 @@ router.get('/products/:identifier', async (req, res) => {
       FROM customers
       WHERE LOWER(full_name) = LOWER($1)
          OR phone = $1
+         OR UPPER(customer_unique_id) = UPPER($1)
       LIMIT 1`,
       [identifier]
     );
@@ -254,6 +329,9 @@ router.post('/', async (req, res) => {
     const { ensureVerificationColumn, shouldBeVerified, notifyStaffCreation } = require('../utils/verification');
     await ensureVerificationColumn('customers');
     
+    // Ensure customer_unique_id column exists
+    await ensureCustomerUniqueIdColumn();
+    
     // Determine verification status based on user role
     const isVerified = shouldBeVerified(userRole || 'staff');
 
@@ -262,10 +340,41 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Full name is required' });
     }
 
+    // Generate unique customer ID
+    let customerUniqueId = phone ? generateCustomerUniqueId(phone) : null;
+    
+    // Check if unique ID already exists (if phone is provided)
+    if (customerUniqueId) {
+      const existingUniqueId = await client.query(
+        'SELECT id, full_name, phone FROM customers WHERE customer_unique_id = $1 LIMIT 1',
+        [customerUniqueId]
+      );
+      
+      if (existingUniqueId.rows.length > 0) {
+        // If unique ID exists but phone is different, generate a new one with timestamp
+        const existing = existingUniqueId.rows[0];
+        if (existing.phone !== phone.trim()) {
+          // Generate alternative unique ID with timestamp suffix
+          const timestamp = Date.now().toString().slice(-4);
+          const alternativeId = `${customerUniqueId}-${timestamp}`;
+          const checkAlt = await client.query(
+            'SELECT id FROM customers WHERE customer_unique_id = $1 LIMIT 1',
+            [alternativeId]
+          );
+          if (checkAlt.rows.length === 0) {
+            customerUniqueId = alternativeId;
+          } else {
+            // Use full timestamp if still conflict
+            customerUniqueId = `C-${Date.now().toString().slice(-8)}`;
+          }
+        }
+      }
+    }
+
     // Check if phone number already exists
     if (phone && phone.trim() !== '') {
       const existingCustomer = await client.query(
-        'SELECT id, full_name, email FROM customers WHERE phone = $1 LIMIT 1',
+        'SELECT id, full_name, email, customer_unique_id FROM customers WHERE phone = $1 LIMIT 1',
         [phone.trim()]
       );
       
@@ -273,7 +382,7 @@ router.post('/', async (req, res) => {
         await client.query('ROLLBACK');
         const existing = existingCustomer.rows[0];
         return res.status(400).json({ 
-          error: `Mobile number already exists! This number is registered with customer: ${existing.full_name} (${existing.email})` 
+          error: `Mobile number already exists! This number is registered with customer: ${existing.full_name}${existing.customer_unique_id ? ` (ID: ${existing.customer_unique_id})` : ''}` 
         });
       }
     }
@@ -315,13 +424,14 @@ router.post('/', async (req, res) => {
     }
 
     const result = await client.query(
-      `INSERT INTO customers (full_name, email, phone, address, city, state, pincode, whatsapp, item_code, quantity, mrp, sell_rate, discount, payment_mode, tokens_used, tokens_earned, created_by, is_verified)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+      `INSERT INTO customers (full_name, email, phone, customer_unique_id, address, city, state, pincode, whatsapp, item_code, quantity, mrp, sell_rate, discount, payment_mode, tokens_used, tokens_earned, created_by, is_verified)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
        RETURNING *`,
       [
         fullName, 
         null, // email is no longer required
-        phone || null, 
+        phone || null,
+        customerUniqueId, // unique customer ID
         address || null,
         city || null,
         state || null,
@@ -656,15 +766,22 @@ router.post('/chit-plan', async (req, res) => {
       // Customer already exists, use existing customer
       customer = existingCustomerCheck.rows[0];
     } else {
+      // Ensure customer_unique_id column exists
+      await ensureCustomerUniqueIdColumn();
+      
+      // Generate unique customer ID
+      const customerUniqueId = generateCustomerUniqueId(phone.trim());
+      
       // Create new customer record
       const customerResult = await client.query(
-        `INSERT INTO customers (full_name, email, phone, address, city, state, pincode, whatsapp, created_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `INSERT INTO customers (full_name, email, phone, customer_unique_id, address, city, state, pincode, whatsapp, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          RETURNING *`,
         [
           fullName.trim(), 
           null, // email
-          phone.trim(), 
+          phone.trim(),
+          customerUniqueId, // unique customer ID
           address ? address.trim() : null,
           city ? city.trim() : null,
           state ? state.trim() : null,

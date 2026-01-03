@@ -11,6 +11,8 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
   const [successMessage, setSuccessMessage] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
   const [viewCustomerModal, setViewCustomerModal] = useState(null);
+  const [editCustomerModal, setEditCustomerModal] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null, customer: null });
   const menuRefs = useRef({});
 
@@ -86,6 +88,7 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
   const filteredCustomers = customers.filter(customer => {
     const matchesSearch = customer.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          customer.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         customer.customer_unique_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          customer.address?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStore = selectedStore === 'All Stores' || customer.store === selectedStore;
     return matchesSearch && matchesStore;
@@ -130,11 +133,70 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
   };
 
   // Handle edit customer
-  const handleEditCustomer = (customer) => {
+  const handleEditCustomer = async (customer) => {
     setOpenMenuId(null);
-    if (onNavigate) {
-      onNavigate('addCustomer', { editId: customer.id });
+    try {
+      const response = await customersAPI.getById(customer.id);
+      if (response.success) {
+        setEditCustomerModal(response.customer);
+      } else {
+        setError('Failed to fetch customer details');
+      }
+    } catch (err) {
+      console.error('Error fetching customer details:', err);
+      setError('Failed to fetch customer details');
     }
+  };
+
+  // Handle save customer details
+  const handleSaveCustomerDetails = async () => {
+    if (!editCustomerModal) return;
+    
+    setIsSaving(true);
+    setError('');
+    
+    try {
+      const response = await customersAPI.update(editCustomerModal.id, {
+        fullName: editCustomerModal.full_name,
+        phone: editCustomerModal.phone,
+        email: editCustomerModal.email,
+        address: editCustomerModal.address,
+        city: editCustomerModal.city,
+        state: editCustomerModal.state,
+        pincode: editCustomerModal.pincode,
+        whatsapp: editCustomerModal.whatsapp
+      });
+      
+      if (response.success) {
+        // Refresh customers list
+        await fetchCustomers();
+        setEditCustomerModal(null);
+        setError('');
+        setSuccessMessage('Customer updated successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        setError('Failed to update customer');
+      }
+    } catch (err) {
+      console.error('Error updating customer:', err);
+      setError(err.message || 'Failed to update customer');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle input change in edit modal
+  const handleEditInputChange = (field, value) => {
+    if (editCustomerModal) {
+      setEditCustomerModal({
+        ...editCustomerModal,
+        [field]: value
+      });
+    }
+  };
+
+  const closeEditModal = () => {
+    setEditCustomerModal(null);
   };
 
   // Handle delete customer
@@ -254,7 +316,7 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
             <i className="fas fa-search"></i>
             <input
               type="text"
-              placeholder="Search name, phone..."
+              placeholder="Search name, phone, or Customer ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -318,6 +380,9 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
                       Phone
                     </th>
                     <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                      Customer ID
+                    </th>
+                    <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
                       Customer Type
                     </th>
                     <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
@@ -356,6 +421,14 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
                         color: '#666'
                       }}>
                         {customer.phone || 'N/A'}
+                      </td>
+                      <td style={{ 
+                        padding: '12px 8px',
+                        fontSize: '14px',
+                        color: '#007bff',
+                        fontWeight: '600'
+                      }}>
+                        {customer.customer_unique_id || 'N/A'}
                       </td>
                       <td style={{ 
                         padding: '12px 8px',
@@ -535,6 +608,10 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
                     <span className="detail-value">{viewCustomerModal.phone || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
+                    <span className="detail-label">Customer ID:</span>
+                    <span className="detail-value" style={{ color: '#007bff', fontWeight: '600' }}>{viewCustomerModal.customer_unique_id || 'N/A'}</span>
+                  </div>
+                  <div className="detail-row">
                     <span className="detail-label">Address:</span>
                     <span className="detail-value">{viewCustomerModal.address || 'N/A'}</span>
                   </div>
@@ -656,6 +733,199 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
               </div>
               <button className="modal-close-button" onClick={closeViewModal}>
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Customer Modal */}
+      {editCustomerModal && (
+        <div className="modal-overlay" onClick={closeEditModal}>
+          <div className="customer-details-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Edit Customer Details</h2>
+              <button className="modal-close-btn" onClick={closeEditModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="modal-content">
+              {error && (
+                <div style={{ 
+                  padding: '12px', 
+                  background: '#ffe0e0', 
+                  color: '#dc3545', 
+                  borderRadius: '8px', 
+                  marginBottom: '20px' 
+                }}>
+                  <i className="fas fa-exclamation-circle"></i> {error}
+                </div>
+              )}
+              <div className="customer-detail-section">
+                <div className="detail-avatar">
+                  <span>{editCustomerModal.full_name 
+                    ? editCustomerModal.full_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+                    : 'CU'}</span>
+                </div>
+                <div className="detail-info">
+                  <div className="detail-row">
+                    <span className="detail-label">Full Name:</span>
+                    <input
+                      type="text"
+                      value={editCustomerModal.full_name || ''}
+                      onChange={(e) => handleEditInputChange('full_name', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Phone:</span>
+                    <input
+                      type="tel"
+                      value={editCustomerModal.phone || ''}
+                      onChange={(e) => handleEditInputChange('phone', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Customer ID:</span>
+                    <span className="detail-value" style={{ color: '#007bff', fontWeight: '600' }}>
+                      {editCustomerModal.customer_unique_id || 'N/A'}
+                    </span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Email:</span>
+                    <input
+                      type="email"
+                      value={editCustomerModal.email || ''}
+                      onChange={(e) => handleEditInputChange('email', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">WhatsApp:</span>
+                    <input
+                      type="tel"
+                      value={editCustomerModal.whatsapp || ''}
+                      onChange={(e) => handleEditInputChange('whatsapp', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Address:</span>
+                    <textarea
+                      value={editCustomerModal.address || ''}
+                      onChange={(e) => handleEditInputChange('address', e.target.value)}
+                      rows="2"
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px',
+                        resize: 'vertical'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">City:</span>
+                    <input
+                      type="text"
+                      value={editCustomerModal.city || ''}
+                      onChange={(e) => handleEditInputChange('city', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">State:</span>
+                    <input
+                      type="text"
+                      value={editCustomerModal.state || ''}
+                      onChange={(e) => handleEditInputChange('state', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Pincode:</span>
+                    <input
+                      type="text"
+                      value={editCustomerModal.pincode || ''}
+                      onChange={(e) => handleEditInputChange('pincode', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button 
+                className="modal-close-button" 
+                onClick={closeEditModal}
+                style={{ background: '#6c757d', color: '#fff' }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="modal-close-button" 
+                onClick={handleSaveCustomerDetails}
+                disabled={isSaving}
+                style={{ 
+                  background: '#dc3545', 
+                  color: '#fff',
+                  opacity: isSaving ? 0.6 : 1,
+                  cursor: isSaving ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

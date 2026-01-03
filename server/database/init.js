@@ -14,7 +14,7 @@ const initDatabase = async () => {
     const hashedPassword = await bcrypt.hash('admin123', 10);
     
     const checkAdmin = await pool.query(
-      'SELECT id FROM admin_profile WHERE email = $1',
+      'SELECT id, password_hash FROM admin_profile WHERE LOWER(TRIM(email)) = LOWER($1)',
       ['admin@anithastores.com']
     );
 
@@ -30,7 +30,7 @@ const initDatabase = async () => {
       const admin = checkAdmin.rows[0];
       if (!admin.password_hash) {
         await pool.query(
-          `UPDATE admin_profile SET password_hash = $1 WHERE email = $2`,
+          `UPDATE admin_profile SET password_hash = $1 WHERE LOWER(TRIM(email)) = LOWER($2)`,
           [hashedPassword, 'admin@anithastores.com']
         );
         console.log('✅ Default admin password set');

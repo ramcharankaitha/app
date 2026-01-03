@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node cluster.js",
     "start:single": "node server.js",
+    "start:vps": "node server.js",
+    "start:pm2": "pm2 start ecosystem.config.js",
     "dev": "nodemon server.js",
     "check-env": "node check-env.js",
     "setup-db": "node setup-database.js"

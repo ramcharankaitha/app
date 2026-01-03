@@ -10,6 +10,8 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
   const [successMessage, setSuccessMessage] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
   const [viewSupplierModal, setViewSupplierModal] = useState(null);
+  const [editSupplierModal, setEditSupplierModal] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null, supplier: null });
   const menuRefs = useRef({});
 
@@ -130,11 +132,72 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
   };
 
   // Handle edit supplier
-  const handleEditSupplier = (supplier) => {
+  const handleEditSupplier = async (supplier) => {
     setOpenMenuId(null);
-    if (onNavigate) {
-      onNavigate('addSupplier', { editId: supplier.id });
+    try {
+      const response = await suppliersAPI.getById(supplier.id);
+      if (response.success) {
+        setEditSupplierModal(response.supplier);
+      } else {
+        setError('Failed to fetch supplier details');
+      }
+    } catch (err) {
+      console.error('Error fetching supplier details:', err);
+      setError('Failed to fetch supplier details');
     }
+  };
+
+  // Handle save supplier details
+  const handleSaveSupplierDetails = async () => {
+    if (!editSupplierModal) return;
+    
+    setIsSaving(true);
+    setError('');
+    
+    try {
+      const response = await suppliersAPI.update(editSupplierModal.id, {
+        supplierName: editSupplierModal.supplier_name,
+        phone: editSupplierModal.phone,
+        phone2: editSupplierModal.phone_2 || editSupplierModal.phone2,
+        phone3: editSupplierModal.phone_3 || editSupplierModal.phone3,
+        address: editSupplierModal.address,
+        city: editSupplierModal.city,
+        state: editSupplierModal.state,
+        pincode: editSupplierModal.pincode,
+        brand: editSupplierModal.brand,
+        notifications: editSupplierModal.notifications
+      });
+      
+      if (response.success) {
+        // Refresh suppliers list
+        await fetchSuppliers();
+        setEditSupplierModal(null);
+        setError('');
+        setSuccessMessage('Supplier updated successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        setError('Failed to update supplier');
+      }
+    } catch (err) {
+      console.error('Error updating supplier:', err);
+      setError(err.message || 'Failed to update supplier');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle input change in edit modal
+  const handleEditInputChange = (field, value) => {
+    if (editSupplierModal) {
+      setEditSupplierModal({
+        ...editSupplierModal,
+        [field]: value
+      });
+    }
+  };
+
+  const closeEditModal = () => {
+    setEditSupplierModal(null);
   };
 
   // Handle delete supplier
@@ -621,6 +684,225 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
               </div>
               <button className="modal-close-button" onClick={closeViewModal}>
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Supplier Modal */}
+      {editSupplierModal && (
+        <div className="modal-overlay" onClick={closeEditModal}>
+          <div className="customer-details-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Edit Supplier Details</h2>
+              <button className="modal-close-btn" onClick={closeEditModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="modal-content">
+              {error && (
+                <div style={{ 
+                  padding: '12px', 
+                  background: '#ffe0e0', 
+                  color: '#dc3545', 
+                  borderRadius: '8px', 
+                  marginBottom: '20px' 
+                }}>
+                  <i className="fas fa-exclamation-circle"></i> {error}
+                </div>
+              )}
+              <div className="customer-detail-section">
+                <div className="detail-avatar">
+                  <span>{editSupplierModal.supplier_name 
+                    ? editSupplierModal.supplier_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+                    : 'SU'}</span>
+                </div>
+                <div className="detail-info">
+                  <div className="detail-row">
+                    <span className="detail-label">Supplier Name:</span>
+                    <input
+                      type="text"
+                      value={editSupplierModal.supplier_name || ''}
+                      onChange={(e) => handleEditInputChange('supplier_name', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Phone:</span>
+                    <input
+                      type="tel"
+                      value={editSupplierModal.phone || ''}
+                      onChange={(e) => handleEditInputChange('phone', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Phone 2:</span>
+                    <input
+                      type="tel"
+                      value={editSupplierModal.phone_2 || editSupplierModal.phone2 || ''}
+                      onChange={(e) => handleEditInputChange(editSupplierModal.phone_2 !== undefined ? 'phone_2' : 'phone2', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Phone 3:</span>
+                    <input
+                      type="tel"
+                      value={editSupplierModal.phone_3 || editSupplierModal.phone3 || ''}
+                      onChange={(e) => handleEditInputChange(editSupplierModal.phone_3 !== undefined ? 'phone_3' : 'phone3', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Address:</span>
+                    <textarea
+                      value={editSupplierModal.address || ''}
+                      onChange={(e) => handleEditInputChange('address', e.target.value)}
+                      rows="2"
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px',
+                        resize: 'vertical'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">City:</span>
+                    <input
+                      type="text"
+                      value={editSupplierModal.city || ''}
+                      onChange={(e) => handleEditInputChange('city', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">State:</span>
+                    <input
+                      type="text"
+                      value={editSupplierModal.state || ''}
+                      onChange={(e) => handleEditInputChange('state', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Pincode:</span>
+                    <input
+                      type="text"
+                      value={editSupplierModal.pincode || ''}
+                      onChange={(e) => handleEditInputChange('pincode', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Brand:</span>
+                    <input
+                      type="text"
+                      value={editSupplierModal.brand || ''}
+                      onChange={(e) => handleEditInputChange('brand', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Notifications:</span>
+                    <input
+                      type="text"
+                      value={editSupplierModal.notifications || ''}
+                      onChange={(e) => handleEditInputChange('notifications', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button 
+                className="modal-close-button" 
+                onClick={closeEditModal}
+                style={{ background: '#6c757d', color: '#fff' }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="modal-close-button" 
+                onClick={handleSaveSupplierDetails}
+                disabled={isSaving}
+                style={{ 
+                  background: '#dc3545', 
+                  color: '#fff',
+                  opacity: isSaving ? 0.6 : 1,
+                  cursor: isSaving ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

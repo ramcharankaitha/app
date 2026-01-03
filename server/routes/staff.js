@@ -147,6 +147,12 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // Trim username to avoid whitespace issues
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername) {
+      return res.status(400).json({ error: 'Username cannot be empty or only whitespace' });
+    }
+
     // Check if phone number already exists (phone is unique identifier)
     const phoneCheck = await pool.query(
       'SELECT id FROM staff WHERE phone = $1',
@@ -156,10 +162,10 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Phone number already exists' });
     }
 
-    // Check if username already exists
+    // Check if username already exists (case-insensitive, trimmed)
     const usernameCheck = await pool.query(
-      'SELECT id FROM staff WHERE username = $1',
-      [username]
+      'SELECT id FROM staff WHERE LOWER(TRIM(username)) = LOWER($1)',
+      [trimmedUsername]
     );
     if (usernameCheck.rows.length > 0) {
       return res.status(400).json({ error: 'Username already exists' });
@@ -182,7 +188,7 @@ router.post('/', async (req, res) => {
         `INSERT INTO staff (full_name, username, password_hash, phone, store_allocated, address, city, state, pincode, is_handler, role, salary, created_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP)
          RETURNING id, full_name, username, phone, role, store_allocated, is_handler`,
-        [fullName, username, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'STAFF', salary || null]
+        [fullName, trimmedUsername, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'STAFF', salary || null]
       );
     } catch (colError) {
       // If it's a NOT NULL violation on email, try to fix it and retry
@@ -194,7 +200,7 @@ router.post('/', async (req, res) => {
             `INSERT INTO staff (full_name, username, password_hash, phone, store_allocated, address, city, state, pincode, is_handler, role, salary, created_at)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP)
              RETURNING id, full_name, username, phone, role, store_allocated, is_handler`,
-            [fullName, username, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'STAFF', salary || null]
+            [fullName, trimmedUsername, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'STAFF', salary || null]
           );
         } catch (retryError) {
           throw colError; // Throw original error if retry fails
@@ -206,7 +212,7 @@ router.post('/', async (req, res) => {
             `INSERT INTO staff (full_name, username, password_hash, phone, store_allocated, address, city, state, pincode, is_handler, role, created_at)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
              RETURNING id, full_name, username, phone, role, store_allocated, is_handler`,
-            [fullName, username, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'STAFF']
+            [fullName, trimmedUsername, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'STAFF']
           );
         } catch (colError2) {
           if (colError2.code === '42703') {
@@ -215,7 +221,7 @@ router.post('/', async (req, res) => {
               `INSERT INTO staff (full_name, username, password_hash, phone, store_allocated, address, city, state, pincode, is_handler, role, created_at)
                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
                RETURNING id, full_name, username, phone, role, store_allocated, is_handler`,
-              [fullName, username, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff']
+              [fullName, trimmedUsername, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff']
             );
           } else {
             throw colError2;
@@ -295,6 +301,12 @@ router.post('/upload', uploadAadhar.single('aadharCopy'), async (req, res) => {
       });
     }
 
+    // Trim username to avoid whitespace issues
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername) {
+      return res.status(400).json({ error: 'Username cannot be empty or only whitespace' });
+    }
+
     // Check if phone number already exists (phone is unique identifier)
     const phoneCheck = await pool.query(
       'SELECT id FROM staff WHERE phone = $1',
@@ -304,10 +316,10 @@ router.post('/upload', uploadAadhar.single('aadharCopy'), async (req, res) => {
       return res.status(400).json({ error: 'Phone number already exists' });
     }
 
-    // Check if username already exists
+    // Check if username already exists (case-insensitive, trimmed)
     const usernameCheck = await pool.query(
-      'SELECT id FROM staff WHERE username = $1',
-      [username]
+      'SELECT id FROM staff WHERE LOWER(TRIM(username)) = LOWER($1)',
+      [trimmedUsername]
     );
     if (usernameCheck.rows.length > 0) {
       return res.status(400).json({ error: 'Username already exists' });
@@ -330,7 +342,7 @@ router.post('/upload', uploadAadhar.single('aadharCopy'), async (req, res) => {
         `INSERT INTO staff (full_name, username, password_hash, phone, store_allocated, address, city, state, pincode, is_handler, role, salary, aadhar_file_path, created_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP)
          RETURNING id, full_name, username, phone, role, store_allocated, is_handler`,
-        [fullName, username, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'STAFF', salary || null, aadharFilePath]
+        [fullName, trimmedUsername, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'STAFF', salary || null, aadharFilePath]
       );
     } catch (colError) {
       // If it's a NOT NULL violation on email, try to fix it and retry
@@ -342,7 +354,7 @@ router.post('/upload', uploadAadhar.single('aadharCopy'), async (req, res) => {
             `INSERT INTO staff (full_name, username, password_hash, phone, store_allocated, address, city, state, pincode, is_handler, role, salary, aadhar_file_path, created_at)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP)
              RETURNING id, full_name, username, phone, role, store_allocated, is_handler`,
-            [fullName, username, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'STAFF', salary || null, aadharFilePath]
+            [fullName, trimmedUsername, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'STAFF', salary || null, aadharFilePath]
           );
         } catch (retryError) {
           throw colError; // Throw original error if retry fails
@@ -372,7 +384,7 @@ router.post('/upload', uploadAadhar.single('aadharCopy'), async (req, res) => {
                 `INSERT INTO staff (full_name, username, password_hash, phone, store_allocated, address, city, state, pincode, is_handler, role, created_at)
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
                  RETURNING id, full_name, username, phone, role, store_allocated, is_handler`,
-                [fullName, username, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff']
+                [fullName, trimmedUsername, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'Staff']
               );
             }
           } else {
@@ -554,6 +566,48 @@ router.post('/face-data', async (req, res) => {
     console.error('Save face data error:', error);
     console.error('Error stack:', error.stack);
     res.status(500).json({ error: 'Internal server error: ' + error.message });
+  }
+});
+
+// Delete staff
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if staff exists
+    const staffCheck = await pool.query('SELECT id, full_name FROM staff WHERE id = $1', [id]);
+    if (staffCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Staff not found' });
+    }
+    
+    // Check for foreign key constraints (e.g., if staff is referenced in other tables)
+    // You can add checks here for related records if needed
+    
+    // Delete the staff member
+    const result = await pool.query('DELETE FROM staff WHERE id = $1 RETURNING id, full_name', [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Staff not found' });
+    }
+    
+    console.log('Staff deleted successfully:', result.rows[0].full_name);
+    
+    res.json({
+      success: true,
+      message: 'Staff deleted successfully',
+      deletedStaff: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Delete staff error:', error);
+    
+    // Handle foreign key constraint violations
+    if (error.code === '23503') {
+      return res.status(400).json({ 
+        error: 'Cannot delete staff member. This staff member is referenced in other records (e.g., services, sales, etc.). Please remove those references first.' 
+      });
+    }
+    
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
