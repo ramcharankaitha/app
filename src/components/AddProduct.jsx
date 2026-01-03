@@ -21,6 +21,8 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     points: '',
     image: ''
   });
+  const [imagePreview, setImagePreview] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -954,34 +956,120 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       </div>
                     </div>
 
-                    {/* Upload Image Button */}
+                    {/* Upload Image */}
                     <div className="form-group">
-                      <label>Upload Image</label>
+                      <label>Product Image</label>
                       <div style={{ 
                         width: '100%',
                         position: 'relative',
                         zIndex: 1
                       }}>
-                        <div className="upload-placeholder" style={{
-                          cursor: 'pointer',
-                          padding: '8px 12px',
-                          border: '2px dashed #dc3545',
-                          borderRadius: '8px',
-                          textAlign: 'center',
-                          background: '#fff',
-                          transition: 'all 0.3s ease',
-                          minHeight: '38px',
-                          height: '38px',
-                          display: 'flex',
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px',
-                          fontSize: '12px'
-                        }}>
-                          <i className="fas fa-plus" style={{ fontSize: '14px' }}></i>
-                          <span>Tap to upload</span>
-                        </div>
+                        <input
+                          type="file"
+                          id="imageUpload"
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              // Validate file size (max 5MB)
+                              if (file.size > 5 * 1024 * 1024) {
+                                setError('Image size should be less than 5MB');
+                                return;
+                              }
+                              // Validate file type
+                              if (!file.type.startsWith('image/')) {
+                                setError('Please select a valid image file');
+                                return;
+                              }
+                              setImageFile(file);
+                              // Create preview
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                setImagePreview(reader.result);
+                                setFormData(prev => ({ ...prev, image: reader.result }));
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                        {imagePreview ? (
+                          <div style={{ position: 'relative', width: '100%' }}>
+                            <img 
+                              src={imagePreview} 
+                              alt="Product preview" 
+                              style={{
+                                width: '100%',
+                                maxHeight: '200px',
+                                objectFit: 'contain',
+                                border: '1px solid #ddd',
+                                borderRadius: '8px',
+                                padding: '8px',
+                                background: '#f8f9fa'
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setImagePreview(null);
+                                setImageFile(null);
+                                setFormData(prev => ({ ...prev, image: '' }));
+                                const fileInput = document.getElementById('imageUpload');
+                                if (fileInput) fileInput.value = '';
+                              }}
+                              style={{
+                                position: 'absolute',
+                                top: '8px',
+                                right: '8px',
+                                background: '#dc3545',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '50%',
+                                width: '30px',
+                                height: '30px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '14px'
+                              }}
+                            >
+                              <i className="fas fa-times"></i>
+                            </button>
+                          </div>
+                        ) : (
+                          <label
+                            htmlFor="imageUpload"
+                            style={{
+                              cursor: 'pointer',
+                              padding: '8px 12px',
+                              border: '2px dashed #dc3545',
+                              borderRadius: '8px',
+                              textAlign: 'center',
+                              background: '#fff',
+                              transition: 'all 0.3s ease',
+                              minHeight: '38px',
+                              height: '38px',
+                              display: 'flex',
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px',
+                              fontSize: '12px'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.target.style.background = '#f8f9fa';
+                              e.target.style.borderColor = '#c82333';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.background = '#fff';
+                              e.target.style.borderColor = '#dc3545';
+                            }}
+                          >
+                            <i className="fas fa-camera" style={{ fontSize: '14px' }}></i>
+                            <span>Click to upload product image</span>
+                          </label>
+                        )}
                       </div>
                     </div>
                   </div>

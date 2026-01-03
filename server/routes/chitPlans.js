@@ -433,40 +433,128 @@ router.post('/entries', async (req, res) => {
       END $$;
     `);
 
+    // Ensure chit_entries table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS chit_entries (
+        id SERIAL PRIMARY KEY,
+        customer_id INTEGER,
+        chit_plan_id INTEGER,
+        payment_mode VARCHAR(50) NOT NULL,
+        month INTEGER,
+        notes TEXT,
+        created_by VARCHAR(255),
+        is_verified BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Add foreign key constraints if they don't exist (without failing if tables don't exist)
+    try {
+      // Check if chit_customers table exists before adding FK
+      const customersTableCheck = await pool.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_name = 'chit_customers'
+        )
+      `);
+      
+      if (customersTableCheck.rows[0].exists) {
+        // Check if foreign key constraint already exists
+        const fkCheck = await pool.query(`
+          SELECT EXISTS (
+            SELECT 1 FROM information_schema.table_constraints 
+            WHERE constraint_name = 'chit_entries_customer_id_fkey'
+            AND table_name = 'chit_entries'
+          )
+        `);
+        
+        if (!fkCheck.rows[0].exists) {
+          await pool.query(`
+            ALTER TABLE chit_entries 
+            ADD CONSTRAINT chit_entries_customer_id_fkey 
+            FOREIGN KEY (customer_id) REFERENCES chit_customers(id) ON DELETE CASCADE
+          `);
+        }
+      }
+    } catch (fkError) {
+      console.warn('Could not add customer_id foreign key constraint:', fkError.message);
+    }
+
+    try {
+      // Check if chit_plans table exists before adding FK
+      const plansTableCheck = await pool.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_name = 'chit_plans'
+        )
+      `);
+      
+      if (plansTableCheck.rows[0].exists) {
+        // Check if foreign key constraint already exists
+        const fkCheck = await pool.query(`
+          SELECT EXISTS (
+            SELECT 1 FROM information_schema.table_constraints 
+            WHERE constraint_name = 'chit_entries_chit_plan_id_fkey'
+            AND table_name = 'chit_entries'
+          )
+        `);
+        
+        if (!fkCheck.rows[0].exists) {
+          await pool.query(`
+            ALTER TABLE chit_entries 
+            ADD CONSTRAINT chit_entries_chit_plan_id_fkey 
+            FOREIGN KEY (chit_plan_id) REFERENCES chit_plans(id) ON DELETE CASCADE
+          `);
+        }
+      }
+    } catch (fkError) {
+      console.warn('Could not add chit_plan_id foreign key constraint:', fkError.message);
+    }
+
+    // Verify customer_id and chit_plan_id exist before inserting
+    const customerCheck = await pool.query('SELECT id FROM chit_customers WHERE id = $1', [customerId]);
+    if (customerCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Invalid customer ID. Customer does not exist.' });
+    }
+
+    const planCheck = await pool.query('SELECT id FROM chit_plans WHERE id = $1', [chitPlanId]);
+    if (planCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Invalid chit plan ID. Chit plan does not exist.' });
+    }
+
+    // Ensure is_verified column exists
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'chit_entries' AND column_name = 'is_verified') THEN
+          ALTER TABLE chit_entries ADD COLUMN is_verified BOOLEAN DEFAULT false;
+          RAISE NOTICE 'Added is_verified column to chit_entries';
+        END IF;
+      END $$;
+    `);
+
     let result;
     try {
       result = await pool.query(
-        `INSERT INTO chit_entries (customer_id, chit_plan_id, payment_mode, month, notes, created_by)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        `INSERT INTO chit_entries (customer_id, chit_plan_id, payment_mode, month, notes, created_by, is_verified)
+         VALUES ($1, $2, $3, $4, $5, $6, false)
          RETURNING *`,
         [customerId, chitPlanId, paymentMode, parseInt(month) || null, notes || null, createdBy || 'system']
       );
-    } catch (colError) {
-      if (colError.code === '42P01') {
-        // Table doesn't exist, create it
-        await pool.query(`
-          CREATE TABLE IF NOT EXISTS chit_entries (
-            id SERIAL PRIMARY KEY,
-            customer_id INTEGER REFERENCES chit_customers(id),
-            chit_plan_id INTEGER REFERENCES chit_plans(id),
-            payment_mode VARCHAR(50) NOT NULL,
-            month INTEGER,
-            notes TEXT,
-            created_by VARCHAR(255),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          )
-        `);
-        // Retry insert
-        result = await pool.query(
-          `INSERT INTO chit_entries (customer_id, chit_plan_id, payment_mode, month, notes, created_by)
-           VALUES ($1, $2, $3, $4, $5, $6)
-           RETURNING *`,
-          [customerId, chitPlanId, paymentMode, parseInt(month) || null, notes || null, createdBy || 'system']
-        );
-      } else {
-        throw colError;
+    } catch (insertError) {
+      console.error('Insert chit entry error:', insertError);
+      // Handle foreign key constraint errors
+      if (insertError.code === '23503') {
+        if (insertError.constraint === 'chit_entries_customer_id_fkey' || insertError.message.includes('customer_id')) {
+          return res.status(400).json({ error: 'Invalid customer ID. Customer does not exist.' });
+        }
+        if (insertError.constraint === 'chit_entries_chit_plan_id_fkey' || insertError.message.includes('chit_plan_id')) {
+          return res.status(400).json({ error: 'Invalid chit plan ID. Chit plan does not exist.' });
+        }
+        return res.status(400).json({ error: 'Foreign key constraint violation. Please check customer and chit plan IDs.' });
       }
+      throw insertError;
     }
 
     res.status(201).json({
@@ -476,7 +564,52 @@ router.post('/entries', async (req, res) => {
     });
   } catch (error) {
     console.error('Create chit entry error:', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    console.error('Error details:', {
+      code: error.code,
+      message: error.message,
+      detail: error.detail,
+      constraint: error.constraint,
+      table: error.table
+    });
+    
+    // Handle specific PostgreSQL errors
+    if (error.code === '42P01') {
+      return res.status(500).json({ 
+        error: 'Database table does not exist. Please contact administrator.',
+        details: error.message 
+      });
+    }
+    
+    if (error.code === '23503') {
+      if (error.message.includes('chit_customers') || error.message.includes('customer_id')) {
+        return res.status(400).json({ 
+          error: 'Invalid customer. The customer does not exist in the system.',
+          details: error.message 
+        });
+      }
+      if (error.message.includes('chit_plans') || error.message.includes('chit_plan_id')) {
+        return res.status(400).json({ 
+          error: 'Invalid chit plan. The chit plan does not exist in the system.',
+          details: error.message 
+        });
+      }
+      return res.status(400).json({ 
+        error: 'Invalid reference. Please check customer and chit plan selections.',
+        details: error.message 
+      });
+    }
+    
+    if (error.code === '23505') {
+      return res.status(400).json({ 
+        error: 'Duplicate entry. This chit entry already exists.',
+        details: error.message 
+      });
+    }
+    
+    res.status(500).json({ 
+      error: 'Failed to create chit entry. Please try again.',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 

@@ -618,32 +618,6 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
                               <i className="fas fa-eye"></i>
                               View
                             </button>
-                            <button
-                              onClick={() => handleEditTransport(transport)}
-                              style={{
-                                background: '#28a745',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: '6px',
-                                padding: '6px 12px',
-                                cursor: 'pointer',
-                                fontSize: '13px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                transition: 'all 0.2s ease',
-                                fontWeight: '500'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.target.style.background = '#218838';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.target.style.background = '#28a745';
-                              }}
-                            >
-                              <i className="fas fa-edit"></i>
-                              Edit
-                            </button>
                             {(userRole === 'admin' || userRole === 'supervisor') && transport.is_verified === false && (
                               <button
                                 onClick={() => handleVerifyTransport(transport)}

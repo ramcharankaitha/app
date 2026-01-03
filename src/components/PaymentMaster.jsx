@@ -11,6 +11,8 @@ const PaymentMaster = ({ onBack, onAddPayment, onNavigate, userRole = 'admin' })
   const [successMessage, setSuccessMessage] = useState('');
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [editPaymentModal, setEditPaymentModal] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [openMenuId, setOpenMenuId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const menuRefs = useRef({});
@@ -151,35 +153,71 @@ const PaymentMaster = ({ onBack, onAddPayment, onNavigate, userRole = 'admin' })
     }
   };
 
-  const handleEditPayment = (payment) => {
+  const handleEditPayment = async (payment) => {
     setOpenMenuId(null);
-    if (onNavigate) {
-      onNavigate('addPayment', { editId: payment.id });
+    try {
+      const response = await paymentsAPI.getById(payment.id);
+      if (response.success) {
+        setEditPaymentModal(response.payment);
+      } else {
+        setError('Failed to fetch payment details');
+      }
+    } catch (err) {
+      console.error('Error fetching payment details for edit:', err);
+      setError('Failed to fetch payment details');
     }
   };
 
-  const handleDeletePayment = async (payment) => {
-    if (!window.confirm(`Are you sure you want to delete payment for ${payment.supplier_name}?`)) {
-      setOpenMenuId(null);
-      return;
+  // Handle input change in edit modal
+  const handleEditInputChange = (field, value) => {
+    if (editPaymentModal) {
+      setEditPaymentModal(prev => ({
+        ...prev,
+        [field]: value
+      }));
     }
+  };
+
+  // Handle save changes in edit modal
+  const handleSavePaymentDetails = async () => {
+    if (!editPaymentModal) return;
+
+    setIsSaving(true);
+    setError('');
+    setSuccessMessage('');
 
     try {
-      const response = await paymentsAPI.delete(payment.id);
+      const paymentData = {
+        supplierName: editPaymentModal.supplier_name,
+        supplierNumber: editPaymentModal.supplier_number || null,
+        chqNumber: editPaymentModal.chq_number || null,
+        utr: editPaymentModal.utr || null,
+        dateToBePaid: editPaymentModal.date_to_be_paid,
+        amount: editPaymentModal.amount
+      };
+
+      const response = await paymentsAPI.update(editPaymentModal.id, paymentData);
+
       if (response.success) {
-        setSuccessMessage('Payment deleted successfully');
-        fetchPayments();
+        setSuccessMessage('Payment updated successfully');
         setTimeout(() => setSuccessMessage(''), 3000);
+        await fetchPayments(); // Refresh list
+        closeEditModal();
       } else {
-        setError(response.error || 'Failed to delete payment');
-        setTimeout(() => setError(''), 3000);
+        setError(response.error || 'Failed to update payment');
       }
     } catch (err) {
-      console.error('Error deleting payment:', err);
-      setError('Failed to delete payment. Please try again.');
-      setTimeout(() => setError(''), 3000);
+      console.error('Error saving payment details:', err);
+      setError(err.message || 'Failed to update payment');
+    } finally {
+      setIsSaving(false);
     }
-    setOpenMenuId(null);
+  };
+
+  // Close edit modal
+  const closeEditModal = () => {
+    setEditPaymentModal(null);
+    setError('');
   };
 
   const closeViewModal = () => {
@@ -572,32 +610,6 @@ const PaymentMaster = ({ onBack, onAddPayment, onNavigate, userRole = 'admin' })
                                   Mark as Verified
                                 </button>
                               )}
-                              <button
-                                onClick={() => handleDeletePayment(payment)}
-                                style={{
-                                  background: '#dc3545',
-                                  color: '#fff',
-                                  border: 'none',
-                                  borderRadius: '6px',
-                                  padding: '6px 12px',
-                                  cursor: 'pointer',
-                                  fontSize: '13px',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '6px',
-                                  transition: 'all 0.2s ease',
-                                  fontWeight: '500'
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.target.style.background = '#c82333';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.target.style.background = '#dc3545';
-                                }}
-                              >
-                                <i className="fas fa-trash"></i>
-                                Delete
-                              </button>
                             </div>
                           </td>
                         </tr>
@@ -773,6 +785,170 @@ const PaymentMaster = ({ onBack, onAddPayment, onNavigate, userRole = 'admin' })
                 }}
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Payment Modal */}
+      {editPaymentModal && (
+        <div className="modal-overlay" onClick={closeEditModal}>
+          <div className="customer-details-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Edit Payment Details</h2>
+              <button className="modal-close-btn" onClick={closeEditModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="modal-content">
+              {error && (
+                <div className="alert alert-error" style={{ marginBottom: '15px' }}>
+                  <i className="fas fa-exclamation-circle"></i> {error}
+                </div>
+              )}
+              <div className="customer-detail-section">
+                <div className="detail-avatar">
+                  <span>{editPaymentModal.supplier_name
+                    ? editPaymentModal.supplier_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+                    : 'PY'}</span>
+                </div>
+                <div className="detail-info">
+                  <div className="detail-row">
+                    <span className="detail-label">Supplier Name:</span>
+                    <input
+                      type="text"
+                      value={editPaymentModal.supplier_name || ''}
+                      onChange={(e) => handleEditInputChange('supplier_name', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Supplier Number:</span>
+                    <input
+                      type="text"
+                      value={editPaymentModal.supplier_number || ''}
+                      onChange={(e) => handleEditInputChange('supplier_number', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Cheque Number:</span>
+                    <input
+                      type="text"
+                      value={editPaymentModal.chq_number || ''}
+                      onChange={(e) => handleEditInputChange('chq_number', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">UTR:</span>
+                    <input
+                      type="text"
+                      value={editPaymentModal.utr || ''}
+                      onChange={(e) => handleEditInputChange('utr', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Date to be Paid:</span>
+                    <input
+                      type="date"
+                      value={editPaymentModal.date_to_be_paid ? new Date(editPaymentModal.date_to_be_paid).toISOString().split('T')[0] : ''}
+                      onChange={(e) => handleEditInputChange('date_to_be_paid', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Amount:</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editPaymentModal.amount || ''}
+                      onChange={(e) => handleEditInputChange('amount', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Status:</span>
+                    <span className="detail-value">
+                      {editPaymentModal.is_verified === false ? (
+                        <span style={{ color: '#dc3545', fontWeight: '600' }}>Not Verified</span>
+                      ) : (
+                        <span style={{ color: '#28a745', fontWeight: '600' }}>Verified</span>
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button onClick={handleSavePaymentDetails} disabled={isSaving} style={{
+                padding: '10px 20px',
+                background: '#dc3545',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: isSaving ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                opacity: isSaving ? 0.6 : 1
+              }}>
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </button>
+              <button onClick={closeEditModal} disabled={isSaving} style={{
+                padding: '10px 20px',
+                background: '#6c757d',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: isSaving ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: '600'
+              }}>
+                Cancel
               </button>
             </div>
           </div>

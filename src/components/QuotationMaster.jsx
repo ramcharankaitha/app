@@ -12,6 +12,8 @@ const QuotationMaster = ({ onBack, onAddQuotation, onNavigate, userRole = 'admin
   const [successMessage, setSuccessMessage] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
   const [viewModal, setViewModal] = useState(null);
+  const [editQuotationModal, setEditQuotationModal] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [conversionModal, setConversionModal] = useState(null);
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
@@ -118,11 +120,91 @@ const QuotationMaster = ({ onBack, onAddQuotation, onNavigate, userRole = 'admin
     }
   };
 
-  const handleEdit = (quotation) => {
+  const handleEdit = async (quotation) => {
     setOpenMenuId(null);
-    if (onNavigate) {
-      onNavigate('addQuotation', { editId: quotation.id });
+    try {
+      const response = await quotationsAPI.getById(quotation.id);
+      if (response.success) {
+        setEditQuotationModal(response.quotation);
+      } else {
+        setError('Failed to fetch quotation details');
+      }
+    } catch (err) {
+      console.error('Error fetching quotation details for edit:', err);
+      setError('Failed to fetch quotation details');
     }
+  };
+
+  // Handle input change in edit modal
+  const handleEditInputChange = (field, value) => {
+    if (editQuotationModal) {
+      setEditQuotationModal(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    }
+  };
+
+  // Handle save changes in edit modal
+  const handleSaveQuotationDetails = async () => {
+    if (!editQuotationModal) return;
+
+    setIsSaving(true);
+    setError('');
+    setSuccessMessage('');
+
+    try {
+      // Parse items if it's a string
+      let items = [];
+      if (editQuotationModal.items) {
+        if (typeof editQuotationModal.items === 'string') {
+          items = JSON.parse(editQuotationModal.items);
+        } else if (Array.isArray(editQuotationModal.items)) {
+          items = editQuotationModal.items;
+        }
+      }
+
+      // Calculate total price from items if not provided
+      let totalPrice = editQuotationModal.total_price;
+      if (!totalPrice && items.length > 0) {
+        totalPrice = items.reduce((total, item) => {
+          const price = parseFloat(item.price) || 0;
+          const quantity = parseFloat(item.quantity) || 0;
+          return total + (price * quantity);
+        }, 0);
+      }
+
+      const quotationData = {
+        itemCode: editQuotationModal.item_code || '',
+        price: items.length > 0 ? items[0].price : editQuotationModal.price || 0,
+        quantity: items.length > 0 ? items[0].quantity : editQuotationModal.quantity || 0,
+        gstNumber: editQuotationModal.gst_number || '',
+        quotationDate: editQuotationModal.quotation_date || new Date().toISOString().split('T')[0],
+        totalPrice: totalPrice || 0
+      };
+
+      const response = await quotationsAPI.update(editQuotationModal.id, quotationData);
+
+      if (response.success) {
+        setSuccessMessage('Quotation updated successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        await fetchQuotations(); // Refresh list
+        closeEditModal();
+      } else {
+        setError(response.error || 'Failed to update quotation');
+      }
+    } catch (err) {
+      console.error('Error saving quotation details:', err);
+      setError(err.message || 'Failed to update quotation');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Close edit modal
+  const closeEditModal = () => {
+    setEditQuotationModal(null);
+    setError('');
   };
 
   const closeViewModal = () => {
@@ -966,6 +1048,170 @@ const QuotationMaster = ({ onBack, onAddQuotation, onNavigate, userRole = 'admin
                   Cancel
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Quotation Modal */}
+      {editQuotationModal && (
+        <div className="modal-overlay" onClick={closeEditModal}>
+          <div className="customer-details-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Edit Quotation Details</h2>
+              <button className="modal-close-btn" onClick={closeEditModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="modal-content">
+              {error && (
+                <div className="alert alert-error" style={{ marginBottom: '15px' }}>
+                  <i className="fas fa-exclamation-circle"></i> {error}
+                </div>
+              )}
+              <div className="customer-detail-section">
+                <div className="detail-avatar">
+                  <span>{editQuotationModal.customer_name
+                    ? editQuotationModal.customer_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+                    : 'QT'}</span>
+                </div>
+                <div className="detail-info">
+                  <div className="detail-row">
+                    <span className="detail-label">Customer Name:</span>
+                    <input
+                      type="text"
+                      value={editQuotationModal.customer_name || ''}
+                      onChange={(e) => handleEditInputChange('customer_name', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Customer Number:</span>
+                    <input
+                      type="text"
+                      value={editQuotationModal.customer_number || ''}
+                      onChange={(e) => handleEditInputChange('customer_number', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Item Code:</span>
+                    <input
+                      type="text"
+                      value={editQuotationModal.item_code || ''}
+                      onChange={(e) => handleEditInputChange('item_code', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">GST Number:</span>
+                    <input
+                      type="text"
+                      value={editQuotationModal.gst_number || ''}
+                      onChange={(e) => handleEditInputChange('gst_number', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Quotation Date:</span>
+                    <input
+                      type="date"
+                      value={editQuotationModal.quotation_date ? new Date(editQuotationModal.quotation_date).toISOString().split('T')[0] : ''}
+                      onChange={(e) => handleEditInputChange('quotation_date', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Total Price:</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editQuotationModal.total_price || ''}
+                      onChange={(e) => handleEditInputChange('total_price', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Status:</span>
+                    <span className="detail-value">
+                      {editQuotationModal.is_verified === false ? (
+                        <span style={{ color: '#dc3545', fontWeight: '600' }}>Not Verified</span>
+                      ) : (
+                        <span style={{ color: '#28a745', fontWeight: '600' }}>Verified</span>
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button onClick={handleSaveQuotationDetails} disabled={isSaving} style={{
+                padding: '10px 20px',
+                background: '#dc3545',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: isSaving ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                opacity: isSaving ? 0.6 : 1
+              }}>
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </button>
+              <button onClick={closeEditModal} disabled={isSaving} style={{
+                padding: '10px 20px',
+                background: '#6c757d',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: isSaving ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: '600'
+              }}>
+                Cancel
+              </button>
             </div>
           </div>
         </div>
