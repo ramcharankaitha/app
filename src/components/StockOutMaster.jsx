@@ -167,6 +167,25 @@ const StockOutMaster = ({ onBack, onAddStockOut, onNavigate, userRole = 'admin' 
     }
   };
 
+  const handleDeleteTransaction = async (transaction) => {
+    if (!window.confirm(`Are you sure you want to delete this stock out transaction for ${transaction.product_name}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setError('');
+      // Note: You may need to add a delete endpoint to stockAPI
+      // For now, this is a placeholder
+      setSuccessMessage('Delete functionality to be implemented');
+      setTimeout(() => setSuccessMessage(''), 3000);
+      // await stockAPI.deleteTransaction(transaction.id);
+      // await fetchTransactions();
+    } catch (err) {
+      console.error('Error deleting transaction:', err);
+      setError(err.message || 'Failed to delete transaction');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
 
   const closeViewModal = () => {
     setShowViewModal(null);

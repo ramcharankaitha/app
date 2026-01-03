@@ -313,6 +313,16 @@ router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const { productName, itemCode, skuCode, minimumQuantity, supplierName, category, mrp, discount, sellRate, currentQuantity, status } = req.body;
 
+    // Fetch previous product values before updating
+    const prevResult = await pool.query('SELECT current_quantity, minimum_quantity FROM products WHERE id = $1', [id]);
+    if (prevResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    const prevProduct = prevResult.rows[0];
+    const prevQty = parseInt(prevProduct.current_quantity) || 0;
+    const prevMinQty = parseInt(prevProduct.minimum_quantity) || 0;
+
     const result = await pool.query(
       `UPDATE products 
        SET product_name = $1, item_code = $2, sku_code = $3, minimum_quantity = $4, 
