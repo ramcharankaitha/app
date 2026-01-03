@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { dispatchAPI, transportAPI, customersAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 
@@ -27,6 +28,7 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const customerInputRef = useRef(null);
   const customerDropdownRef = useRef(null);
+  const [customerDropdownPosition, setCustomerDropdownPosition] = useState(null);
   
   // Booking city autocomplete states
   const [citySuggestions, setCitySuggestions] = useState([]);
@@ -36,6 +38,7 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
   const [cityNumberFound, setCityNumberFound] = useState(false);
   const cityDropdownRef = useRef(null);
   const cityInputRef = useRef(null);
+  const [cityDropdownPosition, setCityDropdownPosition] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -124,11 +127,21 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
       }));
       setSelectedCustomer(null); // Reset selected customer when typing
       if (value.trim().length >= 2) {
+        // Calculate dropdown position
+        if (customerInputRef.current) {
+          const rect = customerInputRef.current.getBoundingClientRect();
+          setCustomerDropdownPosition({
+            top: rect.bottom + 4,
+            left: rect.left,
+            width: rect.width
+          });
+        }
         setShowCustomerDropdown(true);
         searchCustomers(value);
       } else {
         setShowCustomerDropdown(false);
         setCustomerSuggestions([]);
+        setCustomerDropdownPosition(null);
       }
       return;
     }
@@ -138,15 +151,27 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
       setFormData(prev => ({
         ...prev,
         [name]: value,
-        bookingCityNumber: '' // Clear booking city number when city changes
+        bookingCityNumber: '', // Clear booking city number when city changes
+        transportName: '', // Clear transport name when city changes
+        transportPhone: '' // Clear transport phone when city changes
       }));
       
       if (value.trim().length >= 1) {
+        // Calculate dropdown position
+        if (cityInputRef.current) {
+          const rect = cityInputRef.current.getBoundingClientRect();
+          setCityDropdownPosition({
+            top: rect.bottom + 4,
+            left: rect.left,
+            width: rect.width
+          });
+        }
         setShowCityDropdown(true);
         searchCities(value);
       } else {
         setShowCityDropdown(false);
         setCitySuggestions([]);
+        setCityDropdownPosition(null);
       }
       
       // If city is manually entered and not from dropdown, try to fetch phone number
@@ -183,7 +208,7 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
     }
   };
 
-  // Fetch booking city number from transport master
+  // Fetch booking city number, transport name, and transport phone from transport master
   const fetchBookingCityNumber = async (cityName) => {
     if (!cityName || !cityName.trim()) {
       return;
@@ -193,7 +218,7 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
       setIsLoadingCityNumber(true);
       const response = await transportAPI.getByAddress(cityName.trim(), null, null);
       if (response.success && response.transports && response.transports.length > 0) {
-        // Find the city in the addresses array and get its phone number
+        // Find the city in the addresses array and get its phone number, transport name, and transport phone
         for (const transport of response.transports) {
           if (transport.addresses && Array.isArray(transport.addresses)) {
             const cityAddress = transport.addresses.find(addr => 
@@ -202,7 +227,9 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
             if (cityAddress && cityAddress.phoneNumber) {
               setFormData(prev => ({
                 ...prev,
-                bookingCityNumber: cityAddress.phoneNumber
+                bookingCityNumber: cityAddress.phoneNumber,
+                transportName: transport.travels_name || transport.name || '',
+                transportPhone: transport.phone_number || ''
               }));
               setCityNumberFound(true);
               setIsLoadingCityNumber(false);
@@ -219,7 +246,9 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
             if (cityAddress && cityAddress.phoneNumber) {
               setFormData(prev => ({
                 ...prev,
-                bookingCityNumber: cityAddress.phoneNumber
+                bookingCityNumber: cityAddress.phoneNumber,
+                transportName: transport.travels_name || transport.name || '',
+                transportPhone: transport.phone_number || ''
               }));
               setCityNumberFound(true);
               setIsLoadingCityNumber(false);
@@ -231,7 +260,9 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
       // If no phone number found, clear it
       setFormData(prev => ({
         ...prev,
-        bookingCityNumber: ''
+        bookingCityNumber: '',
+        transportName: '',
+        transportPhone: ''
       }));
       setCityNumberFound(false);
     } catch (err) {
@@ -250,7 +281,8 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
     }));
     setShowCityDropdown(false);
     setCitySuggestions([]);
-    // Fetch phone number for selected city
+    setCityDropdownPosition(null);
+    // Fetch phone number, transport name, and transport phone for selected city
     fetchBookingCityNumber(city);
   };
 
@@ -364,6 +396,7 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
     }));
     setShowCustomerDropdown(false);
     setCustomerSuggestions([]);
+    setCustomerDropdownPosition(null);
 
     // If address fields are available, immediately trigger transport fetch (don't wait for debounce)
     if (customer.city || customer.state) {
@@ -392,7 +425,7 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
 
   };
 
-  // Close customer and city dropdowns when clicking outside
+  // Close customer and city dropdowns when clicking outside and update positions
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -402,6 +435,7 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
         !customerDropdownRef.current.contains(event.target)
       ) {
         setShowCustomerDropdown(false);
+        setCustomerDropdownPosition(null);
       }
       
       if (
@@ -411,12 +445,40 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
         !cityDropdownRef.current.contains(event.target)
       ) {
         setShowCityDropdown(false);
+        setCityDropdownPosition(null);
+      }
+    };
+
+    // Update dropdown positions on scroll/resize
+    const handleScroll = () => {
+      if (customerInputRef.current && showCustomerDropdown) {
+        const rect = customerInputRef.current.getBoundingClientRect();
+        setCustomerDropdownPosition({
+          top: rect.bottom + 4,
+          left: rect.left,
+          width: rect.width
+        });
+      }
+      if (cityInputRef.current && showCityDropdown) {
+        const rect = cityInputRef.current.getBoundingClientRect();
+        setCityDropdownPosition({
+          top: rect.bottom + 4,
+          left: rect.left,
+          width: rect.width
+        });
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleScroll);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [showCustomerDropdown, showCityDropdown]);
 
   // Fetch matching transports when city or area changes
   useEffect(() => {
@@ -616,9 +678,17 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                             placeholder="Type customer name to search..."
                             value={formData.customer}
                             onChange={handleInputChange}
-                            onFocus={() => {
+                            onFocus={(e) => {
+                              // Calculate dropdown position on focus
+                              const rect = e.target.getBoundingClientRect();
+                              setCustomerDropdownPosition({
+                                top: rect.bottom + 4,
+                                left: rect.left,
+                                width: rect.width
+                              });
                               if (formData.customer.trim().length >= 2) {
                                 setShowCustomerDropdown(true);
+                                searchCustomers(formData.customer);
                               }
                             }}
                             required
@@ -636,23 +706,24 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                             </div>
                           )}
                         </div>
-                        {showCustomerDropdown && customerSuggestions.length > 0 && (
+                        {showCustomerDropdown && customerSuggestions.length > 0 && customerDropdownPosition && createPortal(
                           <div 
                             ref={customerDropdownRef}
                             style={{
-                              position: 'absolute',
-                              top: '100%',
-                              left: 0,
-                              right: 0,
+                              position: 'fixed',
+                              top: `${customerDropdownPosition.top}px`,
+                              left: `${customerDropdownPosition.left}px`,
+                              width: `${customerDropdownPosition.width}px`,
                               backgroundColor: '#fff',
-                              border: '1px solid #ddd',
+                              border: '1px solid #e0e0e0',
                               borderRadius: '8px',
-                              marginTop: '4px',
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                              zIndex: 99999,
                               maxHeight: '200px',
                               overflowY: 'auto',
-                              zIndex: 1000,
-                              boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                              marginTop: '0'
                             }}
+                            onMouseDown={(e) => e.preventDefault()}
                           >
                             {customerSuggestions.map((customer, index) => (
                               <div
@@ -661,11 +732,12 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                                 style={{
                                   padding: '12px 16px',
                                   cursor: 'pointer',
-                                  borderBottom: index < customerSuggestions.length - 1 ? '1px solid #eee' : 'none',
-                                  transition: 'background-color 0.2s'
+                                  borderBottom: index < customerSuggestions.length - 1 ? '1px solid #f0f0f0' : 'none',
+                                  background: '#fff',
+                                  color: '#333'
                                 }}
-                                onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
-                                onMouseLeave={(e) => e.target.style.backgroundColor = '#fff'}
+                                onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
+                                onMouseLeave={(e) => e.target.style.background = '#fff'}
                               >
                                 <div style={{ fontWeight: '600', color: '#333', marginBottom: '4px' }}>
                                   {customer.full_name}
@@ -684,7 +756,8 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                                 )}
                               </div>
                             ))}
-                          </div>
+                          </div>,
+                          document.body
                         )}
                       </div>
 
@@ -820,9 +893,17 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                           placeholder="Enter or select city"
                           value={formData.bookingToCity}
                           onChange={handleInputChange}
-                          onFocus={() => {
+                          onFocus={(e) => {
+                            // Calculate dropdown position on focus
+                            const rect = e.target.getBoundingClientRect();
+                            setCityDropdownPosition({
+                              top: rect.bottom + 4,
+                              left: rect.left,
+                              width: rect.width
+                            });
                             if (formData.bookingToCity.trim().length >= 1) {
                               setShowCityDropdown(true);
+                              searchCities(formData.bookingToCity);
                             }
                           }}
                         />
@@ -838,41 +919,50 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                           </div>
                         )}
                       </div>
-                      {showCityDropdown && citySuggestions.length > 0 && (
+                      {showCityDropdown && citySuggestions.length > 0 && cityDropdownPosition && createPortal(
                         <div 
                           ref={cityDropdownRef}
                           style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            right: 0,
+                            position: 'fixed',
+                            top: `${cityDropdownPosition.top}px`,
+                            left: `${cityDropdownPosition.left}px`,
+                            width: `${cityDropdownPosition.width}px`,
                             backgroundColor: '#fff',
-                            border: '1px solid #ddd',
+                            border: '1px solid #e0e0e0',
                             borderRadius: '8px',
-                            marginTop: '4px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                            zIndex: 99999,
                             maxHeight: '200px',
                             overflowY: 'auto',
-                            zIndex: 1000,
-                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                            marginTop: '0'
                           }}
+                          onMouseDown={(e) => e.preventDefault()}
                         >
-                          {citySuggestions.map((city, index) => (
-                            <div
-                              key={index}
-                              onClick={() => handleCitySelect(city)}
-                              style={{
-                                padding: '12px 16px',
-                                cursor: 'pointer',
-                                borderBottom: index < citySuggestions.length - 1 ? '1px solid #eee' : 'none',
-                                transition: 'background-color 0.2s'
-                              }}
-                              onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
-                              onMouseLeave={(e) => e.target.style.backgroundColor = '#fff'}
-                            >
-                              {city}
+                          {isLoadingCities ? (
+                            <div style={{ padding: '12px 16px', textAlign: 'center', color: '#666' }}>
+                              <i className="fas fa-spinner fa-spin"></i> Searching...
                             </div>
-                          ))}
-                        </div>
+                          ) : (
+                            citySuggestions.map((city, index) => (
+                              <div
+                                key={index}
+                                onClick={() => handleCitySelect(city)}
+                                style={{
+                                  padding: '12px 16px',
+                                  cursor: 'pointer',
+                                  borderBottom: index < citySuggestions.length - 1 ? '1px solid #f0f0f0' : 'none',
+                                  background: '#fff',
+                                  color: '#333'
+                                }}
+                                onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
+                                onMouseLeave={(e) => e.target.style.background = '#fff'}
+                              >
+                                {city}
+                              </div>
+                            ))
+                          )}
+                        </div>,
+                        document.body
                       )}
                     </div>
 

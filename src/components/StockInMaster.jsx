@@ -72,6 +72,28 @@ const StockInMaster = ({ onBack, onAddStockIn, onNavigate, userRole = 'admin' })
     setShowViewModal(true);
   };
 
+  // Handle verify transaction
+  const handleVerifyTransaction = async (transaction) => {
+    if (transaction.is_verified === true) {
+      return; // Already verified
+    }
+
+    try {
+      setError('');
+      const response = await stockAPI.verifyStockIn(transaction.id);
+      if (response.success) {
+        setSuccessMessage('Stock in transaction verified successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        await fetchTransactions();
+      } else {
+        setError(response.error || 'Failed to mark transaction as verified');
+      }
+    } catch (err) {
+      console.error('Error marking transaction as verified:', err);
+      setError(err.message || 'Failed to mark transaction as verified');
+    }
+  };
+
   const handleDeleteTransaction = async (transaction) => {
     if (!window.confirm(`Are you sure you want to delete this stock in transaction for ${transaction.product_name}? This action cannot be undone.`)) {
       return;
@@ -342,11 +364,40 @@ const StockInMaster = ({ onBack, onAddStockIn, onNavigate, userRole = 'admin' })
                           </td>
                           <td style={{ 
                             textAlign: 'center',
+                            padding: '12px 8px',
+                            fontSize: '14px'
+                          }}>
+                            {transaction.is_verified === true ? (
+                              <span style={{ 
+                                fontSize: '12px', 
+                                color: '#28a745', 
+                                fontWeight: '600',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}>
+                                <i className="fas fa-check-circle"></i> Verified
+                              </span>
+                            ) : (
+                              <span style={{ 
+                                fontSize: '12px', 
+                                color: '#dc3545', 
+                                fontWeight: '600',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}>
+                                <i className="fas fa-exclamation-circle"></i> Not Verified
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ 
+                            textAlign: 'center',
                             padding: '12px 8px'
                           }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                               <button
-                    onClick={() => handleViewTransaction(transaction)}
+                                onClick={() => handleViewTransaction(transaction)}
                                 style={{
                                   background: '#007bff',
                                   color: '#fff',
@@ -371,6 +422,34 @@ const StockInMaster = ({ onBack, onAddStockIn, onNavigate, userRole = 'admin' })
                                 <i className="fas fa-eye"></i>
                                 View
                               </button>
+                              {(transaction.is_verified !== true) && (userRole === 'admin' || userRole === 'supervisor') && (
+                                <button
+                                  onClick={() => handleVerifyTransaction(transaction)}
+                                  style={{
+                                    background: '#ff9800',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    padding: '6px 12px',
+                                    cursor: 'pointer',
+                                    fontSize: '13px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    transition: 'all 0.2s ease',
+                                    fontWeight: '500'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.target.style.background = '#e68900';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.target.style.background = '#ff9800';
+                                  }}
+                                >
+                                  <i className="fas fa-check-circle"></i>
+                                  Mark as Verified
+                                </button>
+                              )}
                               <button
                                 onClick={() => handleDeleteTransaction(transaction)}
                                 style={{
@@ -397,7 +476,7 @@ const StockInMaster = ({ onBack, onAddStockIn, onNavigate, userRole = 'admin' })
                                 <i className="fas fa-trash"></i>
                                 Delete
                               </button>
-                      </div>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -494,35 +573,49 @@ const StockInMaster = ({ onBack, onAddStockIn, onNavigate, userRole = 'admin' })
               )}
               {(userRole === 'admin' || userRole === 'supervisor') && (
                 <div style={{ padding: '12px', background: '#f8f9fa', borderRadius: '8px', marginTop: '16px', borderTop: '1px solid #e0e0e0', paddingTop: '16px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedTransaction.is_verified === true}
-                      onChange={async (e) => {
-                        if (e.target.checked && selectedTransaction.is_verified === false) {
-                          try {
-                            const response = await stockAPI.verifyStockIn(selectedTransaction.id);
-                            if (response.success) {
-                              setSelectedTransaction({ ...selectedTransaction, is_verified: true });
-                              setSuccessMessage('Stock in transaction verified successfully');
-                              setTimeout(() => setSuccessMessage(''), 3000);
-                              fetchTransactions();
-                            } else {
-                              setError('Failed to verify transaction');
-                              setTimeout(() => setError(''), 3000);
-                            }
-                          } catch (err) {
-                            console.error('Error verifying transaction:', err);
-                            setError('Failed to verify transaction');
+                  {selectedTransaction.is_verified === false ? (
+                    <button
+                      onClick={async () => {
+                        try {
+                          const response = await stockAPI.verifyStockIn(selectedTransaction.id);
+                          if (response.success) {
+                            setSelectedTransaction({ ...selectedTransaction, is_verified: true });
+                            setSuccessMessage('Stock in transaction verified successfully');
+                            setTimeout(() => setSuccessMessage(''), 3000);
+                            fetchTransactions();
+                          } else {
+                            setError(response.error || 'Failed to verify transaction');
                             setTimeout(() => setError(''), 3000);
                           }
+                        } catch (err) {
+                          console.error('Error verifying transaction:', err);
+                          setError(err.message || 'Failed to verify transaction');
+                          setTimeout(() => setError(''), 3000);
                         }
                       }}
-                      disabled={selectedTransaction.is_verified === true}
-                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                    />
-                    <span>Mark as Verified</span>
-                  </label>
+                      style={{
+                        background: '#ff9800',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '8px 16px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      <i className="fas fa-check-circle"></i>
+                      Mark as Verified
+                    </button>
+                  ) : (
+                    <span style={{ color: '#28a745', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                      <i className="fas fa-check-circle"></i>
+                      Verified
+                    </span>
+                  )}
                 </div>
               )}
             </div>

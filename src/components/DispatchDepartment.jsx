@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { dispatchAPI } from '../services/api';
-import ConfirmDialog from './ConfirmDialog';
 import './products.css';
 
 const DispatchDepartment = ({ onBack, onAddDispatch, onNavigate, userRole = 'admin' }) => {
@@ -9,7 +8,8 @@ const DispatchDepartment = ({ onBack, onAddDispatch, onNavigate, userRole = 'adm
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [viewDispatchModal, setViewDispatchModal] = useState(null);
-  const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
+  const [editDispatchModal, setEditDispatchModal] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleBack = () => {
     if (onNavigate) {
@@ -91,37 +91,97 @@ const DispatchDepartment = ({ onBack, onAddDispatch, onNavigate, userRole = 'adm
   });
 
   // Handle edit dispatch
-  const handleEditDispatch = (dispatch) => {
-    if (onNavigate) {
-      onNavigate('addDispatch', { editId: dispatch.id });
+  const handleEditDispatch = async (dispatch) => {
+    try {
+      const response = await dispatchAPI.getById(dispatch.id);
+      if (response.success) {
+        setEditDispatchModal(response.dispatch);
+      } else {
+        setError('Failed to fetch dispatch details');
+      }
+    } catch (err) {
+      console.error('Error fetching dispatch details:', err);
+      setError('Failed to fetch dispatch details');
     }
   };
 
-  // Handle delete dispatch
-  const handleDeleteDispatch = (dispatch) => {
-    setConfirmState({
-      open: true,
-      message: `Are you sure you want to delete dispatch "${dispatch.name}"? This action cannot be undone.`,
-      onConfirm: async () => {
-        try {
-          setError('');
-          // Note: You may need to add a delete endpoint to dispatchAPI
-          setError('Delete functionality to be implemented');
-          setTimeout(() => setError(''), 3000);
-          // const response = await dispatchAPI.delete(dispatch.id);
-          // if (response.success) {
-          //   await fetchDispatches();
-          // } else {
-          //   setError(response.error || 'Failed to delete dispatch');
-          // }
-        } catch (err) {
-          console.error('Delete dispatch error:', err);
-          setError(err.message || 'Failed to delete dispatch');
-        } finally {
-          setConfirmState({ open: false, message: '', onConfirm: null });
-        }
+  // Handle save dispatch details
+  const handleSaveDispatchDetails = async () => {
+    if (!editDispatchModal) return;
+    
+    setIsSaving(true);
+    setError('');
+    
+    try {
+      const response = await dispatchAPI.update(editDispatchModal.id, {
+        customer: editDispatchModal.customer,
+        name: editDispatchModal.name,
+        phone: editDispatchModal.phone,
+        address: editDispatchModal.address,
+        city: editDispatchModal.city,
+        state: editDispatchModal.state,
+        pincode: editDispatchModal.pincode,
+        material: editDispatchModal.material,
+        packaging: editDispatchModal.packaging,
+        bookingToCity: editDispatchModal.booking_to_city,
+        bookingCityNumber: editDispatchModal.booking_city_number,
+        transportName: editDispatchModal.transport_name,
+        transportPhone: editDispatchModal.transport_phone,
+        estimatedDate: editDispatchModal.estimated_date,
+        llrNumber: editDispatchModal.llr_number
+      });
+      
+      if (response.success) {
+        await fetchDispatches();
+        setEditDispatchModal(null);
+        setError('');
+        setSuccessMessage('Dispatch updated successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        setError('Failed to update dispatch');
       }
-    });
+    } catch (err) {
+      console.error('Error updating dispatch:', err);
+      setError(err.message || 'Failed to update dispatch');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle input change in edit modal
+  const handleEditInputChange = (field, value) => {
+    if (editDispatchModal) {
+      setEditDispatchModal({
+        ...editDispatchModal,
+        [field]: value
+      });
+    }
+  };
+
+  const closeEditModal = () => {
+    setEditDispatchModal(null);
+  };
+
+  // Handle mark as verified
+  const handleMarkAsVerified = async (dispatch) => {
+    if (dispatch.is_verified === true) {
+      return; // Already verified
+    }
+
+    try {
+      setError('');
+      const response = await dispatchAPI.verify(dispatch.id);
+      if (response.success) {
+        setSuccessMessage('Dispatch marked as verified successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        await fetchDispatches();
+      } else {
+        setError(response.error || 'Failed to mark dispatch as verified');
+      }
+    } catch (err) {
+      console.error('Error marking dispatch as verified:', err);
+      setError(err.message || 'Failed to mark dispatch as verified');
+    }
   };
 
   // Handle view dispatch details
@@ -145,12 +205,6 @@ const DispatchDepartment = ({ onBack, onAddDispatch, onNavigate, userRole = 'adm
 
   return (
     <div className="dashboard-container">
-      <ConfirmDialog
-        open={confirmState.open}
-        message={confirmState.message}
-        onConfirm={confirmState.onConfirm}
-        onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
-      />
       {/* Left Sidebar Navigation */}
       <nav className="sidebar-nav">
         <div className="nav-item" onClick={handleBack}>
@@ -367,18 +421,7 @@ const DispatchDepartment = ({ onBack, onAddDispatch, onNavigate, userRole = 'adm
                         padding: '12px 8px',
                         fontSize: '14px'
                       }}>
-                        {dispatch.is_verified === false ? (
-                          <span style={{ 
-                            fontSize: '12px', 
-                            color: '#dc3545', 
-                            fontWeight: '600',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}>
-                            <i className="fas fa-exclamation-circle"></i> Not Verified
-                          </span>
-                        ) : dispatch.is_verified === true ? (
+                        {dispatch.is_verified === true ? (
                           <span style={{ 
                             fontSize: '12px', 
                             color: '#28a745', 
@@ -392,10 +435,13 @@ const DispatchDepartment = ({ onBack, onAddDispatch, onNavigate, userRole = 'adm
                         ) : (
                           <span style={{ 
                             fontSize: '12px', 
-                            color: '#666', 
-                            fontWeight: '500'
+                            color: '#dc3545', 
+                            fontWeight: '600',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
                           }}>
-                            N/A
+                            <i className="fas fa-exclamation-circle"></i> Not Verified
                           </span>
                         )}
                       </td>
@@ -456,32 +502,34 @@ const DispatchDepartment = ({ onBack, onAddDispatch, onNavigate, userRole = 'adm
                             <i className="fas fa-edit"></i>
                             Edit
                           </button>
-                          <button
-                            onClick={() => handleDeleteDispatch(dispatch)}
-                            style={{
-                              background: '#dc3545',
-                              color: '#fff',
-                              border: 'none',
-                              borderRadius: '6px',
-                              padding: '6px 12px',
-                              cursor: 'pointer',
-                              fontSize: '13px',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              transition: 'all 0.2s ease',
-                              fontWeight: '500'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.target.style.background = '#c82333';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.target.style.background = '#dc3545';
-                            }}
-                          >
-                            <i className="fas fa-trash"></i>
-                            Delete
-                          </button>
+                          {(dispatch.is_verified !== true) && (userRole === 'admin' || userRole === 'supervisor') && (
+                            <button
+                              onClick={() => handleMarkAsVerified(dispatch)}
+                              style={{
+                                background: '#ff9800',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s ease',
+                                fontWeight: '500'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#e68900';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#ff9800';
+                              }}
+                            >
+                              <i className="fas fa-check-circle"></i>
+                              Mark as Verified
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -565,39 +613,366 @@ const DispatchDepartment = ({ onBack, onAddDispatch, onNavigate, userRole = 'adm
             <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {(userRole === 'admin' || userRole === 'supervisor') && (
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
-                    <input
-                      type="checkbox"
-                      checked={viewDispatchModal.is_verified === true}
-                      onChange={async (e) => {
-                        if (e.target.checked && viewDispatchModal.is_verified === false) {
-                          try {
-                            const response = await dispatchAPI.verify(viewDispatchModal.id);
-                            if (response.success) {
-                              setViewDispatchModal({ ...viewDispatchModal, is_verified: true });
-                              setSuccessMessage('Dispatch verified successfully');
-                              setTimeout(() => setSuccessMessage(''), 3000);
-                              await fetchDispatches();
-                            } else {
-                              setError('Failed to verify dispatch');
-                              setTimeout(() => setError(''), 3000);
-                            }
-                          } catch (err) {
-                            console.error('Error verifying dispatch:', err);
-                            setError('Failed to verify dispatch');
+                  viewDispatchModal.is_verified !== true ? (
+                    <button
+                      onClick={async () => {
+                        try {
+                          const response = await dispatchAPI.verify(viewDispatchModal.id);
+                          if (response.success) {
+                            setViewDispatchModal({ ...viewDispatchModal, is_verified: true });
+                            setSuccessMessage('Dispatch verified successfully');
+                            setTimeout(() => setSuccessMessage(''), 3000);
+                            await fetchDispatches();
+                          } else {
+                            setError(response.error || 'Failed to verify dispatch');
                             setTimeout(() => setError(''), 3000);
                           }
+                        } catch (err) {
+                          console.error('Error verifying dispatch:', err);
+                          setError(err.message || 'Failed to verify dispatch');
+                          setTimeout(() => setError(''), 3000);
                         }
                       }}
-                      disabled={viewDispatchModal.is_verified === true}
-                      style={{ width: '18px', height: '18px', cursor: viewDispatchModal.is_verified === true ? 'not-allowed' : 'pointer' }}
-                    />
-                    <span>Mark as Verified</span>
-                  </label>
+                      style={{
+                        background: '#ff9800',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '8px 16px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      <i className="fas fa-check-circle"></i>
+                      Mark as Verified
+                    </button>
+                  ) : (
+                    <span style={{ color: '#28a745', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                      <i className="fas fa-check-circle"></i>
+                      Verified
+                    </span>
+                  )
                 )}
               </div>
               <button className="modal-close-button" onClick={closeViewModal}>
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Dispatch Modal */}
+      {editDispatchModal && (
+        <div className="modal-overlay" onClick={closeEditModal}>
+          <div className="customer-details-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Edit Dispatch Details</h2>
+              <button className="modal-close-btn" onClick={closeEditModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="modal-content">
+              {error && (
+                <div style={{ 
+                  padding: '12px', 
+                  background: '#ffe0e0', 
+                  color: '#dc3545', 
+                  borderRadius: '8px', 
+                  marginBottom: '20px' 
+                }}>
+                  <i className="fas fa-exclamation-circle"></i> {error}
+                </div>
+              )}
+              <div className="customer-detail-section">
+                <div className="detail-avatar">
+                  <span>{editDispatchModal.name 
+                    ? editDispatchModal.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+                    : 'DP'}</span>
+                </div>
+                <div className="detail-info">
+                  <div className="detail-row">
+                    <span className="detail-label">Customer:</span>
+                    <input
+                      type="text"
+                      value={editDispatchModal.customer || ''}
+                      onChange={(e) => handleEditInputChange('customer', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Name:</span>
+                    <input
+                      type="text"
+                      value={editDispatchModal.name || ''}
+                      onChange={(e) => handleEditInputChange('name', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Phone:</span>
+                    <input
+                      type="tel"
+                      value={editDispatchModal.phone || ''}
+                      onChange={(e) => handleEditInputChange('phone', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Address:</span>
+                    <textarea
+                      value={editDispatchModal.address || ''}
+                      onChange={(e) => handleEditInputChange('address', e.target.value)}
+                      rows="2"
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px',
+                        resize: 'vertical'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">City:</span>
+                    <input
+                      type="text"
+                      value={editDispatchModal.city || ''}
+                      onChange={(e) => handleEditInputChange('city', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">State:</span>
+                    <input
+                      type="text"
+                      value={editDispatchModal.state || ''}
+                      onChange={(e) => handleEditInputChange('state', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Pincode:</span>
+                    <input
+                      type="text"
+                      value={editDispatchModal.pincode || ''}
+                      onChange={(e) => handleEditInputChange('pincode', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Transport Name:</span>
+                    <input
+                      type="text"
+                      value={editDispatchModal.transport_name || ''}
+                      onChange={(e) => handleEditInputChange('transport_name', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  {editDispatchModal.material && (
+                    <div className="detail-row">
+                      <span className="detail-label">Material:</span>
+                      <input
+                        type="text"
+                        value={editDispatchModal.material || ''}
+                        onChange={(e) => handleEditInputChange('material', e.target.value)}
+                        style={{
+                          padding: '8px 12px',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          fontSize: '14px',
+                          width: '100%',
+                          maxWidth: '300px'
+                        }}
+                      />
+                    </div>
+                  )}
+                  {editDispatchModal.packaging && (
+                    <div className="detail-row">
+                      <span className="detail-label">Packaging:</span>
+                      <input
+                        type="text"
+                        value={editDispatchModal.packaging || ''}
+                        onChange={(e) => handleEditInputChange('packaging', e.target.value)}
+                        style={{
+                          padding: '8px 12px',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          fontSize: '14px',
+                          width: '100%',
+                          maxWidth: '300px'
+                        }}
+                      />
+                    </div>
+                  )}
+                  {editDispatchModal.booking_to_city && (
+                    <div className="detail-row">
+                      <span className="detail-label">Booking to City:</span>
+                      <input
+                        type="text"
+                        value={editDispatchModal.booking_to_city || ''}
+                        onChange={(e) => handleEditInputChange('booking_to_city', e.target.value)}
+                        style={{
+                          padding: '8px 12px',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          fontSize: '14px',
+                          width: '100%',
+                          maxWidth: '300px'
+                        }}
+                      />
+                    </div>
+                  )}
+                  {editDispatchModal.booking_city_number && (
+                    <div className="detail-row">
+                      <span className="detail-label">Booking City Number:</span>
+                      <input
+                        type="text"
+                        value={editDispatchModal.booking_city_number || ''}
+                        onChange={(e) => handleEditInputChange('booking_city_number', e.target.value)}
+                        style={{
+                          padding: '8px 12px',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          fontSize: '14px',
+                          width: '100%',
+                          maxWidth: '300px'
+                        }}
+                      />
+                    </div>
+                  )}
+                  {editDispatchModal.transport_phone && (
+                    <div className="detail-row">
+                      <span className="detail-label">Transport Phone:</span>
+                      <input
+                        type="tel"
+                        value={editDispatchModal.transport_phone || ''}
+                        onChange={(e) => handleEditInputChange('transport_phone', e.target.value)}
+                        style={{
+                          padding: '8px 12px',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          fontSize: '14px',
+                          width: '100%',
+                          maxWidth: '300px'
+                        }}
+                      />
+                    </div>
+                  )}
+                  {editDispatchModal.estimated_date && (
+                    <div className="detail-row">
+                      <span className="detail-label">Estimated Date:</span>
+                      <input
+                        type="date"
+                        value={editDispatchModal.estimated_date ? editDispatchModal.estimated_date.split('T')[0] : ''}
+                        onChange={(e) => handleEditInputChange('estimated_date', e.target.value)}
+                        style={{
+                          padding: '8px 12px',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          fontSize: '14px',
+                          width: '100%',
+                          maxWidth: '300px'
+                        }}
+                      />
+                    </div>
+                  )}
+                  {editDispatchModal.llr_number && (
+                    <div className="detail-row">
+                      <span className="detail-label">LLR Number:</span>
+                      <input
+                        type="text"
+                        value={editDispatchModal.llr_number || ''}
+                        onChange={(e) => handleEditInputChange('llr_number', e.target.value)}
+                        style={{
+                          padding: '8px 12px',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          fontSize: '14px',
+                          width: '100%',
+                          maxWidth: '300px'
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button 
+                className="modal-close-button" 
+                onClick={closeEditModal}
+                style={{ background: '#6c757d', color: '#fff' }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="modal-close-button" 
+                onClick={handleSaveDispatchDetails}
+                disabled={isSaving}
+                style={{ 
+                  background: '#dc3545', 
+                  color: '#fff',
+                  opacity: isSaving ? 0.6 : 1,
+                  cursor: isSaving ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

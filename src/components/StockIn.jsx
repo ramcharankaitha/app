@@ -211,6 +211,7 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
 
     // Check if products are added
     if (addedProducts.length === 0) {
+      setError('Please add at least one product to the summary before creating stock in.');
       return;
     }
 

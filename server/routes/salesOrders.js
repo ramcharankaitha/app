@@ -85,6 +85,7 @@ const createTableIfNotExists = async () => {
           product_details JSONB DEFAULT '[]'::jsonb,
           total_amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
           po_number VARCHAR(100),
+          is_verified BOOLEAN DEFAULT false,
           created_by VARCHAR(255),
           created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -105,6 +106,7 @@ const createTableIfNotExists = async () => {
         { name: 'supplier_number', type: 'VARCHAR(50)' },
         { name: 'total_amount', type: 'DECIMAL(10, 2)', default: '0' },
         { name: 'po_number', type: 'VARCHAR(100)' },
+        { name: 'is_verified', type: 'BOOLEAN', default: 'false' },
         { name: 'created_by', type: 'VARCHAR(255)' },
         { name: 'created_at', type: 'TIMESTAMP WITH TIME ZONE', default: 'CURRENT_TIMESTAMP' },
         { name: 'updated_at', type: 'TIMESTAMP WITH TIME ZONE', default: 'CURRENT_TIMESTAMP' }
@@ -126,14 +128,15 @@ const createTableIfNotExists = async () => {
             supplier_number VARCHAR(50),
             products JSONB DEFAULT '[]'::jsonb,
             product_details JSONB DEFAULT '[]'::jsonb,
-            total_amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
-            po_number VARCHAR(100),
-            created_by VARCHAR(255),
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-          )
-        `);
-        console.log('sales_records table created with po_number column');
+          total_amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
+          po_number VARCHAR(100),
+          is_verified BOOLEAN DEFAULT false,
+          created_by VARCHAR(255),
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('sales_records table created with po_number column');
       }
       
       for (const col of columnsToAdd) {
@@ -356,13 +359,41 @@ router.post('/', async (req, res) => {
     console.log('Attempting insert into sales_records...');
     let result;
     try {
+      // Ensure is_verified column exists before insert
+      await pool.query(`
+        DO $$ 
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'sales_records' AND column_name = 'is_verified'
+          ) THEN
+            ALTER TABLE sales_records ADD COLUMN is_verified BOOLEAN DEFAULT false;
+            RAISE NOTICE 'Added is_verified column to sales_records';
+          END IF;
+        END $$;
+      `);
+
       result = await pool.query(
         `INSERT INTO sales_records (
           customer_name, customer_contact, handler_id, handler_name, handler_mobile,
-          date_of_duration, supplier_name, supplier_number, products, total_amount, po_number, created_by
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+          date_of_duration, supplier_name, supplier_number, products, total_amount, po_number, is_verified, created_by
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         RETURNING *`,
-        values  // Now values array has po_number at position 10 and created_by at position 11
+        [
+          customerName.trim(),
+          customerContact.trim(),
+          validHandlerId,
+          handlerName ? handlerName.trim() : null,
+          handlerMobile ? handlerMobile.trim() : null,
+          dateOfDuration,
+          supplierName ? supplierName.trim() : null,
+          supplierNumber ? supplierNumber.trim() : null,
+          productsJson,
+          calculatedTotalAmount,
+          poNumber,
+          false,  // is_verified = false for new records
+          createdBy || 'system'
+        ]
       );
     } catch (colError) {
       if (colError.code === '42703') { // undefined_column error (po_number might not exist)
@@ -428,6 +459,12 @@ router.post('/', async (req, res) => {
       }
     }
 
+    // Ensure is_verified is set to false for new records
+    if (salesOrderResponse.is_verified === undefined || salesOrderResponse.is_verified === null) {
+      await pool.query('UPDATE sales_records SET is_verified = false WHERE id = $1', [salesOrderResponse.id]);
+      salesOrderResponse.is_verified = false;
+    }
+
     res.status(201).json({
       success: true,
       salesOrder: salesOrderResponse,
@@ -450,6 +487,45 @@ router.post('/', async (req, res) => {
       detail: error.detail,
       constraint: error.constraint
     });
+  }
+});
+
+// Verify sales order (admin/supervisor only) - MUST come before PUT /:id route
+router.put('/:id/verify', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Ensure is_verified column exists
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'sales_records' AND column_name = 'is_verified'
+        ) THEN
+          ALTER TABLE sales_records ADD COLUMN is_verified BOOLEAN DEFAULT false;
+          RAISE NOTICE 'Added is_verified column to sales_records';
+        END IF;
+      END $$;
+    `);
+    
+    const result = await pool.query(
+      'UPDATE sales_records SET is_verified = true WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Sales order not found' });
+    }
+    
+    res.json({ 
+      success: true, 
+      salesOrder: result.rows[0],
+      message: 'Sales order verified successfully' 
+    });
+  } catch (error) {
+    console.error('Verify sales order error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

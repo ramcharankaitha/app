@@ -306,6 +306,31 @@ router.put('/customers/:id', async (req, res) => {
 router.delete('/customers/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // Validate ID
+    if (!id || isNaN(parseInt(id))) {
+      return res.status(400).json({ error: 'Invalid customer ID' });
+    }
+
+    // Check if customer exists
+    const checkResult = await pool.query('SELECT id FROM chit_customers WHERE id = $1', [id]);
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Chit customer not found' });
+    }
+
+    // Check if there are related chit entries
+    const entriesCheck = await pool.query(
+      'SELECT id FROM chit_entries WHERE customer_id = $1 LIMIT 1',
+      [id]
+    );
+
+    if (entriesCheck.rows.length > 0) {
+      return res.status(400).json({ 
+        error: 'Cannot delete customer as they have chit entries. Please delete the entries first.' 
+      });
+    }
+
+    // Delete the customer
     const result = await pool.query('DELETE FROM chit_customers WHERE id = $1 RETURNING id', [id]);
 
     if (result.rows.length === 0) {
@@ -315,7 +340,15 @@ router.delete('/customers/:id', async (req, res) => {
     res.json({ success: true, message: 'Chit customer deleted successfully' });
   } catch (error) {
     console.error('Delete chit customer error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    
+    // Handle foreign key constraint violations
+    if (error.code === '23503') {
+      return res.status(400).json({ 
+        error: 'Cannot delete customer as they are linked to other records (e.g., chit entries).' 
+      });
+    }
+    
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 
@@ -444,6 +477,45 @@ router.post('/entries', async (req, res) => {
   } catch (error) {
     console.error('Create chit entry error:', error);
     res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+});
+
+// Verify chit entry (admin/supervisor only) - MUST come before PUT /entries/:id route
+router.put('/entries/:id/verify', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Ensure is_verified column exists
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'chit_entries' AND column_name = 'is_verified'
+        ) THEN
+          ALTER TABLE chit_entries ADD COLUMN is_verified BOOLEAN DEFAULT false;
+          RAISE NOTICE 'Added is_verified column to chit_entries';
+        END IF;
+      END $$;
+    `);
+    
+    const result = await pool.query(
+      'UPDATE chit_entries SET is_verified = true WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Chit entry not found' });
+    }
+    
+    res.json({ 
+      success: true, 
+      entry: result.rows[0],
+      message: 'Chit entry verified successfully' 
+    });
+  } catch (error) {
+    console.error('Verify chit entry error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

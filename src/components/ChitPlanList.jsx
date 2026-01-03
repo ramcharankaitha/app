@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { chitPlansAPI } from '../services/api';
-import ConfirmDialog from './ConfirmDialog';
 import './staff.css';
 
 const ChitPlanList = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' }) => {
@@ -10,7 +9,6 @@ const ChitPlanList = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' })
   const [successMessage, setSuccessMessage] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
   const [viewModal, setViewModal] = useState(null);
-  const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
   const menuRefs = useRef({});
 
   // Fetch chit plan customers from database
@@ -82,33 +80,6 @@ const ChitPlanList = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' })
   };
 
 
-  const handleDelete = (customer) => {
-    setOpenMenuId(null);
-    setConfirmState({
-      open: true,
-      message: `Are you sure you want to delete chit plan customer "${customer.customer_name}"? This action cannot be undone.`,
-      onConfirm: async () => {
-        try {
-          setError('');
-          // Note: You may need to add a delete endpoint to chitPlansAPI
-          // For now, this is a placeholder
-          setError('Delete functionality to be implemented');
-          setTimeout(() => setError(''), 3000);
-          // const response = await chitPlansAPI.deleteCustomer(customer.id);
-          // if (response.success) {
-          //   await fetchChitCustomers();
-          // } else {
-          //   setError(response.error || 'Failed to delete customer');
-          // }
-        } catch (err) {
-          console.error('Delete customer error:', err);
-          setError(err.message || 'Failed to delete customer');
-        } finally {
-          setConfirmState({ open: false, message: '', onConfirm: null });
-        }
-      }
-    });
-  };
 
   const closeViewModal = () => {
     setViewModal(null);
@@ -121,12 +92,6 @@ const ChitPlanList = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' })
 
   return (
     <div className="dashboard-container">
-      <ConfirmDialog
-        open={confirmState.open}
-        message={confirmState.message}
-        onConfirm={confirmState.onConfirm}
-        onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
-      />
       {/* Sidebar */}
       <nav className="sidebar-nav">
         <div className="nav-item" onClick={handleBack}>
@@ -440,32 +405,6 @@ const ChitPlanList = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' })
                               >
                                 <i className="fas fa-eye"></i>
                                 View
-                              </button>
-                              <button
-                                onClick={() => handleDelete(customer)}
-                                style={{
-                                  background: '#dc3545',
-                                  color: '#fff',
-                                  border: 'none',
-                                  borderRadius: '6px',
-                                  padding: '6px 12px',
-                                  cursor: 'pointer',
-                                  fontSize: '13px',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '6px',
-                                  transition: 'all 0.2s ease',
-                                  fontWeight: '500'
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.target.style.background = '#c82333';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.target.style.background = '#dc3545';
-                                }}
-                              >
-                                <i className="fas fa-trash"></i>
-                                Delete
                               </button>
                             </div>
                           </td>

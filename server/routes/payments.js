@@ -82,6 +82,45 @@ router.get('/', async (req, res) => {
 });
 
 // Get payment by ID
+// Verify payment (admin/supervisor only) - MUST come before GET /:id route
+router.put('/:id/verify', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Ensure is_verified column exists
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'payments' AND column_name = 'is_verified'
+        ) THEN
+          ALTER TABLE payments ADD COLUMN is_verified BOOLEAN DEFAULT false;
+          RAISE NOTICE 'Added is_verified column to payments';
+        END IF;
+      END $$;
+    `);
+    
+    const result = await pool.query(
+      'UPDATE payments SET is_verified = true WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Payment not found' });
+    }
+    
+    res.json({ 
+      success: true, 
+      payment: result.rows[0],
+      message: 'Payment verified successfully' 
+    });
+  } catch (error) {
+    console.error('Verify payment error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;

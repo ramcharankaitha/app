@@ -131,13 +131,27 @@ router.post('/in', async (req, res) => {
       [newQuantity, product.id]
     );
     
+    // Ensure is_verified column exists
+    await client.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'stock_transactions' AND column_name = 'is_verified'
+        ) THEN
+          ALTER TABLE stock_transactions ADD COLUMN is_verified BOOLEAN DEFAULT false;
+          RAISE NOTICE 'Added is_verified column to stock_transactions';
+        END IF;
+      END $$;
+    `);
+
     // Record stock transaction
     await client.query(
       `INSERT INTO stock_transactions (
         product_id, item_code, product_name, transaction_type, 
         quantity, previous_quantity, new_quantity, 
-        notes, created_by, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)`,
+        notes, created_by, is_verified, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP)`,
       [
         product.id,
         itemCode.trim(),
@@ -147,7 +161,8 @@ router.post('/in', async (req, res) => {
         previousQuantity,
         newQuantity,
         notes || null,
-        createdBy || 'system'
+        createdBy || 'system',
+        false  // is_verified = false for new stock in transactions
       ]
     );
     
@@ -753,6 +768,90 @@ router.get('/dashboard-stats', async (req, res) => {
       error: 'Internal server error',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
+  }
+});
+
+// Verify stock in transaction (admin/supervisor only) - MUST come before other /:id routes
+router.put('/in/:id/verify', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Ensure is_verified column exists
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'stock_transactions' AND column_name = 'is_verified'
+        ) THEN
+          ALTER TABLE stock_transactions ADD COLUMN is_verified BOOLEAN DEFAULT false;
+          RAISE NOTICE 'Added is_verified column to stock_transactions';
+        END IF;
+      END $$;
+    `);
+    
+    const result = await pool.query(
+      `UPDATE stock_transactions 
+       SET is_verified = true 
+       WHERE id = $1 AND transaction_type = 'STOCK_IN'
+       RETURNING *`,
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Stock in transaction not found' });
+    }
+    
+    res.json({ 
+      success: true, 
+      transaction: result.rows[0],
+      message: 'Stock in transaction verified successfully' 
+    });
+  } catch (error) {
+    console.error('Verify stock in error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Verify stock out transaction (admin/supervisor only) - MUST come before other /:id routes
+router.put('/out/:id/verify', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Ensure is_verified column exists
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'stock_transactions' AND column_name = 'is_verified'
+        ) THEN
+          ALTER TABLE stock_transactions ADD COLUMN is_verified BOOLEAN DEFAULT false;
+          RAISE NOTICE 'Added is_verified column to stock_transactions';
+        END IF;
+      END $$;
+    `);
+    
+    const result = await pool.query(
+      `UPDATE stock_transactions 
+       SET is_verified = true 
+       WHERE id = $1 AND transaction_type = 'STOCK_OUT'
+       RETURNING *`,
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Stock out transaction not found' });
+    }
+    
+    res.json({ 
+      success: true, 
+      transaction: result.rows[0],
+      message: 'Stock out transaction verified successfully' 
+    });
+  } catch (error) {
+    console.error('Verify stock out error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

@@ -56,7 +56,7 @@ router.get('/:id', async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Dispatch record not found' });
     }
-
+    
     res.json({ success: true, dispatch: result.rows[0] });
   } catch (error) {
     console.error('Get dispatch error:', error);
@@ -66,7 +66,7 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', uploadLlr.single('llrCopy'), async (req, res) => {
   try {
-    const { customer, name, phone, address, area, city, material, packaging, bookingToCity, bookingCityNumber, transportName, transportPhone, estimatedDate, llrNumber } = req.body;
+    const { customer, name, phone, address, area, city, state, pincode, material, packaging, bookingToCity, bookingCityNumber, transportName, transportPhone, estimatedDate, llrNumber } = req.body;
 
     if (!customer || !name || !phone || !transportName) {
       return res.status(400).json({ error: 'Required fields: customer, name, phone, transportName' });
@@ -76,6 +76,22 @@ router.post('/', uploadLlr.single('llrCopy'), async (req, res) => {
     let llrFilePath = null;
     if (req.file) {
       llrFilePath = `/uploads/llr/${req.file.filename}`;
+    }
+
+    // Helper function to convert empty strings to null
+    const toNull = (val) => (val && val.toString().trim() !== '') ? val : null;
+    
+    // Format date if provided (convert DD-MM-YYYY or other formats to YYYY-MM-DD)
+    let formattedDate = null;
+    if (estimatedDate && estimatedDate.toString().trim() !== '') {
+      try {
+        const date = new Date(estimatedDate);
+        if (!isNaN(date.getTime())) {
+          formattedDate = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+        }
+      } catch (e) {
+        console.warn('Invalid date format:', estimatedDate);
+      }
     }
 
     // Try with new fields first, fallback to old structure if columns don't exist
@@ -107,18 +123,48 @@ router.post('/', uploadLlr.single('llrCopy'), async (req, res) => {
         `INSERT INTO dispatch (customer, name, phone, address, area, city, material, packaging, booking_to_city, booking_city_number, transport_name, transport_phone, estimated_date, llr_number, llr_file_path)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
          RETURNING *`,
-        [customer, name, phone, address || null, area || null, city || null, material || null, packaging || null, bookingToCity || null, bookingCityNumber || null, transportName, transportPhone || null, estimatedDate || null, llrNumber || null, llrFilePath]
+        [
+          customer.trim(), 
+          name.trim(), 
+          phone.trim(), 
+          toNull(address), 
+          toNull(area), 
+          toNull(city), 
+          toNull(material), 
+          toNull(packaging), 
+          toNull(bookingToCity), 
+          toNull(bookingCityNumber), 
+          transportName.trim(), 
+          toNull(transportPhone), 
+          formattedDate, 
+          toNull(llrNumber), 
+          llrFilePath
+        ]
       );
     } catch (colError) {
       // If new columns don't exist, use old structure
       if (colError.code === '42703') { // undefined_column error
+        // Use area as state if state is not provided
+        const stateValue = toNull(state) || toNull(area);
         result = await pool.query(
           `INSERT INTO dispatch (customer, name, phone, address, city, state, pincode, transport_name, packaging, llr_number)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
            RETURNING *`,
-          [customer, name, phone, address || null, city || null, state || null, pincode || null, transportName, packaging || null, llrNumber || null]
+          [
+            customer.trim(), 
+            name.trim(), 
+            phone.trim(), 
+            toNull(address), 
+            toNull(city), 
+            stateValue, 
+            toNull(pincode), 
+            transportName.trim(), 
+            toNull(packaging), 
+            toNull(llrNumber)
+          ]
         );
       } else {
+        console.error('Database column error (not 42703):', colError);
         throw colError;
       }
     }
@@ -130,6 +176,54 @@ router.post('/', uploadLlr.single('llrCopy'), async (req, res) => {
     });
   } catch (error) {
     console.error('Create dispatch error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      stack: error.stack
+    });
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Verify dispatch (admin/supervisor only) - MUST come before PUT /:id route
+router.put('/:id/verify', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Ensure is_verified column exists
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'dispatch' AND column_name = 'is_verified'
+        ) THEN
+          ALTER TABLE dispatch ADD COLUMN is_verified BOOLEAN DEFAULT false;
+          RAISE NOTICE 'Added is_verified column to dispatch';
+        END IF;
+      END $$;
+    `);
+    
+    const result = await pool.query(
+      'UPDATE dispatch SET is_verified = true WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Dispatch record not found' });
+    }
+    
+    res.json({ 
+      success: true, 
+      dispatch: result.rows[0],
+      message: 'Dispatch verified successfully' 
+    });
+  } catch (error) {
+    console.error('Verify dispatch error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -137,7 +231,7 @@ router.post('/', uploadLlr.single('llrCopy'), async (req, res) => {
 router.put('/:id', uploadLlr.single('llrCopy'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { customer, name, phone, address, city, state, pincode, transportName, transportPhone, packaging, llrNumber } = req.body;
+    const { customer, name, phone, address, city, state, pincode, transportName, transportPhone, packaging, llrNumber, material, bookingToCity, bookingCityNumber, estimatedDate } = req.body;
 
     if (!customer || !name || !phone || !transportName) {
       return res.status(400).json({ error: 'Required fields: customer, name, phone, transportName' });
@@ -164,13 +258,17 @@ router.put('/:id', uploadLlr.single('llrCopy'), async (req, res) => {
         'transport_phone = $9',
         'packaging = $10',
         'llr_number = $11',
+        'material = $12',
+        'booking_to_city = $13',
+        'booking_city_number = $14',
+        'estimated_date = $15',
         'updated_at = CURRENT_TIMESTAMP'
       ];
       
-      const updateValues = [customer, name, phone, address || null, city || null, state || null, pincode || null, transportName, transportPhone || null, packaging || null, llrNumber || null];
+      const updateValues = [customer, name, phone, address || null, city || null, state || null, pincode || null, transportName, transportPhone || null, packaging || null, llrNumber || null, material || null, bookingToCity || null, bookingCityNumber || null, estimatedDate || null];
       
       if (llrFilePath) {
-        updateFields.splice(updateFields.length - 1, 0, 'llr_file_path = $12');
+        updateFields.splice(updateFields.length - 1, 0, 'llr_file_path = $16');
         updateValues.push(llrFilePath);
       }
       

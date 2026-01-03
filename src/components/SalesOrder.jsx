@@ -709,35 +709,49 @@ const SalesOrder = ({ onBack, onAddSalesOrder, onNavigate, userRole = 'admin' })
             <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {(userRole === 'admin' || userRole === 'supervisor') && (
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
-                    <input
-                      type="checkbox"
-                      checked={viewSalesOrderModal.is_verified === true}
-                      onChange={async (e) => {
-                        if (e.target.checked && viewSalesOrderModal.is_verified === false) {
-                          try {
-                            const response = await salesOrdersAPI.verify(viewSalesOrderModal.id);
-                            if (response.success) {
-                              setViewSalesOrderModal({ ...viewSalesOrderModal, is_verified: true });
-                              setSuccessMessage('Sales order verified successfully');
-                              setTimeout(() => setSuccessMessage(''), 3000);
-                              await fetchSalesOrders();
-                            } else {
-                              setError('Failed to verify sales order');
-                              setTimeout(() => setError(''), 3000);
-                            }
-                          } catch (err) {
-                            console.error('Error verifying sales order:', err);
-                            setError('Failed to verify sales order');
+                  viewSalesOrderModal.is_verified === false ? (
+                    <button
+                      onClick={async () => {
+                        try {
+                          const response = await salesOrdersAPI.verify(viewSalesOrderModal.id);
+                          if (response.success) {
+                            setViewSalesOrderModal({ ...viewSalesOrderModal, is_verified: true });
+                            setSuccessMessage('Sales order verified successfully');
+                            setTimeout(() => setSuccessMessage(''), 3000);
+                            await fetchSalesOrders();
+                          } else {
+                            setError(response.error || 'Failed to verify sales order');
                             setTimeout(() => setError(''), 3000);
                           }
+                        } catch (err) {
+                          console.error('Error verifying sales order:', err);
+                          setError(err.message || 'Failed to verify sales order');
+                          setTimeout(() => setError(''), 3000);
                         }
                       }}
-                      disabled={viewSalesOrderModal.is_verified === true}
-                      style={{ width: '18px', height: '18px', cursor: viewSalesOrderModal.is_verified === true ? 'not-allowed' : 'pointer' }}
-                    />
-                    <span>Mark as Verified</span>
-                  </label>
+                      style={{
+                        background: '#ff9800',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '8px 16px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      <i className="fas fa-check-circle"></i>
+                      Mark as Verified
+                    </button>
+                  ) : (
+                    <span style={{ color: '#28a745', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                      <i className="fas fa-check-circle"></i>
+                      Verified
+                    </span>
+                  )
                 )}
               </div>
               <button className="modal-close-button" onClick={closeViewModal}>

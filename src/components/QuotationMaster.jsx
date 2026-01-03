@@ -96,6 +96,28 @@ const QuotationMaster = ({ onBack, onAddQuotation, onNavigate, userRole = 'admin
     setOpenMenuId(null);
   };
 
+  // Handle verify quotation
+  const handleVerifyQuotation = async (quotation) => {
+    if (quotation.is_verified === true) {
+      return; // Already verified
+    }
+
+    try {
+      setError('');
+      const response = await quotationsAPI.verify(quotation.id);
+      if (response.success) {
+        setSuccessMessage('Quotation verified successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        await fetchQuotations();
+      } else {
+        setError(response.error || 'Failed to mark quotation as verified');
+      }
+    } catch (err) {
+      console.error('Error marking quotation as verified:', err);
+      setError(err.message || 'Failed to mark quotation as verified');
+    }
+  };
+
   const handleEdit = (quotation) => {
     setOpenMenuId(null);
     if (onNavigate) {
@@ -536,18 +558,7 @@ const QuotationMaster = ({ onBack, onAddQuotation, onNavigate, userRole = 'admin
                             padding: '12px 8px',
                             fontSize: '14px'
                           }}>
-                            {quotation.is_verified === false ? (
-                              <span style={{ 
-                                fontSize: '12px', 
-                                color: '#dc3545', 
-                                fontWeight: '600',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px'
-                              }}>
-                                <i className="fas fa-exclamation-circle"></i> Not Verified
-                              </span>
-                            ) : quotation.is_verified === true ? (
+                            {quotation.is_verified === true ? (
                               <span style={{ 
                                 fontSize: '12px', 
                                 color: '#28a745', 
@@ -561,10 +572,13 @@ const QuotationMaster = ({ onBack, onAddQuotation, onNavigate, userRole = 'admin
                             ) : (
                               <span style={{ 
                                 fontSize: '12px', 
-                                color: '#666', 
-                                fontWeight: '500'
+                                color: '#dc3545', 
+                                fontWeight: '600',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
                               }}>
-                                N/A
+                                <i className="fas fa-exclamation-circle"></i> Not Verified
                               </span>
                             )}
                           </td>
@@ -740,37 +754,49 @@ const QuotationMaster = ({ onBack, onAddQuotation, onNavigate, userRole = 'admin
                   )}
                   {(userRole === 'admin' || userRole === 'supervisor') && (
                     <div className="detail-row" style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e0e0e0' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={viewModal.is_verified === true}
-                          onChange={async (e) => {
-                            if (e.target.checked && viewModal.is_verified === false) {
-                              try {
-                                const response = await quotationsAPI.verify(viewModal.id);
-                                if (response.success) {
-                                  setViewModal({ ...viewModal, is_verified: true });
-                                  setSuccessMessage('Quotation verified successfully');
-                                  setTimeout(() => setSuccessMessage(''), 3000);
-                                  await fetchQuotations();
-                                } else {
-                                  setError('Failed to verify quotation');
-                                  setTimeout(() => setError(''), 3000);
-                                }
-                              } catch (err) {
-                                console.error('Verify quotation error:', err);
-                                setError('Failed to verify quotation');
+                      {viewModal.is_verified !== true ? (
+                        <button
+                          onClick={async () => {
+                            try {
+                              const response = await quotationsAPI.verify(viewModal.id);
+                              if (response.success) {
+                                setViewModal({ ...viewModal, is_verified: true });
+                                setSuccessMessage('Quotation verified successfully');
+                                setTimeout(() => setSuccessMessage(''), 3000);
+                                await fetchQuotations();
+                              } else {
+                                setError(response.error || 'Failed to verify quotation');
                                 setTimeout(() => setError(''), 3000);
                               }
+                            } catch (err) {
+                              console.error('Verify quotation error:', err);
+                              setError(err.message || 'Failed to verify quotation');
+                              setTimeout(() => setError(''), 3000);
                             }
                           }}
-                          disabled={viewModal.is_verified === true}
-                          style={{ width: '18px', height: '18px', cursor: viewModal.is_verified === true ? 'not-allowed' : 'pointer' }}
-                        />
-                        <span style={{ fontSize: '14px', fontWeight: '500', color: '#333' }}>
+                          style={{
+                            background: '#ff9800',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '6px',
+                            padding: '8px 16px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}
+                        >
+                          <i className="fas fa-check-circle"></i>
                           Mark as Verified
+                        </button>
+                      ) : (
+                        <span style={{ color: '#28a745', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                          <i className="fas fa-check-circle"></i>
+                          Verified
                         </span>
-                      </label>
+                      )}
                     </div>
                   )}
                 </div>

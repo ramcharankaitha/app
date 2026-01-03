@@ -128,6 +128,28 @@ const PurchaseOrderMaster = ({ onBack, onAddPurchaseOrder, onNavigate, userRole 
     setOpenMenuId(null);
   };
 
+  // Handle verify order
+  const handleVerifyOrder = async (order) => {
+    if (order.is_verified === true) {
+      return; // Already verified
+    }
+
+    try {
+      setError('');
+      const response = await purchaseOrdersAPI.verify(order.id);
+      if (response.success) {
+        setSuccessMessage('Purchase order verified successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        await fetchPurchaseOrders();
+      } else {
+        setError(response.error || 'Failed to mark order as verified');
+      }
+    } catch (err) {
+      console.error('Error marking order as verified:', err);
+      setError(err.message || 'Failed to mark order as verified');
+    }
+  };
+
   const handleEditOrder = async (order) => {
     setOpenMenuId(null);
     try {
@@ -470,18 +492,7 @@ const PurchaseOrderMaster = ({ onBack, onAddPurchaseOrder, onNavigate, userRole 
                           padding: '12px 8px',
                           fontSize: '14px'
                         }}>
-                          {order.is_verified === false ? (
-                            <span style={{ 
-                              fontSize: '12px', 
-                              color: '#dc3545', 
-                              fontWeight: '600',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px'
-                            }}>
-                              <i className="fas fa-exclamation-circle"></i> Not Verified
-                            </span>
-                          ) : order.is_verified === true ? (
+                          {order.is_verified === true ? (
                             <span style={{ 
                               fontSize: '12px', 
                               color: '#28a745', 
@@ -495,10 +506,13 @@ const PurchaseOrderMaster = ({ onBack, onAddPurchaseOrder, onNavigate, userRole 
                           ) : (
                             <span style={{ 
                               fontSize: '12px', 
-                              color: '#666', 
-                              fontWeight: '500'
+                              color: '#dc3545', 
+                              fontWeight: '600',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
                             }}>
-                              N/A
+                              <i className="fas fa-exclamation-circle"></i> Not Verified
                             </span>
                           )}
                         </td>
@@ -559,6 +573,34 @@ const PurchaseOrderMaster = ({ onBack, onAddPurchaseOrder, onNavigate, userRole 
                               <i className="fas fa-edit"></i>
                               Edit
                             </button>
+                            {(order.is_verified !== true) && (userRole === 'admin' || userRole === 'supervisor') && (
+                              <button
+                                onClick={() => handleVerifyOrder(order)}
+                                style={{
+                                  background: '#ff9800',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  padding: '6px 12px',
+                                  cursor: 'pointer',
+                                  fontSize: '13px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  transition: 'all 0.2s ease',
+                                  fontWeight: '500'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.background = '#e68900';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.background = '#ff9800';
+                                }}
+                              >
+                                <i className="fas fa-check-circle"></i>
+                                Mark as Verified
+                              </button>
+                            )}
                             <button
                               onClick={() => handleDeleteOrder(order)}
                               style={{
@@ -933,35 +975,49 @@ const PurchaseOrderMaster = ({ onBack, onAddPurchaseOrder, onNavigate, userRole 
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {(userRole === 'admin' || userRole === 'supervisor') && (
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedOrder.is_verified === true}
-                      onChange={async (e) => {
-                        if (e.target.checked && selectedOrder.is_verified === false) {
-                          try {
-                            const response = await purchaseOrdersAPI.verify(selectedOrder.id);
-                            if (response.success) {
-                              setSelectedOrder({ ...selectedOrder, is_verified: true });
-                              setSuccessMessage('Purchase order verified successfully');
-                              setTimeout(() => setSuccessMessage(''), 3000);
-                              await fetchPurchaseOrders();
-                            } else {
-                              setError('Failed to verify purchase order');
-                              setTimeout(() => setError(''), 3000);
-                            }
-                          } catch (err) {
-                            console.error('Error verifying purchase order:', err);
-                            setError('Failed to verify purchase order');
+                  selectedOrder.is_verified !== true ? (
+                    <button
+                      onClick={async () => {
+                        try {
+                          const response = await purchaseOrdersAPI.verify(selectedOrder.id);
+                          if (response.success) {
+                            setSelectedOrder({ ...selectedOrder, is_verified: true });
+                            setSuccessMessage('Purchase order verified successfully');
+                            setTimeout(() => setSuccessMessage(''), 3000);
+                            await fetchPurchaseOrders();
+                          } else {
+                            setError(response.error || 'Failed to verify purchase order');
                             setTimeout(() => setError(''), 3000);
                           }
+                        } catch (err) {
+                          console.error('Error verifying purchase order:', err);
+                          setError(err.message || 'Failed to verify purchase order');
+                          setTimeout(() => setError(''), 3000);
                         }
                       }}
-                      disabled={selectedOrder.is_verified === true}
-                      style={{ width: '18px', height: '18px', cursor: selectedOrder.is_verified === true ? 'not-allowed' : 'pointer' }}
-                    />
-                    <span>Mark as Verified</span>
-                  </label>
+                      style={{
+                        background: '#ff9800',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '8px 16px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      <i className="fas fa-check-circle"></i>
+                      Mark as Verified
+                    </button>
+                  ) : (
+                    <span style={{ color: '#28a745', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                      <i className="fas fa-check-circle"></i>
+                      Verified
+                    </span>
+                  )
                 )}
               </div>
               <button 

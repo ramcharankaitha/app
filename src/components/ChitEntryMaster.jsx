@@ -117,6 +117,28 @@ const ChitEntryMaster = ({ onBack, onAddChitEntry, onNavigate, userRole = 'admin
     setShowViewModal(true);
   };
 
+  // Handle verify entry
+  const handleVerifyEntry = async (entry) => {
+    if (entry.is_verified === true) {
+      return; // Already verified
+    }
+
+    try {
+      setError('');
+      const response = await chitPlansAPI.verifyEntry(entry.id);
+      if (response.success) {
+        setSuccessMessage('Chit entry verified successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        await fetchEntries();
+      } else {
+        setError(response.error || 'Failed to mark entry as verified');
+      }
+    } catch (err) {
+      console.error('Error marking entry as verified:', err);
+      setError(err.message || 'Failed to mark entry as verified');
+    }
+  };
+
   const handleEditEntry = async (entry) => {
     try {
       const response = await chitPlansAPI.getEntryById(entry.id);
@@ -450,18 +472,7 @@ const ChitEntryMaster = ({ onBack, onAddChitEntry, onNavigate, userRole = 'admin
                           padding: '12px 8px',
                           fontSize: '14px'
                         }}>
-                          {entry.is_verified === false ? (
-                            <span style={{ 
-                              fontSize: '12px', 
-                              color: '#dc3545', 
-                              fontWeight: '600',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px'
-                            }}>
-                              <i className="fas fa-exclamation-circle"></i> Not Verified
-                            </span>
-                          ) : entry.is_verified === true ? (
+                          {entry.is_verified === true ? (
                             <span style={{ 
                               fontSize: '12px', 
                               color: '#28a745', 
@@ -475,10 +486,13 @@ const ChitEntryMaster = ({ onBack, onAddChitEntry, onNavigate, userRole = 'admin
                           ) : (
                             <span style={{ 
                               fontSize: '12px', 
-                              color: '#666', 
-                              fontWeight: '500'
+                              color: '#dc3545', 
+                              fontWeight: '600',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
                             }}>
-                              N/A
+                              <i className="fas fa-exclamation-circle"></i> Not Verified
                             </span>
                           )}
                         </td>
@@ -684,35 +698,49 @@ const ChitEntryMaster = ({ onBack, onAddChitEntry, onNavigate, userRole = 'admin
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {(userRole === 'admin' || userRole === 'supervisor') && (
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedEntry.is_verified === true}
-                      onChange={async (e) => {
-                        if (e.target.checked && selectedEntry.is_verified === false) {
-                          try {
-                            const response = await chitPlansAPI.verifyEntry(selectedEntry.id);
-                            if (response.success) {
-                              setSelectedEntry({ ...selectedEntry, is_verified: true });
-                              setSuccessMessage('Chit entry verified successfully');
-                              setTimeout(() => setSuccessMessage(''), 3000);
-                              await fetchEntries();
-                            } else {
-                              setError('Failed to verify chit entry');
-                              setTimeout(() => setError(''), 3000);
-                            }
-                          } catch (err) {
-                            console.error('Error verifying chit entry:', err);
-                            setError('Failed to verify chit entry');
+                  selectedEntry.is_verified !== true ? (
+                    <button
+                      onClick={async () => {
+                        try {
+                          const response = await chitPlansAPI.verifyEntry(selectedEntry.id);
+                          if (response.success) {
+                            setSelectedEntry({ ...selectedEntry, is_verified: true });
+                            setSuccessMessage('Chit entry verified successfully');
+                            setTimeout(() => setSuccessMessage(''), 3000);
+                            await fetchEntries();
+                          } else {
+                            setError(response.error || 'Failed to verify chit entry');
                             setTimeout(() => setError(''), 3000);
                           }
+                        } catch (err) {
+                          console.error('Error verifying chit entry:', err);
+                          setError(err.message || 'Failed to verify chit entry');
+                          setTimeout(() => setError(''), 3000);
                         }
                       }}
-                      disabled={selectedEntry.is_verified === true}
-                      style={{ width: '18px', height: '18px', cursor: selectedEntry.is_verified === true ? 'not-allowed' : 'pointer' }}
-                    />
-                    <span>Mark as Verified</span>
-                  </label>
+                      style={{
+                        background: '#ff9800',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '8px 16px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      <i className="fas fa-check-circle"></i>
+                      Mark as Verified
+                    </button>
+                  ) : (
+                    <span style={{ color: '#28a745', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                      <i className="fas fa-check-circle"></i>
+                      Verified
+                    </span>
+                  )
                 )}
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>

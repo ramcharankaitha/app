@@ -123,6 +123,28 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
     }
   };
 
+  // Handle verify service
+  const handleVerifyService = async (service) => {
+    if (service.is_verified === true) {
+      return; // Already verified
+    }
+
+    try {
+      setError('');
+      const response = await servicesAPI.verify(service.id);
+      if (response.success) {
+        setSuccessMessage('Service verified successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        await fetchServices();
+      } else {
+        setError(response.error || 'Failed to mark service as verified');
+      }
+    } catch (err) {
+      console.error('Error marking service as verified:', err);
+      setError(err.message || 'Failed to mark service as verified');
+    }
+  };
+
   // Handle delete service
   const handleDeleteService = (service) => {
     setConfirmState({
@@ -375,18 +397,7 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
                         padding: '12px 8px',
                         fontSize: '14px'
                       }}>
-                        {service.is_verified === false ? (
-                          <span style={{ 
-                            fontSize: '12px', 
-                            color: '#dc3545', 
-                            fontWeight: '600',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}>
-                            <i className="fas fa-exclamation-circle"></i> Not Verified
-                          </span>
-                        ) : service.is_verified === true ? (
+                        {service.is_verified === true ? (
                           <span style={{ 
                             fontSize: '12px', 
                             color: '#28a745', 
@@ -400,10 +411,13 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
                         ) : (
                           <span style={{ 
                             fontSize: '12px', 
-                            color: '#666', 
-                            fontWeight: '500'
+                            color: '#dc3545', 
+                            fontWeight: '600',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
                           }}>
-                            N/A
+                            <i className="fas fa-exclamation-circle"></i> Not Verified
                           </span>
                         )}
                       </td>
@@ -464,6 +478,34 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
                             <i className="fas fa-edit"></i>
                             Edit
                           </button>
+                          {(service.is_verified !== true) && (userRole === 'admin' || userRole === 'supervisor') && (
+                            <button
+                              onClick={() => handleVerifyService(service)}
+                              style={{
+                                background: '#ff9800',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s ease',
+                                fontWeight: '500'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#e68900';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#ff9800';
+                              }}
+                            >
+                              <i className="fas fa-check-circle"></i>
+                              Mark as Verified
+                            </button>
+                          )}
                           <button
                             onClick={() => handleDeleteService(service)}
                             style={{

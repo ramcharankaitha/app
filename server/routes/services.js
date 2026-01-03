@@ -309,6 +309,45 @@ router.get('/handler/:handlerName', async (req, res) => {
   }
 });
 
+// Verify service (admin/supervisor only) - MUST come before GET /:id route
+router.put('/:id/verify', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Ensure is_verified column exists
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'services' AND column_name = 'is_verified'
+        ) THEN
+          ALTER TABLE services ADD COLUMN is_verified BOOLEAN DEFAULT false;
+          RAISE NOTICE 'Added is_verified column to services';
+        END IF;
+      END $$;
+    `);
+    
+    const result = await pool.query(
+      'UPDATE services SET is_verified = true WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Service not found' });
+    }
+    
+    res.json({ 
+      success: true, 
+      service: result.rows[0],
+      message: 'Service verified successfully' 
+    });
+  } catch (error) {
+    console.error('Verify service error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get service by ID
 router.get('/:id', async (req, res) => {
   try {

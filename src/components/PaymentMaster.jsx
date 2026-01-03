@@ -129,6 +129,28 @@ const PaymentMaster = ({ onBack, onAddPayment, onNavigate, userRole = 'admin' })
     setOpenMenuId(null);
   };
 
+  // Handle verify payment
+  const handleVerifyPayment = async (payment) => {
+    if (payment.is_verified === true) {
+      return; // Already verified
+    }
+
+    try {
+      setError('');
+      const response = await paymentsAPI.verify(payment.id);
+      if (response.success) {
+        setSuccessMessage('Payment verified successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        await fetchPayments();
+      } else {
+        setError(response.error || 'Failed to mark payment as verified');
+      }
+    } catch (err) {
+      console.error('Error marking payment as verified:', err);
+      setError(err.message || 'Failed to mark payment as verified');
+    }
+  };
+
   const handleEditPayment = (payment) => {
     setOpenMenuId(null);
     if (onNavigate) {
@@ -441,18 +463,7 @@ const PaymentMaster = ({ onBack, onAddPayment, onNavigate, userRole = 'admin' })
                             padding: '12px 8px',
                             fontSize: '14px'
                           }}>
-                            {payment.is_verified === false ? (
-                              <span style={{ 
-                                fontSize: '12px', 
-                                color: '#dc3545', 
-                                fontWeight: '600',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px'
-                              }}>
-                                <i className="fas fa-exclamation-circle"></i> Not Verified
-                              </span>
-                            ) : payment.is_verified === true ? (
+                            {payment.is_verified === true ? (
                               <span style={{ 
                                 fontSize: '12px', 
                                 color: '#28a745', 
@@ -466,10 +477,13 @@ const PaymentMaster = ({ onBack, onAddPayment, onNavigate, userRole = 'admin' })
                             ) : (
                               <span style={{ 
                                 fontSize: '12px', 
-                                color: '#666', 
-                                fontWeight: '500'
+                                color: '#dc3545', 
+                                fontWeight: '600',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
                               }}>
-                                N/A
+                                <i className="fas fa-exclamation-circle"></i> Not Verified
                               </span>
                             )}
                           </td>
@@ -530,6 +544,34 @@ const PaymentMaster = ({ onBack, onAddPayment, onNavigate, userRole = 'admin' })
                                 <i className="fas fa-edit"></i>
                                 Edit
                               </button>
+                              {(payment.is_verified !== true) && (userRole === 'admin' || userRole === 'supervisor') && (
+                                <button
+                                  onClick={() => handleVerifyPayment(payment)}
+                                  style={{
+                                    background: '#ff9800',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    padding: '6px 12px',
+                                    cursor: 'pointer',
+                                    fontSize: '13px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    transition: 'all 0.2s ease',
+                                    fontWeight: '500'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.target.style.background = '#e68900';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.target.style.background = '#ff9800';
+                                  }}
+                                >
+                                  <i className="fas fa-check-circle"></i>
+                                  Mark as Verified
+                                </button>
+                              )}
                               <button
                                 onClick={() => handleDeletePayment(payment)}
                                 style={{
@@ -665,35 +707,49 @@ const PaymentMaster = ({ onBack, onAddPayment, onNavigate, userRole = 'admin' })
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {(userRole === 'admin' || userRole === 'supervisor') && (
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedPayment.is_verified === true}
-                      onChange={async (e) => {
-                        if (e.target.checked && selectedPayment.is_verified === false) {
-                          try {
-                            const response = await paymentsAPI.verify(selectedPayment.id);
-                            if (response.success) {
-                              setSelectedPayment({ ...selectedPayment, is_verified: true });
-                              setSuccessMessage('Payment verified successfully');
-                              setTimeout(() => setSuccessMessage(''), 3000);
-                              await fetchPayments();
-                            } else {
-                              setError('Failed to verify payment');
-                              setTimeout(() => setError(''), 3000);
-                            }
-                          } catch (err) {
-                            console.error('Error verifying payment:', err);
-                            setError('Failed to verify payment');
+                  selectedPayment.is_verified !== true ? (
+                    <button
+                      onClick={async () => {
+                        try {
+                          const response = await paymentsAPI.verify(selectedPayment.id);
+                          if (response.success) {
+                            setSelectedPayment({ ...selectedPayment, is_verified: true });
+                            setSuccessMessage('Payment verified successfully');
+                            setTimeout(() => setSuccessMessage(''), 3000);
+                            await fetchPayments();
+                          } else {
+                            setError(response.error || 'Failed to verify payment');
                             setTimeout(() => setError(''), 3000);
                           }
+                        } catch (err) {
+                          console.error('Error verifying payment:', err);
+                          setError(err.message || 'Failed to verify payment');
+                          setTimeout(() => setError(''), 3000);
                         }
                       }}
-                      disabled={selectedPayment.is_verified === true}
-                      style={{ width: '18px', height: '18px', cursor: selectedPayment.is_verified === true ? 'not-allowed' : 'pointer' }}
-                    />
-                    <span>Mark as Verified</span>
-                  </label>
+                      style={{
+                        background: '#ff9800',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '8px 16px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      <i className="fas fa-check-circle"></i>
+                      Mark as Verified
+                    </button>
+                  ) : (
+                    <span style={{ color: '#28a745', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                      <i className="fas fa-check-circle"></i>
+                      Verified
+                    </span>
+                  )
                 )}
               </div>
               <button 
