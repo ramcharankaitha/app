@@ -725,6 +725,12 @@ export const servicesAPI = {
       method: 'PUT',
     });
   },
+  update: async (id, serviceData) => {
+    return apiCall(`/services/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(serviceData),
+    });
+  },
 };
 
 export const salesOrdersAPI = {
@@ -754,6 +760,12 @@ export const salesOrdersAPI = {
   verify: async (id) => {
     return apiCall(`/sales-orders/${id}/verify`, {
       method: 'PUT',
+    });
+  },
+  update: async (id, salesOrderData) => {
+    return apiCall(`/sales-orders/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(salesOrderData),
     });
   },
 };

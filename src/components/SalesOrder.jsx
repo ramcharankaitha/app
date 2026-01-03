@@ -10,6 +10,8 @@ const SalesOrder = ({ onBack, onAddSalesOrder, onNavigate, userRole = 'admin' })
   const [successMessage, setSuccessMessage] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
   const [viewSalesOrderModal, setViewSalesOrderModal] = useState(null);
+  const [editSalesOrderModal, setEditSalesOrderModal] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
   const menuRefs = useRef({});
 
@@ -141,11 +143,71 @@ const SalesOrder = ({ onBack, onAddSalesOrder, onNavigate, userRole = 'admin' })
   };
 
   // Handle edit sales order
-  const handleEditSalesOrder = (record) => {
+  const handleEditSalesOrder = async (record) => {
     setOpenMenuId(null);
-    if (onNavigate) {
-      onNavigate('addSalesOrder', { editId: record.id });
+    try {
+      setError('');
+      const response = await salesOrdersAPI.getById(record.id);
+      if (response.success) {
+        setEditSalesOrderModal(response.salesOrder);
+      } else {
+        setError('Failed to fetch sales order details');
+      }
+    } catch (err) {
+      console.error('Error fetching sales order details:', err);
+      setError('Failed to fetch sales order details');
     }
+  };
+
+  // Handle save sales order details
+  const handleSaveSalesOrderDetails = async () => {
+    if (!editSalesOrderModal) return;
+    
+    setIsSaving(true);
+    setError('');
+    
+    try {
+      const response = await salesOrdersAPI.update(editSalesOrderModal.id, {
+        customerName: editSalesOrderModal.customer_name,
+        customerContact: editSalesOrderModal.customer_contact,
+        handlerId: editSalesOrderModal.handler_id,
+        handlerName: editSalesOrderModal.handler_name,
+        handlerMobile: editSalesOrderModal.handler_mobile,
+        dateOfDuration: editSalesOrderModal.date_of_duration,
+        supplierName: editSalesOrderModal.supplier_name,
+        supplierNumber: editSalesOrderModal.supplier_number,
+        products: editSalesOrderModal.products,
+        poNumber: editSalesOrderModal.po_number
+      });
+      
+      if (response.success) {
+        setSuccessMessage('Sales order updated successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        setEditSalesOrderModal(null);
+        await fetchSalesOrders();
+      } else {
+        setError(response.error || 'Failed to update sales order');
+      }
+    } catch (err) {
+      console.error('Error updating sales order:', err);
+      setError(err.message || 'Failed to update sales order');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle edit input change
+  const handleEditInputChange = (field, value) => {
+    if (editSalesOrderModal) {
+      setEditSalesOrderModal({
+        ...editSalesOrderModal,
+        [field]: value
+      });
+    }
+  };
+
+  const closeEditModal = () => {
+    setEditSalesOrderModal(null);
   };
 
   // Handle delete sales order
@@ -486,32 +548,6 @@ const SalesOrder = ({ onBack, onAddSalesOrder, onNavigate, userRole = 'admin' })
                               <i className="fas fa-edit"></i>
                               Edit
                             </button>
-                            <button
-                              onClick={() => handleDeleteSalesOrder(record)}
-                              style={{
-                                background: '#dc3545',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: '6px',
-                                padding: '6px 12px',
-                                cursor: 'pointer',
-                                fontSize: '13px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                transition: 'all 0.2s ease',
-                                fontWeight: '500'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.target.style.background = '#c82333';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.target.style.background = '#dc3545';
-                              }}
-                            >
-                              <i className="fas fa-trash"></i>
-                              Delete
-                            </button>
                           </div>
                         </td>
                       </tr>
@@ -756,6 +792,197 @@ const SalesOrder = ({ onBack, onAddSalesOrder, onNavigate, userRole = 'admin' })
               </div>
               <button className="modal-close-button" onClick={closeViewModal}>
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Sales Order Modal */}
+      {editSalesOrderModal && (
+        <div className="modal-overlay" onClick={closeEditModal}>
+          <div className="customer-details-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Edit Sales Order Details</h2>
+              <button className="modal-close-btn" onClick={closeEditModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="modal-content">
+              {error && (
+                <div style={{ 
+                  padding: '12px', 
+                  background: '#ffe0e0', 
+                  color: '#dc3545', 
+                  borderRadius: '8px', 
+                  marginBottom: '20px' 
+                }}>
+                  <i className="fas fa-exclamation-circle"></i> {error}
+                </div>
+              )}
+              <div className="customer-detail-section">
+                <div className="detail-avatar">
+                  <span>{editSalesOrderModal.customer_name 
+                    ? editSalesOrderModal.customer_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+                    : 'SO'}</span>
+                </div>
+                <div className="detail-info">
+                  <div className="detail-row">
+                    <span className="detail-label">Customer Name:</span>
+                    <input
+                      type="text"
+                      value={editSalesOrderModal.customer_name || ''}
+                      onChange={(e) => handleEditInputChange('customer_name', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Customer Contact:</span>
+                    <input
+                      type="text"
+                      value={editSalesOrderModal.customer_contact || ''}
+                      onChange={(e) => handleEditInputChange('customer_contact', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Handler Name:</span>
+                    <input
+                      type="text"
+                      value={editSalesOrderModal.handler_name || ''}
+                      onChange={(e) => handleEditInputChange('handler_name', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Handler Mobile:</span>
+                    <input
+                      type="text"
+                      value={editSalesOrderModal.handler_mobile || ''}
+                      onChange={(e) => handleEditInputChange('handler_mobile', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Date of Duration:</span>
+                    <input
+                      type="date"
+                      value={editSalesOrderModal.date_of_duration ? editSalesOrderModal.date_of_duration.split('T')[0] : ''}
+                      onChange={(e) => handleEditInputChange('date_of_duration', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Supplier Name:</span>
+                    <input
+                      type="text"
+                      value={editSalesOrderModal.supplier_name || ''}
+                      onChange={(e) => handleEditInputChange('supplier_name', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Supplier Number:</span>
+                    <input
+                      type="text"
+                      value={editSalesOrderModal.supplier_number || ''}
+                      onChange={(e) => handleEditInputChange('supplier_number', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">PO Number:</span>
+                    <input
+                      type="text"
+                      value={editSalesOrderModal.po_number || ''}
+                      onChange={(e) => handleEditInputChange('po_number', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button 
+                className="modal-close-button" 
+                onClick={closeEditModal}
+                disabled={isSaving}
+              >
+                Cancel
+              </button>
+              <button 
+                className="modal-save-button" 
+                onClick={handleSaveSalesOrderDetails}
+                disabled={isSaving}
+                style={{
+                  background: '#28a745',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '10px 20px',
+                  cursor: isSaving ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  opacity: isSaving ? 0.6 : 1
+                }}
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

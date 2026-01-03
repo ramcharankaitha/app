@@ -381,7 +381,16 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Item code or SKU code already exists' });
     }
     console.error('Update product error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      stack: error.stack
+    });
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 

@@ -530,4 +530,77 @@ router.put('/:id/verify', async (req, res) => {
   }
 });
 
+// Update sales order
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      customerName,
+      customerContact,
+      handlerId,
+      handlerName,
+      handlerMobile,
+      dateOfDuration,
+      supplierName,
+      supplierNumber,
+      products,
+      poNumber
+    } = req.body;
+
+    // Check if sales order exists
+    const orderCheck = await pool.query('SELECT id FROM sales_records WHERE id = $1', [id]);
+    if (orderCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Sales order not found' });
+    }
+
+    const productsJson = products ? JSON.stringify(products) : null;
+    const totalAmount = products ? products.reduce((total, product) => {
+      const quantity = parseFloat(product.quantity) || 0;
+      const sellRate = parseFloat(product.sellRate) || 0;
+      return total + (quantity * sellRate);
+    }, 0) : null;
+
+    const result = await pool.query(
+      `UPDATE sales_records 
+       SET customer_name = COALESCE($1, customer_name),
+           customer_contact = COALESCE($2, customer_contact),
+           handler_id = COALESCE($3, handler_id),
+           handler_name = COALESCE($4, handler_name),
+           handler_mobile = COALESCE($5, handler_mobile),
+           date_of_duration = COALESCE($6, date_of_duration),
+           supplier_name = COALESCE($7, supplier_name),
+           supplier_number = COALESCE($8, supplier_number),
+           products = COALESCE($9::jsonb, products),
+           total_amount = COALESCE($10, total_amount),
+           po_number = COALESCE($11, po_number),
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $12
+       RETURNING *`,
+      [
+        customerName || null,
+        customerContact || null,
+        handlerId ? parseInt(handlerId) : null,
+        handlerName || null,
+        handlerMobile || null,
+        dateOfDuration || null,
+        supplierName || null,
+        supplierNumber || null,
+        productsJson,
+        totalAmount,
+        poNumber || null,
+        id
+      ]
+    );
+
+    res.json({
+      success: true,
+      salesOrder: result.rows[0],
+      message: 'Sales order updated successfully'
+    });
+  } catch (error) {
+    console.error('Update sales order error:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+});
+
 module.exports = router;

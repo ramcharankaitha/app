@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { productsAPI, staffAPI, salesOrdersAPI, customersAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import './addUser.css';
@@ -29,6 +30,10 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
   const [allCustomers, setAllCustomers] = useState([]);
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const customerDropdownRef = useRef(null);
+  const customerInputRef = useRef(null);
+  const [customerDropdownPosition, setCustomerDropdownPosition] = useState(null);
+  const [isFetchingCustomer, setIsFetchingCustomer] = useState(false);
+  const [customerVerified, setCustomerVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -116,10 +121,108 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
     };
   }, []);
 
+  // Auto-fetch customer details when phone/ID is entered in customerContact
+  useEffect(() => {
+    const fetchCustomerByPhoneOrId = async () => {
+      const phoneOrId = formData.customerContact.trim();
+      if (!phoneOrId || phoneOrId.length < 4) {
+        setCustomerVerified(false);
+        setFormData(prev => ({ ...prev, customerName: prev.customerName || '' }));
+        return;
+      }
+
+      setIsFetchingCustomer(true);
+      try {
+        const searchResponse = await customersAPI.search(phoneOrId);
+        if (searchResponse.success && searchResponse.customers && searchResponse.customers.length > 0) {
+          const customer = searchResponse.customers[0];
+          setCustomerVerified(true);
+          setFormData(prev => ({
+            ...prev,
+            customerName: customer.full_name || prev.customerName || '',
+            customerContact: customer.phone || prev.customerContact
+          }));
+        } else {
+          setCustomerVerified(false);
+        }
+      } catch (err) {
+        console.error('Error fetching customer:', err);
+        setCustomerVerified(false);
+      } finally {
+        setIsFetchingCustomer(false);
+      }
+    };
+
+    const timer = setTimeout(() => {
+      fetchCustomerByPhoneOrId();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [formData.customerContact]);
+
+  // Search customers when customer name changes
+  useEffect(() => {
+    const searchCustomers = async () => {
+      const searchTerm = formData.customerName.trim();
+      if (!searchTerm || searchTerm.length < 2) {
+        setShowCustomerDropdown(false);
+        return;
+      }
+
+      // Update dropdown position
+      if (customerInputRef.current) {
+        const rect = customerInputRef.current.getBoundingClientRect();
+        setCustomerDropdownPosition({
+          top: rect.bottom + 4,
+          left: rect.left,
+          width: rect.width
+        });
+        setShowCustomerDropdown(true);
+      }
+    };
+
+    const timer = setTimeout(() => {
+      searchCustomers();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [formData.customerName]);
+
+  // Update customer dropdown position on scroll/resize
+  useEffect(() => {
+    const updatePosition = () => {
+      if (customerInputRef.current && showCustomerDropdown) {
+        const rect = customerInputRef.current.getBoundingClientRect();
+        setCustomerDropdownPosition({
+          top: rect.bottom + 4,
+          left: rect.left,
+          width: rect.width
+        });
+      }
+    };
+
+    const handleScroll = () => updatePosition();
+    const handleResize = () => updatePosition();
+
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleResize);
+    updatePosition();
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [showCustomerDropdown]);
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (customerDropdownRef.current && !customerDropdownRef.current.contains(event.target)) {
+      if (
+        customerInputRef.current && 
+        !customerInputRef.current.contains(event.target) &&
+        customerDropdownRef.current &&
+        !customerDropdownRef.current.contains(event.target)
+      ) {
         setShowCustomerDropdown(false);
       }
     };
@@ -195,8 +298,12 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
         setShowCustomerDropdown(true);
       } else {
         setShowCustomerDropdown(false);
-        setFormData(prev => ({ ...prev, customerContact: '' }));
       }
+    }
+    
+    // Reset customer verification when contact changes
+    if (name === 'customerContact') {
+      setCustomerVerified(false);
     }
   };
 
@@ -374,7 +481,19 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
       }
 
       if (addedProducts.length === 0) {
-        setError('Please add at least one product');
+        setError('Please add at least one product to the summary before creating sales order.');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Validate each product has required fields
+      const invalidProducts = addedProducts.filter(p =>
+        !p.itemCode || !p.itemCode.trim() ||
+        !p.quantity || parseFloat(p.quantity) <= 0 ||
+        !p.productInfo
+      );
+      if (invalidProducts.length > 0) {
+        setError('Some products in the summary are missing required fields. Please remove and re-add them.');
         setIsLoading(false);
         return;
       }
@@ -500,19 +619,20 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
 
           {/* Main Content */}
           <main className="add-user-content">
-            <form onSubmit={handleSubmit} className="add-user-form">
+            <form onSubmit={handleSubmit} className="add-user-form" noValidate>
               <div className="form-grid four-col">
                 {/* Row 1: Customer Name, Customer Phone Number, Handler Dropdown, Handler Phone Number */}
-                <div className="form-group" ref={customerDropdownRef} style={{ position: 'relative', zIndex: 1000 }}>
+                <div className="form-group" style={{ position: 'relative' }}>
                   <label htmlFor="customerName">Customer Name *</label>
-                  <div className="input-wrapper">
+                  <div className="input-wrapper" style={{ position: 'relative' }}>
                     <i className="fas fa-user input-icon"></i>
                     <input
+                      ref={customerInputRef}
                       type="text"
                       id="customerName"
                       name="customerName"
                       className="form-input"
-                      placeholder="Type customer name, phone, or Customer ID to search..."
+                      placeholder="Type customer name to search..."
                       value={formData.customerName}
                       onChange={handleInputChange}
                       onFocus={() => {
@@ -523,63 +643,98 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                       required
                       autoComplete="off"
                     />
-                    <i className="fas fa-chevron-down dropdown-icon"></i>
                   </div>
-                  {showCustomerDropdown && filteredCustomers.length > 0 && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '100%',
-                      left: 0,
-                      right: 0,
-                      background: '#fff',
+                </div>
+                {/* Customer Dropdown using Portal */}
+                {showCustomerDropdown && filteredCustomers.length > 0 && customerDropdownPosition && createPortal(
+                  <div
+                    ref={customerDropdownRef}
+                    style={{
+                      position: 'fixed',
+                      top: `${customerDropdownPosition.top}px`,
+                      left: `${customerDropdownPosition.left}px`,
+                      width: `${customerDropdownPosition.width}px`,
+                      backgroundColor: '#fff',
                       border: '1px solid #e0e0e0',
                       borderRadius: '8px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      zIndex: 10000,
-                      maxHeight: '300px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      zIndex: 99999,
+                      maxHeight: '200px',
                       overflowY: 'auto',
-                      marginTop: '4px'
-                    }}>
-                      {filteredCustomers.map((customer) => (
-                        <div
-                          key={customer.id}
-                          onClick={() => handleCustomerSelect(customer)}
-                          style={{
-                            padding: '12px 16px',
-                            cursor: 'pointer',
-                            borderBottom: '1px solid #f0f0f0',
-                            transition: 'background 0.2s'
-                          }}
-                          onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                          onMouseLeave={(e) => e.target.style.background = '#fff'}
-                        >
-                          <div style={{ fontWeight: '600', fontSize: '14px', color: '#333' }}>
-                            {customer.name}
-                          </div>
-                          <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                            {customer.phone}
-                          </div>
+                      marginTop: '0'
+                    }}
+                    onMouseDown={(e) => e.preventDefault()}
+                  >
+                    {filteredCustomers.map((customer, index) => (
+                      <div
+                        key={customer.id || index}
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            customerName: customer.name || customer.full_name || '',
+                            customerContact: customer.phone || prev.customerContact
+                          }));
+                          setShowCustomerDropdown(false);
+                          setCustomerVerified(true);
+                        }}
+                        style={{
+                          padding: '12px 16px',
+                          cursor: 'pointer',
+                          borderBottom: index < filteredCustomers.length - 1 ? '1px solid #f0f0f0' : 'none',
+                          background: '#fff',
+                          color: '#333'
+                        }}
+                        onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
+                        onMouseLeave={(e) => e.target.style.background = '#fff'}
+                      >
+                        <div style={{ fontWeight: '500', marginBottom: '4px' }}>
+                          {customer.name || customer.full_name || 'N/A'}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                        <div style={{ fontSize: '12px', color: '#666' }}>
+                          {customer.phone || ''} {customer.customer_unique_id ? `(${customer.customer_unique_id})` : ''}
+                        </div>
+                      </div>
+                    ))}
+                  </div>,
+                  document.body
+                )}
 
                 <div className="form-group">
-                  <label htmlFor="customerContact">Customer Phone Number *</label>
-                  <div className="input-wrapper">
+                  <label htmlFor="customerContact">Customer Phone Number or Customer ID *</label>
+                  <div className="input-wrapper" style={{ position: 'relative' }}>
                     <i className="fas fa-phone input-icon"></i>
                     <input
-                      type="tel"
+                      type="text"
                       id="customerContact"
                       name="customerContact"
                       className="form-input"
-                      placeholder="Contact number (auto-filled)"
+                      placeholder="Enter phone number or Customer ID (e.g., C-1234)"
                       value={formData.customerContact}
-                      readOnly
-                      style={{ background: '#f5f5f5' }}
+                      onChange={handleInputChange}
                       required
+                      style={{
+                        paddingRight: customerVerified || isFetchingCustomer ? '40px' : '18px',
+                        borderColor: customerVerified ? '#28a745' : undefined
+                      }}
                     />
+                    {isFetchingCustomer && (
+                      <i className="fas fa-spinner fa-spin" style={{ 
+                        position: 'absolute', 
+                        right: '12px', 
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: '#666' 
+                      }}></i>
+                    )}
+                    {!isFetchingCustomer && customerVerified && (
+                      <i className="fas fa-check-circle" style={{ 
+                        position: 'absolute', 
+                        right: '12px', 
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: '#28a745' 
+                      }}></i>
+                    )}
                   </div>
                 </div>
 
@@ -638,7 +793,8 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                       value={currentProduct.itemCode}
                       onChange={handleCurrentProductChange}
                       onKeyPress={handleItemCodeKeyPress}
-                      style={{ paddingRight: '100px' }}
+                      style={{ paddingRight: currentProduct.isFetching ? '40px' : '50px' }}
+                      // removed required
                     />
                     {currentProduct.isFetching ? (
                       <div style={{ 
@@ -711,6 +867,7 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                       min="1"
                       step="1"
                       disabled={!currentProduct.productInfo}
+                      // removed required
                     />
                   </div>
                 </div>

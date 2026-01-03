@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { servicesAPI } from '../services/api';
-import ConfirmDialog from './ConfirmDialog';
 import './products.css';
 
 const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
@@ -9,7 +8,8 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [viewServiceModal, setViewServiceModal] = useState(null);
-  const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
+  const [editServiceModal, setEditServiceModal] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Fetch services from database
   const fetchServices = async () => {
@@ -33,7 +33,9 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
           serialNumber: service.serial_number,
           serviceDate: service.service_date,
           handlerName: service.handler_name,
-          is_verified: service.is_verified
+          handlerId: service.handler_id,
+          is_verified: service.is_verified,
+          is_completed: service.is_completed || false
         }));
         setServices(formattedServices);
       }
@@ -117,10 +119,73 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
   });
 
   // Handle edit service
-  const handleEditService = (service) => {
-    if (onNavigate) {
-      onNavigate('addService', { editId: service.id });
+  const handleEditService = async (service) => {
+    try {
+      setError('');
+      const response = await servicesAPI.getById(service.id);
+      if (response.success) {
+        setEditServiceModal(response.service);
+      } else {
+        setError('Failed to fetch service details');
+      }
+    } catch (err) {
+      console.error('Error fetching service details:', err);
+      setError('Failed to fetch service details');
     }
+  };
+
+  // Handle save service details
+  const handleSaveServiceDetails = async () => {
+    if (!editServiceModal) return;
+    
+    setIsSaving(true);
+    setError('');
+    
+    try {
+      const response = await servicesAPI.update(editServiceModal.id, {
+        customerName: editServiceModal.customer_name,
+        customerPhone: editServiceModal.customer_phone,
+        warranty: editServiceModal.warranty || false,
+        unwarranty: editServiceModal.unwarranty || false,
+        itemCode: editServiceModal.item_code,
+        brandName: editServiceModal.brand_name,
+        productName: editServiceModal.product_name,
+        serialNumber: editServiceModal.serial_number,
+        serviceDate: editServiceModal.service_date,
+        handlerId: editServiceModal.handler_id,
+        handlerName: editServiceModal.handler_name,
+        productComplaint: editServiceModal.product_complaint,
+        estimatedDate: editServiceModal.estimated_date
+      });
+      
+      if (response.success) {
+        setSuccessMessage('Service updated successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        setEditServiceModal(null);
+        await fetchServices();
+      } else {
+        setError(response.error || 'Failed to update service');
+      }
+    } catch (err) {
+      console.error('Error updating service:', err);
+      setError(err.message || 'Failed to update service');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle edit input change
+  const handleEditInputChange = (field, value) => {
+    if (editServiceModal) {
+      setEditServiceModal({
+        ...editServiceModal,
+        [field]: value
+      });
+    }
+  };
+
+  const closeEditModal = () => {
+    setEditServiceModal(null);
   };
 
   // Handle verify service
@@ -145,32 +210,6 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
     }
   };
 
-  // Handle delete service
-  const handleDeleteService = (service) => {
-    setConfirmState({
-      open: true,
-      message: `Are you sure you want to delete service "${service.name}"? This action cannot be undone.`,
-      onConfirm: async () => {
-        try {
-          setError('');
-          // Note: You may need to add a delete endpoint to servicesAPI
-          setError('Delete functionality to be implemented');
-          setTimeout(() => setError(''), 3000);
-          // const response = await servicesAPI.delete(service.id);
-          // if (response.success) {
-          //   await fetchServices();
-          // } else {
-          //   setError(response.error || 'Failed to delete service');
-          // }
-        } catch (err) {
-          console.error('Delete service error:', err);
-          setError(err.message || 'Failed to delete service');
-        } finally {
-          setConfirmState({ open: false, message: '', onConfirm: null });
-        }
-      }
-    });
-  };
 
   // Handle view service details
   const handleViewServiceDetails = (service) => {
@@ -183,12 +222,6 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
 
   return (
     <div className="dashboard-container">
-      <ConfirmDialog
-        open={confirmState.open}
-        message={confirmState.message}
-        onConfirm={confirmState.onConfirm}
-        onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
-      />
       {/* Left Sidebar Navigation */}
       <nav className="sidebar-nav">
         <div className="nav-item" onClick={handleBack}>
@@ -330,6 +363,9 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
                     <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
                       Handler
                     </th>
+                    <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                      Handler Status
+                    </th>
                     <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
                       Service Date
                     </th>
@@ -380,6 +416,35 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
                         color: '#666'
                       }}>
                         {service.handlerName || 'N/A'}
+                      </td>
+                      <td style={{ 
+                        textAlign: 'center',
+                        padding: '12px 8px',
+                        fontSize: '14px'
+                      }}>
+                        {service.is_completed ? (
+                          <span style={{ 
+                            fontSize: '12px', 
+                            color: '#28a745', 
+                            fontWeight: '600',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}>
+                            <i className="fas fa-check-circle"></i> Completed
+                          </span>
+                        ) : (
+                          <span style={{ 
+                            fontSize: '12px', 
+                            color: '#ff9800', 
+                            fontWeight: '600',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}>
+                            <i className="fas fa-clock"></i> Pending
+                          </span>
+                        )}
                       </td>
                       <td style={{ 
                         padding: '12px 8px',
@@ -506,32 +571,6 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
                               Mark as Verified
                             </button>
                           )}
-                          <button
-                            onClick={() => handleDeleteService(service)}
-                            style={{
-                              background: '#dc3545',
-                              color: '#fff',
-                              border: 'none',
-                              borderRadius: '6px',
-                              padding: '6px 12px',
-                              cursor: 'pointer',
-                              fontSize: '13px',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              transition: 'all 0.2s ease',
-                              fontWeight: '500'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.target.style.background = '#c82333';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.target.style.background = '#dc3545';
-                            }}
-                          >
-                            <i className="fas fa-trash"></i>
-                            Delete
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -628,6 +667,197 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
               </div>
               <button className="modal-close-button" onClick={closeViewModal}>
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Service Modal */}
+      {editServiceModal && (
+        <div className="modal-overlay" onClick={closeEditModal}>
+          <div className="customer-details-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Edit Service Details</h2>
+              <button className="modal-close-btn" onClick={closeEditModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="modal-content">
+              {error && (
+                <div style={{ 
+                  padding: '12px', 
+                  background: '#ffe0e0', 
+                  color: '#dc3545', 
+                  borderRadius: '8px', 
+                  marginBottom: '20px' 
+                }}>
+                  <i className="fas fa-exclamation-circle"></i> {error}
+                </div>
+              )}
+              <div className="customer-detail-section">
+                <div className="detail-avatar">
+                  <span>{editServiceModal.customer_name 
+                    ? editServiceModal.customer_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+                    : 'SV'}</span>
+                </div>
+                <div className="detail-info">
+                  <div className="detail-row">
+                    <span className="detail-label">Customer Name:</span>
+                    <input
+                      type="text"
+                      value={editServiceModal.customer_name || ''}
+                      onChange={(e) => handleEditInputChange('customer_name', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Customer Phone:</span>
+                    <input
+                      type="text"
+                      value={editServiceModal.customer_phone || ''}
+                      onChange={(e) => handleEditInputChange('customer_phone', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Item Code:</span>
+                    <input
+                      type="text"
+                      value={editServiceModal.item_code || ''}
+                      onChange={(e) => handleEditInputChange('item_code', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Product Name:</span>
+                    <input
+                      type="text"
+                      value={editServiceModal.product_name || ''}
+                      onChange={(e) => handleEditInputChange('product_name', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Brand Name:</span>
+                    <input
+                      type="text"
+                      value={editServiceModal.brand_name || ''}
+                      onChange={(e) => handleEditInputChange('brand_name', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Serial Number:</span>
+                    <input
+                      type="text"
+                      value={editServiceModal.serial_number || ''}
+                      onChange={(e) => handleEditInputChange('serial_number', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Handler Name:</span>
+                    <input
+                      type="text"
+                      value={editServiceModal.handler_name || ''}
+                      onChange={(e) => handleEditInputChange('handler_name', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Service Date:</span>
+                    <input
+                      type="date"
+                      value={editServiceModal.service_date ? editServiceModal.service_date.split('T')[0] : ''}
+                      onChange={(e) => handleEditInputChange('service_date', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button 
+                className="modal-close-button" 
+                onClick={closeEditModal}
+                disabled={isSaving}
+              >
+                Cancel
+              </button>
+              <button 
+                className="modal-save-button" 
+                onClick={handleSaveServiceDetails}
+                disabled={isSaving}
+                style={{
+                  background: '#28a745',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '10px 20px',
+                  cursor: isSaving ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  opacity: isSaving ? 0.6 : 1
+                }}
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>
