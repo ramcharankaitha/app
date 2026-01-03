@@ -260,6 +260,7 @@ router.get('/', async (req, res) => {
 router.put('/:id/verify', async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(`[Purchase Orders Verify] Received PUT /purchase-orders/${id}/verify request`);
     
     // Ensure is_verified column exists
     await pool.query(`

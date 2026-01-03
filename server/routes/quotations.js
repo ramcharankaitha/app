@@ -468,10 +468,11 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Verify quotation (admin/supervisor only)
+// Verify quotation (admin/supervisor only) - MUST come before PUT /:id route
 router.put('/:id/verify', async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(`[Quotations Verify] Received PUT /quotations/${id}/verify request`);
     const { ensureVerificationColumn } = require('../utils/verification');
     await ensureVerificationColumn('quotations');
     

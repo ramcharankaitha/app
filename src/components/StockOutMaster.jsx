@@ -167,25 +167,6 @@ const StockOutMaster = ({ onBack, onAddStockOut, onNavigate, userRole = 'admin' 
     }
   };
 
-  const handleDeleteTransaction = async (transaction) => {
-    if (!window.confirm(`Are you sure you want to delete this stock out transaction for ${transaction.product_name}? This action cannot be undone.`)) {
-      return;
-    }
-
-    try {
-      setError('');
-      // Note: You may need to add a delete endpoint to stockAPI
-      // For now, this is a placeholder
-      setSuccessMessage('Delete functionality to be implemented');
-      setTimeout(() => setSuccessMessage(''), 3000);
-      // await stockAPI.deleteTransaction(transaction.id);
-      // await fetchTransactions();
-    } catch (err) {
-      console.error('Error deleting transaction:', err);
-      setError(err.message || 'Failed to delete transaction');
-      setTimeout(() => setError(''), 3000);
-    }
-  };
 
   const closeViewModal = () => {
     setShowViewModal(null);
@@ -532,32 +513,6 @@ const StockOutMaster = ({ onBack, onAddStockOut, onNavigate, userRole = 'admin' 
                                   Mark as Verified
                                 </button>
                               )}
-                              <button
-                                onClick={() => handleDeleteTransaction(transaction)}
-                                style={{
-                                  background: '#dc3545',
-                                  color: '#fff',
-                                  border: 'none',
-                                  borderRadius: '6px',
-                                  padding: '6px 12px',
-                                  cursor: 'pointer',
-                                  fontSize: '13px',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '6px',
-                                  transition: 'all 0.2s ease',
-                                  fontWeight: '500'
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.target.style.background = '#c82333';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.target.style.background = '#dc3545';
-                                }}
-                              >
-                                <i className="fas fa-trash"></i>
-                                Delete
-                              </button>
                             </div>
                           </td>
                         </tr>

@@ -484,6 +484,7 @@ router.post('/entries', async (req, res) => {
 router.put('/entries/:id/verify', async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(`[Chit Entry Verify] Received PUT /chit-plans/entries/${id}/verify request`);
     
     // Ensure is_verified column exists
     await pool.query(`

@@ -313,6 +313,7 @@ router.get('/handler/:handlerName', async (req, res) => {
 router.put('/:id/verify', async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(`[Services Verify] Received PUT /services/${id}/verify request`);
     
     // Ensure is_verified column exists
     await pool.query(`

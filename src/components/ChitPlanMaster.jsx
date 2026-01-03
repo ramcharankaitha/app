@@ -432,32 +432,6 @@ const ChitPlanMaster = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' 
                                 <i className="fas fa-edit"></i>
                                 Edit
                               </button>
-                              <button
-                                onClick={() => handleDeletePlan(plan)}
-                                style={{
-                                  background: '#dc3545',
-                                  color: '#fff',
-                                  border: 'none',
-                                  borderRadius: '6px',
-                                  padding: '6px 12px',
-                                  cursor: 'pointer',
-                                  fontSize: '13px',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '6px',
-                                  transition: 'all 0.2s ease',
-                                  fontWeight: '500'
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.target.style.background = '#c82333';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.target.style.background = '#dc3545';
-                                }}
-                              >
-                                <i className="fas fa-trash"></i>
-                                Delete
-                              </button>
                             </div>
                           </td>
                         </tr>

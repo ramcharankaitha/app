@@ -775,6 +775,7 @@ router.get('/dashboard-stats', async (req, res) => {
 router.put('/in/:id/verify', async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(`[Stock In Verify] Received PUT /stock/in/${id}/verify request`);
     
     // Ensure is_verified column exists
     await pool.query(`
@@ -817,6 +818,7 @@ router.put('/in/:id/verify', async (req, res) => {
 router.put('/out/:id/verify', async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(`[Stock Out Verify] Received PUT /stock/out/${id}/verify request`);
     
     // Ensure is_verified column exists
     await pool.query(`
