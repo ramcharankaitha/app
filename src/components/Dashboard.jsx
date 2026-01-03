@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useProfile } from '../hooks/useProfile';
-import { profileAPI, exportAPI, notificationsAPI } from '../services/api';
+import { profileAPI, exportAPI, notificationsAPI, stockAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import SupervisorAttendanceView from './SupervisorAttendanceView';
 import UnifiedAttendanceView from './UnifiedAttendanceView';
@@ -28,6 +28,12 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showSendNotification, setShowSendNotification] = useState(false);
   const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
+  const [dashboardStats, setDashboardStats] = useState({
+    stockInCount: 0,
+    stockOutCount: 0,
+    fastestSelling: null
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
   const menuRef = useRef(null);
   const { profile, avatarUrl, initials } = useProfile();
 
@@ -66,19 +72,45 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     setMenuOpen(false);
   };
 
+  // Fetch dashboard statistics
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      try {
+        setLoadingStats(true);
+        const response = await stockAPI.getDashboardStats();
+        if (response.success) {
+          setDashboardStats({
+            stockInCount: response.stockInCount || 0,
+            stockOutCount: response.stockOutCount || 0,
+            fastestSelling: response.fastestSelling
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchDashboardStats();
+    // Refresh every 5 minutes
+    const interval = setInterval(fetchDashboardStats, 300000);
+    return () => clearInterval(interval);
+  }, []);
+
   const stats = [
     {
-      title: 'Total Supervisors',
-      value: '1,248',
-      subtitle: '+32 this week',
-      icon: 'fa-plus',
-      color: '#dc3545'
+      title: 'Stock In Products',
+      value: loadingStats ? '...' : dashboardStats.stockInCount.toLocaleString(),
+      subtitle: 'Total stock entries',
+      icon: 'fa-box-open',
+      color: '#28a745'
     },
     {
-      title: 'Active Stores',
-      value: '18',
-      subtitle: '2 in maintenance',
-      icon: 'fa-store',
+      title: 'Stock Out Products',
+      value: loadingStats ? '...' : dashboardStats.stockOutCount.toLocaleString(),
+      subtitle: 'Total stock exits',
+      icon: 'fa-box',
       color: '#dc3545'
     },
     {
@@ -89,11 +121,15 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
       color: '#dc3545'
     },
     {
-      title: "Today's Orders",
-      value: '3,291',
-      subtitle: '+12.4% vs yesterday',
-      icon: 'fa-shopping-cart',
-      color: '#dc3545'
+      title: 'Fastest Selling',
+      value: loadingStats ? '...' : (dashboardStats.fastestSelling 
+        ? dashboardStats.fastestSelling.productName.substring(0, 20) + (dashboardStats.fastestSelling.productName.length > 20 ? '...' : '')
+        : 'N/A'),
+      subtitle: dashboardStats.fastestSelling 
+        ? `${dashboardStats.fastestSelling.quantity} units (30 days)`
+        : 'No sales data',
+      icon: 'fa-fire',
+      color: '#ff9800'
     }
   ];
 

@@ -638,7 +638,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
 
               {/* Row 3: SKV Code, Current Stock, Stock Out Quantity, Add Product Button */}
                   <div className="form-group">
-                <label htmlFor="skuCode">SKV Code</label>
+                <label htmlFor="skuCode">SKU Code</label>
                     <div className="input-wrapper">
                       <i className="fas fa-boxes input-icon"></i>
                       <input

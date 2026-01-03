@@ -703,5 +703,58 @@ router.get('/current', async (req, res) => {
   }
 });
 
+// Get dashboard statistics
+router.get('/dashboard-stats', async (req, res) => {
+  try {
+    // Count stock in transactions
+    const stockInResult = await pool.query(
+      "SELECT COUNT(*) as count FROM stock_transactions WHERE transaction_type = 'STOCK_IN'"
+    );
+    const stockInCount = parseInt(stockInResult.rows[0]?.count || 0);
+
+    // Count stock out transactions
+    const stockOutResult = await pool.query(
+      "SELECT COUNT(*) as count FROM stock_transactions WHERE transaction_type = 'STOCK_OUT'"
+    );
+    const stockOutCount = parseInt(stockOutResult.rows[0]?.count || 0);
+
+    // Get fastest selling product (based on stock out transactions in last 30 days)
+    const fastestSellingResult = await pool.query(
+      `SELECT 
+        item_code,
+        product_name,
+        SUM(quantity) as total_quantity
+      FROM stock_transactions
+      WHERE transaction_type IN ('STOCK_OUT', 'SALE')
+      AND created_at >= NOW() - INTERVAL '30 days'
+      GROUP BY item_code, product_name
+      ORDER BY total_quantity DESC
+      LIMIT 1`
+    );
+
+    let fastestSelling = null;
+    if (fastestSellingResult.rows.length > 0) {
+      fastestSelling = {
+        productName: fastestSellingResult.rows[0].product_name,
+        itemCode: fastestSellingResult.rows[0].item_code,
+        quantity: parseInt(fastestSellingResult.rows[0].total_quantity || 0)
+      };
+    }
+
+    res.json({
+      success: true,
+      stockInCount,
+      stockOutCount,
+      fastestSelling
+    });
+  } catch (error) {
+    console.error('Get dashboard stats error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
 module.exports = router;
 

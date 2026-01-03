@@ -552,5 +552,325 @@ router.get('/stock-performance', async (req, res) => {
   }
 });
 
+// Get Services Report
+router.get('/services', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    
+    let dateFilter = '';
+    const params = [];
+    let paramCount = 1;
+    
+    // Use created_at for date filtering since service_date might not exist or might be NULL
+    if (startDate || endDate) {
+      dateFilter = ' WHERE ';
+      const conditions = [];
+      
+      if (startDate) {
+        conditions.push(`DATE(created_at) >= $${paramCount}`);
+        params.push(startDate);
+        paramCount++;
+      }
+      
+      if (endDate) {
+        conditions.push(`DATE(created_at) <= $${paramCount}`);
+        params.push(endDate);
+        paramCount++;
+      }
+      
+      dateFilter += conditions.join(' AND ');
+    }
+
+    // Select all columns and let PostgreSQL return what exists
+    // Use COALESCE and CASE to handle missing columns gracefully
+    const result = await pool.query(
+      `SELECT 
+        id,
+        customer_name,
+        COALESCE(warranty, false)::boolean as warranty,
+        COALESCE(unwarranty, false)::boolean as unwarranty,
+        item_code,
+        brand_name,
+        product_name,
+        serial_number,
+        COALESCE(service_date, created_at::date) as service_date,
+        handler_id,
+        handler_name,
+        handler_phone,
+        COALESCE(product_complaint, '') as product_complaint,
+        estimated_date,
+        COALESCE(is_completed, false)::boolean as is_completed,
+        completed_at,
+        created_by,
+        created_at
+      FROM services
+      ${dateFilter}
+      ORDER BY created_at DESC`,
+      params
+    );
+
+    res.json({
+      success: true,
+      services: result.rows
+    });
+  } catch (error) {
+    console.error('Export services error:', error);
+    console.error('Error details:', error.message);
+    console.error('Error code:', error.code);
+    console.error('Error detail:', error.detail);
+    
+    // If it's a column error, try a simpler query
+    if (error.code === '42703' || error.message.includes('column') || error.message.includes('does not exist')) {
+      console.log('Retrying with simpler query (SELECT *)...');
+      try {
+        const { startDate, endDate } = req.query;
+        let dateFilter = '';
+        const params = [];
+        let paramCount = 1;
+        
+        if (startDate || endDate) {
+          dateFilter = ' WHERE ';
+          const conditions = [];
+          if (startDate) {
+            conditions.push(`DATE(created_at) >= $${paramCount}`);
+            params.push(startDate);
+            paramCount++;
+          }
+          if (endDate) {
+            conditions.push(`DATE(created_at) <= $${paramCount}`);
+            params.push(endDate);
+            paramCount++;
+          }
+          dateFilter += conditions.join(' AND ');
+        }
+        
+        const simpleResult = await pool.query(
+          `SELECT * FROM services ${dateFilter} ORDER BY created_at DESC`,
+          params
+        );
+        
+        // Transform results to ensure all expected fields exist
+        const transformed = simpleResult.rows.map(row => ({
+          id: row.id,
+          customer_name: row.customer_name || '',
+          warranty: row.warranty || false,
+          unwarranty: row.unwarranty || false,
+          item_code: row.item_code || null,
+          brand_name: row.brand_name || null,
+          product_name: row.product_name || null,
+          serial_number: row.serial_number || null,
+          service_date: row.service_date || row.created_at,
+          handler_id: row.handler_id || null,
+          handler_name: row.handler_name || null,
+          handler_phone: row.handler_phone || null,
+          product_complaint: row.product_complaint || null,
+          estimated_date: row.estimated_date || null,
+          is_completed: row.is_completed || false,
+          completed_at: row.completed_at || null,
+          created_by: row.created_by || null,
+          created_at: row.created_at
+        }));
+        
+        return res.json({
+          success: true,
+          services: transformed
+        });
+      } catch (retryError) {
+        console.error('Retry also failed:', retryError.message);
+      }
+    }
+    
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Failed to fetch services data'
+    });
+  }
+});
+
+// Get Sales Orders Report
+router.get('/sales-orders', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    
+    let dateFilter = '';
+    const params = [];
+    let paramCount = 1;
+    
+    if (startDate || endDate) {
+      dateFilter = ' WHERE ';
+      const conditions = [];
+      
+      if (startDate) {
+        conditions.push(`DATE(created_at) >= $${paramCount}`);
+        params.push(startDate);
+        paramCount++;
+      }
+      
+      if (endDate) {
+        conditions.push(`DATE(created_at) <= $${paramCount}`);
+        params.push(endDate);
+        paramCount++;
+      }
+      
+      dateFilter += conditions.join(' AND ');
+    }
+
+    const result = await pool.query(
+      `SELECT 
+        id,
+        customer_name,
+        customer_contact,
+        handler_id,
+        handler_name,
+        handler_mobile,
+        date_of_duration,
+        supplier_name,
+        supplier_number,
+        products,
+        total_amount,
+        created_by,
+        created_at
+      FROM sales_records
+      ${dateFilter}
+      ORDER BY created_at DESC`,
+      params
+    );
+
+    res.json({
+      success: true,
+      salesOrders: result.rows
+    });
+  } catch (error) {
+    console.error('Export sales orders error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get Purchase Orders Report
+router.get('/purchase-orders', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    
+    let dateFilter = '';
+    const params = [];
+    let paramCount = 1;
+    
+    if (startDate || endDate) {
+      dateFilter = ' WHERE ';
+      const conditions = [];
+      
+      if (startDate) {
+        conditions.push(`DATE(order_date) >= $${paramCount}`);
+        params.push(startDate);
+        paramCount++;
+      }
+      
+      if (endDate) {
+        conditions.push(`DATE(order_date) <= $${paramCount}`);
+        params.push(endDate);
+        paramCount++;
+      }
+      
+      dateFilter += conditions.join(' AND ');
+    }
+
+    const result = await pool.query(
+      `SELECT 
+        id,
+        order_number,
+        supplier_name,
+        order_date,
+        expected_delivery_date,
+        items,
+        total_amount,
+        status,
+        notes,
+        created_by,
+        created_at
+      FROM purchase_orders
+      ${dateFilter}
+      ORDER BY created_at DESC`,
+      params
+    );
+
+    res.json({
+      success: true,
+      purchaseOrders: result.rows
+    });
+  } catch (error) {
+    console.error('Export purchase orders error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get Quotations Report
+router.get('/quotations', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    
+    let dateFilter = '';
+    const params = [];
+    let paramCount = 1;
+    
+    if (startDate || endDate) {
+      dateFilter = ' WHERE ';
+      const conditions = [];
+      
+      if (startDate) {
+        conditions.push(`DATE(created_at) >= $${paramCount}`);
+        params.push(startDate);
+        paramCount++;
+      }
+      
+      if (endDate) {
+        conditions.push(`DATE(created_at) <= $${paramCount}`);
+        params.push(endDate);
+        paramCount++;
+      }
+      
+      dateFilter += conditions.join(' AND ');
+    }
+
+    // Query based on actual quotations table schema
+    // The table has: id, items, customer_name, customer_number, gst_number, total_price, status, created_by, created_at
+    const result = await pool.query(
+      `SELECT 
+        id,
+        ('QTN-' || id::text) as quotation_number,
+        customer_name,
+        customer_number as customer_phone,
+        customer_number as customer_email,
+        '' as customer_address,
+        created_at::date as quotation_date,
+        NULL as valid_until,
+        items,
+        COALESCE(total_price, 0) as subtotal,
+        0 as tax_rate,
+        0 as tax_amount,
+        COALESCE(total_price, 0) as total_amount,
+        '' as notes,
+        COALESCE(status, 'pending') as status,
+        created_by,
+        created_at
+      FROM quotations
+      ${dateFilter}
+      ORDER BY created_at DESC`,
+      params
+    );
+
+    res.json({
+      success: true,
+      quotations: result.rows
+    });
+  } catch (error) {
+    console.error('Export quotations error:', error);
+    console.error('Error details:', error.message, error.stack);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Failed to fetch quotations data'
+    });
+  }
+});
+
 module.exports = router;
 

@@ -296,6 +296,34 @@ export const exportAPI = {
     const queryString = params.toString();
     return apiCall(`/export/stock-performance${queryString ? '?' + queryString : ''}`);
   },
+  getServices: async (startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const queryString = params.toString();
+    return apiCall(`/export/services${queryString ? '?' + queryString : ''}`);
+  },
+  getSalesOrders: async (startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const queryString = params.toString();
+    return apiCall(`/export/sales-orders${queryString ? '?' + queryString : ''}`);
+  },
+  getPurchaseOrders: async (startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const queryString = params.toString();
+    return apiCall(`/export/purchase-orders${queryString ? '?' + queryString : ''}`);
+  },
+  getQuotations: async (startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const queryString = params.toString();
+    return apiCall(`/export/quotations${queryString ? '?' + queryString : ''}`);
+  },
 };
 
 export const profileAPI = {
@@ -624,6 +652,9 @@ export const stockAPI = {
   getCurrentStock: async (itemCode) => {
     const params = itemCode ? `?itemCode=${encodeURIComponent(itemCode)}` : '';
     return apiCall(`/stock/current${params}`);
+  },
+  getDashboardStats: async () => {
+    return apiCall('/stock/dashboard-stats');
   },
 };
 

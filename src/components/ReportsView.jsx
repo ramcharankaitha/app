@@ -5,6 +5,10 @@ import StockOutReportView from './StockOutReportView';
 import StockDetailsReportView from './StockDetailsReportView';
 import LowStockReportView from './LowStockReportView';
 import StockPerformanceReportView from './StockPerformanceReportView';
+import ServicesReportView from './ServicesReportView';
+import SalesOrdersReportView from './SalesOrdersReportView';
+import PurchaseOrdersReportView from './PurchaseOrdersReportView';
+import QuotationsReportView from './QuotationsReportView';
 import './staffAttendanceView.css';
 
 const ReportsView = ({ onClose }) => {
@@ -16,7 +20,11 @@ const ReportsView = ({ onClose }) => {
     { value: 'stockOut', label: 'Stock Out Report', icon: 'fa-box' },
     { value: 'stockDetails', label: 'Stock Details Report', icon: 'fa-warehouse' },
     { value: 'lowStock', label: 'Low Stock Report', icon: 'fa-exclamation-triangle' },
-    { value: 'stockPerformance', label: 'Stock Performance Report', icon: 'fa-chart-bar' }
+    { value: 'stockPerformance', label: 'Stock Performance Report', icon: 'fa-chart-bar' },
+    { value: 'services', label: 'Services Report', icon: 'fa-cog' },
+    { value: 'salesOrders', label: 'Sales Orders Report', icon: 'fa-shopping-cart' },
+    { value: 'purchaseOrders', label: 'Purchase Orders Report', icon: 'fa-file-invoice-dollar' },
+    { value: 'quotations', label: 'Quotations Report', icon: 'fa-file-invoice' }
   ];
 
   const renderReportContent = () => {
@@ -33,6 +41,14 @@ const ReportsView = ({ onClose }) => {
         return <LowStockReportView onClose={onClose} />;
       case 'stockPerformance':
         return <StockPerformanceReportView onClose={onClose} />;
+      case 'services':
+        return <ServicesReportView onClose={onClose} />;
+      case 'salesOrders':
+        return <SalesOrdersReportView onClose={onClose} />;
+      case 'purchaseOrders':
+        return <PurchaseOrdersReportView onClose={onClose} />;
+      case 'quotations':
+        return <QuotationsReportView onClose={onClose} />;
       default:
         return <SalesReportContent onClose={onClose} />;
     }

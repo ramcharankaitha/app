@@ -5,6 +5,8 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const { testConnection } = require('./config/database');
 const { initDatabase } = require('./database/init');
+const { apiLimiter, authLimiter } = require('./middleware/rateLimiter');
+const { errorHandler } = require('./middleware/errorHandler');
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
@@ -127,6 +129,10 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
 });
 
+// Apply rate limiting
+app.use('/api/auth', authLimiter);
+app.use('/api', apiLimiter);
+
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/staff', staffRoutes);
@@ -151,6 +157,9 @@ app.use('/api/purchase-orders', purchaseOrdersRoutes);
 app.use('/api/sms', smsRoutes);
 app.use('/api/quotations', quotationsRoutes);
 app.use('/api/payments', paymentsRoutes);
+
+// Global error handler (must be last)
+app.use(errorHandler);
 
 // Schedule daily check for upcoming payments
 const schedulePaymentNotifications = () => {

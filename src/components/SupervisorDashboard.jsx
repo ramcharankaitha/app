@@ -444,7 +444,7 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
                 </div>
               </div>
 
-          <div className="panel checkin-card">
+          <div className="panel checkin-card" style={{ marginBottom: '24px' }}>
             <div className="panel-header">
               <div>
                 <div className="panel-title">Check-in / Check-out</div>
@@ -481,38 +481,16 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
           {/* Best Sales Person of the Month */}
           <BestSalesPerson />
 
-          <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0,1fr))' }}>
-            <div className="stat-card">
-              <div className="stat-content">
-                <h3 className="stat-title">Assigned Tasks</h3>
-                <p className="stat-value">4 open</p>
-                <p className="stat-subtitle">View and update your work</p>
-              </div>
-              <div className="stat-icon" style={{ backgroundColor: '#4caf5020', color: '#4caf50' }}>
-                <i className="fas fa-check"></i>
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-content">
-                <h3 className="stat-title">Update Stock</h3>
-                <p className="stat-value">Tap to update</p>
-                <p className="stat-subtitle">Adjust quantities with log</p>
-              </div>
-              <div className="stat-icon" style={{ backgroundColor: '#8c2f2f20', color: '#8c2f2f' }}>
-                <i className="fas fa-edit"></i>
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-content">
-                <h3 className="stat-title">Report Damage</h3>
-                <p className="stat-value">Log items</p>
-                <p className="stat-subtitle">Reason with evidence</p>
-              </div>
-              <div className="stat-icon" style={{ backgroundColor: '#dc354520', color: '#dc3545' }}>
-                <i className="fas fa-exclamation"></i>
-              </div>
-            </div>
-            <div className="stat-card">
+          <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0,1fr))', marginTop: '24px', gap: '16px' }}>
+            <div 
+              className="stat-card" 
+              onClick={() => {
+                if (onNavigate) {
+                  onNavigate('products');
+                }
+              }} 
+              style={{ cursor: 'pointer' }}
+            >
               <div className="stat-content">
                 <h3 className="stat-title">Check Inventory</h3>
                 <p className="stat-value">View-only list</p>

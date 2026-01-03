@@ -159,8 +159,35 @@ const createTableIfNotExists = async () => {
   }
 };
 
-// Initialize table on module load
-createTableIfNotExists();
+// Initialize table on module load with retry logic
+const initializeTableWithRetry = async (retries = 5, delay = 2000) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await createTableIfNotExists();
+      return; // Success, exit
+    } catch (error) {
+      if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+        if (i < retries - 1) {
+          console.log(`⚠️  Database not ready, retrying in ${delay}ms... (${i + 1}/${retries})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          delay *= 1.5; // Exponential backoff
+        } else {
+          console.error('❌ Failed to initialize quotations table after retries. Database may not be ready.');
+          console.error('   The table will be created on first use.');
+        }
+      } else {
+        // Non-connection errors, log but don't retry
+        console.error('❌ Error initializing quotations table:', error.message);
+        break;
+      }
+    }
+  }
+};
+
+// Initialize asynchronously without blocking
+initializeTableWithRetry().catch(err => {
+  console.error('❌ Table initialization failed:', err.message);
+});
 
 // Get all quotations
 router.get('/', async (req, res) => {

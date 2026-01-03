@@ -13,9 +13,10 @@ if (process.env.DATABASE_URL) {
     ssl: {
       rejectUnauthorized: false
     },
-    max: 20,
+    max: 50, // Increased for 100+ concurrent users
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
+    connectionTimeoutMillis: 5000, // Increased timeout for better reliability
+    allowExitOnIdle: true,
   });
   console.log('✅ Using DATABASE_URL for connection (Production mode)');
 } else {
@@ -26,9 +27,10 @@ if (process.env.DATABASE_URL) {
     database: process.env.DB_NAME || 'anitha_stores',
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD ? String(process.env.DB_PASSWORD) : '',
-    max: 20,
+    max: 50, // Increased for 100+ concurrent users
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
+    connectionTimeoutMillis: 5000, // Increased timeout for better reliability
+    allowExitOnIdle: true,
   };
 
   if (!process.env.DB_PASSWORD) {
@@ -47,8 +49,21 @@ pool.on('connect', () => {
 
 pool.on('error', (err) => {
   console.error('❌ Unexpected error on idle client', err);
-  process.exit(-1);
+  // Don't exit on error - let the application handle it gracefully
+  // process.exit(-1);
 });
+
+// Monitor pool statistics
+setInterval(() => {
+  const poolStats = {
+    totalCount: pool.totalCount,
+    idleCount: pool.idleCount,
+    waitingCount: pool.waitingCount
+  };
+  if (poolStats.totalCount > 40) {
+    console.warn('⚠️  High database connection usage:', poolStats);
+  }
+}, 60000); // Log every minute
 
 const testConnection = async () => {
   try {
