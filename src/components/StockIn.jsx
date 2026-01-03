@@ -209,9 +209,20 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
     setError('');
     setSuccessMessage('');
 
-    // Check if products are added
-    if (addedProducts.length === 0) {
+    // Check if products are added - this should never happen if button is disabled correctly
+    if (!addedProducts || addedProducts.length === 0) {
       setError('Please add at least one product to the summary before creating stock in.');
+      return;
+    }
+
+    // Validate each product has required fields
+    const invalidProducts = addedProducts.filter(p => 
+      !p.itemCode || !p.itemCode.trim() || 
+      !p.stockInQuantity || parseFloat(p.stockInQuantity) <= 0
+    );
+    
+    if (invalidProducts.length > 0) {
+      setError('Some products in the summary are missing required fields. Please remove and re-add them.');
       return;
     }
 
@@ -240,6 +251,8 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
           const allSuccess = results.every(result => result.success);
 
           if (allSuccess) {
+            setError('');
+            const productCount = addedProducts.length;
             // Reset form
             setFormData({
               supplierName: '',
@@ -255,10 +268,18 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
             });
             setProductInfo(null);
             setAddedProducts([]);
-            setSuccessMessage('');
+            setSuccessMessage(`Successfully added stock for ${productCount} product(s)!`);
+            setTimeout(() => {
+              setSuccessMessage('');
+              // Navigate back after showing success message
+              handleBack();
+            }, 2000);
+          } else {
+            setError('Some products failed to add. Please try again.');
           }
         } catch (err) {
           console.error('Stock In error:', err);
+          setError('An error occurred while adding stock. Please try again.');
         } finally {
           setIsLoading(false);
           setConfirmState({ open: false, message: '', onConfirm: null });
@@ -293,7 +314,41 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
 
       {/* Main Content */}
       <main className="add-user-content">
-        <form onSubmit={handleSubmit} className="add-user-form add-stock-in-form">
+        {/* Error and Success Messages */}
+        {error && (
+          <div style={{
+            padding: '12px 16px',
+            background: '#f8d7da',
+            color: '#721c24',
+            border: '1px solid #f5c6cb',
+            borderRadius: '6px',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <i className="fas fa-exclamation-circle"></i>
+            <span>{error}</span>
+          </div>
+        )}
+        {successMessage && (
+          <div style={{
+            padding: '12px 16px',
+            background: '#d4edda',
+            color: '#155724',
+            border: '1px solid #c3e6cb',
+            borderRadius: '6px',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <i className="fas fa-check-circle"></i>
+            <span>{successMessage}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="add-user-form add-stock-in-form" noValidate>
           {/* Form Fields */}
           <div className="form-section">
             {/* First Row: Item Code, SKU Code, Product Name, Supplier Name */}
@@ -312,7 +367,6 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     onChange={handleInputChange}
                     onKeyPress={handleItemCodeKeyPress}
                     onBlur={handleItemCodeBlur}
-                    required
                     autoFocus
                     style={{ paddingRight: isFetchingProduct ? '40px' : '50px' }}
                   />
@@ -424,7 +478,6 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     min="1"
                     step="1"
                     disabled={!productInfo}
-                    required
                   />
                 </div>
               </div>

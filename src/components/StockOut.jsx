@@ -35,6 +35,8 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
   // Added products (displayed as cards)
   const [addedProducts, setAddedProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
 
   const getUserIdentifier = () => {
@@ -334,24 +336,48 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setSuccessMessage('');
 
+    // Validate customer name
     if (!formData.customerName || !formData.customerName.trim()) {
+      setError('Customer name is required. Please enter customer name.');
       return;
     }
 
+    // Validate customer phone
     if (!formData.customerPhone || !formData.customerPhone.trim()) {
+      setError('Customer phone number is required. Please enter customer phone number.');
       return;
     }
 
+    // Validate customer is verified
     if (!customerVerified) {
+      setError('Please verify the customer by entering a valid phone number or customer ID.');
       return;
     }
 
+    // Validate payment mode
     if (!formData.paymentMode || !formData.paymentMode.trim()) {
+      setError('Payment mode is required. Please select a payment mode.');
       return;
     }
 
-    if (addedProducts.length === 0) {
+    // Check if products are added
+    if (!addedProducts || addedProducts.length === 0) {
+      setError('Please add at least one product to the summary before creating stock out.');
+      return;
+    }
+
+    // Validate each product has required fields
+    const invalidProducts = addedProducts.filter(p => 
+      !p.itemCode || !p.itemCode.trim() || 
+      !p.stockOutQuantity || parseFloat(p.stockOutQuantity) <= 0 ||
+      !p.productInfo
+    );
+    
+    if (invalidProducts.length > 0) {
+      setError('Some products in the summary are missing required fields. Please remove and re-add them.');
       return;
     }
 
@@ -407,6 +433,8 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
           const allSuccess = results.every(result => result && result.success !== false);
 
           if (allSuccess) {
+            setError('');
+            setSuccessMessage(`Successfully removed stock for ${addedProducts.length} item(s)!`);
             // Reset form after successful stock out
             setFormData({
               customerName: '',
@@ -444,6 +472,8 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 handleBack();
               }, 500);
             }, 1500);
+          } else {
+            setError('Some products failed to remove. Please try again.');
           }
         } catch (err) {
           console.error('Stock Out error:', err);
@@ -481,7 +511,41 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
 
       {/* Main Content */}
       <main className="add-user-content">
-        <form onSubmit={handleSubmit} className="add-user-form add-stock-out-form">
+        {/* Error and Success Messages */}
+        {error && (
+          <div style={{
+            padding: '12px 16px',
+            background: '#f8d7da',
+            color: '#721c24',
+            border: '1px solid #f5c6cb',
+            borderRadius: '6px',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <i className="fas fa-exclamation-circle"></i>
+            <span>{error}</span>
+          </div>
+        )}
+        {successMessage && (
+          <div style={{
+            padding: '12px 16px',
+            background: '#d4edda',
+            color: '#155724',
+            border: '1px solid #c3e6cb',
+            borderRadius: '6px',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <i className="fas fa-check-circle"></i>
+            <span>{successMessage}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="add-user-form add-stock-out-form" noValidate>
           {/* All fields in 4-column grid without section titles */}
           <div className="form-section">
             <div className="form-grid four-col">
@@ -556,7 +620,6 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     value={currentProduct.itemCode}
                     onChange={(e) => handleProductChange('itemCode', e.target.value)}
                     onKeyPress={handleItemCodeKeyPress}
-                        required
                     disabled={!customerVerified}
                     style={{ paddingRight: currentProduct.isFetching ? '40px' : '50px' }}
                       />
@@ -669,7 +732,6 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                         min="1"
                     max={currentProduct.productInfo ? currentProduct.productInfo.currentQuantity : undefined}
                         step="1"
-                        required
                     disabled={!currentProduct.productInfo || !customerVerified}
                       />
                     </div>
@@ -927,9 +989,20 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                         cursor: (isLoading || !customerVerified || !formData.paymentMode || addedProducts.length === 0) ? 'not-allowed' : 'pointer'
                       }}
                       onClick={(e) => {
-                        // Additional validation before submit
-                        if (!customerVerified || !formData.paymentMode || addedProducts.length === 0) {
+                        // Additional validation before submit - show error messages
+                        if (!customerVerified) {
                           e.preventDefault();
+                          setError('Please verify the customer by entering a valid phone number or customer ID.');
+                          return;
+                        }
+                        if (!formData.paymentMode || !formData.paymentMode.trim()) {
+                          e.preventDefault();
+                          setError('Payment mode is required. Please select a payment mode.');
+                          return;
+                        }
+                        if (!addedProducts || addedProducts.length === 0) {
+                          e.preventDefault();
+                          setError('Please add at least one product to the summary before creating stock out.');
                           return;
                         }
                       }}
