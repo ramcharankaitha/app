@@ -23,6 +23,7 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
   const [paidMonths, setPaidMonths] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
 
   const getUserIdentifier = () => {
@@ -172,18 +173,24 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
           });
 
           if (response.success) {
+            setError('');
+            setSuccessMessage('Chit receipt created successfully!');
             // Dispatch event to trigger refresh in ChitEntryMaster
             window.dispatchEvent(new Event('chitEntryCompleted'));
             // Navigate after a short delay
             setTimeout(() => {
               handleBack();
-            }, 500);
+            }, 1500);
+          } else {
+            setError(response.error || 'Failed to create chit receipt. Please try again.');
+            setConfirmState({ open: false, message: '', onConfirm: null });
           }
         } catch (err) {
           console.error('Create chit entry error:', err);
+          setError(err.message || 'Failed to create chit receipt. Please try again.');
+          setConfirmState({ open: false, message: '', onConfirm: null });
         } finally {
           setIsLoading(false);
-          setConfirmState({ open: false, message: '', onConfirm: null });
         }
       }
     });
@@ -219,6 +226,11 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
           {error && (
             <div className="alert alert-error" style={{ marginBottom: '20px' }}>
               <i className="fas fa-exclamation-circle"></i> {error}
+            </div>
+          )}
+          {successMessage && (
+            <div className="alert alert-success" style={{ marginBottom: '20px' }}>
+              <i className="fas fa-check-circle"></i> {successMessage}
             </div>
           )}
 

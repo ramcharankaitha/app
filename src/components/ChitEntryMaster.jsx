@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { chitPlansAPI } from '../services/api';
-import ConfirmDialog from './ConfirmDialog';
 import './products.css';
 import './staff.css';
 
@@ -16,7 +15,6 @@ const ChitEntryMaster = ({ onBack, onAddChitEntry, onNavigate, userRole = 'admin
   const [chitPlans, setChitPlans] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
 
   const handleBack = () => {
     if (onNavigate) {
@@ -153,31 +151,6 @@ const ChitEntryMaster = ({ onBack, onAddChitEntry, onNavigate, userRole = 'admin
     }
   };
 
-  const handleDeleteEntry = (entry) => {
-    setConfirmState({
-      open: true,
-      message: `Are you sure you want to delete chit entry for "${entry.customer_name}"? This action cannot be undone.`,
-      onConfirm: async () => {
-        try {
-          setError('');
-          // Note: You may need to add a delete endpoint to chitPlansAPI
-          setError('Delete functionality to be implemented');
-          setTimeout(() => setError(''), 3000);
-          // const response = await chitPlansAPI.deleteEntry(entry.id);
-          // if (response.success) {
-          //   await fetchEntries();
-          // } else {
-          //   setError(response.error || 'Failed to delete entry');
-          // }
-        } catch (err) {
-          console.error('Delete entry error:', err);
-          setError(err.message || 'Failed to delete entry');
-        } finally {
-          setConfirmState({ open: false, message: '', onConfirm: null });
-        }
-      }
-    });
-  };
 
   const closeViewModal = () => {
     setShowViewModal(false);
@@ -252,12 +225,6 @@ const ChitEntryMaster = ({ onBack, onAddChitEntry, onNavigate, userRole = 'admin
 
   return (
       <div className="dashboard-container">
-      <ConfirmDialog
-        open={confirmState.open}
-        message={confirmState.message}
-        onConfirm={confirmState.onConfirm}
-        onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
-      />
       {/* Left Sidebar Navigation */}
       <nav className="sidebar-nav">
         <div className="nav-item" onClick={handleBack}>
@@ -552,32 +519,6 @@ const ChitEntryMaster = ({ onBack, onAddChitEntry, onNavigate, userRole = 'admin
                             >
                               <i className="fas fa-edit"></i>
                               Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteEntry(entry)}
-                              style={{
-                                background: '#dc3545',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: '6px',
-                                padding: '6px 12px',
-                                cursor: 'pointer',
-                                fontSize: '13px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                transition: 'all 0.2s ease',
-                                fontWeight: '500'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.target.style.background = '#c82333';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.target.style.background = '#dc3545';
-                              }}
-                            >
-                              <i className="fas fa-trash"></i>
-                              Delete
                             </button>
                           </div>
                         </td>
