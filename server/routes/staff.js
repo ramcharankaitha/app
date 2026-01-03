@@ -6,6 +6,42 @@ const path = require('path');
 const fs = require('fs');
 const { pool } = require('../config/database');
 
+// Ensure email is optional in staff table
+const ensureEmailOptional = async () => {
+  try {
+    // Check if email column has NOT NULL constraint
+    const checkResult = await pool.query(`
+      SELECT is_nullable 
+      FROM information_schema.columns 
+      WHERE table_name = 'staff' AND column_name = 'email'
+    `);
+    
+    if (checkResult.rows.length > 0 && checkResult.rows[0].is_nullable === 'NO') {
+      // Remove NOT NULL constraint
+      await pool.query('ALTER TABLE staff ALTER COLUMN email DROP NOT NULL');
+      console.log('✅ Removed NOT NULL constraint from staff.email');
+      
+      // Also drop unique constraint if exists
+      try {
+        await pool.query('ALTER TABLE staff DROP CONSTRAINT IF EXISTS staff_email_key');
+        console.log('✅ Removed unique constraint from staff.email');
+      } catch (e) {
+        // Constraint might not exist, that's okay
+      }
+    }
+  } catch (error) {
+    // If table or column doesn't exist, that's okay
+    if (error.code !== '42P01' && error.code !== '42703') {
+      console.error('Error ensuring email is optional:', error.message);
+    }
+  }
+};
+
+// Run migration on module load (non-blocking)
+ensureEmailOptional().catch(err => {
+  console.log('Email migration will be attempted on first use');
+});
+
 // Multer storage configuration for Aadhar files
 const aadharStorage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -128,15 +164,29 @@ router.post('/', async (req, res) => {
 
     let result;
     try {
-      // Try with all columns including phone, salary, explicitly setting email to NULL
+      // Try with all columns including phone, salary - DO NOT include email at all
       result = await pool.query(
-        `INSERT INTO staff (full_name, username, password_hash, phone, email, store_allocated, address, city, state, pincode, is_handler, role, salary, created_at)
-         VALUES ($1, $2, $3, $4, NULL, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP)
+        `INSERT INTO staff (full_name, username, password_hash, phone, store_allocated, address, city, state, pincode, is_handler, role, salary, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP)
          RETURNING id, full_name, username, phone, role, store_allocated, is_handler`,
         [fullName, username, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'STAFF', salary || null]
       );
     } catch (colError) {
-      if (colError.code === '42703') { // undefined_column error (email or salary might not exist)
+      // If it's a NOT NULL violation on email, try to fix it and retry
+      if (colError.code === '23502' && colError.column === 'email') {
+        try {
+          await ensureEmailOptional();
+          // Retry the insert
+          result = await pool.query(
+            `INSERT INTO staff (full_name, username, password_hash, phone, store_allocated, address, city, state, pincode, is_handler, role, salary, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP)
+             RETURNING id, full_name, username, phone, role, store_allocated, is_handler`,
+            [fullName, username, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'STAFF', salary || null]
+          );
+        } catch (retryError) {
+          throw colError; // Throw original error if retry fails
+        }
+      } else if (colError.code === '42703') { // undefined_column error (email or salary might not exist)
         try {
           // Try without email and salary
           result = await pool.query(
@@ -191,6 +241,14 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Duplicate entry. Please check phone number and username.' });
     }
     if (error.code === '23502') { // Not null violation
+      // If it's email column, provide a helpful message
+      if (error.column === 'email') {
+        return res.status(400).json({ 
+          error: 'Database constraint error: Email field has NOT NULL constraint. Please run this SQL: ALTER TABLE staff ALTER COLUMN email DROP NOT NULL;',
+          column: error.column,
+          fix: 'Run SQL: ALTER TABLE staff ALTER COLUMN email DROP NOT NULL;'
+        });
+      }
       return res.status(400).json({ 
         error: `Required field missing: ${error.column || 'unknown'}. Please check database constraints.`,
         column: error.column
@@ -251,15 +309,29 @@ router.post('/upload', uploadAadhar.single('aadharCopy'), async (req, res) => {
 
     let result;
     try {
-      // Try with all columns including phone, salary, aadhar_file_path, explicitly setting email to NULL
+      // Try with all columns including phone, salary, aadhar_file_path - DO NOT include email at all
       result = await pool.query(
-        `INSERT INTO staff (full_name, username, password_hash, phone, email, store_allocated, address, city, state, pincode, is_handler, role, salary, aadhar_file_path, created_at)
-         VALUES ($1, $2, $3, $4, NULL, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP)
+        `INSERT INTO staff (full_name, username, password_hash, phone, store_allocated, address, city, state, pincode, is_handler, role, salary, aadhar_file_path, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP)
          RETURNING id, full_name, username, phone, role, store_allocated, is_handler`,
         [fullName, username, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'STAFF', salary || null, aadharFilePath]
       );
     } catch (colError) {
-      if (colError.code === '42703') { // undefined_column error (email, salary, or aadhar_file_path might not exist)
+      // If it's a NOT NULL violation on email, try to fix it and retry
+      if (colError.code === '23502' && colError.column === 'email') {
+        try {
+          await ensureEmailOptional();
+          // Retry the insert
+          result = await pool.query(
+            `INSERT INTO staff (full_name, username, password_hash, phone, store_allocated, address, city, state, pincode, is_handler, role, salary, aadhar_file_path, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP)
+             RETURNING id, full_name, username, phone, role, store_allocated, is_handler`,
+            [fullName, username, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'STAFF', salary || null, aadharFilePath]
+          );
+        } catch (retryError) {
+          throw colError; // Throw original error if retry fails
+        }
+      } else if (colError.code === '42703') { // undefined_column error (email, salary, or aadhar_file_path might not exist)
         try {
           // Try without email and aadhar_file_path
           result = await pool.query(
@@ -325,6 +397,14 @@ router.post('/upload', uploadAadhar.single('aadharCopy'), async (req, res) => {
       return res.status(400).json({ error: 'Duplicate entry. Please check phone number and username.' });
     }
     if (error.code === '23502') { // Not null violation
+      // If it's email column, provide a helpful message
+      if (error.column === 'email') {
+        return res.status(400).json({ 
+          error: 'Database constraint error: Email field has NOT NULL constraint. Please run this SQL: ALTER TABLE staff ALTER COLUMN email DROP NOT NULL;',
+          column: error.column,
+          fix: 'Run SQL: ALTER TABLE staff ALTER COLUMN email DROP NOT NULL;'
+        });
+      }
       return res.status(400).json({ 
         error: `Required field missing: ${error.column || 'unknown'}. Please check database constraints.`,
         column: error.column
