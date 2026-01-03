@@ -3,6 +3,38 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const { pool } = require('../config/database');
 
+// Ensure email is optional in users table - URGENT FIX for hosted server
+const ensureEmailOptional = async () => {
+  try {
+    // Aggressively remove all email constraints
+    try {
+      await pool.query('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key');
+      await pool.query('ALTER TABLE users ALTER COLUMN email DROP NOT NULL');
+      console.log('✅ Removed NOT NULL constraint from users.email');
+    } catch (e) {
+      if (e.code !== '42703' && e.code !== '42P01') {
+        console.error('Error removing NOT NULL from users.email:', e.message);
+      }
+    }
+    
+    // Also fix staff table
+    try {
+      await pool.query('ALTER TABLE staff DROP CONSTRAINT IF EXISTS staff_email_key');
+      await pool.query('ALTER TABLE staff ALTER COLUMN email DROP NOT NULL');
+      console.log('✅ Removed NOT NULL constraint from staff.email');
+    } catch (e) {
+      // Ignore errors
+    }
+  } catch (error) {
+    console.error('Error ensuring email is optional:', error.message);
+  }
+};
+
+// Run migration immediately
+ensureEmailOptional().catch(err => {
+  console.log('⚠️  Email migration failed, will retry on first use');
+});
+
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
@@ -86,13 +118,16 @@ router.post('/', async (req, res) => {
       return res.status(500).json({ error: 'Failed to hash password' });
     }
 
+    // Ensure email constraint is removed before insert (for hosted server)
+    await ensureEmailOptional();
+
     let result;
     try {
-      // Try with 'SUPERVISOR' role (uppercase), explicitly setting email to NULL
+      // Try with 'SUPERVISOR' role (uppercase) - DO NOT include email at all
       // Use trimmed values and ensure lastName is not empty string (use null if empty)
       result = await pool.query(
-        `INSERT INTO users (first_name, last_name, username, password_hash, phone, email, store_allocated, address, city, state, pincode, role, created_at)
-         VALUES ($1, $2, $3, $4, $5, NULL, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
+        `INSERT INTO users (first_name, last_name, username, password_hash, phone, store_allocated, address, city, state, pincode, role, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
          RETURNING id, first_name, last_name, username, phone, role, store_allocated`,
         [trimmedFirstName, trimmedLastName || null, trimmedUsername, passwordHash, trimmedPhone, storeAllocated || null, address || null, city || null, state || null, pincode || null, 'SUPERVISOR']
       );
@@ -119,11 +154,24 @@ router.post('/', async (req, res) => {
             throw roleError;
           }
         }
+      } else if (insertError.code === '23502' && insertError.column === 'email') {
+        // Email constraint error - try to fix and retry
+        try {
+          await ensureEmailOptional();
+          result = await pool.query(
+            `INSERT INTO users (first_name, last_name, username, password_hash, phone, store_allocated, address, city, state, pincode, role, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
+             RETURNING id, first_name, last_name, username, phone, role, store_allocated`,
+            [trimmedFirstName, trimmedLastName || null, trimmedUsername, passwordHash, trimmedPhone, storeAllocated || null, address || null, city || null, state || null, pincode || null, 'SUPERVISOR']
+          );
+        } catch (retryError) {
+          throw insertError;
+        }
       } else if (insertError.code === '23502' || insertError.message.includes('role')) {
         // If role enum doesn't accept 'SUPERVISOR', try 'Supervisor'
         result = await pool.query(
-          `INSERT INTO users (first_name, last_name, username, password_hash, phone, email, store_allocated, address, city, state, pincode, role, created_at)
-           VALUES ($1, $2, $3, $4, $5, NULL, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
+          `INSERT INTO users (first_name, last_name, username, password_hash, phone, store_allocated, address, city, state, pincode, role, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
            RETURNING id, first_name, last_name, username, phone, role, store_allocated`,
           [trimmedFirstName, trimmedLastName || null, trimmedUsername, passwordHash, trimmedPhone, storeAllocated || null, address || null, city || null, state || null, pincode || null, 'Supervisor']
         );
@@ -160,6 +208,14 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Duplicate entry. Please check phone number and username.' });
     }
     if (error.code === '23502') { // Not null violation
+      // If it's email column, provide a helpful message
+      if (error.column === 'email') {
+        return res.status(400).json({ 
+          error: 'Database constraint error: Email field has NOT NULL constraint. Please run this SQL: ALTER TABLE users ALTER COLUMN email DROP NOT NULL;',
+          column: error.column,
+          fix: 'Run SQL: ALTER TABLE users ALTER COLUMN email DROP NOT NULL;'
+        });
+      }
       return res.status(400).json({ 
         error: `Required field missing: ${error.column || 'unknown'}. Please check database constraints.`,
         column: error.column

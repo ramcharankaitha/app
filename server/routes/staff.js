@@ -6,40 +6,50 @@ const path = require('path');
 const fs = require('fs');
 const { pool } = require('../config/database');
 
-// Ensure email is optional in staff table
+// Ensure email is optional in staff table - URGENT FIX for hosted server
 const ensureEmailOptional = async () => {
   try {
-    // Check if email column has NOT NULL constraint
-    const checkResult = await pool.query(`
-      SELECT is_nullable 
-      FROM information_schema.columns 
-      WHERE table_name = 'staff' AND column_name = 'email'
-    `);
+    // Aggressively remove all email constraints
+    try {
+      await pool.query('ALTER TABLE staff DROP CONSTRAINT IF EXISTS staff_email_key');
+    } catch (e) {
+      // Ignore if constraint doesn't exist
+    }
     
-    if (checkResult.rows.length > 0 && checkResult.rows[0].is_nullable === 'NO') {
-      // Remove NOT NULL constraint
+    try {
       await pool.query('ALTER TABLE staff ALTER COLUMN email DROP NOT NULL');
       console.log('✅ Removed NOT NULL constraint from staff.email');
-      
-      // Also drop unique constraint if exists
-      try {
-        await pool.query('ALTER TABLE staff DROP CONSTRAINT IF EXISTS staff_email_key');
-        console.log('✅ Removed unique constraint from staff.email');
-      } catch (e) {
-        // Constraint might not exist, that's okay
+    } catch (e) {
+      if (e.code !== '42703') { // Ignore if column doesn't exist
+        console.error('Error removing NOT NULL from staff.email:', e.message);
       }
     }
-  } catch (error) {
-    // If table or column doesn't exist, that's okay
-    if (error.code !== '42P01' && error.code !== '42703') {
-      console.error('Error ensuring email is optional:', error.message);
+    
+    // Also fix users table
+    try {
+      await pool.query('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key');
+      await pool.query('ALTER TABLE users ALTER COLUMN email DROP NOT NULL');
+      console.log('✅ Removed NOT NULL constraint from users.email');
+    } catch (e) {
+      // Ignore errors
     }
+    
+    // Also fix customers table
+    try {
+      await pool.query('ALTER TABLE customers DROP CONSTRAINT IF EXISTS customers_email_key');
+      await pool.query('ALTER TABLE customers ALTER COLUMN email DROP NOT NULL');
+      console.log('✅ Removed NOT NULL constraint from customers.email');
+    } catch (e) {
+      // Ignore errors
+    }
+  } catch (error) {
+    console.error('Error ensuring email is optional:', error.message);
   }
 };
 
-// Run migration on module load (non-blocking)
+// Run migration immediately and aggressively
 ensureEmailOptional().catch(err => {
-  console.log('Email migration will be attempted on first use');
+  console.log('⚠️  Email migration failed, will retry on first use');
 });
 
 // Multer storage configuration for Aadhar files
@@ -161,6 +171,9 @@ router.post('/', async (req, res) => {
       console.error('Password hash creation failed');
       return res.status(500).json({ error: 'Failed to hash password' });
     }
+
+    // Ensure email constraint is removed before insert (for hosted server)
+    await ensureEmailOptional();
 
     let result;
     try {
@@ -306,6 +319,9 @@ router.post('/upload', uploadAadhar.single('aadharCopy'), async (req, res) => {
       console.error('Password hash creation failed');
       return res.status(500).json({ error: 'Failed to hash password' });
     }
+
+    // Ensure email constraint is removed before insert (for hosted server)
+    await ensureEmailOptional();
 
     let result;
     try {
