@@ -7,8 +7,50 @@ router.post('/login', async (req, res) => {
   try {
     const { email, username, password } = req.body;
 
+    console.log('=== LOGIN ATTEMPT ===');
+    console.log('Email:', email || 'not provided');
+    console.log('Username:', username || 'not provided');
+    console.log('Password provided:', !!password);
+
     if (!password) {
       return res.status(400).json({ error: 'Password is required' });
+    }
+
+    // Ensure password_hash column exists in all tables
+    try {
+      // Check and add password_hash to staff if missing
+      await pool.query(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_schema = 'public' 
+            AND table_name = 'staff' 
+            AND column_name = 'password_hash'
+          ) THEN
+            ALTER TABLE staff ADD COLUMN password_hash VARCHAR(255);
+            RAISE NOTICE 'Added password_hash column to staff';
+          END IF;
+        END $$;
+      `);
+
+      // Check and add password_hash to users if missing
+      await pool.query(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_schema = 'public' 
+            AND table_name = 'users' 
+            AND column_name = 'password_hash'
+          ) THEN
+            ALTER TABLE users ADD COLUMN password_hash VARCHAR(255);
+            RAISE NOTICE 'Added password_hash column to users';
+          END IF;
+        END $$;
+      `);
+    } catch (colError) {
+      console.warn('Column check warning (may already exist):', colError.message);
     }
 
     if (email) {
@@ -56,23 +98,33 @@ router.post('/login', async (req, res) => {
 
     if (username) {
       // Trim whitespace from username for lookup
-      const trimmedUsername = username.trim();
+      const trimmedUsername = username.trim().toLowerCase();
+      
+      if (!trimmedUsername) {
+        return res.status(400).json({ error: 'Username cannot be empty' });
+      }
+
+      console.log('Looking up supervisor with username:', trimmedUsername);
       const userResult = await pool.query(
-        'SELECT * FROM users WHERE LOWER(TRIM(username)) = LOWER($1)',
+        'SELECT * FROM users WHERE LOWER(TRIM(username)) = $1',
         [trimmedUsername]
       );
 
       if (userResult.rows.length > 0) {
         const user = userResult.rows[0];
         
-        if (!user.password_hash) {
-          console.error('Supervisor has no password hash:', user.username);
-          return res.status(401).json({ error: 'Invalid username or password' });
+        console.log('Found supervisor:', user.username, 'Has password_hash:', !!user.password_hash);
+        
+        if (!user.password_hash || user.password_hash.trim() === '') {
+          console.error('Supervisor has no password hash:', user.username, 'ID:', user.id);
+          return res.status(401).json({ 
+            error: 'Account setup incomplete. Please contact administrator to set your password.' 
+          });
         }
         
-        console.log('Attempting login for supervisor:', user.username);
+        console.log('Attempting password comparison for supervisor:', user.username);
         const isValid = await bcrypt.compare(password, user.password_hash);
-        console.log('Password comparison result:', isValid);
+        console.log('Password comparison result for supervisor:', isValid);
         
         if (!isValid) {
           console.error('Password mismatch for supervisor:', user.username);
@@ -85,7 +137,7 @@ router.post('/login', async (req, res) => {
           success: true,
           user: {
             id: user.id,
-            name: `${user.first_name} ${user.last_name}`,
+            name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
             email: user.email,
             username: user.username,
             role: user.role,
@@ -96,21 +148,25 @@ router.post('/login', async (req, res) => {
       }
 
       // Trim whitespace from username for staff lookup (same as supervisor)
-      const trimmedStaffUsername = username.trim();
+      console.log('Looking up staff with username:', trimmedUsername);
       const staffResult = await pool.query(
-        'SELECT * FROM staff WHERE LOWER(TRIM(username)) = LOWER($1)',
-        [trimmedStaffUsername]
+        'SELECT * FROM staff WHERE LOWER(TRIM(username)) = $1',
+        [trimmedUsername]
       );
 
       if (staffResult.rows.length > 0) {
         const staff = staffResult.rows[0];
         
-        if (!staff.password_hash) {
-          console.error('Staff has no password hash:', staff.username);
-          return res.status(401).json({ error: 'Invalid username or password' });
+        console.log('Found staff:', staff.username, 'Has password_hash:', !!staff.password_hash);
+        
+        if (!staff.password_hash || staff.password_hash.trim() === '') {
+          console.error('Staff has no password hash:', staff.username, 'ID:', staff.id);
+          return res.status(401).json({ 
+            error: 'Account setup incomplete. Please contact administrator to set your password.' 
+          });
         }
         
-        console.log('Attempting login for staff:', staff.username);
+        console.log('Attempting password comparison for staff:', staff.username);
         const isValid = await bcrypt.compare(password, staff.password_hash);
         console.log('Password comparison result for staff:', isValid);
         
@@ -118,7 +174,7 @@ router.post('/login', async (req, res) => {
           console.error('Password mismatch for staff:', staff.username);
           return res.status(401).json({ error: 'Invalid username or password' });
         }
-
+        
         console.log('Staff login successful:', staff.username);
 
         return res.json({
@@ -134,12 +190,19 @@ router.post('/login', async (req, res) => {
           message: 'Login successful'
         });
       }
+      
+      console.log('No user found with username:', trimmedUsername);
     }
 
+    console.log('Login failed: No matching user found');
     return res.status(401).json({ error: 'Invalid credentials' });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 

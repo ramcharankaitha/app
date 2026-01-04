@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { servicesAPI, salesOrdersAPI, purchaseOrdersAPI } from '../services/api';
 import './products.css';
 
-const Handler = ({ onBack, onNavigate, userData }) => {
+const Handler = ({ onBack, onNavigate, userData, inline = false }) => {
   const [activeTab, setActiveTab] = useState('services');
   const [services, setServices] = useState([]);
   const [salesOrders, setSalesOrders] = useState([]);
@@ -297,33 +297,29 @@ const Handler = ({ onBack, onNavigate, userData }) => {
     return `₹${parseFloat(amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
   };
 
-  return (
-    <div className="dashboard-container">
-      {/* Sidebar */}
-      <nav className="sidebar-nav">
-        <div className="nav-item" onClick={onBack}>
-          <div className="nav-icon">
-            <i className="fas fa-home"></i>
-          </div>
-          <span>Home</span>
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <div className="dashboard-main">
-        <div className="staff-container">
-          {/* Header */}
-          <header className="staff-header">
-            <div className="header-left">
-              <button className="back-btn" onClick={onBack}>
-                <i className="fas fa-arrow-left"></i>
-              </button>
-              <div>
-                <h1 className="staff-title">Handler Module</h1>
-                <p className="staff-subtitle">View your assigned services, sales orders, and purchase orders</p>
-              </div>
+  const content = (
+    <div className="staff-container" style={inline ? { padding: '0' } : {}}>
+      {/* Header - only show if not inline */}
+      {!inline && (
+        <header className="staff-header">
+          <div className="header-left">
+            <button className="back-btn" onClick={onBack}>
+              <i className="fas fa-arrow-left"></i>
+            </button>
+            <div>
+              <h1 className="staff-title">Handler Module</h1>
+              <p className="staff-subtitle">View your assigned services, sales orders, and purchase orders</p>
             </div>
-          </header>
+          </div>
+        </header>
+      )}
+
+      {inline && (
+        <div style={{ marginBottom: '20px' }}>
+          <h2 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '8px' }}>Handler Module</h2>
+          <p style={{ color: '#666', fontSize: '14px' }}>View your assigned services, sales orders, and purchase orders</p>
+        </div>
+      )}
 
           {/* Success/Error Messages */}
           {successMessage && (
@@ -337,25 +333,6 @@ const Handler = ({ onBack, onNavigate, userData }) => {
               <i className="fas fa-exclamation-circle"></i> {error}
             </div>
           )}
-
-          {/* Debug Info - Always show for troubleshooting */}
-          <div style={{ margin: '16px 24px', padding: '12px', background: '#f8f9fa', borderRadius: '8px', fontSize: '12px', border: '1px solid #dee2e6' }}>
-            <strong style={{ color: '#dc3545' }}>Handler Information:</strong>
-            <div style={{ marginTop: '8px' }}>
-              <div><strong>Handler Name:</strong> {handlerInfo.name || 'Not found'}</div>
-              <div><strong>Handler ID:</strong> {handlerInfo.id || 'Not found'}</div>
-              <div><strong>Active Tab:</strong> {activeTab}</div>
-              <div><strong>Services Count:</strong> {services.length} (filtered: {filteredServices.length})</div>
-              <div><strong>Sales Orders Count:</strong> {salesOrders.length}</div>
-              <div><strong>Purchase Orders Count:</strong> {purchaseOrders.length}</div>
-            </div>
-            <details style={{ marginTop: '8px' }}>
-              <summary style={{ cursor: 'pointer', color: '#007bff' }}>View UserData</summary>
-              <pre style={{ marginTop: '8px', fontSize: '10px', overflow: 'auto', maxHeight: '200px' }}>
-                {JSON.stringify(userData || {}, null, 2)}
-              </pre>
-            </details>
-          </div>
 
           {/* Tabs */}
           <div style={{ padding: '16px 24px', borderBottom: '1px solid #e0e0e0' }}>
@@ -454,55 +431,65 @@ const Handler = ({ onBack, onNavigate, userData }) => {
                   </p>
                 </div>
               ) : (
-                <div className="products-grid">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {filteredServices.map((service) => (
                     <div
                       key={service.id}
-                      className="product-card handler-service-card"
                       onClick={() => handleSelectService(service)}
-                      style={{ cursor: 'pointer' }}
+                      style={{
+                        cursor: 'pointer',
+                        background: '#fff',
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '8px',
+                        padding: '16px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        transition: 'all 0.2s ease',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+                        e.currentTarget.style.borderColor = '#17a2b8';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                        e.currentTarget.style.borderColor = '#e0e0e0';
+                      }}
                     >
-                      <div className="product-header">
-                        <div className="product-title">{service.customer_name || 'Unknown Customer'}</div>
-                        <div className="product-badge" style={{ background: '#17a2b8', color: '#fff' }}>
-                          <i className="fas fa-tools"></i> Service
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#333' }}>
+                            {service.customer_name || 'Unknown Customer'}
+                          </h3>
+                          <span style={{
+                            background: '#17a2b8',
+                            color: '#fff',
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }}>
+                            <i className="fas fa-tools"></i> Service
+                          </span>
                         </div>
-                      </div>
-                      <div className="product-details">
-                        <div className="detail-row">
-                          <span className="detail-label">Product:</span>
-                          <span className="detail-value">{service.product_name || 'N/A'}</span>
+                        <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', fontSize: '14px', color: '#666' }}>
+                          <div><strong>Product:</strong> {service.product_name || 'N/A'}</div>
+                          {service.item_code && <div><strong>Item Code:</strong> {service.item_code}</div>}
+                          {service.serial_number && <div><strong>Serial Number:</strong> {service.serial_number}</div>}
+                          {service.service_date && <div><strong>Service Date:</strong> {formatDate(service.service_date)}</div>}
                         </div>
-                        {service.item_code && (
-                          <div className="detail-row">
-                            <span className="detail-label">Item Code:</span>
-                            <span className="detail-value">{service.item_code}</span>
-                          </div>
-                        )}
-                        {service.serial_number && (
-                          <div className="detail-row">
-                            <span className="detail-label">Serial Number:</span>
-                            <span className="detail-value">{service.serial_number}</span>
-                          </div>
-                        )}
-                        {service.service_date && (
-                          <div className="detail-row">
-                            <span className="detail-label">Service Date:</span>
-                            <span className="detail-value">{formatDate(service.service_date)}</span>
-                          </div>
-                        )}
                       </div>
                       <div style={{
-                        marginTop: '12px',
                         padding: '8px 12px',
                         background: '#fff3cd',
                         borderRadius: '6px',
                         fontSize: '12px',
                         color: '#856404',
-                        textAlign: 'center',
-                        fontWeight: '600'
+                        fontWeight: '600',
+                        whiteSpace: 'nowrap'
                       }}>
-                        <i className="fas fa-hand-pointer"></i> Click to complete service
+                        <i className="fas fa-hand-pointer"></i> Complete
                       </div>
                     </div>
                   ))}
@@ -527,7 +514,7 @@ const Handler = ({ onBack, onNavigate, userData }) => {
                   </p>
                 </div>
               ) : (
-                <div className="products-grid">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {filteredSalesOrders.map((order) => {
                     let products = [];
                     try {
@@ -539,44 +526,42 @@ const Handler = ({ onBack, onNavigate, userData }) => {
                     }
                     
                     return (
-                      <div key={order.id} className="product-card">
-                        <div className="product-header">
-                          <div className="product-title">{order.customer_name || 'Unknown Customer'}</div>
-                          <div className="product-badge" style={{ background: '#28a745', color: '#fff' }}>
-                            <i className="fas fa-shopping-cart"></i> Sales Order
+                      <div
+                        key={order.id}
+                        style={{
+                          background: '#fff',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '8px',
+                          padding: '16px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#333' }}>
+                              {order.customer_name || 'Unknown Customer'}
+                            </h3>
+                            <span style={{
+                              background: '#28a745',
+                              color: '#fff',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              fontWeight: '600'
+                            }}>
+                              <i className="fas fa-shopping-cart"></i> Sales Order
+                            </span>
                           </div>
-                        </div>
-                        <div className="product-details">
-                          <div className="detail-row">
-                            <span className="detail-label">Customer Contact:</span>
-                            <span className="detail-value">{order.customer_contact || 'N/A'}</span>
+                          <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', fontSize: '14px', color: '#666' }}>
+                            <div><strong>Contact:</strong> {order.customer_contact || 'N/A'}</div>
+                            {order.po_number && <div><strong>PO Number:</strong> <span style={{ color: '#dc3545', fontWeight: '600' }}>{order.po_number}</span></div>}
+                            {order.total_amount && <div><strong>Total:</strong> <span style={{ color: '#28a745', fontWeight: '600' }}>{formatCurrency(order.total_amount)}</span></div>}
+                            {products.length > 0 && <div><strong>Items:</strong> {products.length} item(s)</div>}
+                            {order.date_of_duration && <div><strong>Date:</strong> {formatDate(order.date_of_duration)}</div>}
                           </div>
-                          {order.po_number && (
-                            <div className="detail-row">
-                              <span className="detail-label">PO Number:</span>
-                              <span className="detail-value" style={{ color: '#dc3545', fontWeight: '600' }}>{order.po_number}</span>
-                            </div>
-                          )}
-                          {order.total_amount && (
-                            <div className="detail-row">
-                              <span className="detail-label">Total Amount:</span>
-                              <span className="detail-value" style={{ color: '#28a745', fontWeight: '600', fontSize: '16px' }}>
-                                {formatCurrency(order.total_amount)}
-                              </span>
-                            </div>
-                          )}
-                          {products.length > 0 && (
-                            <div className="detail-row">
-                              <span className="detail-label">Items:</span>
-                              <span className="detail-value">{products.length} item(s)</span>
-                            </div>
-                          )}
-                          {order.date_of_duration && (
-                            <div className="detail-row">
-                              <span className="detail-label">Date:</span>
-                              <span className="detail-value">{formatDate(order.date_of_duration)}</span>
-                            </div>
-                          )}
                         </div>
                       </div>
                     );
@@ -602,7 +587,7 @@ const Handler = ({ onBack, onNavigate, userData }) => {
                   </p>
                 </div>
               ) : (
-                <div className="products-grid">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {filteredPurchaseOrders.map((order) => {
                     let items = [];
                     try {
@@ -614,63 +599,55 @@ const Handler = ({ onBack, onNavigate, userData }) => {
                     }
                     
                     return (
-                      <div key={order.id} className="product-card">
-                        <div className="product-header">
-                          <div className="product-title">{order.supplier_name || 'Unknown Supplier'}</div>
-                          <div className="product-badge" style={{ background: '#007bff', color: '#fff' }}>
-                            <i className="fas fa-box"></i> Purchase Order
-                          </div>
-                        </div>
-                        <div className="product-details">
-                          {order.order_number && (
-                            <div className="detail-row">
-                              <span className="detail-label">Order Number:</span>
-                              <span className="detail-value" style={{ color: '#dc3545', fontWeight: '600' }}>{order.order_number}</span>
-                            </div>
-                          )}
-                          {order.po_number && (
-                            <div className="detail-row">
-                              <span className="detail-label">PO Number:</span>
-                              <span className="detail-value" style={{ color: '#dc3545', fontWeight: '600' }}>{order.po_number}</span>
-                            </div>
-                          )}
-                          {order.supplier_number && (
-                            <div className="detail-row">
-                              <span className="detail-label">Supplier Number:</span>
-                              <span className="detail-value">{order.supplier_number}</span>
-                            </div>
-                          )}
-                          {order.total_amount && (
-                            <div className="detail-row">
-                              <span className="detail-label">Total Amount:</span>
-                              <span className="detail-value" style={{ color: '#28a745', fontWeight: '600', fontSize: '16px' }}>
-                                {formatCurrency(order.total_amount)}
-                              </span>
-                            </div>
-                          )}
-                          {items.length > 0 && (
-                            <div className="detail-row">
-                              <span className="detail-label">Items:</span>
-                              <span className="detail-value">{items.length} item(s)</span>
-                            </div>
-                          )}
-                          {order.order_date && (
-                            <div className="detail-row">
-                              <span className="detail-label">Order Date:</span>
-                              <span className="detail-value">{formatDate(order.order_date)}</span>
-                            </div>
-                          )}
-                          {order.status && (
-                            <div className="detail-row">
-                              <span className="detail-label">Status:</span>
-                              <span className="detail-value" style={{ 
-                                color: order.status === 'completed' ? '#28a745' : order.status === 'pending' ? '#ffc107' : '#dc3545',
-                                fontWeight: '600'
+                      <div
+                        key={order.id}
+                        style={{
+                          background: '#fff',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '8px',
+                          padding: '16px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#333' }}>
+                              {order.supplier_name || 'Unknown Supplier'}
+                            </h3>
+                            <span style={{
+                              background: '#007bff',
+                              color: '#fff',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              fontWeight: '600'
+                            }}>
+                              <i className="fas fa-box"></i> Purchase Order
+                            </span>
+                            {order.status && (
+                              <span style={{
+                                padding: '4px 8px',
+                                borderRadius: '4px',
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                color: '#fff',
+                                background: order.status === 'completed' ? '#28a745' : order.status === 'pending' ? '#ffc107' : '#dc3545'
                               }}>
                                 {order.status.toUpperCase()}
                               </span>
-                            </div>
-                          )}
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', fontSize: '14px', color: '#666' }}>
+                            {order.order_number && <div><strong>Order Number:</strong> <span style={{ color: '#dc3545', fontWeight: '600' }}>{order.order_number}</span></div>}
+                            {order.po_number && <div><strong>PO Number:</strong> <span style={{ color: '#dc3545', fontWeight: '600' }}>{order.po_number}</span></div>}
+                            {order.supplier_number && <div><strong>Supplier Number:</strong> {order.supplier_number}</div>}
+                            {order.total_amount && <div><strong>Total:</strong> <span style={{ color: '#28a745', fontWeight: '600' }}>{formatCurrency(order.total_amount)}</span></div>}
+                            {items.length > 0 && <div><strong>Items:</strong> {items.length} item(s)</div>}
+                            {order.order_date && <div><strong>Date:</strong> {formatDate(order.order_date)}</div>}
+                          </div>
                         </div>
                       </div>
                     );
@@ -679,8 +656,6 @@ const Handler = ({ onBack, onNavigate, userData }) => {
               )}
             </div>
           )}
-        </div>
-      </div>
 
       {/* OTP Modal */}
       {showOTPModal && selectedService && (
@@ -856,6 +831,29 @@ const Handler = ({ onBack, onNavigate, userData }) => {
           </div>
         </div>
       )}
+    </div>
+  );
+
+  if (inline) {
+    return content;
+  }
+
+  return (
+    <div className="dashboard-container">
+      {/* Sidebar */}
+      <nav className="sidebar-nav">
+        <div className="nav-item" onClick={onBack}>
+          <div className="nav-icon">
+            <i className="fas fa-home"></i>
+          </div>
+          <span>Home</span>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <div className="dashboard-main">
+        {content}
+      </div>
     </div>
   );
 };

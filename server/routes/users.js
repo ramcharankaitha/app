@@ -117,6 +117,9 @@ router.post('/', async (req, res) => {
       console.error('Password hash creation failed');
       return res.status(500).json({ error: 'Failed to hash password' });
     }
+    
+    console.log('Password hash created successfully for supervisor:', trimmedUsername);
+    console.log('Hash length:', passwordHash.length);
 
     // Ensure email constraint is removed before insert (for hosted server)
     await ensureEmailOptional();
@@ -177,6 +180,27 @@ router.post('/', async (req, res) => {
         );
       } else {
         throw insertError;
+      }
+    }
+    
+    // Verify password_hash was saved correctly
+    const verifyResult = await pool.query(
+      'SELECT id, username, password_hash FROM users WHERE id = $1',
+      [result.rows[0].id]
+    );
+    
+    if (verifyResult.rows.length > 0) {
+      const savedUser = verifyResult.rows[0];
+      if (!savedUser.password_hash || savedUser.password_hash.trim() === '') {
+        console.error('⚠️ CRITICAL: Password hash was not saved for supervisor:', savedUser.username);
+        // Try to update it
+        await pool.query(
+          'UPDATE users SET password_hash = $1 WHERE id = $2',
+          [passwordHash, savedUser.id]
+        );
+        console.log('✅ Fixed: Updated password_hash for supervisor:', savedUser.username);
+      } else {
+        console.log('✅ Verified: Password hash saved correctly for supervisor:', savedUser.username);
       }
     }
     

@@ -232,6 +232,27 @@ router.post('/', async (req, res) => {
       }
     }
     
+    // Verify password_hash was saved correctly
+    const verifyResult = await pool.query(
+      'SELECT id, username, password_hash FROM staff WHERE id = $1',
+      [result.rows[0].id]
+    );
+    
+    if (verifyResult.rows.length > 0) {
+      const savedStaff = verifyResult.rows[0];
+      if (!savedStaff.password_hash || savedStaff.password_hash.trim() === '') {
+        console.error('⚠️ CRITICAL: Password hash was not saved for staff:', savedStaff.username);
+        // Try to update it
+        await pool.query(
+          'UPDATE staff SET password_hash = $1 WHERE id = $2',
+          [passwordHash, savedStaff.id]
+        );
+        console.log('✅ Fixed: Updated password_hash for staff:', savedStaff.username);
+      } else {
+        console.log('✅ Verified: Password hash saved correctly for staff:', savedStaff.username);
+      }
+    }
+    
     console.log('Staff created successfully:', result.rows[0].username, 'Phone:', result.rows[0].phone);
 
     res.status(201).json({

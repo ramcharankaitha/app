@@ -4,6 +4,8 @@ import ConfirmDialog from './ConfirmDialog';
 import AttendanceModal from './AttendanceModal';
 import BestSalesPerson from './BestSalesPerson';
 import NotificationsPanel from './NotificationsPanel';
+import Handler from './Handler';
+import { stockAPI, productsAPI } from '../services/api';
 import './attendanceModal.css';
 
 const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
@@ -22,6 +24,13 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
   const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [warningMessage, setWarningMessage] = useState('');
+  const [dashboardStats, setDashboardStats] = useState({
+    stockInCount: 0,
+    stockOutCount: 0,
+    totalProducts: 0,
+    highestSellingProduct: null,
+    loading: true
+  });
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -105,6 +114,41 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
     };
   }, []);
 
+  // Fetch dashboard statistics
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      try {
+        setDashboardStats(prev => ({ ...prev, loading: true }));
+        
+        // Fetch stock stats
+        const stockStats = await stockAPI.getDashboardStats();
+        
+        // Fetch total products count
+        const productsData = await productsAPI.getAll();
+        const totalProducts = productsData.products?.length || 0;
+        
+        setDashboardStats({
+          stockInCount: stockStats.stockInCount || 0,
+          stockOutCount: stockStats.stockOutCount || 0,
+          totalProducts: totalProducts,
+          highestSellingProduct: stockStats.fastestSelling || null,
+          loading: false
+        });
+      } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+        setDashboardStats(prev => ({ ...prev, loading: false }));
+      }
+    };
+
+    fetchDashboardStats();
+    // Refresh stats every 5 minutes
+    const statsInterval = setInterval(fetchDashboardStats, 300000);
+    
+    return () => {
+      clearInterval(statsInterval);
+    };
+  }, []);
+
   // Check if user is a handler
   useEffect(() => {
     const checkHandlerStatus = async () => {
@@ -180,7 +224,8 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
         onNavigate('staffHome');
       }
     } else if (navItem === 'handler') {
-      onNavigate('handler');
+      // Handle handler as internal state, don't navigate away
+      // Just update the activeNav state, which is already done above
     } else if (navItem === 'customers') {
       onNavigate('customers');
     } else if (navItem === 'masterMenu') {
@@ -435,6 +480,7 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
                 { title: 'Products', desc: 'Catalog and pricing', icon: 'fa-box', target: 'products' },
                 { title: 'Supply Master', desc: 'Suppliers and logistics', icon: 'fa-truck', target: 'suppliers' },
                 { title: 'Customers', desc: 'Customer management & details', icon: 'fa-user-friends', target: 'customers' },
+                { title: 'Chit Plan', desc: 'Create customers with chit plans', icon: 'fa-user-check', target: 'chitPlan' },
               ].map((item) => (
                 <div
                   key={item.title}
@@ -468,6 +514,8 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
                 { title: 'Sales Order', desc: 'View and manage sales orders', icon: 'fa-chart-line', target: 'salesOrder' },
                 { title: 'Chit Receipt', desc: 'Record chit payments', icon: 'fa-file-invoice-dollar', target: 'chitEntryMaster' },
                 { title: 'Purchase Order', desc: 'Create and manage purchase orders', icon: 'fa-shopping-cart', target: 'purchaseOrderMaster' },
+                { title: 'Payment Menu', desc: 'Manage payment records', icon: 'fa-money-bill-wave', target: 'paymentMaster' },
+                { title: 'Quotations', desc: 'Create and manage quotations', icon: 'fa-file-invoice', target: 'quotationMaster' },
               ].map((item) => (
                 <div
                   key={item.title}
@@ -491,6 +539,13 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
                 </div>
               ))}
             </div>
+          ) : activeNav === 'handler' ? (
+            <Handler 
+              onBack={() => setActiveNav('home')} 
+              onNavigate={onNavigate}
+              userData={userData}
+              inline={true}
+            />
           ) : (
             <>
               <div className="controls-section">
@@ -511,7 +566,7 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
                 </div>
               </div>
 
-              <div className="panel checkin-card">
+              <div className="panel checkin-card" style={{ marginBottom: '30px' }}>
                 <div className="panel-header">
                   <div>
                     <div className="panel-title">Check-in / Check-out</div>
@@ -557,45 +612,62 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
               {/* Best Sales Person of the Month */}
               <BestSalesPerson />
 
-              <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0,1fr))' }}>
+              <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0,1fr))' }}>
                 <div className="stat-card">
                   <div className="stat-content">
-                    <h3 className="stat-title">Assigned Tasks</h3>
-                    <p className="stat-value">4 open</p>
-                    <p className="stat-subtitle">View and update your work</p>
+                    <h3 className="stat-title">Stock In Products</h3>
+                    <p className="stat-value">{dashboardStats.loading ? '...' : dashboardStats.stockInCount}</p>
+                    <p className="stat-subtitle">Total stock in transactions</p>
                   </div>
                   <div className="stat-icon" style={{ backgroundColor: '#4caf5020', color: '#4caf50' }}>
-                    <i className="fas fa-check"></i>
+                    <i className="fas fa-box-open"></i>
                   </div>
                 </div>
                 <div className="stat-card">
                   <div className="stat-content">
-                    <h3 className="stat-title">Update Stock</h3>
-                    <p className="stat-value">Tap to update</p>
-                    <p className="stat-subtitle">Adjust quantities with log</p>
+                    <h3 className="stat-title">Stock Out Products</h3>
+                    <p className="stat-value">{dashboardStats.loading ? '...' : dashboardStats.stockOutCount}</p>
+                    <p className="stat-subtitle">Total stock out transactions</p>
                   </div>
                   <div className="stat-icon" style={{ backgroundColor: '#8c2f2f20', color: '#8c2f2f' }}>
-                    <i className="fas fa-edit"></i>
+                    <i className="fas fa-box"></i>
                   </div>
                 </div>
-                <div className="stat-card">
+                <div className="stat-card" 
+                  style={{ cursor: 'pointer' }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (onNavigate) {
+                      onNavigate('products');
+                    }
+                  }}
+                >
                   <div className="stat-content">
-                    <h3 className="stat-title">Report Damage</h3>
-                    <p className="stat-value">Log items</p>
-                    <p className="stat-subtitle">Reason with evidence</p>
-                  </div>
-                  <div className="stat-icon" style={{ backgroundColor: '#dc354520', color: '#dc3545' }}>
-                    <i className="fas fa-exclamation"></i>
-                  </div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-content">
-                    <h3 className="stat-title">Check Inventory</h3>
-                    <p className="stat-value">View-only list</p>
-                    <p className="stat-subtitle">Stay updated</p>
+                    <h3 className="stat-title">Products in Store</h3>
+                    <p className="stat-value">{dashboardStats.loading ? '...' : dashboardStats.totalProducts}</p>
+                    <p className="stat-subtitle">View-only list</p>
                   </div>
                   <div className="stat-icon" style={{ backgroundColor: '#99999920', color: '#666' }}>
                     <i className="fas fa-list"></i>
+                  </div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-content">
+                    <h3 className="stat-title">Highest Selling Product</h3>
+                    <p className="stat-value">
+                      {dashboardStats.loading ? '...' : dashboardStats.highestSellingProduct 
+                        ? dashboardStats.highestSellingProduct.productName || dashboardStats.highestSellingProduct.itemCode || 'N/A'
+                        : 'N/A'}
+                    </p>
+                    <p className="stat-subtitle">
+                      {dashboardStats.highestSellingProduct && !dashboardStats.loading
+                        ? `${dashboardStats.highestSellingProduct.quantity || 0} units sold`
+                        : 'Top performer'}
+                    </p>
+                  </div>
+                  <div className="stat-icon" style={{ backgroundColor: '#dc354520', color: '#dc3545' }}>
+                    <i className="fas fa-chart-line"></i>
                   </div>
                 </div>
               </div>
