@@ -419,35 +419,78 @@ router.post('/entries', async (req, res) => {
       return res.status(400).json({ error: 'Month is required' });
     }
 
-    // Ensure month column exists
-    await pool.query(`
-      DO $$ 
-      BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM information_schema.columns 
-          WHERE table_name = 'chit_entries' AND column_name = 'month'
-        ) THEN
-          ALTER TABLE chit_entries ADD COLUMN month INTEGER;
-          RAISE NOTICE 'Added month column to chit_entries';
-        END IF;
-      END $$;
-    `);
+    // First, ensure chit_entries table exists (MUST be done before any column checks)
+    try {
+      // Check if table exists first
+      const tableExists = await pool.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'chit_entries'
+        )
+      `);
 
-    // Ensure chit_entries table exists
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS chit_entries (
-        id SERIAL PRIMARY KEY,
-        customer_id INTEGER,
-        chit_plan_id INTEGER,
-        payment_mode VARCHAR(50) NOT NULL,
-        month INTEGER,
-        notes TEXT,
-        created_by VARCHAR(255),
-        is_verified BOOLEAN DEFAULT false,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+      if (!tableExists.rows[0].exists) {
+        // Table doesn't exist, create it
+        await pool.query(`
+          CREATE TABLE chit_entries (
+            id SERIAL PRIMARY KEY,
+            customer_id INTEGER,
+            chit_plan_id INTEGER,
+            payment_mode VARCHAR(50) NOT NULL,
+            month INTEGER,
+            notes TEXT,
+            created_by VARCHAR(255),
+            is_verified BOOLEAN DEFAULT false,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        console.log('Created chit_entries table');
+      }
+    } catch (tableError) {
+      console.error('Error checking/creating chit_entries table:', tableError);
+      // If it's not a "table already exists" error, throw it
+      if (tableError.code !== '42P07') {
+        throw tableError;
+      }
+    }
+
+    // Now ensure all columns exist (table must exist first)
+    try {
+      await pool.query(`
+        DO $$ 
+        BEGIN
+          -- Ensure month column exists
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_schema = 'public'
+            AND table_name = 'chit_entries' AND column_name = 'month'
+          ) THEN
+            ALTER TABLE chit_entries ADD COLUMN month INTEGER;
+            RAISE NOTICE 'Added month column to chit_entries';
+          END IF;
+          
+          -- Ensure is_verified column exists
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_schema = 'public'
+            AND table_name = 'chit_entries' AND column_name = 'is_verified'
+          ) THEN
+            ALTER TABLE chit_entries ADD COLUMN is_verified BOOLEAN DEFAULT false;
+            RAISE NOTICE 'Added is_verified column to chit_entries';
+          END IF;
+        END $$;
+      `);
+    } catch (columnError) {
+      console.error('Error adding columns to chit_entries:', columnError);
+      // If table still doesn't exist, this is a critical error
+      if (columnError.code === '42P01') {
+        throw new Error('chit_entries table could not be created. Please contact administrator.');
+      }
+      // For other column errors, log but continue (column might already exist)
+      console.warn('Column addition warning:', columnError.message);
+    }
 
     // Add foreign key constraints if they don't exist (without failing if tables don't exist)
     try {
@@ -522,17 +565,6 @@ router.post('/entries', async (req, res) => {
     if (planCheck.rows.length === 0) {
       return res.status(400).json({ error: 'Invalid chit plan ID. Chit plan does not exist.' });
     }
-
-    // Ensure is_verified column exists
-    await pool.query(`
-      DO $$
-      BEGIN
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'chit_entries' AND column_name = 'is_verified') THEN
-          ALTER TABLE chit_entries ADD COLUMN is_verified BOOLEAN DEFAULT false;
-          RAISE NOTICE 'Added is_verified column to chit_entries';
-        END IF;
-      END $$;
-    `);
 
     let result;
     try {
