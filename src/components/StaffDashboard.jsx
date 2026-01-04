@@ -31,6 +31,7 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
     highestSellingProduct: null,
     loading: true
   });
+  const [handlerExplicitlySelected, setHandlerExplicitlySelected] = useState(false);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -179,32 +180,47 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
 
   // Sync activeNav with currentPage
   useEffect(() => {
+    // If handler is explicitly selected, keep it active (handler is now in master menu)
+    if (handlerExplicitlySelected && activeNav === 'handler') {
+      // Handler is explicitly selected, keep it active
+      return;
+    }
+
+    // Reset handler flag when navigating to a different page (but not when clicking master menu)
+    if (currentPage !== 'staffHome' && currentPage !== 'handler' && currentPage !== 'masterMenu' && 
+        currentPage !== 'products' && currentPage !== 'suppliers' && currentPage !== 'transport' && 
+        currentPage !== 'chitPlans' && currentPage !== 'addChitCustomer' && currentPage !== 'chitPlanMaster' && 
+        currentPage !== 'addChitPlan' && currentPage !== 'categoryMaster') {
+      setHandlerExplicitlySelected(false);
+    }
+
     if (currentPage === 'staffHome') {
-      setActiveNav('home');
+      // Only set to home if handler wasn't explicitly selected
+      if (!handlerExplicitlySelected) {
+        setActiveNav('home');
+      }
     } else if (currentPage === 'handler') {
       setActiveNav('handler');
+      setHandlerExplicitlySelected(true);
     } else if (currentPage === 'customers') {
       setActiveNav('customers');
-    } else if (currentPage === 'products') {
-      setActiveNav('masterMenu');
-    } else if (currentPage === 'suppliers') {
-      setActiveNav('masterMenu');
-    } else if (currentPage === 'dispatch') {
-      setActiveNav('transactionMenu');
-    } else if (currentPage === 'transport') {
-      setActiveNav('masterMenu');
-    } else if (currentPage === 'chitPlans' || currentPage === 'addChitCustomer' || currentPage === 'chitPlanMaster' || currentPage === 'addChitPlan') {
-      setActiveNav('masterMenu');
-    } else if (currentPage === 'categoryMaster') {
-      setActiveNav('masterMenu');
-    } else if (currentPage === 'masterMenu') {
-      setActiveNav('masterMenu');
-    } else if (currentPage === 'transactionMenu' || currentPage === 'stockIn' || currentPage === 'stockOut' || currentPage === 'createSupplier' || currentPage === 'supplierTransactionMaster' || currentPage === 'transactionProducts' || currentPage === 'addProductPricing') {
+    } else if (currentPage === 'products' || currentPage === 'suppliers' || currentPage === 'transport' || 
+               currentPage === 'chitPlans' || currentPage === 'addChitCustomer' || currentPage === 'chitPlanMaster' || 
+               currentPage === 'addChitPlan' || currentPage === 'categoryMaster' || currentPage === 'masterMenu') {
+      // Only set to masterMenu if handler isn't active
+      if (activeNav !== 'handler') {
+        setActiveNav('masterMenu');
+      }
+    } else if (currentPage === 'dispatch' || currentPage === 'transactionMenu' || currentPage === 'stockIn' || 
+               currentPage === 'stockOut' || currentPage === 'createSupplier' || currentPage === 'supplierTransactionMaster' || 
+               currentPage === 'transactionProducts' || currentPage === 'addProductPricing' || currentPage === 'services' ||
+               currentPage === 'salesOrder' || currentPage === 'chitEntryMaster' || currentPage === 'purchaseOrderMaster' ||
+               currentPage === 'paymentMaster' || currentPage === 'quotationMaster') {
       setActiveNav('transactionMenu');
     } else if (currentPage === 'settings') {
       setActiveNav('settings');
     }
-  }, [currentPage]);
+  }, [currentPage, handlerExplicitlySelected, activeNav]);
 
   const workingStore = useMemo(() => {
     return profile?.primary_store || 'Hyderabad Store';
@@ -225,7 +241,8 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
       }
     } else if (navItem === 'handler') {
       // Handle handler as internal state, don't navigate away
-      // Just update the activeNav state, which is already done above
+      // Mark handler as explicitly selected so it stays active when navigating to other pages
+      setHandlerExplicitlySelected(true);
     } else if (navItem === 'customers') {
       onNavigate('customers');
     } else if (navItem === 'masterMenu') {
@@ -311,17 +328,6 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
           </div>
           <span>Home</span>
         </div>
-        {isHandler && (
-          <div 
-            className={`nav-item ${activeNav === 'handler' ? 'active' : ''}`} 
-            onClick={(e) => handleNavClick('handler', e)}
-          >
-            <div className="nav-icon">
-              <i className="fas fa-tools"></i>
-            </div>
-            <span>Handler</span>
-          </div>
-        )}
         <div 
           className={`nav-item ${activeNav === 'masterMenu' ? 'active' : ''}`} 
           onClick={(e) => handleNavClick('masterMenu', e)}
@@ -481,15 +487,20 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
                 { title: 'Supply Master', desc: 'Suppliers and logistics', icon: 'fa-truck', target: 'suppliers' },
                 { title: 'Customers', desc: 'Customer management & details', icon: 'fa-user-friends', target: 'customers' },
                 { title: 'Chit Plan', desc: 'Create customers with chit plans', icon: 'fa-user-check', target: 'chitPlan' },
+                ...(isHandler ? [{ title: 'Handler', desc: 'View assigned services and orders', icon: 'fa-tools', target: 'handler', isHandler: true }] : []),
               ].map((item) => (
                 <div
                   key={item.title}
                   className="stat-card"
-                  style={{ cursor: item.target ? 'pointer' : 'default' }}
+                  style={{ cursor: (item.target || item.isHandler) ? 'pointer' : 'default' }}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (item.target && onNavigate) {
+                    if (item.isHandler) {
+                      // Handle handler as internal state, don't navigate away
+                      setActiveNav('handler');
+                      setHandlerExplicitlySelected(true);
+                    } else if (item.target && onNavigate) {
                       onNavigate(item.target);
                     }
                   }}
@@ -541,7 +552,10 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
             </div>
           ) : activeNav === 'handler' ? (
             <Handler 
-              onBack={() => setActiveNav('home')} 
+              onBack={() => {
+                setActiveNav('masterMenu');
+                setHandlerExplicitlySelected(false);
+              }} 
               onNavigate={onNavigate}
               userData={userData}
               inline={true}
