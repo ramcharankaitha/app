@@ -58,36 +58,59 @@ ensurePasswordHashColumns().catch(err => {
 // Helper function to execute query with timeout
 const queryWithTimeout = async (queryText, params, timeoutMs = 3000) => {
   const client = await pool.connect();
+  let queryCompleted = false;
+  
   try {
-    // Set query timeout for this connection
+    // Set query timeout for this connection (LOCAL means only for this transaction)
     await client.query(`SET LOCAL statement_timeout = ${timeoutMs}`);
     const result = await client.query(queryText, params);
+    queryCompleted = true;
     return result;
+  } catch (error) {
+    // Re-throw the error so caller can handle it
+    throw error;
   } finally {
-    // Reset timeout and release connection
+    // Always release the connection, even if there was an error
     try {
+      if (!queryCompleted) {
+        // If query didn't complete, try to cancel it
+        try {
+          await client.query('SELECT pg_cancel_backend(pg_backend_pid())');
+        } catch (cancelError) {
+          // Ignore cancel errors
+        }
+      }
+      // Reset timeout (though LOCAL should auto-reset)
       await client.query('RESET statement_timeout');
-    } catch (e) {
-      // Ignore reset errors
+    } catch (resetError) {
+      // Ignore reset errors - connection will be released anyway
+    } finally {
+      // Always release the connection back to the pool
+      client.release();
     }
-    client.release();
   }
 };
 
 router.post('/login', async (req, res) => {
   const startTime = Date.now();
+  let client = null;
   
   try {
     const { email, username, password } = req.body;
 
     // Basic validation
-    if (!password) {
+    if (!password || password.trim() === '') {
       return res.status(400).json({ error: 'Password is required' });
     }
 
-    // Ensure columns are initialized (non-blocking check)
+    // Ensure columns are initialized (non-blocking check, but don't wait if already initialized)
     if (!columnsInitialized) {
-      await ensurePasswordHashColumns();
+      try {
+        await ensurePasswordHashColumns();
+      } catch (initError) {
+        // Log but don't block login if initialization fails
+        console.warn('⚠️  Column initialization warning:', initError.message);
+      }
     }
 
     if (email) {

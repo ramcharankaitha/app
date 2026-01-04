@@ -113,8 +113,8 @@ app.use((req, res, next) => {
   );
   // Referrer Policy
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  // Permissions Policy
-  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  // Permissions Policy - Allow camera for same origin (needed for face capture)
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=(self)');
   next();
 });
 

@@ -19,16 +19,63 @@ const FaceCaptureModal = ({ onSuccess, onClose, userRole, username }) => {
 
   const startCamera = async () => {
     try {
+      // Check if getUserMedia is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setError('Camera access is not supported in this browser. Please use a modern browser like Chrome, Firefox, or Safari.');
+        return;
+      }
+
+      // Check if we're on HTTPS or localhost (required for camera access)
+      const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      if (!isSecure) {
+        setError('Camera access requires a secure connection (HTTPS). Please access the site via HTTPS.');
+        return;
+      }
+
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
+        video: { 
+          facingMode: 'user', 
+          width: { ideal: 1280 }, 
+          height: { ideal: 720 } 
+        }
       });
       setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
       }
+      setError(''); // Clear any previous errors
     } catch (err) {
       console.error('Error accessing camera:', err);
-      setError('Unable to access camera. Please allow camera permissions.');
+      
+      let errorMessage = 'Unable to access camera. ';
+      
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        errorMessage += 'Please allow camera permissions in your browser settings and try again.';
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        errorMessage += 'No camera found. Please connect a camera and try again.';
+      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+        errorMessage += 'Camera is already in use by another application. Please close other apps using the camera.';
+      } else if (err.name === 'OverconstrainedError' || err.name === 'ConstraintNotSatisfiedError') {
+        errorMessage += 'Camera does not support the required settings. Trying with default settings...';
+        // Retry with simpler constraints
+        try {
+          const mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user' }
+          });
+          setStream(mediaStream);
+          if (videoRef.current) {
+            videoRef.current.srcObject = mediaStream;
+          }
+          setError('');
+          return;
+        } catch (retryErr) {
+          errorMessage = 'Unable to access camera. Please check your camera settings.';
+        }
+      } else {
+        errorMessage += 'Please check your camera permissions and try again.';
+      }
+      
+      setError(errorMessage);
     }
   };
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { authAPI } from '../services/api';
 
 const Login = ({ onLoginSuccess }) => {
@@ -11,6 +11,24 @@ const Login = ({ onLoginSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Clear form state and localStorage on component mount (after logout)
+  useEffect(() => {
+    // Clear any stale authentication data
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userData');
+    
+    // Reset form to clean state
+    setFormData({
+      role: 'admin',
+      username: '',
+      password: '',
+      remember: true
+    });
+    setError('');
+    setIsLoading(false);
+  }, []);
 
 
   const handleInputChange = (e) => {
@@ -51,15 +69,35 @@ const Login = ({ onLoginSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Prevent multiple simultaneous login attempts
+    if (isLoading) {
+      return;
+    }
+    
     setIsLoading(true);
     setError('');
 
     try {
-      // Try API login first
-      // Use username for all roles
-      const response = await authAPI.login(formData.username, formData.password, formData.role);
+      // Clear any previous authentication data before new login
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('userData');
       
-      if (response.success) {
+      // Trim and validate inputs
+      const trimmedUsername = formData.username.trim();
+      const trimmedPassword = formData.password.trim();
+      
+      if (!trimmedUsername || !trimmedPassword) {
+        setError('Please enter both username and password.');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Try API login
+      const response = await authAPI.login(trimmedUsername, trimmedPassword, formData.role);
+      
+      if (response && response.success) {
         // Normalize role: Super Admin -> admin, Supervisor -> supervisor, Staff -> staff
         let normalizedRole = response.user.role || formData.role;
         if (normalizedRole === 'Super Admin' || normalizedRole === 'admin') {
@@ -73,22 +111,49 @@ const Login = ({ onLoginSuccess }) => {
           normalizedRole = 'staff';
         }
         
-        // Successful login
+        // Successful login - store credentials
         if (formData.remember) {
           localStorage.setItem('isLoggedIn', 'true');
           localStorage.setItem('userRole', normalizedRole);
           localStorage.setItem('userData', JSON.stringify(response.user));
         }
+        
+        // Clear form before navigation
+        setFormData({
+          role: 'admin',
+          username: '',
+          password: '',
+          remember: true
+        });
         setIsLoading(false);
-        onLoginSuccess(normalizedRole, response.user);
+        
+        // Small delay to ensure state is cleared
+        setTimeout(() => {
+          onLoginSuccess(normalizedRole, response.user);
+        }, 100);
+      } else {
+        setIsLoading(false);
+        setError('Invalid username or password. Please check your credentials.');
       }
     } catch (apiError) {
-      // Fallback to temporary credentials if API fails (only for admin)
-      console.warn('API login failed, using fallback:', apiError.message);
+      console.error('Login error:', apiError);
       
-      // Failed login
+      // Clear form password on error
+      setFormData(prev => ({
+        ...prev,
+        password: ''
+      }));
+      
       setIsLoading(false);
-      setError('Invalid username or password. Please check your credentials.');
+      
+      // Provide specific error messages
+      if (apiError.message && apiError.message.includes('timeout')) {
+        setError('Login request timed out. Please try again.');
+      } else if (apiError.message && apiError.message.includes('connection')) {
+        setError('Connection error. Please check your internet and try again.');
+      } else {
+        setError(apiError.message || 'Invalid username or password. Please check your credentials.');
+      }
     }
   };
 
