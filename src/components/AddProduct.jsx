@@ -34,18 +34,7 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [selectedSubCategory, setSelectedSubCategory] = useState('');
   const [selectedCommonCategory, setSelectedCommonCategory] = useState('');
   
-  // Search/filter states for dropdowns
-  const [mainSearchTerm, setMainSearchTerm] = useState('');
-  const [subSearchTerm, setSubSearchTerm] = useState('');
-  const [commonSearchTerm, setCommonSearchTerm] = useState('');
-  const [showMainDropdown, setShowMainDropdown] = useState(false);
-  const [showSubDropdown, setShowSubDropdown] = useState(false);
-  const [showCommonDropdown, setShowCommonDropdown] = useState(false);
-  
-  // Refs for click outside detection
-  const mainDropdownRef = useRef(null);
-  const subDropdownRef = useRef(null);
-  const commonDropdownRef = useRef(null);
+  // Removed search/filter states - using standard select dropdowns now
 
   // Fetch main categories on component mount
   useEffect(() => {
@@ -82,10 +71,6 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
         setSelectedSubCategory('');
         setSelectedCommonCategory('');
         setCommonCategories([]);
-        setSubSearchTerm('');
-        setCommonSearchTerm('');
-        setShowSubDropdown(false);
-        setShowCommonDropdown(false);
       } catch (err) {
         console.error('Error fetching sub categories:', err);
       }
@@ -110,8 +95,6 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
         }
         // Clear common selection when sub changes
         setSelectedCommonCategory('');
-        setCommonSearchTerm('');
-        setShowCommonDropdown(false);
       } catch (err) {
         console.error('Error fetching common categories:', err);
       }
@@ -303,59 +286,25 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     return updated;
   };
 
-  // Filter categories based on search term
-  const filteredMainCategories = mainCategories.filter(cat =>
-    cat.toLowerCase().includes(mainSearchTerm.toLowerCase())
-  );
-  
-  const filteredSubCategories = subCategories.filter(cat =>
-    cat.toLowerCase().includes(subSearchTerm.toLowerCase())
-  );
-  
-  const filteredCommonCategories = commonCategories.filter(cat =>
-    cat.toLowerCase().includes(commonSearchTerm.toLowerCase())
-  );
-
   // Handle main category selection
-  const handleMainSelect = (main) => {
-    setSelectedMainCategory(main);
-    setMainSearchTerm(main);
-    setShowMainDropdown(false);
+  const handleMainCategoryChange = (e) => {
+    const value = e.target.value;
+    setSelectedMainCategory(value);
     // Sub and common will be cleared by useEffect
   };
 
   // Handle sub category selection
-  const handleSubSelect = (sub) => {
-    setSelectedSubCategory(sub);
-    setSubSearchTerm(sub);
-    setShowSubDropdown(false);
+  const handleSubCategoryChange = (e) => {
+    const value = e.target.value;
+    setSelectedSubCategory(value);
     // Common will be cleared by useEffect
   };
 
   // Handle common category selection
-  const handleCommonSelect = (common) => {
-    setSelectedCommonCategory(common);
-    setCommonSearchTerm(common);
-    setShowCommonDropdown(false);
+  const handleCommonCategoryChange = (e) => {
+    const value = e.target.value;
+    setSelectedCommonCategory(value);
   };
-
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (mainDropdownRef.current && !mainDropdownRef.current.contains(event.target)) {
-        setShowMainDropdown(false);
-      }
-      if (subDropdownRef.current && !subDropdownRef.current.contains(event.target)) {
-        setShowSubDropdown(false);
-      }
-      if (commonDropdownRef.current && !commonDropdownRef.current.contains(event.target)) {
-        setShowCommonDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   // Update category string whenever main, sub, or common changes
   useEffect(() => {
@@ -499,204 +448,75 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                   <div className="form-grid four-col">
                     {/* Category Selection - All three in first row */}
                     {/* 1. Main Category */}
-                    <div className="form-group" ref={mainDropdownRef} style={{ position: 'relative', zIndex: 1000 }}>
+                    <div className="form-group">
                       <label htmlFor="mainCategory">Main Category</label>
                       <div className="input-wrapper">
                         <i className="fas fa-th-large input-icon"></i>
-                        <input
-                          type="text"
+                        <select
                           id="mainCategory"
                           name="mainCategory"
                           className="form-input"
-                          placeholder="Type to search main category..."
-                          value={mainSearchTerm}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            setMainSearchTerm(value);
-                            setShowMainDropdown(true);
-                            // If user is typing something different, clear selection
-                            if (value !== selectedMainCategory) {
-                              setSelectedMainCategory('');
-                            }
-                          }}
-                          onFocus={() => {
-                            if (mainCategories.length > 0) {
-                              setShowMainDropdown(true);
-                            }
-                          }}
+                          value={selectedMainCategory}
+                          onChange={handleMainCategoryChange}
                           required
-                          autoComplete="off"
-                        />
+                        >
+                          <option value="">Select Main Category</option>
+                          {mainCategories.map((main, index) => (
+                            <option key={index} value={main}>
+                              {main}
+                            </option>
+                          ))}
+                        </select>
                         <i className="fas fa-chevron-down dropdown-icon"></i>
                       </div>
-                      {showMainDropdown && filteredMainCategories.length > 0 && (
-                        <div style={{
-                          position: 'absolute',
-                          top: '100%',
-                          left: 0,
-                          right: 0,
-                          background: '#fff',
-                          border: '1px solid #e0e0e0',
-                          borderRadius: '8px',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                          zIndex: 10000,
-                          maxHeight: '200px',
-                          overflowY: 'auto',
-                          marginTop: '4px'
-                        }}>
-                          {filteredMainCategories.map((main, index) => (
-                            <div
-                              key={index}
-                              onClick={() => handleMainSelect(main)}
-                              style={{
-                                padding: '12px 16px',
-                                cursor: 'pointer',
-                                borderBottom: index < filteredMainCategories.length - 1 ? '1px solid #f0f0f0' : 'none',
-                                background: selectedMainCategory === main ? '#f0f7ff' : '#fff',
-                                color: selectedMainCategory === main ? '#007bff' : '#333'
-                              }}
-                              onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                              onMouseLeave={(e) => e.target.style.background = selectedMainCategory === main ? '#f0f7ff' : '#fff'}
-                            >
-                              {main}
-                            </div>
-                          ))}
-                        </div>
-                      )}
                     </div>
 
                     {/* 2. Sub Category */}
-                    <div className="form-group" ref={subDropdownRef} style={{ position: 'relative', zIndex: 1000 }}>
+                    <div className="form-group">
                       <label htmlFor="subCategory">Sub Category</label>
                       <div className="input-wrapper">
                         <i className="fas fa-th-large input-icon"></i>
-                        <input
-                          type="text"
+                        <select
                           id="subCategory"
                           name="subCategory"
                           className="form-input"
-                          placeholder={selectedMainCategory ? "Type to search sub category..." : "Select main category first"}
-                          value={subSearchTerm}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            setSubSearchTerm(value);
-                            setShowSubDropdown(true);
-                            // If user is typing something different, clear selection
-                            if (value !== selectedSubCategory) {
-                              setSelectedSubCategory('');
-                            }
-                          }}
-                          onFocus={() => {
-                            if (subCategories.length > 0) {
-                              setShowSubDropdown(true);
-                            }
-                          }}
+                          value={selectedSubCategory}
+                          onChange={handleSubCategoryChange}
                           disabled={!selectedMainCategory}
-                          autoComplete="off"
-                        />
+                        >
+                          <option value="">{selectedMainCategory ? "Select Sub Category" : "Select main category first"}</option>
+                          {subCategories.map((sub, index) => (
+                            <option key={index} value={sub}>
+                              {sub}
+                            </option>
+                          ))}
+                        </select>
                         <i className="fas fa-chevron-down dropdown-icon"></i>
                       </div>
-                      {showSubDropdown && selectedMainCategory && filteredSubCategories.length > 0 && (
-                        <div style={{
-                          position: 'absolute',
-                          top: '100%',
-                          left: 0,
-                          right: 0,
-                          background: '#fff',
-                          border: '1px solid #e0e0e0',
-                          borderRadius: '8px',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                          zIndex: 10000,
-                          maxHeight: '200px',
-                          overflowY: 'auto',
-                          marginTop: '4px'
-                        }}>
-                          {filteredSubCategories.map((sub, index) => (
-                            <div
-                              key={index}
-                              onClick={() => handleSubSelect(sub)}
-                              style={{
-                                padding: '12px 16px',
-                                cursor: 'pointer',
-                                borderBottom: index < filteredSubCategories.length - 1 ? '1px solid #f0f0f0' : 'none',
-                                background: selectedSubCategory === sub ? '#f0f7ff' : '#fff',
-                                color: selectedSubCategory === sub ? '#007bff' : '#333'
-                              }}
-                              onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                              onMouseLeave={(e) => e.target.style.background = selectedSubCategory === sub ? '#f0f7ff' : '#fff'}
-                            >
-                              {sub}
-                            </div>
-                          ))}
-                        </div>
-                      )}
                     </div>
 
                     {/* 3. Common Category */}
-                    <div className="form-group" ref={commonDropdownRef} style={{ position: 'relative', zIndex: 1000 }}>
+                    <div className="form-group">
                       <label htmlFor="commonCategory">Common Category</label>
                       <div className="input-wrapper">
                         <i className="fas fa-th-large input-icon"></i>
-                        <input
-                          type="text"
+                        <select
                           id="commonCategory"
                           name="commonCategory"
                           className="form-input"
-                          placeholder={selectedSubCategory ? "Type to search common category..." : "Select sub category first"}
-                          value={commonSearchTerm}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            setCommonSearchTerm(value);
-                            setShowCommonDropdown(true);
-                            // If user is typing something different, clear selection
-                            if (value !== selectedCommonCategory) {
-                              setSelectedCommonCategory('');
-                            }
-                          }}
-                          onFocus={() => {
-                            if (commonCategories.length > 0) {
-                              setShowCommonDropdown(true);
-                            }
-                          }}
+                          value={selectedCommonCategory}
+                          onChange={handleCommonCategoryChange}
                           disabled={!selectedSubCategory}
-                          autoComplete="off"
-                        />
+                        >
+                          <option value="">{selectedSubCategory ? "Select Common Category" : "Select sub category first"}</option>
+                          {commonCategories.map((common, index) => (
+                            <option key={index} value={common}>
+                              {common}
+                            </option>
+                          ))}
+                        </select>
                         <i className="fas fa-chevron-down dropdown-icon"></i>
                       </div>
-                      {showCommonDropdown && selectedSubCategory && filteredCommonCategories.length > 0 && (
-                        <div style={{
-                          position: 'absolute',
-                          top: '100%',
-                          left: 0,
-                          right: 0,
-                          background: '#fff',
-                          border: '1px solid #e0e0e0',
-                          borderRadius: '8px',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                          zIndex: 10000,
-                          maxHeight: '200px',
-                          overflowY: 'auto',
-                          marginTop: '4px'
-                        }}>
-                          {filteredCommonCategories.map((common, index) => (
-                            <div
-                              key={index}
-                              onClick={() => handleCommonSelect(common)}
-                              style={{
-                                padding: '12px 16px',
-                                cursor: 'pointer',
-                                borderBottom: index < filteredCommonCategories.length - 1 ? '1px solid #f0f0f0' : 'none',
-                                background: selectedCommonCategory === common ? '#f0f7ff' : '#fff',
-                                color: selectedCommonCategory === common ? '#007bff' : '#333'
-                              }}
-                              onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                              onMouseLeave={(e) => e.target.style.background = selectedCommonCategory === common ? '#f0f7ff' : '#fff'}
-                            >
-                              {common}
-                            </div>
-                          ))}
-                        </div>
-                      )}
                     </div>
 
                     {/* 2. Item Code */}

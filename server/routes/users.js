@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const { pool } = require('../config/database');
 
 // Ensure email is optional in users table - URGENT FIX for hosted server
@@ -35,10 +38,36 @@ ensureEmailOptional().catch(err => {
   console.log('⚠️  Email migration failed, will retry on first use');
 });
 
+// Ensure avatar_url column exists in users table
+const ensureAvatarUrlColumn = async () => {
+  try {
+    const result = await pool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_schema = 'public' 
+      AND table_name = 'users' 
+      AND column_name = 'avatar_url'
+    `);
+    if (result.rows.length === 0) {
+      await pool.query('ALTER TABLE users ADD COLUMN avatar_url TEXT');
+      console.log('✅ Added avatar_url column to users table');
+    }
+  } catch (error) {
+    console.warn('⚠️  Error checking/adding avatar_url column:', error.message);
+  }
+};
+
+// Run migration on module load
+ensureAvatarUrlColumn().catch(err => {
+  console.log('⚠️  Avatar URL migration failed, will retry on first use');
+});
+
 router.get('/', async (req, res) => {
   try {
+    // Ensure avatar_url column exists
+    await ensureAvatarUrlColumn();
     const result = await pool.query(
-      'SELECT id, first_name, last_name, role, store_allocated, phone, created_at FROM users ORDER BY created_at DESC'
+      'SELECT id, first_name, last_name, role, store_allocated, phone, avatar_url, created_at FROM users ORDER BY created_at DESC'
     );
     res.json({ success: true, users: result.rows });
   } catch (error) {
@@ -70,7 +99,10 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { firstName, lastName, username, password, storeAllocated, address, city, state, pincode, phone } = req.body;
+    const { firstName, lastName, username, password, storeAllocated, address, city, state, pincode, phone, photo } = req.body;
+    
+    // Ensure avatar_url column exists
+    await ensureAvatarUrlColumn();
 
     // Validate required fields - trim whitespace and check
     const trimmedFirstName = firstName ? firstName.trim() : '';
@@ -124,15 +156,26 @@ router.post('/', async (req, res) => {
     // Ensure email constraint is removed before insert (for hosted server)
     await ensureEmailOptional();
 
+    // Handle photo - if it's base64, store it directly
+    let avatarUrl = null;
+    if (photo) {
+      // If photo is base64 data URL, store it directly
+      if (photo.startsWith('data:image')) {
+        avatarUrl = photo;
+      } else {
+        avatarUrl = photo;
+      }
+    }
+
     let result;
     try {
       // Try with 'SUPERVISOR' role (uppercase) - DO NOT include email at all
       // Use trimmed values and ensure lastName is not empty string (use null if empty)
       result = await pool.query(
-        `INSERT INTO users (first_name, last_name, username, password_hash, phone, store_allocated, address, city, state, pincode, role, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
-         RETURNING id, first_name, last_name, username, phone, role, store_allocated`,
-        [trimmedFirstName, trimmedLastName || null, trimmedUsername, passwordHash, trimmedPhone, storeAllocated || null, address || null, city || null, state || null, pincode || null, 'SUPERVISOR']
+        `INSERT INTO users (first_name, last_name, username, password_hash, phone, store_allocated, address, city, state, pincode, role, avatar_url, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP)
+         RETURNING id, first_name, last_name, username, phone, role, store_allocated, avatar_url`,
+        [trimmedFirstName, trimmedLastName || null, trimmedUsername, passwordHash, trimmedPhone, storeAllocated || null, address || null, city || null, state || null, pincode || null, 'SUPERVISOR', avatarUrl]
       );
     } catch (insertError) {
       if (insertError.code === '42703') { // undefined_column error (email might not exist in some schemas)

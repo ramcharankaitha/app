@@ -100,7 +100,6 @@ const PaymentMaster = ({ onBack, onAddPayment, onNavigate, userRole = 'admin' })
     const query = searchQuery.toLowerCase();
     const filtered = payments.filter(payment => 
       payment.supplier_name?.toLowerCase().includes(query) ||
-      payment.supplier_number?.toLowerCase().includes(query) ||
       payment.chq_number?.toLowerCase().includes(query) ||
       payment.utr?.toLowerCase().includes(query) ||
       payment.created_by?.toLowerCase().includes(query)
@@ -189,7 +188,6 @@ const PaymentMaster = ({ onBack, onAddPayment, onNavigate, userRole = 'admin' })
     try {
       const paymentData = {
         supplierName: editPaymentModal.supplier_name,
-        supplierNumber: editPaymentModal.supplier_number || null,
         chqNumber: editPaymentModal.chq_number || null,
         utr: editPaymentModal.utr || null,
         dateToBePaid: editPaymentModal.date_to_be_paid,
@@ -417,9 +415,6 @@ const PaymentMaster = ({ onBack, onAddPayment, onNavigate, userRole = 'admin' })
                         Supplier Name
                       </th>
                       <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
-                        Supplier Number
-                      </th>
-                      <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
                         CHQ Number
                       </th>
                       <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
@@ -458,13 +453,6 @@ const PaymentMaster = ({ onBack, onAddPayment, onNavigate, userRole = 'admin' })
                             color: '#333'
                           }}>
                             {payment.supplier_name || 'N/A'}
-                          </td>
-                          <td style={{ 
-                            padding: '12px 8px',
-                            fontSize: '14px',
-                            color: '#666'
-                          }}>
-                            {payment.supplier_number || 'N/A'}
                           </td>
                           <td style={{ 
                             padding: '12px 8px',
@@ -820,22 +808,6 @@ const PaymentMaster = ({ onBack, onAddPayment, onNavigate, userRole = 'admin' })
                       type="text"
                       value={editPaymentModal.supplier_name || ''}
                       onChange={(e) => handleEditInputChange('supplier_name', e.target.value)}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        width: '100%',
-                        maxWidth: '300px'
-                      }}
-                    />
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Supplier Number:</span>
-                    <input
-                      type="text"
-                      value={editPaymentModal.supplier_number || ''}
-                      onChange={(e) => handleEditInputChange('supplier_number', e.target.value)}
                       style={{
                         padding: '8px 12px',
                         border: '1px solid #ddd',

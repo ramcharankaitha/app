@@ -83,10 +83,43 @@ const uploadAadhar = multer({
   }
 });
 
+// Multer storage configuration for staff photos
+const photoStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../uploads/staff-photos');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'staff-photo-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const uploadPhoto = multer({
+  storage: photoStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+
+    if (extname && mimetype) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files (jpeg, jpg, png, gif, webp) are allowed for photos.'));
+    }
+  }
+});
+
 router.get('/', async (req, res) => {
   try {
+    // Ensure avatar_url column exists
+    await ensureAvatarUrlColumn();
     const result = await pool.query(
-      'SELECT id, full_name, role, store_allocated, phone, is_handler, created_at FROM staff ORDER BY created_at DESC'
+      'SELECT id, full_name, role, store_allocated, phone, is_handler, avatar_url, created_at FROM staff ORDER BY created_at DESC'
     );
     res.json({ success: true, staff: result.rows });
   } catch (error) {
@@ -130,9 +163,36 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// Ensure avatar_url column exists in staff table
+const ensureAvatarUrlColumn = async () => {
+  try {
+    const result = await pool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_schema = 'public' 
+      AND table_name = 'staff' 
+      AND column_name = 'avatar_url'
+    `);
+    if (result.rows.length === 0) {
+      await pool.query('ALTER TABLE staff ADD COLUMN avatar_url TEXT');
+      console.log('✅ Added avatar_url column to staff table');
+    }
+  } catch (error) {
+    console.warn('⚠️  Error checking/adding avatar_url column:', error.message);
+  }
+};
+
+// Run migration on module load
+ensureAvatarUrlColumn().catch(err => {
+  console.log('⚠️  Avatar URL migration failed, will retry on first use');
+});
+
 router.post('/', async (req, res) => {
   try {
-    const { fullName, username, password, storeAllocated, address, city, state, pincode, isHandler, phoneNumber, salary } = req.body;
+    const { fullName, username, password, storeAllocated, address, city, state, pincode, isHandler, phoneNumber, salary, photo } = req.body;
+    
+    // Ensure avatar_url column exists
+    await ensureAvatarUrlColumn();
 
     // Validate required fields
     if (!fullName || !username || !password || !phoneNumber) {
@@ -181,14 +241,25 @@ router.post('/', async (req, res) => {
     // Ensure email constraint is removed before insert (for hosted server)
     await ensureEmailOptional();
 
+    // Handle photo - if it's base64, store it directly; if it's a file path, use that
+    let avatarUrl = null;
+    if (photo) {
+      // If photo is base64 data URL, store it directly
+      if (photo.startsWith('data:image')) {
+        avatarUrl = photo;
+      } else {
+        avatarUrl = photo;
+      }
+    }
+
     let result;
     try {
-      // Try with all columns including phone, salary - DO NOT include email at all
+      // Try with all columns including phone, salary, avatar_url - DO NOT include email at all
       result = await pool.query(
-        `INSERT INTO staff (full_name, username, password_hash, phone, store_allocated, address, city, state, pincode, is_handler, role, salary, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP)
-         RETURNING id, full_name, username, phone, role, store_allocated, is_handler`,
-        [fullName, trimmedUsername, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'STAFF', salary || null]
+        `INSERT INTO staff (full_name, username, password_hash, phone, store_allocated, address, city, state, pincode, is_handler, role, salary, avatar_url, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP)
+         RETURNING id, full_name, username, phone, role, store_allocated, is_handler, avatar_url`,
+        [fullName, trimmedUsername, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'STAFF', salary || null, avatarUrl]
       );
     } catch (colError) {
       // If it's a NOT NULL violation on email, try to fix it and retry
@@ -303,11 +374,74 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Route for creating staff with file upload
-router.post('/upload', uploadAadhar.single('aadharCopy'), async (req, res) => {
+// Combined multer for handling both aadhar and photo
+const uploadFiles = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      let uploadDir;
+      if (file.fieldname === 'aadharCopy') {
+        uploadDir = path.join(__dirname, '../uploads/aadhar');
+      } else if (file.fieldname === 'photo') {
+        uploadDir = path.join(__dirname, '../uploads/staff-photos');
+      } else {
+        uploadDir = path.join(__dirname, '../uploads');
+      }
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      if (file.fieldname === 'aadharCopy') {
+        cb(null, 'aadhar-' + uniqueSuffix + path.extname(file.originalname));
+      } else if (file.fieldname === 'photo') {
+        cb(null, 'staff-photo-' + uniqueSuffix + path.extname(file.originalname));
+      } else {
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+      }
+    }
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.fieldname === 'aadharCopy') {
+      const allowedTypes = /jpeg|jpg|png|gif|webp|pdf/;
+      const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+      const mimetype = allowedTypes.test(file.mimetype);
+      if (extname && mimetype) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only image (jpeg, jpg, png, gif, webp) and PDF files are allowed for Aadhar copy.'));
+      }
+    } else if (file.fieldname === 'photo') {
+      const allowedTypes = /jpeg|jpg|png|gif|webp/;
+      const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+      const mimetype = allowedTypes.test(file.mimetype);
+      if (extname && mimetype) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only image files (jpeg, jpg, png, gif, webp) are allowed for photos.'));
+      }
+    } else {
+      cb(null, true);
+    }
+  }
+}).fields([
+  { name: 'aadharCopy', maxCount: 1 },
+  { name: 'photo', maxCount: 1 }
+]);
+
+// Route for creating staff with file upload (supports both aadhar and photo)
+router.post('/upload', uploadFiles, async (req, res) => {
   try {
     const { fullName, username, password, storeAllocated, address, city, state, pincode, isHandler, phoneNumber, salary } = req.body;
-    const aadharFilePath = req.file ? `/uploads/aadhar/${req.file.filename}` : null;
+    const aadharFile = req.files && req.files['aadharCopy'] ? req.files['aadharCopy'][0] : null;
+    const photoFile = req.files && req.files['photo'] ? req.files['photo'][0] : null;
+    const aadharFilePath = aadharFile ? `/uploads/aadhar/${aadharFile.filename}` : null;
+    const photoFilePath = photoFile ? `/uploads/staff-photos/${photoFile.filename}` : null;
+    
+    // Ensure avatar_url column exists
+    await ensureAvatarUrlColumn();
 
     // Validate required fields
     if (!fullName || !username || !password || !phoneNumber) {
@@ -356,14 +490,17 @@ router.post('/upload', uploadAadhar.single('aadharCopy'), async (req, res) => {
     // Ensure email constraint is removed before insert (for hosted server)
     await ensureEmailOptional();
 
+    // Handle photo - use file path if uploaded, otherwise null
+    const avatarUrl = photoFilePath || null;
+
     let result;
     try {
-      // Try with all columns including phone, salary, aadhar_file_path - DO NOT include email at all
+      // Try with all columns including phone, salary, aadhar_file_path, avatar_url - DO NOT include email at all
       result = await pool.query(
-        `INSERT INTO staff (full_name, username, password_hash, phone, store_allocated, address, city, state, pincode, is_handler, role, salary, aadhar_file_path, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP)
-         RETURNING id, full_name, username, phone, role, store_allocated, is_handler`,
-        [fullName, trimmedUsername, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'STAFF', salary || null, aadharFilePath]
+        `INSERT INTO staff (full_name, username, password_hash, phone, store_allocated, address, city, state, pincode, is_handler, role, salary, aadhar_file_path, avatar_url, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CURRENT_TIMESTAMP)
+         RETURNING id, full_name, username, phone, role, store_allocated, is_handler, avatar_url`,
+        [fullName, trimmedUsername, passwordHash, phoneNumber, storeAllocated || null, address || null, city || null, state || null, pincode || null, isHandler || false, 'STAFF', salary || null, aadharFilePath, avatarUrl]
       );
     } catch (colError) {
       // If it's a NOT NULL violation on email, try to fix it and retry

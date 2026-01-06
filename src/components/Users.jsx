@@ -77,6 +77,7 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
               initials: initials,
               role: user.role || 'Store User/Supervisor',
               store: user.store_allocated || 'Not Assigned',
+              avatar_url: user.avatar_url || null,
             };
           });
           setUsers(formattedUsers);
@@ -188,6 +189,7 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
                   initials: initials,
                   role: user.role || 'Store User/Supervisor',
                   store: user.store_allocated || 'Not Assigned',
+                  avatar_url: user.avatar_url || null,
                 };
               });
               setUsers(formattedUsers);
@@ -446,16 +448,36 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
                               width: '40px',
                               height: '40px',
                               borderRadius: '50%',
-                              background: '#dc3545',
+                              background: user.avatar_url ? 'transparent' : '#dc3545',
                               color: '#fff',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
                               fontWeight: '600',
                               fontSize: '14px',
-                              flexShrink: 0
+                              flexShrink: 0,
+                              position: 'relative',
+                              overflow: 'hidden'
                             }}>
-                              {user.initials || 'SP'}
+                              {user.avatar_url ? (
+                                <img 
+                                  src={user.avatar_url.startsWith('data:') ? user.avatar_url : (user.avatar_url.startsWith('/') ? `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000'}${user.avatar_url}` : user.avatar_url)}
+                                  alt={user.name}
+                                  style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                    borderRadius: '50%'
+                                  }}
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.parentElement.style.background = '#dc3545';
+                                    e.target.parentElement.innerHTML = user.initials || 'SP';
+                                  }}
+                                />
+                              ) : (
+                                user.initials || 'SP'
+                              )}
                             </div>
                             <span style={{ fontWeight: '500', color: '#333' }}>{user.name || 'N/A'}</span>
                           </div>

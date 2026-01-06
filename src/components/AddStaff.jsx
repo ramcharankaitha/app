@@ -15,13 +15,16 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
     password: '',
     isHandler: false,
     salary: '',
-    aadharFile: null
+    aadharFile: null,
+    photo: null
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [photoFile, setPhotoFile] = useState(null);
 
   const handleBack = () => {
     if (onNavigate) {
@@ -78,10 +81,35 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
   const handleInputChange = (e) => {
     const { name, value, type, checked, files } = e.target;
     if (type === 'file') {
-      setFormData(prev => ({
-        ...prev,
-        [name]: files && files.length > 0 ? files[0] : null
-      }));
+      if (name === 'photo') {
+        const file = files && files.length > 0 ? files[0] : null;
+        if (file) {
+          // Validate file size (max 5MB)
+          if (file.size > 5 * 1024 * 1024) {
+            setError('Photo size should be less than 5MB');
+            return;
+          }
+          // Validate file type
+          if (!file.type.startsWith('image/')) {
+            setError('Please select a valid image file');
+            return;
+          }
+          setPhotoFile(file);
+          // Create preview and store both file and base64
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            setPhotoPreview(reader.result);
+            // Store base64 for JSON API, file object for FormData API
+            setFormData(prev => ({ ...prev, photo: reader.result }));
+          };
+          reader.readAsDataURL(file);
+        }
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          [name]: files && files.length > 0 ? files[0] : null
+        }));
+      }
     } else {
       setFormData(prev => ({
         ...prev,
@@ -96,7 +124,7 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
     setSuccessMessage('');
 
     try {
-      // If Aadhar file is present, use FormData, otherwise use JSON
+      // If Aadhar file is present, use FormData; if only photo (base64), use JSON
       let response;
       if (formData.aadharFile) {
         const formDataToSend = new FormData();
@@ -112,9 +140,14 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
         formDataToSend.append('isHandler', formData.isHandler);
         formDataToSend.append('salary', formData.salary || '');
         formDataToSend.append('aadharCopy', formData.aadharFile);
+        // If photo is base64, convert to blob and append
+        if (formData.photo && photoFile) {
+          formDataToSend.append('photo', photoFile);
+        }
         
         response = await staffAPI.createWithFile(formDataToSend);
       } else {
+        // Use JSON for regular creation (supports base64 photo)
         response = await staffAPI.create({
           fullName: formData.fullName,
           phoneNumber: formData.phoneNumber,
@@ -126,7 +159,8 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
           state: formData.state,
           pincode: formData.pincode,
           isHandler: formData.isHandler,
-          salary: formData.salary || null
+          salary: formData.salary || null,
+          photo: formData.photo || null
         });
       }
 
@@ -215,13 +249,66 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
           <main className="add-user-content">
             {/* Photo Upload */}
             <div className="photo-upload-section">
-              <div className="photo-placeholder">
+              {photoPreview ? (
+                <div style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto' }}>
+                  <img 
+                    src={photoPreview} 
+                    alt="Staff preview" 
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '3px solid #dc3545'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPhotoPreview(null);
+                      setPhotoFile(null);
+                      setFormData(prev => ({ ...prev, photo: null }));
+                      const fileInput = document.getElementById('staffPhoto');
+                      if (fileInput) fileInput.value = '';
+                    }}
+                    style={{
+                      position: 'absolute',
+                      top: '-8px',
+                      right: '-8px',
+                      background: '#dc3545',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '28px',
+                      height: '28px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '12px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    }}
+                  >
+                    <i className="fas fa-times"></i>
+                  </button>
+                </div>
+              ) : (
+                <div className="photo-placeholder">
+                  <i className="fas fa-camera"></i>
+                </div>
+              )}
+              <input
+                type="file"
+                id="staffPhoto"
+                name="photo"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleInputChange}
+              />
+              <label htmlFor="staffPhoto" className="upload-photo-btn" style={{ cursor: 'pointer' }}>
                 <i className="fas fa-camera"></i>
-              </div>
-              <button type="button" className="upload-photo-btn">
-                <i className="fas fa-camera"></i>
-                <span>Upload photo</span>
-              </button>
+                <span>{photoPreview ? 'Change photo' : 'Upload photo'}</span>
+              </label>
             </div>
 
             <form onSubmit={handleSubmit} className="add-user-form">

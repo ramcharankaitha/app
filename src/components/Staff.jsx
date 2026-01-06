@@ -27,6 +27,7 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
             : 'ST',
           role: member.role || 'Staff',
           floor: member.store_allocated || 'Not Assigned', // store_allocated is used for floor in this system
+          avatar_url: member.avatar_url || null,
           created_at: member.created_at
         }));
         setStaff(formattedStaff);
@@ -397,16 +398,36 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
                               width: '40px',
                               height: '40px',
                               borderRadius: '50%',
-                              background: '#dc3545',
+                              background: member.avatar_url ? 'transparent' : '#dc3545',
                               color: '#fff',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
                               fontWeight: '600',
                               fontSize: '14px',
-                              flexShrink: 0
+                              flexShrink: 0,
+                              position: 'relative',
+                              overflow: 'hidden'
                             }}>
-                              {member.initials || 'ST'}
+                              {member.avatar_url ? (
+                                <img 
+                                  src={member.avatar_url.startsWith('data:') ? member.avatar_url : (member.avatar_url.startsWith('/') ? `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000'}${member.avatar_url}` : member.avatar_url)}
+                                  alt={member.name}
+                                  style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                    borderRadius: '50%'
+                                  }}
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.parentElement.style.background = '#dc3545';
+                                    e.target.parentElement.innerHTML = member.initials || 'ST';
+                                  }}
+                                />
+                              ) : (
+                                member.initials || 'ST'
+                              )}
                             </div>
                             <span style={{ fontWeight: '500', color: '#333' }}>{member.name || 'N/A'}</span>
                           </div>

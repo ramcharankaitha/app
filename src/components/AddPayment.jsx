@@ -6,7 +6,6 @@ import './addUser.css';
 const AddPayment = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
     supplierName: '',
-    supplierNumber: '',
     chqNumber: '',
     utr: '',
     dateToBePaid: '',
@@ -93,8 +92,7 @@ const AddPayment = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     const supplierName = supplier.name || supplier.supplier_name || '';
     setFormData(prev => ({
       ...prev,
-      supplierName: supplierName,
-      supplierNumber: supplier.phone || supplier.phone_number_1 || supplier.phone_2 || ''
+      supplierName: supplierName
     }));
     setSupplierSearchResults([]);
     setShowSupplierDropdown(false);
@@ -140,7 +138,6 @@ const AddPayment = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
 
       const response = await paymentsAPI.create({
         supplierName: formData.supplierName.trim(),
-        supplierNumber: formData.supplierNumber.trim() || null,
         chqNumber: formData.chqNumber.trim() || null,
         utr: formData.utr.trim() || null,
         dateToBePaid: formData.dateToBePaid,
@@ -151,7 +148,6 @@ const AddPayment = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
       if (response.success) {
         setFormData({
           supplierName: '',
-          supplierNumber: '',
           chqNumber: '',
           utr: '',
           dateToBePaid: '',
@@ -248,8 +244,8 @@ const AddPayment = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
           {/* Main Content */}
           <main className="add-user-content">
             <form onSubmit={handleSubmit} className="add-user-form">
-              <div className="form-grid four-col">
-                {/* Row 1: Supplier Name, Supplier Number, CHQ Number, UTR */}
+              <div className="form-grid three-col">
+                {/* Row 1: Supplier Name, CHQ Number, UTR */}
                 <div className="form-group" ref={supplierDropdownRef} style={{ position: 'relative', zIndex: 1000 }}>
                   <label htmlFor="supplierName">Supplier Name *</label>
                   <div className="input-wrapper">
@@ -315,22 +311,6 @@ const AddPayment = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       ))}
                     </div>
                   )}
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="supplierNumber">Supplier Number</label>
-                  <div className="input-wrapper">
-                    <i className="fas fa-phone input-icon"></i>
-                    <input
-                      type="tel"
-                      id="supplierNumber"
-                      name="supplierNumber"
-                      className="form-input"
-                      placeholder="Supplier phone number"
-                      value={formData.supplierNumber}
-                      onChange={handleInputChange}
-                    />
-                  </div>
                 </div>
 
                 <div className="form-group">
