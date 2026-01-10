@@ -113,30 +113,7 @@ BEGIN
     END IF;
 END $$;
 
--- Add payment_mode, customer_name, and customer_phone columns to stock_transactions if they don't exist (for existing databases)
-DO $$ 
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'stock_transactions' AND column_name = 'payment_mode'
-    ) THEN
-        ALTER TABLE stock_transactions ADD COLUMN payment_mode VARCHAR(50);
-    END IF;
-    
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'stock_transactions' AND column_name = 'customer_name'
-    ) THEN
-        ALTER TABLE stock_transactions ADD COLUMN customer_name VARCHAR(200);
-    END IF;
-    
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'stock_transactions' AND column_name = 'customer_phone'
-    ) THEN
-        ALTER TABLE stock_transactions ADD COLUMN customer_phone VARCHAR(20);
-    END IF;
-END $$;
+-- NOTE: The ALTER statements for stock_transactions are moved to AFTER the table creation (see after line 583)
 
 -- Add password_hash column if it doesn't exist (for existing databases)
 DO $$ 
@@ -602,6 +579,38 @@ CREATE TABLE IF NOT EXISTS stock_transactions (
     created_by VARCHAR(100), -- username or user identifier
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Add payment_mode, customer_name, and customer_phone columns to stock_transactions if they don't exist (for existing databases)
+-- This runs AFTER table creation to avoid errors on fresh databases
+DO $$ 
+BEGIN
+    -- Check if table exists first (it should, but check to be safe)
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_name = 'stock_transactions'
+    ) THEN
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'stock_transactions' AND column_name = 'payment_mode'
+        ) THEN
+            ALTER TABLE stock_transactions ADD COLUMN payment_mode VARCHAR(50);
+        END IF;
+        
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'stock_transactions' AND column_name = 'customer_name'
+        ) THEN
+            ALTER TABLE stock_transactions ADD COLUMN customer_name VARCHAR(200);
+        END IF;
+        
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'stock_transactions' AND column_name = 'customer_phone'
+        ) THEN
+            ALTER TABLE stock_transactions ADD COLUMN customer_phone VARCHAR(20);
+        END IF;
+    END IF;
+END $$;
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);

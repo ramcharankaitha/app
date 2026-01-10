@@ -4,36 +4,69 @@ const { pool } = require('../config/database');
 
 const initDatabase = async () => {
   try {
-    const schemaPath = path.join(__dirname, 'schema.sql');
-    const schema = fs.readFileSync(schemaPath, 'utf8');
-
-    await pool.query(schema);
-    console.log('✅ Database schema initialized successfully');
+    // Check if database is already initialized
+    const checkTables = await pool.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND table_name IN ('users', 'staff', 'products', 'stores')
+      LIMIT 1
+    `);
+    
+    if (checkTables.rows.length === 0) {
+      console.log('📦 Initializing fresh database...');
+      const schemaPath = path.join(__dirname, 'schema.sql');
+      const schema = fs.readFileSync(schemaPath, 'utf8');
+      
+      // Execute schema in a transaction for safety
+      await pool.query('BEGIN');
+      try {
+        await pool.query(schema);
+        await pool.query('COMMIT');
+        console.log('✅ Database schema initialized successfully');
+      } catch (schemaError) {
+        await pool.query('ROLLBACK');
+        console.error('❌ Error executing schema, rolling back:', schemaError.message);
+        throw schemaError;
+      }
+    } else {
+      console.log('✅ Database tables already exist, skipping schema initialization');
+    }
 
     const bcrypt = require('bcryptjs');
     const hashedPassword = await bcrypt.hash('admin123', 10);
     
-    const checkAdmin = await pool.query(
-      'SELECT id, password_hash FROM admin_profile WHERE LOWER(TRIM(email)) = LOWER($1)',
-      ['admin@anithastores.com']
-    );
-
-    if (checkAdmin.rows.length === 0) {
-      await pool.query(
-        `INSERT INTO admin_profile (full_name, email, role, primary_store, store_scope, timezone, password_hash)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         ON CONFLICT DO NOTHING`,
-        ['Admin Root', 'admin@anithastores.com', 'Super Admin', 'Global', 'All stores • Global scope', 'IST (GMT+05:30)', hashedPassword]
-      );
-      console.log('✅ Default admin profile created');
+    // Check if admin_profile table exists before querying
+    const adminTableExists = await pool.query(`
+      SELECT 1 FROM information_schema.tables 
+      WHERE table_name = 'admin_profile'
+    `);
+    
+    if (adminTableExists.rows.length === 0) {
+      console.log('⚠️  admin_profile table does not exist yet, skipping admin setup');
     } else {
-      const admin = checkAdmin.rows[0];
-      if (!admin.password_hash) {
+      const checkAdmin = await pool.query(
+        'SELECT id, password_hash FROM admin_profile WHERE LOWER(TRIM(email)) = LOWER($1)',
+        ['admin@anithastores.com']
+      );
+
+      if (checkAdmin.rows.length === 0) {
         await pool.query(
-          `UPDATE admin_profile SET password_hash = $1 WHERE LOWER(TRIM(email)) = LOWER($2)`,
-          [hashedPassword, 'admin@anithastores.com']
+          `INSERT INTO admin_profile (full_name, email, role, primary_store, store_scope, timezone, password_hash)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           ON CONFLICT DO NOTHING`,
+          ['Admin Root', 'admin@anithastores.com', 'Super Admin', 'Global', 'All stores • Global scope', 'IST (GMT+05:30)', hashedPassword]
         );
-        console.log('✅ Default admin password set');
+        console.log('✅ Default admin profile created');
+      } else {
+        const admin = checkAdmin.rows[0];
+        if (!admin.password_hash) {
+          await pool.query(
+            `UPDATE admin_profile SET password_hash = $1 WHERE LOWER(TRIM(email)) = LOWER($2)`,
+            [hashedPassword, 'admin@anithastores.com']
+          );
+          console.log('✅ Default admin password set');
+        }
       }
     }
 
