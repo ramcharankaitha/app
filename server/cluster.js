@@ -9,10 +9,13 @@ if (cluster.isMaster) {
   console.log(`🚀 Master process ${process.pid} is running`);
   console.log(`📊 Starting ${numWorkers} worker processes...`);
 
-  // Fork workers
+  // Fork workers with staggered startup to avoid overwhelming database
+  // Stagger by 500ms to prevent all workers connecting simultaneously
   for (let i = 0; i < numWorkers; i++) {
-    const worker = cluster.fork();
-    console.log(`✅ Worker ${worker.process.pid} started`);
+    setTimeout(() => {
+      const worker = cluster.fork();
+      console.log(`✅ Worker ${worker.process.pid} started`);
+    }, i * 500); // Stagger by 500ms per worker
   }
 
   // Handle worker exit

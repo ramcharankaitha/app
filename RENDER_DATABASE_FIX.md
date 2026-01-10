@@ -28,7 +28,7 @@ Go to **Render Dashboard → Your Backend Service → Environment**
 
 **Required Variables:**
 ```
-DATABASE_URL=<automatically provided by Render>
+DATABASE_URL=<your-database-connection-string>
 PORT=5000
 NODE_ENV=production
 JWT_SECRET=<your-secret-key>
@@ -36,23 +36,42 @@ FRONTEND_URL=<your-frontend-url>
 ```
 
 **Important:** 
-- `DATABASE_URL` is automatically set by Render when you link a PostgreSQL database
-- Make sure your PostgreSQL database is **linked** to your backend service
+- `DATABASE_URL` can be from:
+  - **Render PostgreSQL** (automatically set when linked)
+  - **Supabase** (see `SUPABASE_SETUP_GUIDE.md`)
+  - **Railway** (external connection string)
+  - **Any PostgreSQL database** (connection string format)
+- The code automatically detects the provider and enables SSL
 
-### Step 2: Link PostgreSQL Database
+### Step 2: Set Database Connection String
 
+**Option A: Using Render PostgreSQL (Automatic)**
 1. **Go to Render Dashboard**
 2. **Click on your PostgreSQL database**
-3. **Copy the "Internal Database URL"** (for Render services) or **"External Database URL"** (for external access)
+3. **Copy the "Internal Database URL"** (for Render services)
 4. **Go to your Backend Service → Environment**
 5. **Verify `DATABASE_URL` is set** (should be automatic if linked)
+
+**Option B: Using Supabase (Recommended)**
+1. **Get Supabase connection string:**
+   - Go to Supabase Dashboard → Your Project → Settings → Database
+   - Copy "Connection pooling" string (port 6543)
+2. **Set in Render:**
+   - Go to Backend Service → Environment
+   - Add/Update `DATABASE_URL` with Supabase connection string
+   - See `SUPABASE_SETUP_GUIDE.md` for detailed instructions
+
+**Option C: Using External Database (Railway, etc.)**
+1. Get connection string from your database provider
+2. Go to Backend Service → Environment
+3. Add/Update `DATABASE_URL` with connection string
 
 **If DATABASE_URL is missing:**
 1. Go to your backend service
 2. Click **"Environment"** tab
 3. Click **"Add Environment Variable"**
 4. Key: `DATABASE_URL`
-5. Value: Copy from your PostgreSQL database (Internal Database URL)
+5. Value: Your database connection string
 6. Click **"Save Changes"**
 
 ### Step 3: Verify Database is Initialized

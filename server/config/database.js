@@ -11,19 +11,23 @@ if (process.env.DATABASE_URL) {
   // Parse DATABASE_URL to extract connection details
   let connectionConfig = {
     connectionString: process.env.DATABASE_URL,
-    max: 20, // Reduced for Render free tier compatibility
+    max: 10, // Reduced for Railway compatibility
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000, // Increased timeout for Render
+    connectionTimeoutMillis: 30000, // Increased timeout for Railway (30 seconds)
     allowExitOnIdle: true,
+    // Add keepalive to prevent connection drops
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10000,
   };
 
   // Determine SSL requirement based on environment
-  // Render PostgreSQL requires SSL
+  // Most cloud PostgreSQL providers require SSL
   const isRender = process.env.DATABASE_URL && process.env.DATABASE_URL.includes('render.com');
   const isRailway = process.env.DATABASE_URL && process.env.DATABASE_URL.includes('railway.app');
   const isHeroku = process.env.DATABASE_URL && process.env.DATABASE_URL.includes('herokuapp.com');
+  const isSupabase = process.env.DATABASE_URL && process.env.DATABASE_URL.includes('supabase.co');
   
-  if (isRender || isRailway || isHeroku || process.env.NODE_ENV === 'production') {
+  if (isRender || isRailway || isHeroku || isSupabase || process.env.NODE_ENV === 'production') {
     connectionConfig.ssl = {
       rejectUnauthorized: false
     };
@@ -34,6 +38,12 @@ if (process.env.DATABASE_URL) {
   console.log('✅ Using DATABASE_URL for connection (Production mode)');
   if (isRender) {
     console.log('✅ Detected Render database - SSL enabled');
+  } else if (isSupabase) {
+    console.log('✅ Detected Supabase database - SSL enabled');
+  } else if (isRailway) {
+    console.log('✅ Detected Railway database - SSL enabled');
+  } else if (isHeroku) {
+    console.log('✅ Detected Heroku database - SSL enabled');
   }
 } else {
   // Development - Individual config values
@@ -88,7 +98,7 @@ setInterval(() => {
   }
 }, 60000); // Log every minute
 
-const testConnection = async (retries = 3, delay = 2000) => {
+const testConnection = async (retries = 5, delay = 3000) => {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       console.log(`🔄 Testing database connection (attempt ${attempt}/${retries})...`);
@@ -122,9 +132,12 @@ const testConnection = async (retries = 3, delay = 2000) => {
       } else if (error.message.includes('ECONNREFUSED') || error.code === 'ECONNREFUSED') {
         console.error('\n💡 Solution: Make sure PostgreSQL service is running');
         console.error('   For Render: Check if database service is active in Render dashboard');
-      } else if (error.message.includes('timeout') || error.code === 'ETIMEDOUT') {
+      } else if (error.message.includes('timeout') || error.code === 'ETIMEDOUT' || error.message.includes('Connection terminated due to connection timeout')) {
         console.error('\n💡 Solution: Connection timeout - database may be slow to respond');
-        console.error('   For Render: This may happen on free tier - retrying...');
+        console.error('   For Railway: Database may be paused (free tier) or slow to respond');
+        console.error('   - Check Railway dashboard: Is database service active?');
+        console.error('   - Free tier databases pause after inactivity - may need to wake up');
+        console.error('   - Retrying with longer delays...');
       } else if (error.message.includes('SSL') || error.code === '23505') {
         console.error('\n💡 Solution: SSL connection issue');
         console.error('   For Render: SSL should be enabled automatically');
@@ -134,7 +147,7 @@ const testConnection = async (retries = 3, delay = 2000) => {
       if (attempt < retries) {
         console.log(`⏳ Waiting ${delay}ms before retry...`);
         await new Promise(resolve => setTimeout(resolve, delay));
-        delay *= 1.5; // Exponential backoff
+        delay = Math.min(delay * 1.5, 10000); // Exponential backoff, max 10s
       } else {
         console.error('\n❌ All connection attempts failed. Please check:');
         console.error('   1. Database service is running (Render dashboard)');
