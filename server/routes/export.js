@@ -33,6 +33,89 @@ router.get('/all', async (req, res) => {
   }
 });
 
+// Export ALL database tables - Complete backup
+router.get('/complete-backup', async (req, res) => {
+  try {
+    console.log('📦 Starting complete database backup export...');
+    
+    // List of all tables to export
+    const tables = [
+      'users',
+      'staff',
+      'products',
+      'customers',
+      'suppliers',
+      'stores',
+      'services',
+      'stock_transactions',
+      'sales_records',
+      'purchase_orders',
+      'payments',
+      'quotations',
+      'chit_plans',
+      'chit_customers',
+      'chit_entries',
+      'admin_profile',
+      'role_permissions',
+      'dispatch',
+      'transport',
+      'attendance',
+      'supervisor_attendance',
+      'notifications',
+      'categories'
+    ];
+
+    const exportData = {
+      exportDate: new Date().toISOString(),
+      databaseUrl: process.env.DATABASE_URL ? 'Connected' : 'Not set',
+      tables: {}
+    };
+
+    // Export each table
+    for (const table of tables) {
+      try {
+        const result = await pool.query(`SELECT * FROM ${table} ORDER BY id`);
+        exportData.tables[table] = result.rows;
+        console.log(`✅ Exported ${table}: ${result.rows.length} records`);
+      } catch (error) {
+        // Table might not exist, skip it
+        if (error.code === '42P01') {
+          console.log(`⚠️  Table ${table} does not exist, skipping...`);
+          exportData.tables[table] = [];
+        } else {
+          console.error(`❌ Error exporting ${table}:`, error.message);
+          exportData.tables[table] = [];
+        }
+      }
+    }
+
+    // Get table counts for summary
+    const summary = {};
+    for (const table of tables) {
+      if (exportData.tables[table]) {
+        summary[table] = exportData.tables[table].length;
+      }
+    }
+
+    exportData.summary = summary;
+    exportData.totalRecords = Object.values(summary).reduce((sum, count) => sum + count, 0);
+
+    console.log(`✅ Complete backup exported: ${exportData.totalRecords} total records`);
+
+    res.json({
+      success: true,
+      message: 'Complete database backup exported successfully',
+      data: exportData
+    });
+  } catch (error) {
+    console.error('❌ Complete backup export error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Failed to export complete backup'
+    });
+  }
+});
+
 router.get('/sales', async (req, res) => {
   try {
     const { startDate, endDate } = req.query;

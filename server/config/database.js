@@ -11,7 +11,7 @@ if (process.env.DATABASE_URL) {
   // Parse DATABASE_URL to extract connection details
   let connectionConfig = {
     connectionString: process.env.DATABASE_URL,
-    max: 10, // Reduced for Railway compatibility
+    max: 40, // Optimized for 50-100 concurrent users making updates (write-heavy workload)
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 30000, // Increased timeout for Railway (30 seconds)
     allowExitOnIdle: true,
@@ -93,8 +93,10 @@ setInterval(() => {
     idleCount: pool.idleCount,
     waitingCount: pool.waitingCount
   };
-  if (poolStats.totalCount > 40) {
-    console.warn('⚠️  High database connection usage:', poolStats);
+  // Warn if using more than 80% of pool capacity
+  const poolCapacity = process.env.DATABASE_URL ? 40 : 20; // Production: 40, Development: 20
+  if (poolStats.totalCount > poolCapacity * 0.8) {
+    console.warn('⚠️  High database connection usage:', poolStats, `(Max: ${poolCapacity})`);
   }
 }, 60000); // Log every minute
 
