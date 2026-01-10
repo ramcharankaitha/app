@@ -12,7 +12,32 @@ router.get('/', async (req, res) => {
     res.json({ success: true, services: result.rows });
   } catch (error) {
     console.error('Get services error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error details:', {
+      code: error.code,
+      message: error.message,
+      detail: error.detail
+    });
+    
+    // Handle database connection errors
+    if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+      return res.status(503).json({ 
+        error: 'Database connection failed. Please try again later.',
+        message: 'The database is temporarily unavailable.'
+      });
+    }
+    
+    // Handle table not found errors
+    if (error.code === '42P01') {
+      return res.status(500).json({ 
+        error: 'Database table does not exist. Please contact administrator.',
+        message: 'The services table may not have been initialized.'
+      });
+    }
+    
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
@@ -114,6 +139,19 @@ router.get('/:id', async (req, res) => {
 // Create service
 router.post('/', async (req, res) => {
   try {
+    // Test database connection first
+    try {
+      await pool.query('SELECT 1');
+    } catch (connError) {
+      console.error('Database connection error:', connError);
+      if (connError.code === 'ECONNREFUSED' || connError.code === 'ETIMEDOUT') {
+        return res.status(503).json({ 
+          error: 'Database connection failed',
+          message: 'Unable to connect to database. Please try again later.'
+        });
+      }
+      throw connError;
+    }
     const {
       customerName,
       warranty,
@@ -328,7 +366,50 @@ router.post('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Create service error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error details:', {
+      code: error.code,
+      message: error.message,
+      detail: error.detail,
+      constraint: error.constraint,
+      table: error.table,
+      column: error.column
+    });
+    
+    // Handle database connection errors
+    if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+      return res.status(503).json({ 
+        error: 'Database connection failed',
+        message: 'Unable to connect to database. Please try again later.'
+      });
+    }
+    
+    // Handle table not found errors
+    if (error.code === '42P01') {
+      return res.status(500).json({ 
+        error: 'Database table does not exist',
+        message: 'The services table may not have been initialized. Please contact administrator.'
+      });
+    }
+    
+    // Handle constraint violations
+    if (error.code === '23502') {
+      return res.status(400).json({ 
+        error: 'Required field missing',
+        message: `Column '${error.column}' cannot be null. Please check your input.`
+      });
+    }
+    
+    if (error.code === '23505') {
+      return res.status(400).json({ 
+        error: 'Duplicate entry',
+        message: 'A service with these details already exists.'
+      });
+    }
+    
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Failed to create service. Please try again.'
+    });
   }
 });
 
