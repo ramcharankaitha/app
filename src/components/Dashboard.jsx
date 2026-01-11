@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useProfile } from '../hooks/useProfile';
-import { profileAPI, exportAPI, notificationsAPI, stockAPI } from '../services/api';
+import { profileAPI, exportAPI, notificationsAPI, stockAPI, productsAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import SupervisorAttendanceView from './SupervisorAttendanceView';
 import UnifiedAttendanceView from './UnifiedAttendanceView';
@@ -31,7 +31,9 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
   const [dashboardStats, setDashboardStats] = useState({
     stockInCount: 0,
     stockOutCount: 0,
-    fastestSelling: null
+    fastestSelling: null,
+    totalProducts: 0,
+    criticalProducts: 0
   });
   const [loadingStats, setLoadingStats] = useState(true);
   const menuRef = useRef(null);
@@ -79,11 +81,35 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
         setLoadingStats(true);
         const response = await stockAPI.getDashboardStats();
         if (response.success) {
-          setDashboardStats({
+          setDashboardStats(prev => ({
+            ...prev,
             stockInCount: response.stockInCount || 0,
             stockOutCount: response.stockOutCount || 0,
             fastestSelling: response.fastestSelling
-          });
+          }));
+        }
+        
+        // Fetch products count
+        try {
+          const productsResponse = await productsAPI.getAll();
+          if (productsResponse.success) {
+            const products = productsResponse.products || [];
+            const totalProducts = products.length;
+            // Count critical products (low stock - quantity <= minimum_quantity)
+            const criticalProducts = products.filter(p => {
+              const currentQty = parseInt(p.current_quantity) || 0;
+              const minQty = parseInt(p.minimum_quantity) || 0;
+              return currentQty <= minQty && currentQty > 0;
+            }).length;
+            
+            setDashboardStats(prev => ({
+              ...prev,
+              totalProducts,
+              criticalProducts
+            }));
+          }
+        } catch (productsError) {
+          console.error('Error fetching products count:', productsError);
         }
       } catch (error) {
         console.error('Error fetching dashboard stats:', error);
@@ -115,10 +141,15 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     },
     {
       title: 'Current Products',
-      value: '54',
-      subtitle: 'Critical: 9 products',
+      value: loadingStats ? '...' : dashboardStats.totalProducts.toLocaleString(),
+      subtitle: `Critical: ${loadingStats ? '...' : dashboardStats.criticalProducts} products`,
       icon: 'fa-box',
-      color: '#dc3545'
+      color: '#dc3545',
+      onClick: () => {
+        if (onNavigate) {
+          onNavigate('productList');
+        }
+      }
     },
     {
       title: 'Fastest Selling',
@@ -306,7 +337,7 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
       setActiveNav('home');
     } else if (currentPage === 'users' || currentPage === 'addUser') {
       setActiveNav('users');
-    } else if (currentPage === 'products' || currentPage === 'addProduct' || currentPage === 'suppliers' || currentPage === 'addSupplier' || currentPage === 'transport' || currentPage === 'addTransport' || currentPage === 'chitPlans' || currentPage === 'addChitCustomer' || currentPage === 'categoryMaster' || currentPage === 'addCategory' || currentPage === 'masterMenu') {
+    } else if (currentPage === 'products' || currentPage === 'productList' || currentPage === 'addProduct' || currentPage === 'suppliers' || currentPage === 'addSupplier' || currentPage === 'transport' || currentPage === 'addTransport' || currentPage === 'chitPlans' || currentPage === 'addChitCustomer' || currentPage === 'categoryMaster' || currentPage === 'addCategory' || currentPage === 'masterMenu') {
       setActiveNav('masterMenu');
     } else if (currentPage === 'staff' || currentPage === 'addStaff') {
       setActiveNav('staff');
@@ -526,7 +557,27 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
         {/* Stats Cards */}
         <div className="stats-grid">
           {stats.map((stat, index) => (
-            <div key={index} className="stat-card">
+            <div 
+              key={index} 
+              className="stat-card"
+              onClick={stat.onClick}
+              style={{ 
+                cursor: stat.onClick ? 'pointer' : 'default',
+                transition: stat.onClick ? 'transform 0.2s, box-shadow 0.2s' : 'none'
+              }}
+              onMouseEnter={(e) => {
+                if (stat.onClick) {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (stat.onClick) {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '';
+                }
+              }}
+            >
               <div className="stat-content">
                 <h3 className="stat-title">{stat.title}</h3>
                 <p className="stat-value">{stat.value}</p>

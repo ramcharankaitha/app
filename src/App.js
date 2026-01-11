@@ -11,6 +11,7 @@ import Staff from './components/Staff';
 import AddStaff from './components/AddStaff';
 import Products from './components/Products';
 import AddProduct from './components/AddProduct';
+import ProductList from './components/ProductList';
 import Customers from './components/Customers';
 import AddCustomer from './components/AddCustomer';
 import Suppliers from './components/Suppliers';
@@ -273,6 +274,18 @@ const AdminRoutes = () => {
         element={
           <ProtectedRoute>
             <AddProduct onBack={() => handleNavigation('products')} onCancel={() => handleNavigation('products')} onNavigate={handleNavigation} userRole={userRole} />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/productList"
+        element={
+          <ProtectedRoute>
+            <ProductList
+              onBack={() => handleNavigation(getBackPath('dashboard'))}
+              onNavigate={handleNavigation}
+            />
           </ProtectedRoute>
         }
       />
