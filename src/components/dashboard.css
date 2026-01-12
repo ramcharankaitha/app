@@ -36,6 +36,8 @@
     margin-left: 90px;
     width: calc(100% - 90px);
     min-height: 100vh;
+    max-width: calc(100vw - 90px);
+    box-sizing: border-box;
     /* Hide scrollbar for Chrome, Safari and Opera */
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE and Edge */
@@ -49,6 +51,7 @@
 .dashboard-main.shifted {
     margin-left: 260px;
     width: calc(100% - 260px);
+    max-width: calc(100vw - 260px);
 }
 
 .sidebar-overlay {
@@ -267,9 +270,11 @@
     padding: 20px;
     padding-bottom: 20px;
     overflow-y: visible;
+    overflow-x: hidden;
     min-height: 0;
     width: 100%;
-    max-width: 1400px;
+    max-width: 100%;
+    box-sizing: border-box;
     margin: 0 auto;
 }
 

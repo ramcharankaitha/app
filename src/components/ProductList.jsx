@@ -195,16 +195,26 @@ const ProductList = ({ onBack, onNavigate }) => {
                     marginTop: '0', 
                     maxHeight: 'none',
                     overflowX: 'auto',
-                    width: '100%'
+                    overflowY: 'visible',
+                    width: '100%',
+                    maxWidth: '100%',
+                    position: 'relative'
                   }}>
-                    <table style={{ 
-                      width: '100%', 
-                      borderCollapse: 'collapse',
-                      background: 'var(--card-bg)',
-                      borderRadius: '12px',
-                      overflow: 'hidden',
-                      boxShadow: '0 2px 8px var(--shadow-light)'
+                    <div style={{
+                      minWidth: '100%',
+                      width: 'max-content',
+                      maxWidth: '100%'
                     }}>
+                      <table style={{ 
+                        width: '100%', 
+                        minWidth: '800px',
+                        borderCollapse: 'collapse',
+                        background: 'var(--card-bg)',
+                        borderRadius: '12px',
+                        overflow: 'hidden',
+                        boxShadow: '0 2px 8px var(--shadow-light)',
+                        tableLayout: 'auto'
+                      }}>
                       <thead>
                         <tr style={{ background: '#f8f9fa' }}>
                           <th style={{ 
@@ -415,6 +425,7 @@ const ProductList = ({ onBack, onNavigate }) => {
                         })}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 )}
               </>

@@ -52,8 +52,13 @@
         }
         #root {
             width: 100%;
+            max-width: 100vw;
             min-height: 100vh;
             position: relative;
+            overflow-x: hidden;
+        }
+        *, *::before, *::after {
+            box-sizing: border-box;
         }
         /* Prevent zoom on input focus (iOS) */
         input, textarea, select {
