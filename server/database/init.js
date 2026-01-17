@@ -33,6 +33,39 @@ const initDatabase = async () => {
       console.log('✅ Database tables already exist, skipping schema initialization');
     }
 
+    // Ensure product fields are optional (sku_code, model_number) - run on every startup
+    try {
+      await pool.query(`
+        DO $$ 
+        BEGIN
+          -- Make sku_code optional (remove NOT NULL constraint if it exists)
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'products' 
+            AND column_name = 'sku_code' 
+            AND is_nullable = 'NO'
+          ) THEN
+            ALTER TABLE products ALTER COLUMN sku_code DROP NOT NULL;
+            RAISE NOTICE 'Made sku_code optional';
+          END IF;
+          
+          -- Add model_number column if it doesn't exist
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'products' 
+            AND column_name = 'model_number'
+          ) THEN
+            ALTER TABLE products ADD COLUMN model_number VARCHAR(255);
+            RAISE NOTICE 'Added model_number column to products table';
+          END IF;
+        END $$;
+      `);
+      console.log('✅ Product fields (sku_code, model_number) verified');
+    } catch (migrationError) {
+      console.warn('⚠️  Product fields migration warning:', migrationError.message);
+      // Continue even if migration fails (column might already be in correct state)
+    }
+
     const bcrypt = require('bcryptjs');
     const hashedPassword = await bcrypt.hash('admin123', 10);
     

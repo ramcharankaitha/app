@@ -43,6 +43,19 @@ BEGIN
     END IF;
 END $$;
 
+-- Add model_number column if it doesn't exist
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'products' 
+        AND column_name = 'model_number'
+    ) THEN
+        ALTER TABLE products ADD COLUMN model_number VARCHAR(255);
+        RAISE NOTICE 'Added model_number column to products table';
+    END IF;
+END $$;
+
 -- Verify the changes
 SELECT 
     column_name,
@@ -51,9 +64,10 @@ SELECT
     data_type
 FROM information_schema.columns
 WHERE table_name = 'products'
-AND column_name IN ('product_name', 'item_code', 'sku_code', 'image_url')
+AND column_name IN ('product_name', 'item_code', 'sku_code', 'model_number', 'image_url')
 ORDER BY column_name;
 
 -- Expected result: is_nullable should be 'YES' for all checked columns
 -- Note: item_code and sku_code may still have UNIQUE constraints, which is fine
+-- Multiple NULL values are allowed in UNIQUE columns in PostgreSQL
 

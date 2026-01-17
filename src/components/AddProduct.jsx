@@ -568,7 +568,6 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           placeholder="e.g., SKU-44355"
                           value={formData.skuCode}
                           onChange={handleInputChange}
-                          required
                         />
                       </div>
                     </div>

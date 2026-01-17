@@ -70,10 +70,40 @@ router.get('/item-code/:itemCode', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { productName, itemCode, skuCode, minimumQuantity, maintainingQuantity, currentQuantity, supplierName, category, mrp, discount, discount1, discount2, sellRate, purchaseRate, points, imageUrl, userRole, createdBy } = req.body;
+    const { productName, itemCode, skuCode, modelNumber, minimumQuantity, maintainingQuantity, currentQuantity, supplierName, category, mrp, discount, discount1, discount2, sellRate, purchaseRate, points, imageUrl, userRole, createdBy } = req.body;
     
     // Ensure verification columns exist
     await ensureVerificationColumn('products');
+    
+    // Ensure sku_code is optional and model_number exists (one-time migration)
+    try {
+      await pool.query(`
+        DO $$ 
+        BEGIN
+          -- Make sku_code optional (remove NOT NULL constraint if it exists)
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'products' 
+            AND column_name = 'sku_code' 
+            AND is_nullable = 'NO'
+          ) THEN
+            ALTER TABLE products ALTER COLUMN sku_code DROP NOT NULL;
+          END IF;
+          
+          -- Add model_number column if it doesn't exist
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'products' 
+            AND column_name = 'model_number'
+          ) THEN
+            ALTER TABLE products ADD COLUMN model_number VARCHAR(255);
+          END IF;
+        END $$;
+      `);
+    } catch (migrationError) {
+      // Log but don't fail - migration might have already run
+      console.warn('⚠️  Product fields migration warning:', migrationError.message);
+    }
     
     // Determine verification status based on user role
     const isVerified = shouldBeVerified(userRole || 'staff');
@@ -98,11 +128,14 @@ router.post('/', async (req, res) => {
     const trimmedProductName = productName ? productName.trim() : null;
     const trimmedItemCode = itemCode ? itemCode.trim() : null;
     const trimmedSkuCode = skuCode ? skuCode.trim() : null;
+    const trimmedModelNumber = modelNumber ? modelNumber.trim() : null;
     
     // Generate default values if not provided - ensure they're not empty strings
     const finalProductName = (trimmedProductName && trimmedProductName.length > 0) ? trimmedProductName : 'Unnamed Product';
     const finalItemCode = (trimmedItemCode && trimmedItemCode.length > 0) ? trimmedItemCode : `ITEM-${Date.now()}`;
-    const finalSkuCode = (trimmedSkuCode && trimmedSkuCode.length > 0) ? trimmedSkuCode : `SKU-${Date.now()}`;
+    // SKU and Model Number are now optional - use null if not provided
+    const finalSkuCode = (trimmedSkuCode && trimmedSkuCode.length > 0) ? trimmedSkuCode : null;
+    const finalModelNumber = (trimmedModelNumber && trimmedModelNumber.length > 0) ? trimmedModelNumber : null;
 
     // Parse numeric values safely
     const parsedMrp = parseNumeric(mrp);
@@ -132,7 +165,7 @@ router.post('/', async (req, res) => {
       SELECT column_name 
       FROM information_schema.columns 
       WHERE table_name = 'products' 
-      AND column_name IN ('maintaining_quantity', 'points', 'image_url', 'purchase_rate', 'discount_1', 'discount_2')
+      AND column_name IN ('maintaining_quantity', 'points', 'image_url', 'purchase_rate', 'discount_1', 'discount_2', 'model_number')
     `);
     
     const existingColumns = columnCheck.rows.map(r => r.column_name);
@@ -142,6 +175,7 @@ router.post('/', async (req, res) => {
     const hasPurchaseRate = existingColumns.includes('purchase_rate');
     const hasDiscount1 = existingColumns.includes('discount_1');
     const hasDiscount2 = existingColumns.includes('discount_2');
+    const hasModelNumber = existingColumns.includes('model_number');
     
     // Build query based on existing columns
     let columns = ['product_name', 'item_code', 'sku_code', 'minimum_quantity', 'current_quantity', 'status', 'mrp', 'discount', 'sell_rate', 'supplier_name', 'category', 'is_verified', 'created_by'];
@@ -181,6 +215,12 @@ router.post('/', async (req, res) => {
     if (hasDiscount2) {
       columns.push('discount_2');
       values.push(parsedDiscount2);
+      paramIndex++;
+    }
+    
+    if (hasModelNumber) {
+      columns.push('model_number');
+      values.push(finalModelNumber);
       paramIndex++;
     }
     
@@ -311,7 +351,7 @@ router.put('/:id/verify', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { productName, itemCode, skuCode, minimumQuantity, supplierName, category, mrp, discount, sellRate, currentQuantity, status } = req.body;
+    const { productName, itemCode, skuCode, modelNumber, minimumQuantity, supplierName, category, mrp, discount, sellRate, currentQuantity, status } = req.body;
 
     // Fetch previous product values before updating
     const prevResult = await pool.query('SELECT current_quantity, minimum_quantity FROM products WHERE id = $1', [id]);
@@ -323,16 +363,36 @@ router.put('/:id', async (req, res) => {
     const prevQty = parseInt(prevProduct.current_quantity) || 0;
     const prevMinQty = parseInt(prevProduct.minimum_quantity) || 0;
 
-    const result = await pool.query(
-      `UPDATE products 
-       SET product_name = $1, item_code = $2, sku_code = $3, minimum_quantity = $4, 
-           mrp = $5, discount = $6, sell_rate = $7, current_quantity = $8, status = $9, supplier_name = $10, category = $11, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $12
-       RETURNING *`,
-      [
+    // Check if model_number column exists
+    const columnCheck = await pool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'products' 
+      AND column_name = 'model_number'
+    `);
+    const hasModelNumber = columnCheck.rows.length > 0;
+
+    // Trim and handle optional fields
+    const trimmedSkuCode = skuCode ? skuCode.trim() : null;
+    const finalSkuCode = (trimmedSkuCode && trimmedSkuCode.length > 0) ? trimmedSkuCode : null;
+    const trimmedModelNumber = modelNumber ? modelNumber.trim() : null;
+    const finalModelNumber = (trimmedModelNumber && trimmedModelNumber.length > 0) ? trimmedModelNumber : null;
+
+    // Build update query dynamically based on whether model_number column exists
+    let updateQuery;
+    let updateValues;
+    
+    if (hasModelNumber) {
+      updateQuery = `UPDATE products 
+       SET product_name = $1, item_code = $2, sku_code = $3, model_number = $4, minimum_quantity = $5, 
+           mrp = $6, discount = $7, sell_rate = $8, current_quantity = $9, status = $10, supplier_name = $11, category = $12, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $13
+       RETURNING *`;
+      updateValues = [
         productName,
         itemCode,
-        skuCode,
+        finalSkuCode,
+        finalModelNumber,
         minimumQuantity || 0,
         mrp || null,
         discount || 0,
@@ -342,8 +402,30 @@ router.put('/:id', async (req, res) => {
         supplierName || null,
         category && category.trim() !== '' ? category.trim() : null,
         id
-      ]
-    );
+      ];
+    } else {
+      updateQuery = `UPDATE products 
+       SET product_name = $1, item_code = $2, sku_code = $3, minimum_quantity = $4, 
+           mrp = $5, discount = $6, sell_rate = $7, current_quantity = $8, status = $9, supplier_name = $10, category = $11, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $12
+       RETURNING *`;
+      updateValues = [
+        productName,
+        itemCode,
+        finalSkuCode,
+        minimumQuantity || 0,
+        mrp || null,
+        discount || 0,
+        sellRate || null,
+        currentQuantity !== undefined ? currentQuantity : null,
+        status || 'STOCK',
+        supplierName || null,
+        category && category.trim() !== '' ? category.trim() : null,
+        id
+      ];
+    }
+
+    const result = await pool.query(updateQuery, updateValues);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Product not found' });

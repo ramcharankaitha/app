@@ -43,7 +43,8 @@ CREATE TABLE IF NOT EXISTS products (
     id SERIAL PRIMARY KEY,
     product_name VARCHAR(255) NOT NULL,
     item_code VARCHAR(100) UNIQUE NOT NULL,
-    sku_code VARCHAR(100) UNIQUE NOT NULL,
+    sku_code VARCHAR(100) UNIQUE,
+    model_number VARCHAR(255),
     minimum_quantity INTEGER DEFAULT 0,
     current_quantity INTEGER DEFAULT 0,
     category VARCHAR(100),
@@ -250,6 +251,24 @@ BEGIN
         WHERE table_name = 'products' AND column_name = 'discount_2'
     ) THEN
         ALTER TABLE products ADD COLUMN discount_2 DECIMAL(10, 2) DEFAULT 0;
+    END IF;
+    
+    -- Add model_number column if it doesn't exist
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'products' AND column_name = 'model_number'
+    ) THEN
+        ALTER TABLE products ADD COLUMN model_number VARCHAR(255);
+    END IF;
+    
+    -- Make sku_code optional (remove NOT NULL constraint if it exists)
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'products' 
+        AND column_name = 'sku_code' 
+        AND is_nullable = 'NO'
+    ) THEN
+        ALTER TABLE products ALTER COLUMN sku_code DROP NOT NULL;
     END IF;
 END $$;
 
