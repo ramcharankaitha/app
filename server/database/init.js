@@ -66,6 +66,100 @@ const initDatabase = async () => {
       // Continue even if migration fails (column might already be in correct state)
     }
 
+    // Ensure address fields are optional in customers and dispatch tables - run on every startup
+    try {
+      await pool.query(`
+        DO $$ 
+        BEGIN
+          -- Make address fields optional in customers table (remove NOT NULL constraints if they exist)
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'customers' 
+            AND column_name = 'address' 
+            AND is_nullable = 'NO'
+          ) THEN
+            ALTER TABLE customers ALTER COLUMN address DROP NOT NULL;
+            RAISE NOTICE 'Made customers.address optional';
+          END IF;
+          
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'customers' 
+            AND column_name = 'city' 
+            AND is_nullable = 'NO'
+          ) THEN
+            ALTER TABLE customers ALTER COLUMN city DROP NOT NULL;
+            RAISE NOTICE 'Made customers.city optional';
+          END IF;
+          
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'customers' 
+            AND column_name = 'state' 
+            AND is_nullable = 'NO'
+          ) THEN
+            ALTER TABLE customers ALTER COLUMN state DROP NOT NULL;
+            RAISE NOTICE 'Made customers.state optional';
+          END IF;
+          
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'customers' 
+            AND column_name = 'pincode' 
+            AND is_nullable = 'NO'
+          ) THEN
+            ALTER TABLE customers ALTER COLUMN pincode DROP NOT NULL;
+            RAISE NOTICE 'Made customers.pincode optional';
+          END IF;
+          
+          -- Make address fields optional in dispatch table (remove NOT NULL constraints if they exist)
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'dispatch' 
+            AND column_name = 'address' 
+            AND is_nullable = 'NO'
+          ) THEN
+            ALTER TABLE dispatch ALTER COLUMN address DROP NOT NULL;
+            RAISE NOTICE 'Made dispatch.address optional';
+          END IF;
+          
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'dispatch' 
+            AND column_name = 'city' 
+            AND is_nullable = 'NO'
+          ) THEN
+            ALTER TABLE dispatch ALTER COLUMN city DROP NOT NULL;
+            RAISE NOTICE 'Made dispatch.city optional';
+          END IF;
+          
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'dispatch' 
+            AND column_name = 'state' 
+            AND is_nullable = 'NO'
+          ) THEN
+            ALTER TABLE dispatch ALTER COLUMN state DROP NOT NULL;
+            RAISE NOTICE 'Made dispatch.state optional';
+          END IF;
+          
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'dispatch' 
+            AND column_name = 'pincode' 
+            AND is_nullable = 'NO'
+          ) THEN
+            ALTER TABLE dispatch ALTER COLUMN pincode DROP NOT NULL;
+            RAISE NOTICE 'Made dispatch.pincode optional';
+          END IF;
+        END $$;
+      `);
+      console.log('✅ Address fields (address, city, state, pincode) verified as optional');
+    } catch (migrationError) {
+      console.warn('⚠️  Address fields migration warning:', migrationError.message);
+      // Continue even if migration fails (column might already be in correct state)
+    }
+
     const bcrypt = require('bcryptjs');
     const hashedPassword = await bcrypt.hash('admin123', 10);
     
@@ -162,34 +256,105 @@ const initDatabase = async () => {
       console.log('✅ Default role permissions created');
     }
 
-    // Insert default chit plans (1, 2, 3, 4, 5)
-    const checkChitPlans = await pool.query('SELECT COUNT(*) as count FROM chit_plans');
-    const planCount = parseInt(checkChitPlans.rows[0]?.count || 0);
-    
-    if (planCount < 5) {
-      // Check which plans exist
-      const existingPlans = await pool.query('SELECT plan_name FROM chit_plans');
-      const existingNames = existingPlans.rows.map(p => p.plan_name);
+    // Ensure only 2 chit plans exist: AAA (₹500) and BH (₹100)
+    try {
+      // Get all existing plans
+      const existingPlans = await pool.query('SELECT id, plan_name, plan_amount FROM chit_plans');
       
-      const defaultPlans = [
-        { name: 'Chit Plan 1', amount: 1000.00, desc: 'Chit plan of ₹1000' },
-        { name: 'Chit Plan 2', amount: 2000.00, desc: 'Chit plan of ₹2000' },
-        { name: 'Chit Plan 3', amount: 3000.00, desc: 'Chit plan of ₹3000' },
-        { name: 'Chit Plan 4', amount: 4000.00, desc: 'Chit plan of ₹4000' },
-        { name: 'Chit Plan 5', amount: 5000.00, desc: 'Chit plan of ₹5000' }
+      // Define the required plans
+      const requiredPlans = [
+        { name: 'AAA', amount: 500.00, desc: 'Chit plan of ₹500' },
+        { name: 'BH', amount: 100.00, desc: 'Chit plan of ₹100' }
       ];
       
-      for (const plan of defaultPlans) {
-        if (!existingNames.includes(plan.name)) {
+      // First, ensure AAA and BH plans exist with correct amounts (needed for reassignment)
+      for (const plan of requiredPlans) {
+        const existingPlan = existingPlans.rows.find(p => p.plan_name === plan.name);
+        
+        if (!existingPlan) {
+          // Create the plan if it doesn't exist
           await pool.query(
             `INSERT INTO chit_plans (plan_name, plan_amount, description)
              VALUES ($1, $2, $3)
              ON CONFLICT (plan_name) DO NOTHING`,
             [plan.name, plan.amount, plan.desc]
           );
+          console.log(`✅ Created chit plan: ${plan.name} (₹${plan.amount})`);
+        } else if (parseFloat(existingPlan.plan_amount) !== plan.amount) {
+          // Update the amount if it's incorrect
+          await pool.query(
+            `UPDATE chit_plans SET plan_amount = $1, description = $2 WHERE plan_name = $3`,
+            [plan.amount, plan.desc, plan.name]
+          );
+          console.log(`✅ Updated chit plan: ${plan.name} to ₹${plan.amount}`);
         }
       }
-      console.log('✅ Default chit plans (1-5) created');
+      
+      // Get AAA and BH plan IDs after ensuring they exist
+      const finalPlans = await pool.query('SELECT id, plan_name FROM chit_plans WHERE plan_name IN ($1, $2)', ['AAA', 'BH']);
+      const aaaPlan = finalPlans.rows.find(p => p.plan_name === 'AAA');
+      const bhPlan = finalPlans.rows.find(p => p.plan_name === 'BH');
+      const defaultPlanId = aaaPlan ? aaaPlan.id : (bhPlan ? bhPlan.id : null);
+      
+      // Delete all plans that are not AAA or BH
+      const requiredNames = requiredPlans.map(p => p.name);
+      const plansToDelete = existingPlans.rows.filter(p => !requiredNames.includes(p.plan_name));
+      
+      if (plansToDelete.length > 0) {
+        for (const plan of plansToDelete) {
+          try {
+            // First, delete any chit_entries that reference this plan
+            try {
+              const entriesResult = await pool.query('DELETE FROM chit_entries WHERE chit_plan_id = $1', [plan.id]);
+              if (entriesResult.rowCount > 0) {
+                console.log(`🗑️  Deleted ${entriesResult.rowCount} chit entries for plan: ${plan.plan_name}`);
+              }
+            } catch (entryError) {
+              // Table might not exist, continue
+              if (entryError.code !== '42P01') {
+                console.log(`ℹ️  Could not delete chit entries for plan: ${plan.plan_name}`);
+              }
+            }
+            
+            // Reassign customers to AAA plan (or set to NULL if no default plan available)
+            try {
+              if (defaultPlanId) {
+                const customersResult = await pool.query(
+                  'UPDATE chit_customers SET chit_plan_id = $1 WHERE chit_plan_id = $2',
+                  [defaultPlanId, plan.id]
+                );
+                if (customersResult.rowCount > 0) {
+                  console.log(`🔄 Reassigned ${customersResult.rowCount} customers from "${plan.plan_name}" to AAA`);
+                }
+              } else {
+                // If no default plan, set to NULL
+                const customersResult = await pool.query(
+                  'UPDATE chit_customers SET chit_plan_id = NULL WHERE chit_plan_id = $1',
+                  [plan.id]
+                );
+                if (customersResult.rowCount > 0) {
+                  console.log(`🔄 Set chit_plan_id to NULL for ${customersResult.rowCount} customers from "${plan.plan_name}"`);
+                }
+              }
+            } catch (customerError) {
+              // Table might not exist, continue
+              if (customerError.code !== '42P01') {
+                console.log(`ℹ️  Could not update chit customers for plan: ${plan.plan_name}`);
+              }
+            }
+            
+            // Now delete the plan itself
+            await pool.query('DELETE FROM chit_plans WHERE id = $1', [plan.id]);
+            console.log(`🗑️  Deleted chit plan: ${plan.plan_name}`);
+          } catch (deleteError) {
+            console.warn(`⚠️  Could not delete chit plan "${plan.plan_name}": ${deleteError.message}`);
+          }
+        }
+      }
+      
+      console.log('✅ Chit plans verified: AAA (₹500) and BH (₹100)');
+    } catch (chitPlanError) {
+      console.warn('⚠️  Chit plan initialization warning:', chitPlanError.message);
     }
 
     console.log('✅ Database initialization completed');

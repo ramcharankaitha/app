@@ -38,6 +38,25 @@ router.post('/plans', async (req, res) => {
       return res.status(400).json({ error: 'Plan name and amount are required' });
     }
 
+    // Only allow creating AAA (₹500) or BH (₹100) plans
+    const allowedPlans = {
+      'AAA': 500.00,
+      'BH': 100.00
+    };
+
+    if (!allowedPlans.hasOwnProperty(planName)) {
+      return res.status(400).json({ 
+        error: 'Only two chit plans are allowed: AAA (₹500) and BH (₹100)' 
+      });
+    }
+
+    // Verify the amount matches the plan
+    if (parseFloat(planAmount) !== allowedPlans[planName]) {
+      return res.status(400).json({ 
+        error: `${planName} plan must have amount ₹${allowedPlans[planName]}` 
+      });
+    }
+
     const result = await pool.query(
       `INSERT INTO chit_plans (plan_name, plan_amount)
        VALUES ($1, $2)
@@ -66,6 +85,31 @@ router.put('/plans/:id', async (req, res) => {
 
     if (!planName || !planAmount) {
       return res.status(400).json({ error: 'Plan name and amount are required' });
+    }
+
+    // Only allow updating to AAA (₹500) or BH (₹100) plans
+    const allowedPlans = {
+      'AAA': 500.00,
+      'BH': 100.00
+    };
+
+    if (!allowedPlans.hasOwnProperty(planName)) {
+      return res.status(400).json({ 
+        error: 'Only two chit plans are allowed: AAA (₹500) and BH (₹100)' 
+      });
+    }
+
+    // Verify the amount matches the plan
+    if (parseFloat(planAmount) !== allowedPlans[planName]) {
+      return res.status(400).json({ 
+        error: `${planName} plan must have amount ₹${allowedPlans[planName]}` 
+      });
+    }
+
+    // Check if this is an existing AAA or BH plan being updated
+    const existingPlan = await pool.query('SELECT plan_name FROM chit_plans WHERE id = $1', [id]);
+    if (existingPlan.rows.length === 0) {
+      return res.status(404).json({ error: 'Chit plan not found' });
     }
 
     const result = await pool.query(
@@ -99,6 +143,22 @@ router.put('/plans/:id', async (req, res) => {
 router.delete('/plans/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // Get the plan name to check if it's AAA or BH
+    const planCheck = await pool.query('SELECT plan_name FROM chit_plans WHERE id = $1', [id]);
+    
+    if (planCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Chit plan not found' });
+    }
+
+    const planName = planCheck.rows[0].plan_name;
+    
+    // Prevent deletion of AAA or BH plans
+    if (planName === 'AAA' || planName === 'BH') {
+      return res.status(400).json({ 
+        error: 'Cannot delete AAA or BH plans. These are the only allowed chit plans.' 
+      });
+    }
     
     // Check if there are any customers using this plan
     const customersCheck = await pool.query(

@@ -438,7 +438,6 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           placeholder="Enter street address"
                           value={formData.address}
                           onChange={handleInputChange}
-                          required
                         />
                       </div>
                     </div>
@@ -455,7 +454,6 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           placeholder="Enter city"
                           value={formData.city}
                           onChange={handleInputChange}
-                          required
                         />
                       </div>
                     </div>
@@ -472,7 +470,6 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           placeholder="Enter state"
                           value={formData.state}
                           onChange={handleInputChange}
-                          required
                         />
                       </div>
                     </div>
@@ -490,7 +487,6 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           placeholder="Enter pincode"
                           value={formData.pincode}
                           onChange={handleInputChange}
-                          required
                           maxLength="10"
                         />
                       </div>
