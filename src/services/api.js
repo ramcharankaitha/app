@@ -977,7 +977,7 @@ export const paymentsAPI = {
   },
 };
 
-export default {
+const apiServices = {
   authAPI,
   usersAPI,
   staffAPI,
@@ -998,4 +998,6 @@ export default {
   notificationsAPI,
   paymentsAPI,
 };
+
+export default apiServices;
 
