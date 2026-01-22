@@ -10,6 +10,8 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
     address: '',
     area: '',
     city: '',
+    state: '',
+    pincode: '',
     material: '',
     packaging: '',
     bookingToCity: '',
@@ -338,7 +340,9 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
               phone: customer.phone || prev.phone,
               address: customer.address || '',
               city: customer.city || '',
-              area: customer.state || ''
+              area: customer.state || '',
+              state: customer.state || '',
+              pincode: customer.pincode || ''
             }));
             
             // Trigger transport fetch if city/state available
@@ -392,7 +396,9 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
       phone: customer.phone || '',
       address: customer.address || '',
       city: customer.city || '',
-      area: customer.state || ''
+      area: customer.state || '',
+      state: customer.state || '',
+      pincode: customer.pincode || ''
     }));
     setShowCustomerDropdown(false);
     setCustomerSuggestions([]);
@@ -554,6 +560,8 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
         address: formData.address,
         area: formData.area,
         city: formData.city,
+        state: formData.state,
+        pincode: formData.pincode,
         material: formData.material,
         packaging: formData.packaging,
         bookingToCity: formData.bookingToCity,
@@ -845,6 +853,39 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                           placeholder="Enter city"
                           value={formData.city}
                           onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="state">State</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-map input-icon"></i>
+                        <input
+                          type="text"
+                          id="state"
+                          name="state"
+                          className="form-input"
+                          placeholder="Enter state"
+                          value={formData.state}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="pincode">Pincode</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-mail-bulk input-icon"></i>
+                        <input
+                          type="text"
+                          id="pincode"
+                          name="pincode"
+                          className="form-input"
+                          placeholder="Enter pincode"
+                          value={formData.pincode}
+                          onChange={handleInputChange}
+                          maxLength="10"
                         />
                       </div>
                     </div>

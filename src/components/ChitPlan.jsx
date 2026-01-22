@@ -31,7 +31,14 @@ const ChitPlan = ({ onBack, onNavigate, userRole = 'admin' }) => {
       try {
         const response = await chitPlansAPI.getPlans();
         if (response && response.success) {
-          setChitPlans(response.plans || []);
+          // Filter to show only AAA (500) and BH (100) plans
+          const filteredPlans = (response.plans || []).filter(plan => {
+            const planName = (plan.plan_name || '').toUpperCase();
+            const planAmount = parseFloat(plan.plan_amount) || 0;
+            return (planName.includes('AAA') && planAmount === 500) || 
+                   (planName.includes('BH') && planAmount === 100);
+          });
+          setChitPlans(filteredPlans);
         }
       } catch (err) {
         console.error('Error fetching chit plans:', err);
