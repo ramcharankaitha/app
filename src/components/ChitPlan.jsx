@@ -361,7 +361,7 @@ const ChitPlan = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     style={{ paddingLeft: '50px', appearance: 'auto', cursor: 'pointer' }}
                   >
                     <option value="">Select Chit Plan</option>
-                    {chitPlans.map((plan) => (
+                    {chitPlans.slice(0, 2).map((plan) => (
                       <option key={plan.id} value={plan.id}>
                         {plan.plan_name} - ₹{parseFloat(plan.plan_amount || 0).toLocaleString('en-IN')}
                       </option>

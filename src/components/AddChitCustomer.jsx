@@ -341,7 +341,7 @@ const AddChitCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =
                           required
                         >
                           <option value="">Select a chit plan</option>
-                          {plans.map(plan => (
+                          {plans.slice(0, 2).map(plan => (
                             <option key={plan.id} value={plan.id}>
                               {plan.plan_name} - ₹{parseFloat(plan.plan_amount).toLocaleString('en-IN')}
                             </option>

@@ -330,7 +330,6 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
                           placeholder="Enter street address"
                           value={formData.address}
                           onChange={handleInputChange}
-                          required
                         />
                       </div>
                     </div>
@@ -347,7 +346,6 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
                           placeholder="Enter city"
                           value={formData.city}
                           onChange={handleInputChange}
-                          required
                         />
                       </div>
                     </div>
@@ -364,7 +362,6 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
                           placeholder="Enter state"
                           value={formData.state}
                           onChange={handleInputChange}
-                          required
                         />
                       </div>
                     </div>
