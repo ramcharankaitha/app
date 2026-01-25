@@ -4,7 +4,8 @@ import ConfirmDialog from './ConfirmDialog';
 
 const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStore, setSelectedStore] = useState('All Stores');
+  // eslint-disable-next-line no-unused-vars
+  const [selectedStore] = useState('All Stores');
   const [users, setUsers] = useState([]);
   const [error, setError] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
@@ -25,12 +26,6 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
   const handleStaff = () => {
     if (onNavigate) {
       onNavigate('staff');
-    }
-  };
-
-  const handleCustomers = () => {
-    if (onNavigate) {
-      onNavigate('customers');
     }
   };
 
@@ -98,12 +93,6 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
     const matchesStore = selectedStore === 'All Stores' || user.store === selectedStore;
     return matchesSearch && matchesStore;
   });
-
-  // Handle menu toggle
-  const toggleMenu = (userId, e) => {
-    e.stopPropagation();
-    setOpenMenuId(openMenuId === userId ? null : userId);
-  };
 
   // Close menu when clicking outside
   useEffect(() => {

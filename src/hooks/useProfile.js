@@ -12,7 +12,7 @@ export const useProfile = () => {
     avatar_url: null
   });
   const [avatarUrl, setAvatarUrl] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {

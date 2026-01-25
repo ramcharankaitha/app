@@ -25,7 +25,14 @@ const AddChitCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =
       try {
         const response = await chitPlansAPI.getPlans();
         if (response.success) {
-          setPlans(response.plans);
+          // Filter to show only AAA (500) and BH (100) plans
+          const filteredPlans = response.plans.filter(plan => {
+            const planName = (plan.plan_name || '').toUpperCase();
+            const planAmount = parseFloat(plan.plan_amount) || 0;
+            return (planName.includes('AAA') && planAmount === 500) || 
+                   (planName.includes('BH') && planAmount === 100);
+          });
+          setPlans(filteredPlans);
         }
       } catch (err) {
         console.error('Error fetching chit plans:', err);
@@ -341,7 +348,7 @@ const AddChitCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =
                           required
                         >
                           <option value="">Select a chit plan</option>
-                          {plans.map(plan => (
+                          {plans.slice(0, 2).map(plan => (
                             <option key={plan.id} value={plan.id}>
                               {plan.plan_name} - ₹{parseFloat(plan.plan_amount).toLocaleString('en-IN')}
                             </option>
