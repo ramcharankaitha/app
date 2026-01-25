@@ -10,6 +10,8 @@
     flex: 1;
     overflow: hidden;
     transition: background-color 0.3s ease;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
 }
 
 /* Add User Header */
@@ -85,6 +87,9 @@
     width: 100%;
     box-sizing: border-box;
     transition: background-color 0.3s ease;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    overscroll-behavior: contain;
 }
 
 .add-user-form {
@@ -163,10 +168,24 @@
     position: relative;
     overflow: visible;
     padding-top: 0;
+    display: block;
 }
 
 .form-section:last-of-type {
-    margin-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+/* Ensure form-section closes properly before form-actions */
+.add-user-form .form-section:last-of-type {
+    margin-bottom: 20px;
+    padding-bottom: 0;
+    display: block;
+}
+
+/* Ensure form-grid is contained within form-section */
+.add-user-form .form-section .form-grid {
+    display: grid;
+    position: relative;
 }
 
 .upload-placeholder {
@@ -250,18 +269,16 @@
 }
 
 /* For staff form: Pincode is 7th child, Username is 10th, Password is 11th */
-/* Pincode (7th child) - takes first column */
-.form-grid.three-col .form-group:nth-child(7) {
+/* Only apply to staff form, not supervisor form */
+.add-staff-form .form-grid.three-col .form-group:nth-child(7) {
     grid-column: 1;
 }
 
-/* Username (10th child in staff form) - takes first column, side by side with password */
-.form-grid.three-col .form-group:nth-child(10) {
+.add-staff-form .form-grid.three-col .form-group:nth-child(10) {
     grid-column: 1;
 }
 
-/* Password (11th child in staff form) - takes second column, side by side with username */
-.form-grid.three-col .form-group:nth-child(11) {
+.add-staff-form .form-grid.three-col .form-group:nth-child(11) {
     grid-column: 2;
 }
 
@@ -866,17 +883,82 @@ form.add-user-form .form-grid > .form-group:first-child > label {
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
-/* Form Actions */
+/* Form Actions - Ensure it's always after all fields */
 .form-actions {
     display: flex;
     flex-direction: row;
     gap: 6px;
-    margin-top: 6px;
+    margin-top: 24px;
+    margin-bottom: 0;
     align-items: center;
     width: 100%;
     justify-content: flex-end;
     flex-shrink: 0;
-    padding-top: 4px;
+    padding-top: 8px;
+    clear: both;
+    position: relative;
+    z-index: 1;
+}
+
+/* Ensure form-actions is not part of the grid and appears after all fields */
+.add-user-form .form-section + .form-actions,
+.add-user-form .form-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    width: 100%;
+    margin-top: 24px;
+    margin-bottom: 0;
+    padding-top: 8px;
+    clear: both;
+}
+
+/* Ensure form-actions is completely outside any grid layout */
+.add-user-form .form-section ~ .form-actions {
+    display: flex !important;
+    grid-column: unset !important;
+    width: 100% !important;
+    margin-top: 24px !important;
+}
+
+/* Ensure form-actions is never inside a grid - STRICT RULES */
+.form-grid ~ .form-actions,
+.form-section ~ .form-actions,
+.add-user-form > .form-actions,
+form.add-user-form > .form-actions,
+.add-user-form .form-actions {
+    display: flex !important;
+    grid-column: unset !important;
+    grid-row: unset !important;
+    width: 100% !important;
+    margin-top: 24px !important;
+    clear: both !important;
+    position: relative !important;
+}
+
+/* CRITICAL: Ensure form-actions appears AFTER password field on mobile */
+@media (max-width: 768px) {
+    .add-user-form .form-section .form-grid .form-group:last-child {
+        margin-bottom: 0 !important;
+    }
+    
+    /* Extra spacing after password field */
+    .add-user-form .form-section .form-grid .password-wrapper {
+        margin-bottom: 0 !important;
+    }
+}
+
+/* Prevent form-actions from being a grid item - UNIVERSAL RULE */
+.add-user-form .form-grid .form-actions,
+.add-user-form .form-section .form-grid .form-actions,
+form.add-user-form .form-grid .form-actions,
+form.add-user-form .form-section .form-grid .form-actions {
+    display: none !important;
+}
+
+/* Ensure form-actions is always a direct child of form, not grid */
+.add-user-form > .form-actions,
+form.add-user-form > .form-actions {
+    display: flex !important;
 }
 
 .create-user-btn {
@@ -923,84 +1005,237 @@ form.add-user-form .form-grid > .form-group:first-child > label {
     background: var(--accent-light);
 }
 
-/* Responsive */
+/* Responsive - Enhanced for better alignment */
+@media (max-width: 1600px) {
+    .form-grid.three-col {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px 14px;
+    }
+    
+    .form-grid.four-col {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px 14px;
+    }
+}
+
 @media (max-width: 1400px) {
     .form-grid.three-col {
         grid-template-columns: repeat(2, 1fr);
+        gap: 12px 14px;
     }
     
     .form-grid.four-col {
         grid-template-columns: repeat(3, 1fr);
+        gap: 12px 14px;
+    }
+    
+    .add-user-content {
+        padding: 16px 20px;
     }
 }
 
 @media (max-width: 1200px) {
     .form-grid.four-col {
         grid-template-columns: repeat(2, 1fr);
+        gap: 12px 14px;
     }
-}
-
-@media (max-width: 1200px) {
+    
+    .form-grid.three-col {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px 14px;
+    }
+    
     .add-user-content {
-        padding: 12px 18px;
+        padding: 14px 18px;
         max-height: calc(100vh - 65px);
+    }
+    
+    /* Ensure all form groups maintain consistent width */
+    .form-grid > .form-group {
+        min-width: 0;
+        width: 100%;
     }
 }
 
 @media (max-width: 992px) {
     .add-user-content {
-        padding: 10px 16px;
+        padding: 12px 16px;
         max-height: calc(100vh - 60px);
     }
     
     .form-grid {
-        gap: 10px 14px;
+        gap: 12px 14px;
+    }
+    
+    .form-grid.three-col,
+    .form-grid.four-col {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px 14px;
+    }
+    
+    /* Ensure proper alignment on tablets */
+    .form-group {
+        width: 100%;
+        min-width: 0;
+    }
+    
+    .form-input,
+    .input-wrapper {
+        width: 100%;
+        box-sizing: border-box;
     }
 }
 
+/* Mobile-First Optimizations - Perfect Phone Compatibility */
 @media (max-width: 768px) {
-    .add-user-content {
-        padding: 10px 14px;
-        max-height: calc(100vh - 58px);
+    /* Container adjustments for mobile */
+    .add-user-container {
+        height: 100vh;
+        max-height: 100vh;
+        overflow: hidden;
+        -webkit-overflow-scrolling: touch;
     }
 
+    .add-user-content {
+        padding: 16px 14px 20px 14px;
+        max-height: calc(100vh - 58px);
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+    }
+
+    /* Photo upload section - mobile optimized */
     .photo-upload-section {
         flex-direction: column;
         align-items: center;
-        gap: 10px;
-        margin-bottom: 12px;
+        gap: 12px;
+        margin-bottom: 20px;
+        padding: 12px 0;
+        width: 100%;
     }
 
     .photo-placeholder {
-        width: 70px;
-        height: 70px;
-        font-size: 24px;
+        width: 80px;
+        height: 80px;
+        font-size: 28px;
+        border-width: 3px;
     }
 
+    .upload-photo-btn {
+        padding: 10px 20px;
+        font-size: 13px;
+        min-height: 44px;
+        min-width: 140px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    /* Header - mobile optimized */
     .add-user-header {
-        padding: 10px 18px;
+        padding: 12px 16px;
+        min-height: 56px;
+        max-height: 56px;
     }
 
-    .add-user-header .page-title {
+    .add-user-header .back-btn {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        min-height: 40px;
+        margin-right: 12px;
         font-size: 16px;
     }
 
+    .add-user-header .page-title {
+        font-size: 17px;
+        line-height: 1.3;
+    }
+
     .add-user-header .page-subtitle {
-        font-size: 10px;
+        font-size: 11px;
+        line-height: 1.4;
+        margin-top: 2px;
     }
 
     .form-actions {
-        flex-direction: column;
-        gap: 8px;
-        margin-top: 8px;
+        flex-direction: column !important;
+        gap: 8px !important;
+        margin-top: 56px !important;
+        margin-bottom: 0 !important;
+        padding-top: 28px !important;
+        clear: both !important;
+        position: relative !important;
+        z-index: 10 !important;
+        display: flex !important;
+        width: 100% !important;
+        order: 9999 !important;
+    }
+    
+    /* Ensure form-actions appears after all fields on mobile - STRICT */
+    .add-user-form .form-section ~ .form-actions,
+    .add-user-form .form-section + .form-actions,
+    form.add-user-form .form-section ~ .form-actions {
+        margin-top: 56px !important;
+        padding-top: 28px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        grid-column: unset !important;
+        grid-row: unset !important;
+        width: 100% !important;
+        clear: both !important;
+        order: 9999 !important;
+    }
+    
+    /* Prevent form-actions from being inside any grid - ABSOLUTE */
+    .add-user-form .form-grid ~ .form-actions,
+    .add-user-form .form-section ~ .form-actions,
+    .add-user-form .form-grid .form-actions,
+    .add-user-form .form-section .form-grid .form-actions {
+        margin-top: 48px !important;
+        padding-top: 24px !important;
+        display: flex !important;
+        grid-column: unset !important;
+        grid-row: unset !important;
+        width: 100% !important;
+        clear: both !important;
+    }
+    
+    /* Hide form-actions if it's inside form-grid */
+    .add-user-form .form-grid .form-actions,
+    .add-user-form .form-section .form-grid .form-actions {
+        display: none !important;
     }
 
+    /* Buttons - mobile optimized with proper touch targets */
     .create-user-btn,
     .cancel-btn {
         width: 100%;
         min-width: auto;
-        padding: 9px 20px;
-        font-size: 12px;
+        min-height: 48px;
+        padding: 14px 20px;
+        font-size: 15px;
+        font-weight: 600;
+        border-radius: 8px;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: rgba(220, 53, 69, 0.2);
+    }
+
+    .create-user-btn {
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.35);
+    }
+
+    .create-user-btn:active {
+        transform: translateY(1px);
+        box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+    }
+
+    .cancel-btn {
+        min-height: 44px;
+        padding: 12px 20px;
+        font-size: 14px;
     }
 
     .section-title {
@@ -1008,27 +1243,139 @@ form.add-user-form .form-grid > .form-group:first-child > label {
         margin-bottom: 8px;
     }
 
+    /* Single column on mobile for better alignment */
     .form-grid {
-        gap: 10px 12px;
+        grid-template-columns: 1fr !important;
+        gap: 14px;
+    }
+
+    .form-grid.three-col,
+    .form-grid.four-col {
+        grid-template-columns: 1fr !important;
+        gap: 14px;
     }
 
     .form-section {
-        margin-bottom: 12px;
+        margin-bottom: 40px !important;
+        padding-bottom: 0 !important;
+        display: block !important;
+    }
+    
+    .add-user-form .form-section:last-of-type {
+        margin-bottom: 40px !important;
+        padding-bottom: 0 !important;
+        display: block !important;
+    }
+    
+    /* Ensure form-grid closes properly before form-actions */
+    .add-user-form .form-section .form-grid {
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+        display: grid !important;
+    }
+    
+    /* Ensure form-grid ends properly */
+    .add-user-form .form-section .form-grid:last-child {
+        margin-bottom: 0 !important;
+    }
+    
+    /* Extra spacing after last form-group to ensure password field is complete */
+    .add-user-form .form-section .form-grid .form-group:last-child {
+        margin-bottom: 0 !important;
     }
 
+    /* Ensure all form groups are full width on mobile */
+    .form-grid > .form-group {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        grid-column: 1 !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    
+    /* CRITICAL: Ensure form-actions is completely outside grid on mobile */
+    .add-user-form .form-actions,
+    form.add-user-form .form-actions,
+    .add-user-form > .form-actions {
+        display: flex !important;
+        flex-direction: column !important;
+        grid-column: unset !important;
+        grid-row: unset !important;
+        width: 100% !important;
+        margin-top: 56px !important;
+        margin-bottom: 0 !important;
+        padding-top: 28px !important;
+        clear: both !important;
+        position: relative !important;
+        z-index: 10 !important;
+        order: 9999 !important;
+    }
+    
+    /* Prevent form-actions from being inside form-grid */
+    .add-user-form .form-grid .form-actions,
+    .add-user-form .form-section .form-grid .form-actions {
+        display: none !important;
+    }
+    
+    /* Ensure form-actions comes after form-section - AFTER ALL FIELDS INCLUDING PASSWORD */
+    .add-user-form .form-section ~ .form-actions,
+    .add-user-form .form-section + .form-actions {
+        margin-top: 56px !important;
+        padding-top: 28px !important;
+        display: flex !important;
+        grid-column: unset !important;
+    }
+    
+    /* Ensure error/success messages don't affect button positioning */
+    .add-user-form .error-message ~ .form-actions,
+    .add-user-form .success-message ~ .form-actions {
+        margin-top: 56px !important;
+    }
+
+    /* Form inputs - mobile optimized with proper touch targets */
     .form-input {
-        padding: 7px 10px;
-        font-size: 12px;
+        padding: 12px 14px;
+        font-size: 16px;
+        min-height: 48px;
+        height: 48px;
+        width: 100%;
+        box-sizing: border-box;
+        -webkit-appearance: none;
+        border-radius: 8px;
+        touch-action: manipulation;
+    }
+    
+    /* Prevent zoom on input focus (iOS) */
+    @supports (-webkit-touch-callout: none) {
+        .form-input {
+            font-size: 16px;
+        }
+    }
+
+    .input-wrapper {
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .input-wrapper .form-input {
-        padding: 7px 10px 7px 46px !important;
+        padding: 12px 14px 12px 52px !important;
         background: var(--input-bg) !important;
+        width: 100%;
+        box-sizing: border-box;
+        min-height: 48px;
+        height: 48px;
+        font-size: 16px;
     }
 
     .input-wrapper.password-wrapper .form-input {
-        padding: 7px 40px 7px 46px !important;
+        padding: 12px 50px 12px 52px !important;
         background: var(--input-bg) !important;
+        width: 100%;
+        box-sizing: border-box;
+        min-height: 48px;
+        height: 48px;
+        font-size: 16px;
     }
 
     /* First field without input-wrapper - match mobile padding for alignment */
@@ -1038,39 +1385,172 @@ form.add-user-form .form-grid > .form-group:first-child > label {
     .add-customer-form .form-grid > .form-group:first-child > .form-input,
     .form-section .form-grid > .form-group:first-child > .form-input,
     form.add-user-form .form-grid > .form-group:first-child > .form-input {
-        padding: 7px 10px 7px 46px !important;
+        padding: 12px 14px 12px 52px !important;
         background: var(--input-bg) !important;
+        width: 100%;
+        box-sizing: border-box;
+        min-height: 48px;
+        height: 48px;
+        font-size: 16px;
     }
 
     /* Ensure this doesn't override fields inside input-wrapper on mobile */
     .add-user-form .form-section .form-grid > .form-group:first-child > .input-wrapper .form-input,
     .add-user-form .form-grid > .form-group:first-child > .input-wrapper .form-input {
-        padding: 7px 10px 7px 46px !important;
+        padding: 10px 12px 10px 48px !important;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .input-icon {
+        left: 16px;
+        font-size: 16px;
+        width: 18px;
+        height: 18px;
+    }
+
+    .password-toggle {
+        right: 14px;
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+        min-height: 36px;
+        padding: 6px;
+        font-size: 16px;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .input-wrapper select.form-input {
+        padding: 10px 40px 10px 48px !important;
+        background: var(--input-bg) !important;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .form-group label {
+        font-size: 13px;
+        margin-bottom: 8px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+    
+    /* Error and success messages - mobile optimized */
+    .error-message,
+    .success-message {
+        padding: 14px 16px !important;
+        font-size: 14px !important;
+        line-height: 1.5;
+        margin-bottom: 20px !important;
+        border-radius: 8px;
+    }
+    
+    .error-message i,
+    .success-message i {
+        margin-right: 8px;
+        font-size: 16px;
+    }
+}
+
+/* Extra small devices (phones in portrait) */
+@media (max-width: 480px) {
+    .add-user-content {
+        padding: 10px 12px;
+        max-height: calc(100vh - 56px);
+    }
+
+    .add-user-header {
+        padding: 8px 12px;
+        min-height: 48px;
+    }
+
+    .add-user-header .page-title {
+        font-size: 15px;
+    }
+
+    .add-user-header .page-subtitle {
+        font-size: 9px;
+    }
+
+    .form-grid {
+        gap: 12px;
+    }
+    
+    .form-section {
+        margin-bottom: 44px !important;
+        display: block !important;
+    }
+    
+    .add-user-form .form-section:last-of-type {
+        margin-bottom: 44px !important;
+        display: block !important;
+    }
+
+    .form-input {
+        padding: 9px 11px;
+        font-size: 14px;
+        min-height: 44px;
+        height: 44px;
+    }
+
+    .input-wrapper .form-input {
+        padding: 9px 11px 9px 46px !important;
+        min-height: 44px;
+        height: 44px;
+    }
+
+    .input-wrapper.password-wrapper .form-input {
+        padding: 9px 40px 9px 46px !important;
+        min-height: 44px;
+        height: 44px;
+    }
+
+    .add-user-form .form-section .form-grid > .form-group:first-child > .form-input,
+    .add-user-form .form-grid > .form-group:first-child > .form-input {
+        padding: 9px 11px 9px 46px !important;
+        min-height: 44px;
+        height: 44px;
     }
 
     .input-icon {
         left: 13px;
-        font-size: 12px;
-        width: 14px;
-        height: 14px;
-    }
-
-    .password-toggle {
-        right: 10px;
-        width: 26px;
-        height: 26px;
-        padding: 3px 5px;
-        font-size: 12px;
-    }
-
-    .input-wrapper select.form-input {
-        padding: 7px 36px 7px 46px !important;
-        background: var(--input-bg) !important;
+        font-size: 13px;
     }
 
     .form-group label {
         font-size: 11px;
         margin-bottom: 5px;
+    }
+    
+    .form-actions {
+        margin-top: 60px !important;
+        padding-top: 32px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        clear: both !important;
+        order: 9999 !important;
+        gap: 12px !important;
+    }
+    
+    .add-user-form .form-section ~ .form-actions,
+    .add-user-form .form-section + .form-actions {
+        margin-top: 60px !important;
+        padding-top: 32px !important;
+        display: flex !important;
+        grid-column: unset !important;
+    }
+    
+    /* Ensure error/success messages don't affect button positioning on small phones */
+    .add-user-form .error-message ~ .form-actions,
+    .add-user-form .success-message ~ .form-actions {
+        margin-top: 60px !important;
+    }
+
+    .create-user-btn,
+    .cancel-btn {
+        padding: 11px 20px;
+        font-size: 13px;
     }
 }
 
