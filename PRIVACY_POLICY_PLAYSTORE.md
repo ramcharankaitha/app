@@ -159,3 +159,4 @@ If you need help customizing the privacy policy or have questions about Play Sto
 
 **Note:** This privacy policy is a template. You must customize it to accurately reflect your application's data collection and usage practices. It's recommended to have a legal professional review your privacy policy before publishing.
 
+
