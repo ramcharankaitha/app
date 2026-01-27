@@ -53,6 +53,7 @@ import PurchaseBillAlert from './components/PurchaseBillAlert';
 import Settings from './components/Settings';
 import Profile from './components/Profile';
 import EditProfile from './components/EditProfile';
+import PrivacyPolicy from './components/PrivacyPolicy';
 import './components/dashboard.css';
 import './components/users.css';
 import './components/addUser.css';
@@ -827,13 +828,17 @@ function App() {
     <ThemeProvider>
       <BrowserRouter>
         <Routes>
+          {/* Public Routes - Must be before catch-all */}
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          
           {/* Admin Routes */}
           <Route path="/admin/*" element={<AdminRoutes />} />
           
           {/* Default route - redirect to admin login */}
           <Route path="/" element={<Navigate to="/admin/login" replace />} />
           
-          {/* Catch all - redirect to admin login */}
+          {/* Catch all - redirect to admin login (must be last) */}
           <Route path="*" element={<Navigate to="/admin/login" replace />} />
         </Routes>
       </BrowserRouter>
