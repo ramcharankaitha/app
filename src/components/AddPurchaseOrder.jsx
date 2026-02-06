@@ -617,9 +617,6 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
           <h1 className="add-user-title">Purchase Order</h1>
         </div>
         <div className="header-right">
-          <button className="header-btn" onClick={() => onNavigate && onNavigate('dashboard')}>
-            <i className="fas fa-home"></i>
-          </button>
         </div>
       </header>
 
@@ -1031,10 +1028,10 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
                               {product.quantity}
                             </td>
                             <td style={{ textAlign: 'center', fontWeight: '500', color: '#333' }}>
-                              ₹{parseFloat(product.unitPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                              ₹{parseFloat(product.unitPrice || 0).toFixed(2)}
                             </td>
-                            <td style={{ textAlign: 'center', fontWeight: '600', color: '#28a745' }}>
-                              ₹{parseFloat(product.totalPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            <td style={{ textAlign: 'center', fontWeight: '600', color: '#0066cc' }}>
+                              ₹{parseFloat(product.totalPrice || 0).toFixed(2)}
                             </td>
                             <td style={{ textAlign: 'center' }}>
                               <button
@@ -1088,12 +1085,12 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     </div>
                     <div style={{ 
                       textAlign: 'center',
-                      color: '#28a745',
+                      color: '#dc3545',
                       fontSize: '18px',
                       fontWeight: 'bold',
                       minWidth: '150px'
                     }}>
-                      ₹{calculateTotalAmount().toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      ₹{calculateTotalAmount().toFixed(2)}
                     </div>
                     <div style={{ minWidth: '100px' }}></div>
                   </div>

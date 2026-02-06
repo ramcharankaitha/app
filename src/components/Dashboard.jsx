@@ -60,13 +60,6 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
       if (currentPage !== 'transactionMenu') {
         onNavigate('transactionMenu');
       }
-    } else if (navItem === 'home') {
-      // Reset to home view
-      setActiveNav('home');
-      // Only navigate if not already on dashboard
-      if (currentPage !== 'dashboard') {
-        onNavigate('dashboard');
-      }
     } else if (navItem === 'settings') {
       onNavigate('settings');
     }
@@ -771,15 +764,6 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     <div className="dashboard-container">
       {/* Left Sidebar Navigation */}
       <nav className={`sidebar-nav ${sidebarOpen ? 'open' : ''}`}>
-        <div 
-          className={`nav-item ${activeNav === 'home' ? 'active' : ''}`}
-          onClick={(e) => handleNavClick('home', e)}
-        >
-          <div className="nav-icon">
-            <i className="fas fa-home"></i>
-          </div>
-          <span>Home</span>
-        </div>
         <div 
           className={`nav-item ${activeNav === 'users' ? 'active' : ''}`} 
           onClick={(e) => handleNavClick('users', e)}

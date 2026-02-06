@@ -329,9 +329,6 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
           <h1 className="add-user-title">Add Quotation</h1>
         </div>
         <div className="header-right">
-          <button className="header-btn" onClick={() => onNavigate && onNavigate('dashboard')}>
-            <i className="fas fa-home"></i>
-          </button>
         </div>
       </header>
 
@@ -573,149 +570,133 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
             </div>
           </div>
 
-          {/* Product Summary Section */}
+          {/* Product Summary Section - Stock In style */}
           {addedProducts.length > 0 && (
-            <div className="form-section" style={{ 
+            <div style={{ 
+              marginTop: '30px', 
               clear: 'both', 
-              marginTop: '15px', 
-              marginBottom: '15px',
-              paddingTop: '10px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px',
-              width: '100%'
+              paddingTop: '20px', 
+              marginBottom: '20px',
+              paddingBottom: '20px',
+              position: 'relative',
+              zIndex: 1,
+              width: '100%',
+              display: 'block'
             }}>
-              {/* Product List Container */}
-              <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: '0', width: '100%' }}>
-                <div className="attendance-table-container" style={{ 
-                  marginTop: '0', 
-                  maxHeight: '250px', 
-                  overflowY: 'auto', 
-                  marginBottom: '0',
-                  width: '100%'
-                }}>
-                  <table className="attendance-table" style={{ width: '100%' }}>
-                    <thead>
-                      <tr>
-                        <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
-                          #
-                        </th>
-                        <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
-                          Item ID
-                        </th>
-                        <th style={{ textAlign: 'left', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
-                          Product Name
-                        </th>
-                        <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
-                          Quantity
-                        </th>
-                        <th style={{ textAlign: 'right', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
-                          Unit Price
-                        </th>
-                        <th style={{ textAlign: 'right', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
-                          Total Price
-                        </th>
-                        <th style={{ textAlign: 'center', fontWeight: '600', color: '#333', padding: '12px 8px', background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
-                          Action
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {addedProducts.map((product, index) => (
-                        <tr key={product.id}>
-                          <td style={{ textAlign: 'center', color: '#666', fontWeight: '500' }}>
-                            {index + 1}
-                          </td>
-                          <td style={{ fontWeight: '500', color: '#333' }}>
-                            {product.itemCode}
-                          </td>
-                          <td style={{ fontWeight: '500', color: '#333' }}>
-                            {product.productName}
-                          </td>
-                          <td style={{ textAlign: 'center', color: '#666' }}>
-                            {product.quantity}
-                          </td>
-                          <td style={{ textAlign: 'right', color: '#666' }}>
-                            ₹{parseFloat(product.price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </td>
-                          <td style={{ textAlign: 'right', fontWeight: '600', color: '#28a745' }}>
-                            ₹{parseFloat(product.totalPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </td>
-                          <td style={{ textAlign: 'center' }}>
-                            <button
-                              type="button"
-                              onClick={() => removeProduct(product.id)}
-                              style={{
-                                background: '#dc3545',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: '6px',
-                                padding: '6px 12px',
-                                cursor: 'pointer',
-                                fontSize: '12px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                transition: 'all 0.2s ease',
-                                whiteSpace: 'nowrap'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.target.style.background = '#c82333';
-                                e.target.style.transform = 'scale(1.05)';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.target.style.background = '#dc3545';
-                                e.target.style.transform = 'scale(1)';
-                              }}
-                              title="Remove this product"
-                            >
-                              <i className="fas fa-trash"></i>
-                              Remove
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Total Amount Summary Container */}
-              <div className="form-group" style={{ 
-                gridColumn: '1 / -1', 
-                marginTop: '0',
-                marginBottom: '0',
-                width: '100%',
-                paddingTop: '10px',
-                borderTop: '2px solid #e9ecef'
-              }}>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                  alignItems: 'center',
-                  gap: '16px',
-                  padding: '10px 16px',
-                  background: '#f8f9fa',
-                  borderRadius: '8px',
+              <div style={{ width: '100%', marginBottom: '0' }}>
+                <div style={{ 
                   width: '100%',
-                  boxSizing: 'border-box'
+                  border: '1px solid #dee2e6',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  background: '#fff',
+                  position: 'relative',
+                  zIndex: 1
                 }}>
-                  <span style={{ 
-                    fontSize: '16px', 
-                    fontWeight: '700', 
-                    color: '#333'
+                  {/* Scrollable Product Table */}
+                  <div className="attendance-table-container" style={{ 
+                    marginTop: '0', 
+                    maxHeight: '400px',
+                    overflowY: 'auto',
+                    overflowX: 'auto',
+                    width: '100%',
+                    paddingRight: '8px'
                   }}>
-                    Total Amount:
-                  </span>
-                  <span style={{ 
-                    fontSize: '18px', 
-                    fontWeight: '700', 
-                    color: '#28a745',
-                    minWidth: '120px',
-                    textAlign: 'right'
+                    <table className="attendance-table" style={{ width: '100%', tableLayout: 'auto' }}>
+                      <thead>
+                        <tr>
+                          <th style={{ width: '60px', textAlign: 'center' }}>#</th>
+                          <th>ITEM CODE</th>
+                          <th>ITEM NAME</th>
+                          <th style={{ width: '100px', textAlign: 'center' }}>QTY</th>
+                          <th style={{ width: '120px', textAlign: 'center' }}>UNIT PRICE</th>
+                          <th style={{ width: '150px', textAlign: 'center' }}>TOTAL PRICE</th>
+                          <th style={{ width: '100px', textAlign: 'center' }}>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {addedProducts.map((product, index) => (
+                          <tr key={product.id}>
+                            <td style={{ textAlign: 'center', color: '#666', fontWeight: '500' }}>
+                              {index + 1}
+                            </td>
+                            <td style={{ fontWeight: '500', color: '#333' }}>
+                              {product.itemCode}
+                            </td>
+                            <td style={{ fontWeight: '500', color: '#333' }}>
+                              {product.productName}
+                            </td>
+                            <td style={{ textAlign: 'center', color: '#28a745', fontWeight: '600' }}>
+                              {product.quantity}
+                            </td>
+                            <td style={{ textAlign: 'center', fontWeight: '500', color: '#333' }}>
+                              ₹{parseFloat(product.price || 0).toFixed(2)}
+                            </td>
+                            <td style={{ textAlign: 'center', fontWeight: '600', color: '#0066cc' }}>
+                              ₹{parseFloat(product.totalPrice || 0).toFixed(2)}
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              <button
+                                type="button"
+                                onClick={() => removeProduct(product.id)}
+                                style={{
+                                  background: '#dc3545',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  padding: '6px 12px',
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  transition: 'all 0.2s ease',
+                                  whiteSpace: 'nowrap'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.background = '#c82333';
+                                  e.target.style.transform = 'scale(1.05)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.background = '#dc3545';
+                                  e.target.style.transform = 'scale(1)';
+                                }}
+                                title="Remove this product"
+                              >
+                                <i className="fas fa-trash"></i>
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Total Amount Row - Always Visible at Bottom of Card */}
+                  <div style={{ 
+                    background: '#f8f9fa', 
+                    borderTop: '2px solid #dc3545',
+                    padding: '12px 16px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    fontWeight: 'bold'
                   }}>
-                    ₹{calculateTotalAmount().toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </span>
+                    <div style={{ flex: 1, textAlign: 'right', color: '#333', marginRight: '20px', fontSize: '16px' }}>
+                      TOTAL AMOUNT:
+                    </div>
+                    <div style={{ 
+                      textAlign: 'center',
+                      color: '#dc3545',
+                      fontSize: '18px',
+                      fontWeight: 'bold',
+                      minWidth: '150px'
+                    }}>
+                      ₹{calculateTotalAmount().toFixed(2)}
+                    </div>
+                    <div style={{ minWidth: '100px' }}></div>
+                  </div>
                 </div>
               </div>
             </div>

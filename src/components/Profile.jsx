@@ -30,12 +30,6 @@ const Profile = ({ onBack, onNavigate, userRole = 'admin' }) => {
     <div className="dashboard-container">
       {/* Sidebar */}
       <nav className={`sidebar-nav ${sidebarOpen ? 'open' : ''}`}>
-        <div className="nav-item" onClick={handleHome}>
-          <div className="nav-icon">
-            <i className="fas fa-home"></i>
-          </div>
-          <span>Home</span>
-        </div>
         <div className="nav-item" onClick={handleManagers}>
           <div className="nav-icon">
             <i className="fas fa-users"></i>

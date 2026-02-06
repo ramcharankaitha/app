@@ -235,11 +235,7 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
     }
     setActiveNav(navItem);
     if (!onNavigate) return;
-    if (navItem === 'home') {
-      if (currentPage !== 'staffHome') {
-        onNavigate('staffHome');
-      }
-    } else if (navItem === 'handler') {
+    if (navItem === 'handler') {
       // Handle handler as internal state, don't navigate away
       // Mark handler as explicitly selected so it stays active when navigating to other pages
       setHandlerExplicitlySelected(true);
@@ -319,15 +315,6 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
     <div className="dashboard-container">
       {/* Left Sidebar Navigation */}
       <nav className={`sidebar-nav ${sidebarOpen ? 'open' : ''}`}>
-        <div 
-          className={`nav-item ${activeNav === 'home' ? 'active' : ''}`}
-          onClick={(e) => handleNavClick('home', e)}
-        >
-          <div className="nav-icon">
-            <i className="fas fa-home"></i>
-          </div>
-          <span>Home</span>
-        </div>
         <div 
           className={`nav-item ${activeNav === 'masterMenu' ? 'active' : ''}`} 
           onClick={(e) => handleNavClick('masterMenu', e)}

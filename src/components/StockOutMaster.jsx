@@ -208,12 +208,6 @@ const StockOutMaster = ({ onBack, onAddStockOut, onNavigate, userRole = 'admin' 
     <div className="dashboard-container">
       {/* Left Sidebar Navigation */}
       <nav className="sidebar-nav">
-        <div className="nav-item" onClick={handleBack}>
-          <div className="nav-icon">
-            <i className="fas fa-home"></i>
-          </div>
-          <span>Home</span>
-        </div>
         {userRole === 'admin' && (
           <div className="nav-item" onClick={() => onNavigate && onNavigate('users')}>
             <div className="nav-icon">

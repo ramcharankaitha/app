@@ -200,12 +200,7 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
     }
     setActiveNav(navItem);
     if (!onNavigate) return;
-    if (navItem === 'home') {
-      // Only navigate if not already on supervisorHome
-      if (currentPage !== 'supervisorHome') {
-        onNavigate('supervisorHome');
-      }
-    } else if (navItem === 'staff') {
+    if (navItem === 'staff') {
       onNavigate('staff');
     } else if (navItem === 'customers') {
       onNavigate('customers');
@@ -226,15 +221,6 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
     <div className="dashboard-container">
       {/* Left Sidebar Navigation */}
       <nav className={`sidebar-nav ${sidebarOpen ? 'open' : ''}`}>
-        <div 
-          className={`nav-item ${activeNav === 'home' ? 'active' : ''}`}
-          onClick={(e) => handleNavClick('home', e)}
-        >
-          <div className="nav-icon">
-            <i className="fas fa-home"></i>
-          </div>
-          <span>Home</span>
-        </div>
         <div 
           className={`nav-item ${activeNav === 'staff' ? 'active' : ''}`} 
           onClick={(e) => handleNavClick('staff', e)}

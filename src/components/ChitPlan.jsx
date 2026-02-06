@@ -251,9 +251,6 @@ const ChitPlan = ({ onBack, onNavigate, userRole = 'admin' }) => {
           <h1 className="add-user-title">Chit Plan</h1>
         </div>
         <div className="header-right">
-          <button className="header-btn" onClick={() => onNavigate && onNavigate('dashboard')}>
-            <i className="fas fa-home"></i>
-          </button>
         </div>
       </header>
 

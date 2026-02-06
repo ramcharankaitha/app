@@ -328,18 +328,26 @@
 }
 
 /* Products table spacing - prevent overlap with Add Product button */
-.add-stock-in-form .form-section[style*="marginTop: 40px"] {
+.add-stock-in-form .form-section[style*="marginTop: 40px"],
+.add-stock-out-form .form-section[style*="marginTop: 40px"] {
     margin-top: 40px !important;
     clear: both !important;
     padding-top: 20px !important;
-    position: relative;
-    z-index: 1;
+    margin-bottom: 150px !important;
+    padding-bottom: 40px !important;
+    position: relative !important;
+    z-index: 1 !important;
 }
 
-.add-stock-in-form .attendance-table-container {
-    margin-top: 12px !important;
-    max-height: 200px !important;
-    position: relative;
+.add-stock-in-form .attendance-table-container,
+.add-stock-out-form .attendance-table-container {
+    margin-top: 0 !important;
+    max-height: 400px !important;
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+    width: 100% !important;
+    padding-right: 8px !important;
+    position: relative !important;
 }
 
 /* Ensure Add Product button has proper spacing */
@@ -1787,5 +1795,89 @@ form.add-user-form>.form-actions {
     /* Ensure password field (last form-group) has spacing before buttons */
     .add-user-form .form-section .form-grid .form-group:last-child {
         margin-bottom: 12px !important;
+    }
+
+    /* Stock In and Stock Out - Product List Table Mobile Fix - MOBILE ONLY */
+    .add-stock-in-form .form-section > div[style*="marginTop: 30px"],
+    .add-stock-out-form .form-section > div[style*="marginTop: 30px"] {
+        margin-top: 40px !important;
+        clear: both !important;
+        padding-top: 24px !important;
+        margin-bottom: 30px !important;
+        padding-bottom: 24px !important;
+        position: relative !important;
+        z-index: 1 !important;
+        width: 100% !important;
+        display: block !important;
+        float: none !important;
+    }
+
+    /* Ensure table container is properly styled on mobile */
+    .add-stock-in-form .form-section > div[style*="marginTop: 30px"] > div,
+    .add-stock-out-form .form-section > div[style*="marginTop: 30px"] > div {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Ensure form-grid has proper spacing before table on mobile */
+    .add-stock-in-form .form-section .form-grid:last-of-type:not([style*="marginTop: 30px"]) {
+        margin-bottom: 20px !important;
+    }
+
+    /* Stock In button at bottom - mobile only */
+    .add-stock-in-form .form-actions {
+        margin-top: 40px !important;
+        padding-top: 24px !important;
+        padding-bottom: 24px !important;
+        position: relative !important;
+        width: 100% !important;
+        display: flex !important;
+        justify-content: center !important;
+    }
+
+    .add-stock-in-form .form-section[style*="marginTop: 40px"] > .form-group,
+    .add-stock-out-form .form-section[style*="marginTop: 40px"] > .form-group {
+        grid-column: 1 / -1 !important;
+        width: 100% !important;
+        margin-bottom: 0 !important;
+    }
+
+    .add-stock-in-form .form-section[style*="marginTop: 40px"] > .form-group > div[style*="border"],
+    .add-stock-out-form .form-section[style*="marginTop: 40px"] > .form-group > div[style*="border"] {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        position: relative !important;
+    }
+
+    .add-stock-in-form .attendance-table-container,
+    .add-stock-out-form .attendance-table-container {
+        max-height: 300px !important;
+        overflow-y: auto !important;
+        overflow-x: auto !important;
+        width: 100% !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    .add-stock-in-form .attendance-table,
+    .add-stock-out-form .attendance-table {
+        width: 100% !important;
+        min-width: 600px !important;
+        font-size: 12px !important;
+    }
+
+    .add-stock-in-form .attendance-table th,
+    .add-stock-in-form .attendance-table td,
+    .add-stock-out-form .attendance-table th,
+    .add-stock-out-form .attendance-table td {
+        padding: 8px 6px !important;
+        font-size: 12px !important;
+        white-space: nowrap !important;
+    }
+
+    /* Ensure form fields above don't overlap with product list */
+    .add-stock-in-form .form-grid.four-col,
+    .add-stock-out-form .form-grid.four-col {
+        margin-bottom: 20px !important;
     }
 }

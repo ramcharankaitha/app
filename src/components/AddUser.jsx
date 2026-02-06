@@ -165,12 +165,6 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
     <div className="dashboard-container">
       {/* Left Sidebar Navigation */}
       <nav className="sidebar-nav">
-        <div className="nav-item" onClick={handleHome}>
-          <div className="nav-icon">
-            <i className="fas fa-home"></i>
-          </div>
-          <span>Home</span>
-        </div>
         <div className="nav-item active" onClick={handleUsers}>
           <div className="nav-icon">
             <i className="fas fa-users"></i>
