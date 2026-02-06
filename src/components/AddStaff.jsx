@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { staffAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import { pickPhotoWithSource, pickPhoto, pickDocument } from '../utils/photoUpload';
+import SidebarNav from './SidebarNav';
 
-const AddStaff = ({ onBack, onCancel, onNavigate }) => {
+const AddStaff = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
     fullName: '',
     storeAllocated: '',
@@ -213,38 +214,7 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
   return (
     <div className="dashboard-container">
       {/* Left Sidebar Navigation */}
-      <nav className="sidebar-nav">
-        <div className="nav-item" onClick={handleManagers}>
-          <div className="nav-icon">
-            <i className="fas fa-users"></i>
-          </div>
-          <span>Supervisors</span>
-        </div>
-        <div className="nav-item active" onClick={handleStaff}>
-          <div className="nav-icon">
-            <i className="fas fa-user-tie"></i>
-          </div>
-          <span>Staff</span>
-        </div>
-        <div className="nav-item" onClick={handleMasterMenu}>
-          <div className="nav-icon">
-            <i className="fas fa-th-large"></i>
-          </div>
-          <span>Master Menu</span>
-        </div>
-        <div className="nav-item" onClick={() => onNavigate && onNavigate('transactionMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-exchange-alt"></i>
-          </div>
-          <span>Transaction</span>
-        </div>
-        <div className="nav-item" onClick={handleSettings}>
-          <div className="nav-icon">
-            <i className="fas fa-cog"></i>
-          </div>
-          <span>Settings</span>
-        </div>
-      </nav>
+      <SidebarNav onNavigate={onNavigate} userRole={userRole} activeKey="staff" />
 
       {/* Main Content Area */}
       <div className="dashboard-main">

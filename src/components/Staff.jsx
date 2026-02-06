@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { staffAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
+import SidebarNav from './SidebarNav';
 
 const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -251,46 +252,7 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
         onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
       />
       {/* Left Sidebar Navigation */}
-      <nav className="sidebar-nav">
-        <div className="nav-item" onClick={handleHome}>
-          <div className="nav-icon">
-            <i className="fas fa-home"></i>
-          </div>
-          <span>Home</span>
-        </div>
-        {userRole === 'admin' && (
-          <div className="nav-item" onClick={handleManagers}>
-            <div className="nav-icon">
-              <i className="fas fa-users"></i>
-            </div>
-            <span>Supervisors</span>
-          </div>
-        )}
-        <div className="nav-item active">
-          <div className="nav-icon">
-            <i className="fas fa-user-tie"></i>
-          </div>
-          <span>Staff</span>
-        </div>
-        <div className="nav-item" onClick={() => onNavigate && onNavigate('masterMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-th-large"></i>
-          </div>
-          <span>Master Menu</span>
-        </div>
-        <div className="nav-item" onClick={() => onNavigate && onNavigate('transactionMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-exchange-alt"></i>
-          </div>
-          <span>Transaction</span>
-        </div>
-        <div className="nav-item" onClick={handleSettings}>
-          <div className="nav-icon">
-            <i className="fas fa-cog"></i>
-          </div>
-          <span>Settings</span>
-        </div>
-      </nav>
+      <SidebarNav onNavigate={onNavigate} userRole={userRole} activeKey="staff" />
 
       {/* Main Content Area */}
       <div className="dashboard-main">

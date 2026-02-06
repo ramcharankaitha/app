@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { purchaseOrdersAPI } from '../services/api';
-import './products.css';
+import ConfirmDialog from './ConfirmDialog';
+import SidebarNav from './SidebarNav';
 import './staff.css';
 
 const PurchaseOrderMaster = ({ onBack, onAddPurchaseOrder, onNavigate, userRole = 'admin' }) => {
@@ -248,42 +249,7 @@ const PurchaseOrderMaster = ({ onBack, onAddPurchaseOrder, onNavigate, userRole 
   return (
     <div className="dashboard-container">
       {/* Left Sidebar Navigation */}
-      <nav className="sidebar-nav">
-        {userRole === 'admin' && (
-          <div className="nav-item" onClick={() => onNavigate && onNavigate('users')}>
-            <div className="nav-icon">
-              <i className="fas fa-users"></i>
-            </div>
-            <span>Supervisors</span>
-          </div>
-        )}
-        {userRole !== 'staff' && (
-          <div className="nav-item" onClick={() => onNavigate && onNavigate('staff')}>
-            <div className="nav-icon">
-              <i className="fas fa-user-tie"></i>
-            </div>
-            <span>Staff</span>
-          </div>
-        )}
-        <div className="nav-item" onClick={() => onNavigate && onNavigate('masterMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-th-large"></i>
-          </div>
-          <span>Master Menu</span>
-        </div>
-        <div className="nav-item active" onClick={() => onNavigate && onNavigate('transactionMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-exchange-alt"></i>
-          </div>
-          <span>Transaction</span>
-        </div>
-        <div className="nav-item" onClick={() => onNavigate && onNavigate('settings')}>
-          <div className="nav-icon">
-            <i className="fas fa-cog"></i>
-          </div>
-          <span>Settings</span>
-        </div>
-      </nav>
+      <SidebarNav onNavigate={onNavigate} userRole={userRole} activeKey="transactionMenu" />
 
       {/* Main Content Area */}
       <div className="dashboard-main">

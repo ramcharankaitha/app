@@ -241,6 +241,7 @@ const AdminRoutes = () => {
               onBack={() => handleNavigation(getBackPath('dashboard'))}
               onAddUser={() => handleNavigation('addUser')}
               onNavigate={handleNavigation}
+              userRole={userRole}
             />
           </ProtectedRoute>
         }
@@ -250,7 +251,7 @@ const AdminRoutes = () => {
         path="/addUser"
         element={
           <ProtectedRoute>
-            <AddUser onBack={() => handleNavigation('users')} onCancel={() => handleNavigation('users')} onNavigate={handleNavigation} />
+            <AddUser onBack={() => handleNavigation('users')} onCancel={() => handleNavigation('users')} onNavigate={handleNavigation} userRole={userRole} />
           </ProtectedRoute>
         }
       />
@@ -342,7 +343,7 @@ const AdminRoutes = () => {
         path="/addStaff"
         element={
           <ProtectedRoute>
-            <AddStaff onBack={() => handleNavigation('staff')} onCancel={() => handleNavigation('staff')} onNavigate={handleNavigation} />
+            <AddStaff onBack={() => handleNavigation('staff')} onCancel={() => handleNavigation('staff')} onNavigate={handleNavigation} userRole={userRole} />
           </ProtectedRoute>
         }
       />
