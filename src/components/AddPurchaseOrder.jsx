@@ -15,6 +15,8 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
     orderDate: new Date().toISOString().split('T')[0],
     expectedDeliveryDate: '',
   });
+  const [isMobile, setIsMobile] = useState(false);
+  const [showSummaryOnMobile, setShowSummaryOnMobile] = useState(false);
   const [supplierSearchResults, setSupplierSearchResults] = useState([]);
   const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
   const [isSearchingSupplier, setIsSearchingSupplier] = useState(false);
@@ -59,6 +61,36 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
       console.error('Error fetching handlers:', err);
     }
   };
+
+  useEffect(() => {
+    const getViewportWidth = () => {
+      if (window.visualViewport && typeof window.visualViewport.width === 'number') {
+        return window.visualViewport.width;
+      }
+      return document.documentElement?.clientWidth || window.innerWidth;
+    };
+
+    const update = () => {
+      const vw = getViewportWidth();
+      setIsMobile(vw <= 768);
+    };
+
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', update);
+      window.visualViewport.addEventListener('scroll', update);
+    }
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', update);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', update);
+        window.visualViewport.removeEventListener('scroll', update);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     fetchHandlers();
@@ -253,6 +285,9 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
       
       // Reset product info if item code changes
       if (field === 'itemCode') {
+        if (isMobile) {
+          setShowSummaryOnMobile(false);
+        }
         updated.productInfo = null;
         updated.productName = '';
         updated.skuCode = '';
@@ -371,6 +406,8 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
       unitPrice: unitPrice,
       totalPrice: totalPrice
     }]);
+
+    setShowSummaryOnMobile(true);
     
     // Clear current product form
     setCurrentProduct({
@@ -600,7 +637,7 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
   };
 
   return (
-    <div className="add-user-container">
+    <div className="add-user-container add-purchase-order-container">
       <ConfirmDialog
         open={confirmState.open}
         message={confirmState.message}
@@ -622,7 +659,7 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
 
       {/* Main Content */}
       <main className="add-user-content">
-        <form onSubmit={handleSubmit} className="add-user-form">
+        <form onSubmit={handleSubmit} className="add-user-form add-purchase-order-form">
           {error && (
             <div className="alert alert-error" style={{ marginBottom: '20px' }}>
               <i className="fas fa-exclamation-circle"></i> {error}
@@ -971,137 +1008,141 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 </button>
               </div>
 
+              {/* Product Summary Section - Single Card */}
+              {addedProducts.length > 0 && (!isMobile || showSummaryOnMobile) && (
+                <div className="product-summary-section" style={{ 
+                  marginTop: '20px',
+                  clear: 'both',
+                  paddingTop: '20px',
+                  marginBottom: '20px',
+                  paddingBottom: '20px',
+                  position: 'relative',
+                  zIndex: 1,
+                  width: '100%',
+                  display: 'block'
+                }}>
+                  <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: '0', width: '100%' }}>
+                    <div style={{ 
+                      width: '100%',
+                      border: '1px solid #dee2e6',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      background: '#fff'
+                    }}>
+                      {/* Scrollable Product Table */}
+                      <div className="attendance-table-container" style={{ 
+                        marginTop: '0', 
+                        maxHeight: '300px',
+                        overflowY: 'auto',
+                        overflowX: 'auto',
+                        width: '100%',
+                        paddingRight: '8px'
+                      }}>
+                        <table className="attendance-table" style={{ width: '100%', tableLayout: 'auto' }}>
+                          <thead>
+                            <tr>
+                              <th style={{ width: '60px', textAlign: 'center' }}>#</th>
+                              <th>ITEM CODE</th>
+                              <th>ITEM NAME</th>
+                              <th style={{ width: '100px', textAlign: 'center' }}>QTY</th>
+                              <th style={{ width: '120px', textAlign: 'center' }}>UNIT PRICE</th>
+                              <th style={{ width: '150px', textAlign: 'center' }}>TOTAL PRICE</th>
+                              <th style={{ width: '100px', textAlign: 'center' }}>Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {addedProducts.map((product, index) => (
+                              <tr key={product.id}>
+                                <td style={{ textAlign: 'center', color: '#666', fontWeight: '500' }}>
+                                  {index + 1}
+                                </td>
+                                <td style={{ fontWeight: '500', color: '#333' }}>
+                                  {product.itemCode}
+                                </td>
+                                <td style={{ fontWeight: '500', color: '#333' }}>
+                                  {product.productName}
+                                </td>
+                                <td style={{ textAlign: 'center', color: '#28a745', fontWeight: '600' }}>
+                                  {product.quantity}
+                                </td>
+                                <td style={{ textAlign: 'center', fontWeight: '500', color: '#333' }}>
+                                  ₹{parseFloat(product.unitPrice || 0).toFixed(2)}
+                                </td>
+                                <td style={{ textAlign: 'center', fontWeight: '600', color: '#0066cc' }}>
+                                  ₹{parseFloat(product.totalPrice || 0).toFixed(2)}
+                                </td>
+                                <td style={{ textAlign: 'center' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeProduct(product.id)}
+                                    style={{
+                                      background: '#dc3545',
+                                      color: '#fff',
+                                      border: 'none',
+                                      borderRadius: '6px',
+                                      padding: '6px 12px',
+                                      cursor: 'pointer',
+                                      fontSize: '12px',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      transition: 'all 0.2s ease',
+                                      whiteSpace: 'nowrap'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.target.style.background = '#c82333';
+                                      e.target.style.transform = 'scale(1.05)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.target.style.background = '#dc3545';
+                                      e.target.style.transform = 'scale(1)';
+                                    }}
+                                    title="Remove this product"
+                                  >
+                                    <i className="fas fa-trash"></i>
+                                    Remove
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {/* Total Amount Row - Always Visible at Bottom of Card */}
+                      <div style={{ 
+                        background: '#f8f9fa', 
+                        borderTop: '2px solid #dc3545',
+                        padding: '12px 16px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        fontWeight: 'bold'
+                      }}>
+                        <div style={{ flex: 1, textAlign: 'right', color: '#333', marginRight: '20px', fontSize: '16px' }}>
+                          TOTAL AMOUNT:
+                        </div>
+                        <div style={{ 
+                          textAlign: 'center',
+                          color: '#dc3545',
+                          fontSize: '18px',
+                          fontWeight: 'bold',
+                          minWidth: '150px'
+                        }}>
+                          ₹{calculateTotalAmount().toFixed(2)}
+                        </div>
+                        <div style={{ minWidth: '100px' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
 
-          {/* Product Summary Section - Single Card */}
-          {addedProducts.length > 0 && (
-            <div className="form-section" style={{ 
-              clear: 'both', 
-              marginTop: '240px', 
-              marginBottom: '130px',
-              paddingTop: '20px',
-              paddingBottom: '20px'
-            }}>
-              <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: '0', width: '100%' }}>
-                <div style={{ 
-                  width: '100%',
-                  border: '1px solid #dee2e6',
-                  borderRadius: '8px',
-                  overflow: 'hidden',
-                  background: '#fff'
-                }}>
-                  {/* Scrollable Product Table */}
-                  <div className="attendance-table-container" style={{ 
-                    marginTop: '0', 
-                    maxHeight: addedProducts.length > 2 ? '300px' : 'auto',
-                    overflowY: addedProducts.length > 2 ? 'auto' : 'visible',
-                    overflowX: 'auto',
-                    width: '100%',
-                    paddingRight: '8px'
-                  }}>
-                    <table className="attendance-table" style={{ width: '100%', tableLayout: 'auto' }}>
-                      <thead>
-                        <tr>
-                          <th style={{ width: '60px', textAlign: 'center' }}>#</th>
-                          <th>ITEM CODE</th>
-                          <th>ITEM NAME</th>
-                          <th style={{ width: '100px', textAlign: 'center' }}>QTY</th>
-                          <th style={{ width: '120px', textAlign: 'center' }}>UNIT PRICE</th>
-                          <th style={{ width: '150px', textAlign: 'center' }}>TOTAL PRICE</th>
-                          <th style={{ width: '100px', textAlign: 'center' }}>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {addedProducts.map((product, index) => (
-                          <tr key={product.id}>
-                            <td style={{ textAlign: 'center', color: '#666', fontWeight: '500' }}>
-                              {index + 1}
-                            </td>
-                            <td style={{ fontWeight: '500', color: '#333' }}>
-                              {product.itemCode}
-                            </td>
-                            <td style={{ fontWeight: '500', color: '#333' }}>
-                              {product.productName}
-                            </td>
-                            <td style={{ textAlign: 'center', color: '#28a745', fontWeight: '600' }}>
-                              {product.quantity}
-                            </td>
-                            <td style={{ textAlign: 'center', fontWeight: '500', color: '#333' }}>
-                              ₹{parseFloat(product.unitPrice || 0).toFixed(2)}
-                            </td>
-                            <td style={{ textAlign: 'center', fontWeight: '600', color: '#0066cc' }}>
-                              ₹{parseFloat(product.totalPrice || 0).toFixed(2)}
-                            </td>
-                            <td style={{ textAlign: 'center' }}>
-                              <button
-                                type="button"
-                                onClick={() => removeProduct(product.id)}
-                                style={{
-                                  background: '#dc3545',
-                                  color: '#fff',
-                                  border: 'none',
-                                  borderRadius: '6px',
-                                  padding: '6px 12px',
-                                  cursor: 'pointer',
-                                  fontSize: '12px',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '6px',
-                                  transition: 'all 0.2s ease',
-                                  whiteSpace: 'nowrap'
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.target.style.background = '#c82333';
-                                  e.target.style.transform = 'scale(1.05)';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.target.style.background = '#dc3545';
-                                  e.target.style.transform = 'scale(1)';
-                                }}
-                                title="Remove this product"
-                              >
-                                <i className="fas fa-trash"></i>
-                                Remove
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  {/* Total Amount Row - Always Visible at Bottom of Card */}
-                  <div style={{ 
-                    background: '#f8f9fa', 
-                    borderTop: '2px solid #dc3545',
-                    padding: '12px 16px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    fontWeight: 'bold'
-                  }}>
-                    <div style={{ flex: 1, textAlign: 'right', color: '#333', marginRight: '20px', fontSize: '16px' }}>
-                      TOTAL AMOUNT:
-                    </div>
-                    <div style={{ 
-                      textAlign: 'center',
-                      color: '#dc3545',
-                      fontSize: '18px',
-                      fontWeight: 'bold',
-                      minWidth: '150px'
-                    }}>
-                      ₹{calculateTotalAmount().toFixed(2)}
-                    </div>
-                    <div style={{ minWidth: '100px' }}></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Submit Button */}
           <div className="form-actions" style={{ 
-            marginTop: addedProducts.length > 0 ? '130px' : '20px',
+            marginTop: addedProducts.length > 0 ? '30px' : '20px',
             clear: 'both',
             paddingTop: '20px'
           }}>
