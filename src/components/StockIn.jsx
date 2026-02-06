@@ -601,7 +601,7 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
 
             {/* Display Added Products - Summary Table - Right after Total After Adding */}
             {addedProducts.length > 0 && (
-              <div style={{ 
+              <div className="product-summary-section" style={{ 
                 marginTop: '30px', 
                 clear: 'both', 
                 paddingTop: '20px', 

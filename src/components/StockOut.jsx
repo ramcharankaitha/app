@@ -838,17 +838,18 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
               </div>
             </div>
 
-          {/* Display Added Products - Summary Table (after Points) */}
+          {/* Display Added Products - Summary Table */}
+          {/* Moved below payment section to ensure it appears after all fields */}
+          {/* See updated block near the end of the form */}
+
+          {/* Display Added Products - Summary Table (after Add Product) */}
           {addedProducts.length > 0 && (
-            <div style={{ 
+            <div className="product-summary-section" style={{ 
               marginTop: '30px', 
               clear: 'both', 
               paddingTop: '20px', 
               marginBottom: '20px',
               paddingBottom: '20px',
-              position: 'relative',
-              zIndex: 1,
-              gridColumn: '1 / -1',
               width: '100%',
               display: 'block'
             }}>
@@ -858,11 +859,8 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                   border: '1px solid #dee2e6',
                   borderRadius: '8px',
                   overflow: 'hidden',
-                  background: '#fff',
-                  position: 'relative',
-                  zIndex: 1
+                  background: '#fff'
                 }}>
-                  {/* Scrollable Product Table */}
                   <div className="attendance-table-container" style={{ 
                     marginTop: '0', 
                     maxHeight: '400px',
@@ -941,8 +939,6 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                       </tbody>
                     </table>
                   </div>
-
-                  {/* Total Amount Row - Always Visible at Bottom of Card */}
                   <div style={{ 
                     background: '#f8f9fa', 
                     borderTop: '2px solid #dc3545',
@@ -970,10 +966,9 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
               </div>
             </div>
           )}
-
-          {/* Payment Mode and Remove Stock Button - Same row */}
+          
           {addedProducts.length > 0 && (
-            <div className="form-section" style={{ marginTop: '30px', paddingTop: '20px' }}>
+            <div className="form-section payment-mode-section" style={{ marginTop: '30px', paddingTop: '20px' }}>
               <div className="form-grid four-col">
                 <div className="form-group">
                   <label htmlFor="paymentMode">Payment Mode *</label>
@@ -1003,7 +998,6 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     <i className="fas fa-chevron-down dropdown-icon"></i>
                   </div>
                 </div>
-
                 <div className="form-group" style={{ gridColumn: '2 / 4' }}>
                   <label>&nbsp;</label>
                   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -1021,7 +1015,6 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                         cursor: (isLoading || !customerVerified || !formData.paymentMode || addedProducts.length === 0) ? 'not-allowed' : 'pointer'
                       }}
                       onClick={(e) => {
-                        // Additional validation before submit - show error messages
                         if (!customerVerified) {
                           e.preventDefault();
                           setError('Please verify the customer by entering a valid phone number or customer ID.');

@@ -334,7 +334,7 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
 
       {/* Main Content */}
       <main className="add-user-content">
-        <form onSubmit={(e) => { e.preventDefault(); submitQuotation(); }} className="add-user-form">
+        <form onSubmit={(e) => { e.preventDefault(); submitQuotation(); }} className="add-user-form add-quotation-form">
           {error && (
             <div className="alert alert-error" style={{ marginBottom: '20px' }}>
               <i className="fas fa-exclamation-circle"></i> {error}
@@ -572,14 +572,12 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
 
           {/* Product Summary Section - Stock In style */}
           {addedProducts.length > 0 && (
-            <div style={{ 
+            <div className="product-summary-section" style={{ 
               marginTop: '30px', 
               clear: 'both', 
               paddingTop: '20px', 
               marginBottom: '20px',
               paddingBottom: '20px',
-              position: 'relative',
-              zIndex: 1,
               width: '100%',
               display: 'block'
             }}>
@@ -589,9 +587,7 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                   border: '1px solid #dee2e6',
                   borderRadius: '8px',
                   overflow: 'hidden',
-                  background: '#fff',
-                  position: 'relative',
-                  zIndex: 1
+                  background: '#fff'
                 }}>
                   {/* Scrollable Product Table */}
                   <div className="attendance-table-container" style={{ 
@@ -745,4 +741,3 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
 };
 
 export default AddQuotation;
-

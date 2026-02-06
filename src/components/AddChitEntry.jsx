@@ -219,7 +219,7 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
 
       {/* Main Content */}
       <main className="add-user-content">
-        <form onSubmit={handleSubmit} className="add-user-form">
+        <form onSubmit={handleSubmit} className="add-user-form add-chit-entry-form">
           {error && (
             <div className="alert alert-error" style={{ marginBottom: '20px' }}>
               <i className="fas fa-exclamation-circle"></i> {error}
@@ -422,26 +422,11 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
           </div>
 
           {/* Submit Button */}
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center',
-            marginTop: '40px',
-            paddingTop: '20px'
-          }}>
+          <div className="submit-bar">
             <button
               type="submit"
               className="btn-primary"
               disabled={isLoading || !selectedCustomer || !formData.paymentMode || !formData.month}
-              style={{
-                width: '200px',
-                maxWidth: '200px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                cursor: (isLoading || !selectedCustomer || !formData.paymentMode || !formData.month) ? 'not-allowed' : 'pointer'
-              }}
             >
               {isLoading ? (
                 <>
@@ -461,4 +446,3 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
 };
 
 export default AddChitEntry;
-

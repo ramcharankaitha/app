@@ -255,19 +255,9 @@ const StockOutMaster = ({ onBack, onAddStockOut, onNavigate, userRole = 'admin' 
               </button>
               <div>
                 <h1 className="staff-title">Stock Out Master</h1>
-                <p className="staff-subtitle">View and manage all stock out transactions</p>
               </div>
             </div>
             <div className="header-right" style={{ display: 'flex', gap: '12px' }}>
-              <button 
-                className="add-btn" 
-                onClick={fetchTransactions}
-                style={{ background: '#28a745' }}
-                title="Refresh transactions"
-              >
-                <i className="fas fa-sync-alt"></i>
-                <span>Refresh</span>
-              </button>
               <button className="add-btn" onClick={handleAddStockOut}>
                 <i className="fas fa-plus"></i>
                 <span>Add Stock Out</span>
@@ -694,4 +684,3 @@ const StockOutMaster = ({ onBack, onAddStockOut, onNavigate, userRole = 'admin' 
 };
 
 export default StockOutMaster;
-
