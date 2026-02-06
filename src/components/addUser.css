@@ -1889,6 +1889,70 @@ form.add-user-form>.form-actions {
 
     /* Mobile: Stack Stock Out fields to single column and place actions below */
     @media (max-width: 768px) {
+        .add-stock-out-container {
+            height: 100dvh !important;
+            max-height: 100dvh !important;
+            overflow: hidden !important;
+        }
+
+        .add-stock-out-container .add-user-content {
+            max-height: calc(100dvh - 50px) !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            -webkit-overflow-scrolling: touch !important;
+            padding-bottom: 16px !important;
+        }
+
+        .add-stock-out-container .add-stock-out-form {
+            height: auto !important;
+            overflow: visible !important;
+        }
+
+        .add-stock-out-form .stock-out-bottom-sections {
+            display: flex !important;
+            flex-direction: column !important;
+        }
+
+        .add-stock-out-form .stock-out-add-product {
+            order: 1 !important;
+        }
+
+        .add-stock-out-form .stock-out-payment {
+            order: 2 !important;
+        }
+
+        .add-stock-out-form .stock-out-payment {
+            position: sticky !important;
+            top: 12px !important;
+            z-index: 20 !important;
+            background: var(--card-bg) !important;
+            padding-top: 6px !important;
+            padding-bottom: 6px !important;
+            border-bottom: 1px solid var(--border-light) !important;
+        }
+
+        .add-stock-out-form .stock-out-payment .form-actions {
+            margin-top: 0 !important;
+            padding-top: 8px !important;
+            padding-bottom: 8px !important;
+            gap: 8px !important;
+        }
+
+        .add-stock-out-form .stock-out-payment .form-actions > div {
+            max-width: none !important;
+        }
+
+        .add-stock-out-form .stock-out-payment .form-actions .btn-primary {
+            width: 170px !important;
+            max-width: 170px !important;
+            padding: 10px 14px !important;
+            font-size: 13px !important;
+        }
+
+        .add-stock-out-form .stock-out-table {
+            order: 3 !important;
+        }
+
         .add-stock-out-form .form-grid.four-col {
             grid-template-columns: 1fr !important;
             gap: 12px !important;
