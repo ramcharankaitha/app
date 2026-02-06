@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { staffAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
+import { pickPhotoWithSource, pickPhoto, pickDocument } from '../utils/photoUpload';
 
 const AddStaff = ({ onBack, onCancel, onNavigate }) => {
   const [formData, setFormData] = useState({
@@ -78,44 +79,64 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value, type, checked, files } = e.target;
-    if (type === 'file') {
-      if (name === 'photo') {
-        const file = files && files.length > 0 ? files[0] : null;
-        if (file) {
-          // Validate file size (max 5MB)
-          if (file.size > 5 * 1024 * 1024) {
-            setError('Photo size should be less than 5MB');
-            return;
-          }
-          // Validate file type
-          if (!file.type.startsWith('image/')) {
-            setError('Please select a valid image file');
-            return;
-          }
-          setPhotoFile(file);
-          // Create preview and store both file and base64
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            setPhotoPreview(reader.result);
-            // Store base64 for JSON API, file object for FormData API
-            setFormData(prev => ({ ...prev, photo: reader.result }));
-          };
-          reader.readAsDataURL(file);
-        }
-      } else {
+  const handlePhotoUpload = async () => {
+    try {
+      setError('');
+      const result = await pickPhotoWithSource({ quality: 80, allowEditing: true });
+      
+      if (result.cancelled) {
+        return;
+      }
+      
+      if (!result.success) {
+        setError(result.error || 'Failed to select photo');
+        return;
+      }
+      
+      if (result.file && result.preview) {
+        setPhotoFile(result.file);
+        setPhotoPreview(result.preview);
+        setFormData(prev => ({ ...prev, photo: result.preview }));
+      }
+    } catch (err) {
+      console.error('Photo upload error:', err);
+      setError('Failed to upload photo. Please try again.');
+    }
+  };
+
+  const handleAadharUpload = async () => {
+    try {
+      setError('');
+      // Use pickDocument for Aadhar since it can be PDF or image
+      const result = await pickDocument('image/*,.pdf');
+      
+      if (result.cancelled) {
+        return;
+      }
+      
+      if (!result.success) {
+        setError(result.error || 'Failed to select Aadhar file');
+        return;
+      }
+      
+      if (result.file) {
         setFormData(prev => ({
           ...prev,
-          [name]: files && files.length > 0 ? files[0] : null
+          aadharFile: result.file
         }));
       }
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: type === 'checkbox' ? checked : value
-      }));
+    } catch (err) {
+      console.error('Aadhar upload error:', err);
+      setError('Failed to upload Aadhar file. Please try again.');
     }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
   };
 
   const submitStaff = async () => {
@@ -268,8 +289,6 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                       setPhotoPreview(null);
                       setPhotoFile(null);
                       setFormData(prev => ({ ...prev, photo: null }));
-                      const fileInput = document.getElementById('staffPhoto');
-                      if (fileInput) fileInput.value = '';
                     }}
                     style={{
                       position: 'absolute',
@@ -297,18 +316,15 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                   <i className="fas fa-camera"></i>
                 </div>
               )}
-              <input
-                type="file"
-                id="staffPhoto"
-                name="photo"
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={handleInputChange}
-              />
-              <label htmlFor="staffPhoto" className="upload-photo-btn" style={{ cursor: 'pointer' }}>
+              <button
+                type="button"
+                className="upload-photo-btn"
+                onClick={handlePhotoUpload}
+                style={{ cursor: 'pointer', border: 'none', background: 'transparent' }}
+              >
                 <i className="fas fa-camera"></i>
                 <span>{photoPreview ? 'Change photo' : 'Upload photo'}</span>
-              </label>
+              </button>
             </div>
 
             <form onSubmit={handleSubmit} className="add-user-form">
@@ -502,19 +518,27 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                       <label htmlFor="aadharFile">Upload Aadhar</label>
                       <div className="input-wrapper" style={{ position: 'relative' }}>
                         <i className="fas fa-id-card input-icon"></i>
-                        <input
-                          type="file"
-                          id="aadharFile"
-                          name="aadharFile"
+                        <button
+                          type="button"
+                          onClick={handleAadharUpload}
                           className="form-input"
-                          accept="image/*,.pdf"
-                          onChange={handleInputChange}
                           style={{ 
                             paddingTop: '10px',
                             paddingBottom: '10px',
-                            cursor: 'pointer'
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            background: 'var(--input-bg)',
+                            border: '1px solid #ddd',
+                            borderRadius: '8px',
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
                           }}
-                        />
+                        >
+                          <i className="fas fa-upload"></i>
+                          <span>{formData.aadharFile ? formData.aadharFile.name : 'Click to upload Aadhar (Image/PDF)'}</span>
+                        </button>
                         {formData.aadharFile && (
                           <div style={{
                             fontSize: '11px',
@@ -530,7 +554,6 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                               type="button"
                               onClick={() => {
                                 setFormData(prev => ({ ...prev, aadharFile: null }));
-                                document.getElementById('aadharFile').value = '';
                               }}
                               style={{
                                 marginLeft: '8px',

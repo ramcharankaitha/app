@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { usersAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
+import { pickPhotoWithSource } from '../utils/photoUpload';
 
 const AddUser = ({ onBack, onCancel, onNavigate }) => {
   const [formData, setFormData] = useState({
@@ -75,36 +76,37 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value, type, files } = e.target;
-    if (type === 'file' && name === 'photo') {
-      const file = files && files.length > 0 ? files[0] : null;
-      if (file) {
-        // Validate file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-          setError('Photo size should be less than 5MB');
-          return;
-        }
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-          setError('Please select a valid image file');
-          return;
-        }
-        setPhotoFile(file);
-        // Create preview
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setPhotoPreview(reader.result);
-          setFormData(prev => ({ ...prev, photo: reader.result }));
-        };
-        reader.readAsDataURL(file);
+  const handlePhotoUpload = async () => {
+    try {
+      setError('');
+      const result = await pickPhotoWithSource({ quality: 80, allowEditing: true });
+      
+      if (result.cancelled) {
+        return; // User cancelled, do nothing
       }
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
+      
+      if (!result.success) {
+        setError(result.error || 'Failed to select photo');
+        return;
+      }
+      
+      if (result.file && result.preview) {
+        setPhotoFile(result.file);
+        setPhotoPreview(result.preview);
+        setFormData(prev => ({ ...prev, photo: result.preview }));
+      }
+    } catch (err) {
+      console.error('Photo upload error:', err);
+      setError('Failed to upload photo. Please try again.');
     }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const submitUser = async () => {
@@ -267,18 +269,15 @@ const AddUser = ({ onBack, onCancel, onNavigate }) => {
                   <i className="fas fa-camera"></i>
                 </div>
               )}
-              <input
-                type="file"
-                id="supervisorPhoto"
-                name="photo"
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={handleInputChange}
-              />
-              <label htmlFor="supervisorPhoto" className="upload-photo-btn" style={{ cursor: 'pointer' }}>
+              <button
+                type="button"
+                className="upload-photo-btn"
+                onClick={handlePhotoUpload}
+                style={{ cursor: 'pointer', border: 'none', background: 'transparent' }}
+              >
                 <i className="fas fa-camera"></i>
                 <span>{photoPreview ? 'Change photo' : 'Upload photo'}</span>
-              </label>
+              </button>
             </div>
 
             <form onSubmit={handleSubmit} className="add-user-form">

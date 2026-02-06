@@ -41,6 +41,46 @@
   color: #111;
 }
 
+.reports-header-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.reports-select-wrapper {
+  position: relative;
+  min-width: 280px;
+}
+
+.reports-select {
+  padding: 12px 45px 12px 40px;
+  border-radius: 8px;
+  border: 2px solid #dc3545;
+  background: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  appearance: none;
+  width: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 15px center;
+  background-size: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.reports-select-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #dc3545;
+  pointer-events: none;
+  font-size: 16px;
+}
+
 .attendance-view-body {
   padding: 24px;
 }
@@ -125,5 +165,188 @@
 .badge.info {
   background: #d1ecf1;
   color: #0c5460;
+}
+
+/* Mobile responsive styles for Reports modal */
+@media (max-width: 768px) {
+  .attendance-view-overlay {
+    padding: 0 !important;
+    align-items: flex-start !important;
+  }
+
+  .attendance-view-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 0 !important;
+    max-height: 100vh !important;
+    height: 100vh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  .attendance-view-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    padding: 12px 14px !important;
+    position: relative !important;
+  }
+
+  .reports-header-content {
+    width: 100% !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    align-items: flex-start !important;
+  }
+
+  .attendance-view-header h2 {
+    font-size: 18px !important;
+    margin: 0 !important;
+  }
+
+  .reports-select-wrapper {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .reports-select {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    padding: 10px 40px 10px 36px !important;
+    font-size: 14px !important;
+    background-position: right 12px center !important;
+  }
+
+  .reports-select-icon {
+    left: 12px !important;
+    font-size: 14px !important;
+  }
+
+  .attendance-view-header .close-btn {
+    position: absolute !important;
+    top: 12px !important;
+    right: 14px !important;
+    margin: 0 !important;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .attendance-view-body {
+    padding: 12px 14px !important;
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .attendance-controls {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .date-selector {
+    width: 100% !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 6px !important;
+  }
+
+  .date-selector label {
+    font-size: 12px !important;
+    margin-bottom: 0 !important;
+  }
+
+  .date-selector input,
+  .date-selector select {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    padding: 8px !important;
+    font-size: 14px !important;
+    box-sizing: border-box !important;
+  }
+
+  .attendance-controls .btn-primary {
+    width: 100% !important;
+    padding: 10px 16px !important;
+    font-size: 14px !important;
+    box-sizing: border-box !important;
+  }
+
+  .attendance-table-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .attendance-table {
+    min-width: 600px !important;
+    font-size: 12px !important;
+  }
+
+  .attendance-table th,
+  .attendance-table td {
+    padding: 8px 6px !important;
+    white-space: nowrap !important;
+  }
+
+  /* Summary cards - stack on mobile */
+  .attendance-view-body > div > div[style*="grid"] {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* Ensure no element causes horizontal overflow */
+  .attendance-view-modal * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Prevent horizontal scroll on body */
+  body {
+    overflow-x: hidden !important;
+  }
+
+  /* Ensure modal content doesn't overflow */
+  .attendance-view-modal > * {
+    overflow-x: hidden !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .attendance-view-header h2 {
+    font-size: 16px !important;
+  }
+
+  .reports-select {
+    font-size: 13px !important;
+    padding: 9px 38px 9px 34px !important;
+    background-position: right 10px center !important;
+  }
+
+  .reports-select-icon {
+    left: 10px !important;
+    font-size: 13px !important;
+  }
+
+  .attendance-table {
+    font-size: 11px !important;
+  }
+
+  .attendance-table th,
+  .attendance-table td {
+    padding: 6px 4px !important;
+  }
 }
 
