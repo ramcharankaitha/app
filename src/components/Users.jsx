@@ -15,6 +15,14 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null, user: null });
   const menuRefs = useRef({});
 
+  const handleHome = () => {
+    if (onNavigate) {
+      onNavigate('dashboard');
+    } else if (onBack) {
+      onBack();
+    }
+  };
+
   const handleBack = () => {
     if (onNavigate) {
       onNavigate('dashboard');
@@ -285,6 +293,12 @@ const Supervisors = ({ onBack, onAddUser, onNavigate }) => {
       />
       {/* Left Sidebar Navigation */}
       <nav className="sidebar-nav">
+        <div className="nav-item" onClick={handleHome}>
+          <div className="nav-icon">
+            <i className="fas fa-home"></i>
+          </div>
+          <span>Home</span>
+        </div>
         <div className="nav-item active" onClick={handleUsers}>
           <div className="nav-icon">
             <i className="fas fa-users"></i>

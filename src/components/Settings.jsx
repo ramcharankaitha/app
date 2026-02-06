@@ -30,7 +30,7 @@ const Settings = ({ onBack, onNavigate, onLogout, userRole = 'admin' }) => {
   const handleManagers = () => onNavigate && onNavigate('users');
   const handleStaff = () => onNavigate && onNavigate('staff');
   const handleCustomers = () => onNavigate && onNavigate('customers');
-  const handleMasterMenu = () => onNavigate && onNavigate('dashboard');
+  const handleMasterMenu = () => onNavigate && onNavigate('masterMenu');
   const handleSettings = () => onNavigate && onNavigate('settings');
 
   const displayName = profile.full_name || (userRole === 'supervisor' ? 'Supervisor Account' : userRole === 'staff' ? 'Staff Account' : 'Admin Root');
@@ -222,6 +222,12 @@ const Settings = ({ onBack, onNavigate, onLogout, userRole = 'admin' }) => {
     <div className="dashboard-container">
       {/* Sidebar */}
       <nav className={`sidebar-nav ${sidebarOpen ? 'open' : ''}`}>
+        <div className="nav-item" onClick={handleHome}>
+          <div className="nav-icon">
+            <i className="fas fa-home"></i>
+          </div>
+          <span>Home</span>
+        </div>
         {userRole === 'admin' && (
           <div className="nav-item" onClick={handleManagers}>
             <div className="nav-icon">

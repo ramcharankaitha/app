@@ -806,8 +806,139 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                       />
                     </div>
                   </div>
+              </div>
 
-                {/* Add Product button in 4th column */}
+              {/* Display Added Products - Summary Table (after Points, before Add Product) */}
+              {addedProducts.length > 0 && (
+                <div className="product-summary-section" style={{ 
+                  marginTop: '30px',
+                  clear: 'both',
+                  paddingTop: '20px',
+                  marginBottom: '20px',
+                  paddingBottom: '20px',
+                  position: 'relative',
+                  zIndex: 1,
+                  width: '100%',
+                  display: 'block'
+                }}>
+                  <div style={{ width: '100%', marginBottom: '0' }}>
+                    <div style={{ 
+                      width: '100%',
+                      border: '1px solid #dee2e6',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      background: '#fff',
+                      position: 'relative',
+                      zIndex: 1,
+                    }}>
+                      <div className="attendance-table-container" style={{ 
+                        marginTop: '0',
+                        maxHeight: '400px',
+                        overflowY: 'auto',
+                        overflowX: 'auto',
+                        width: '100%',
+                        paddingRight: '8px'
+                      }}>
+                        <table className="attendance-table" style={{ width: '100%', tableLayout: 'auto' }}>
+                          <thead>
+                            <tr>
+                              <th style={{ width: '60px', textAlign: 'center' }}>#</th>
+                              <th>ITEM CODE</th>
+                              <th>ITEM NAME</th>
+                              <th style={{ width: '100px', textAlign: 'center' }}>QTY</th>
+                              <th style={{ width: '120px', textAlign: 'center' }}>MRP</th>
+                              <th style={{ width: '150px', textAlign: 'center' }}>Amount</th>
+                              <th style={{ width: '100px', textAlign: 'center' }}>Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {addedProducts.map((product, index) => (
+                              <tr key={product.id}>
+                                <td style={{ textAlign: 'center', color: '#666', fontWeight: '500' }}>
+                                  {index + 1}
+                                </td>
+                                <td style={{ fontWeight: '500', color: '#333' }}>
+                                  {product.itemCode}
+                                </td>
+                                <td style={{ fontWeight: '500', color: '#333' }}>
+                                  {product.productName}
+                                </td>
+                                <td style={{ textAlign: 'center', color: '#28a745', fontWeight: '600' }}>
+                                  {product.stockOutQuantity}
+                                </td>
+                                <td style={{ textAlign: 'center', fontWeight: '500', color: '#333' }}>
+                                  ₹{parseFloat(product.mrp || 0).toFixed(2)}
+                                </td>
+                                <td style={{ textAlign: 'center', fontWeight: '600', color: '#0066cc' }}>
+                                  ₹{parseFloat(product.amount || 0).toFixed(2)}
+                                </td>
+                                <td style={{ textAlign: 'center' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeProduct(product.id)}
+                                    style={{
+                                      background: '#dc3545',
+                                      color: '#fff',
+                                      border: 'none',
+                                      borderRadius: '6px',
+                                      padding: '6px 12px',
+                                      cursor: 'pointer',
+                                      fontSize: '12px',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      transition: 'all 0.2s ease',
+                                      whiteSpace: 'nowrap'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.target.style.background = '#c82333';
+                                      e.target.style.transform = 'scale(1.05)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.target.style.background = '#dc3545';
+                                      e.target.style.transform = 'scale(1)';
+                                    }}
+                                    title="Remove this product"
+                                  >
+                                    <i className="fas fa-trash"></i>
+                                    Remove
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div style={{ 
+                        background: '#f8f9fa', 
+                        borderTop: '2px solid #dc3545',
+                        padding: '12px 16px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        fontWeight: 'bold'
+                      }}>
+                        <div style={{ flex: 1, textAlign: 'right', color: '#333', marginRight: '20px', fontSize: '16px' }}>
+                          TOTAL AMOUNT:
+                        </div>
+                        <div style={{ 
+                          textAlign: 'center',
+                          color: '#dc3545',
+                          fontSize: '18px',
+                          fontWeight: 'bold',
+                          minWidth: '150px'
+                        }}>
+                          ₹{addedProducts.reduce((sum, product) => sum + (parseFloat(product.amount) || 0), 0).toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Add Product button */}
+              <div className="form-grid four-col" style={{ marginTop: '12px' }}>
                 <div className="form-group">
                   <label style={{ visibility: 'hidden' }}>Add Product</label>
                   <button
@@ -836,215 +967,91 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                   </button>
                 </div>
               </div>
-            </div>
 
-          {/* Display Added Products - Summary Table */}
-          {/* Moved below payment section to ensure it appears after all fields */}
-          {/* See updated block near the end of the form */}
-
-          {/* Display Added Products - Summary Table (after Add Product) */}
-          {addedProducts.length > 0 && (
-            <div className="product-summary-section" style={{ 
-              marginTop: '30px', 
-              clear: 'both', 
-              paddingTop: '20px', 
-              marginBottom: '20px',
-              paddingBottom: '20px',
-              width: '100%',
-              display: 'block'
-            }}>
-              <div style={{ width: '100%', marginBottom: '0' }}>
-                <div style={{ 
-                  width: '100%',
-                  border: '1px solid #dee2e6',
-                  borderRadius: '8px',
-                  overflow: 'hidden',
-                  background: '#fff'
-                }}>
-                  <div className="attendance-table-container" style={{ 
-                    marginTop: '0', 
-                    maxHeight: '400px',
-                    overflowY: 'auto',
-                    overflowX: 'auto',
-                    width: '100%',
-                    paddingRight: '8px'
-                  }}>
-                    <table className="attendance-table" style={{ width: '100%', tableLayout: 'auto' }}>
-                      <thead>
-                        <tr>
-                          <th style={{ width: '60px', textAlign: 'center' }}>#</th>
-                          <th>ITEM CODE</th>
-                          <th>ITEM NAME</th>
-                          <th style={{ width: '100px', textAlign: 'center' }}>QTY</th>
-                          <th style={{ width: '120px', textAlign: 'center' }}>MRP</th>
-                          <th style={{ width: '150px', textAlign: 'center' }}>Amount</th>
-                          <th style={{ width: '100px', textAlign: 'center' }}>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {addedProducts.map((product, index) => (
-                          <tr key={product.id}>
-                            <td style={{ textAlign: 'center', color: '#666', fontWeight: '500' }}>
-                              {index + 1}
-                            </td>
-                            <td style={{ fontWeight: '500', color: '#333' }}>
-                              {product.itemCode}
-                            </td>
-                            <td style={{ fontWeight: '500', color: '#333' }}>
-                              {product.productName}
-                            </td>
-                            <td style={{ textAlign: 'center', color: '#28a745', fontWeight: '600' }}>
-                              {product.stockOutQuantity}
-                            </td>
-                            <td style={{ textAlign: 'center', fontWeight: '500', color: '#333' }}>
-                              ₹{parseFloat(product.mrp || 0).toFixed(2)}
-                            </td>
-                            <td style={{ textAlign: 'center', fontWeight: '600', color: '#0066cc' }}>
-                              ₹{parseFloat(product.amount || 0).toFixed(2)}
-                            </td>
-                            <td style={{ textAlign: 'center' }}>
-                              <button
-                                type="button"
-                                onClick={() => removeProduct(product.id)}
-                                style={{
-                                  background: '#dc3545',
-                                  color: '#fff',
-                                  border: 'none',
-                                  borderRadius: '6px',
-                                  padding: '6px 12px',
-                                  cursor: 'pointer',
-                                  fontSize: '12px',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '6px',
-                                  transition: 'all 0.2s ease',
-                                  whiteSpace: 'nowrap'
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.target.style.background = '#c82333';
-                                  e.target.style.transform = 'scale(1.05)';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.target.style.background = '#dc3545';
-                                  e.target.style.transform = 'scale(1)';
-                                }}
-                                title="Remove this product"
-                              >
-                                <i className="fas fa-trash"></i>
-                                Remove
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div style={{ 
-                    background: '#f8f9fa', 
-                    borderTop: '2px solid #dc3545',
-                    padding: '12px 16px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    fontWeight: 'bold'
-                  }}>
-                    <div style={{ flex: 1, textAlign: 'right', color: '#333', marginRight: '20px', fontSize: '16px' }}>
-                      TOTAL AMOUNT:
-                    </div>
-                    <div style={{ 
-                      textAlign: 'center',
-                      color: '#dc3545',
-                      fontSize: '18px',
-                      fontWeight: 'bold',
-                      minWidth: '150px'
-                    }}>
-                      ₹{addedProducts.reduce((sum, product) => sum + (parseFloat(product.amount) || 0), 0).toFixed(2)}
-                    </div>
-                    <div style={{ minWidth: '100px' }}></div>
-                  </div>
-                </div>
-              </div>
             </div>
           )}
           
           {addedProducts.length > 0 && (
-            <div className="form-section payment-mode-section" style={{ marginTop: '30px', paddingTop: '20px' }}>
-              <div className="form-grid four-col">
-                <div className="form-group">
-                  <label htmlFor="paymentMode">Payment Mode *</label>
-                  <div className="input-wrapper">
-                    <i className="fas fa-credit-card input-icon"></i>
-                    <select
-                      id="paymentMode"
-                      name="paymentMode"
-                      className="form-input"
-                      value={formData.paymentMode}
-                      onChange={handleInputChange}
-                      required
-                      disabled={!customerVerified}
-                      style={{ 
-                        background: !customerVerified ? '#f8f9fa' : '#fff',
-                        cursor: !customerVerified ? 'not-allowed' : 'pointer'
-                      }}
-                    >
-                      <option value="">Select payment mode</option>
-                      <option value="Cash">Cash</option>
-                      <option value="Card">Card</option>
-                      <option value="UPI">UPI</option>
-                      <option value="Net Banking">Net Banking</option>
-                      <option value="Wallet">Wallet</option>
-                      <option value="Credit">Credit</option>
-                    </select>
-                    <i className="fas fa-chevron-down dropdown-icon"></i>
-                  </div>
-                </div>
-                <div className="form-group" style={{ gridColumn: '2 / 4' }}>
-                  <label>&nbsp;</label>
-                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <button
-                      type="submit"
-                      className="btn-primary"
-                      disabled={isLoading || !customerVerified || !formData.paymentMode || addedProducts.length === 0}
-                      style={{
-                        width: '200px',
-                        maxWidth: '200px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        cursor: (isLoading || !customerVerified || !formData.paymentMode || addedProducts.length === 0) ? 'not-allowed' : 'pointer'
-                      }}
-                      onClick={(e) => {
-                        if (!customerVerified) {
-                          e.preventDefault();
-                          setError('Please verify the customer by entering a valid phone number or customer ID.');
-                          return;
-                        }
-                        if (!formData.paymentMode || !formData.paymentMode.trim()) {
-                          e.preventDefault();
-                          setError('Payment mode is required. Please select a payment mode.');
-                          return;
-                        }
-                        if (!addedProducts || addedProducts.length === 0) {
-                          e.preventDefault();
-                          setError('Please add at least one product to the summary before creating stock out.');
-                          return;
-                        }
-                      }}
-                    >
-                      {isLoading ? (
-                        <>
-                          <i className="fas fa-spinner fa-spin"></i> Removing Stock...
-                        </>
-                      ) : (
-                        <>
-                          <i className="fas fa-minus"></i> Remove Stock
-                        </>
-                      )}
-                    </button>
-                  </div>
+            <div className="form-actions" style={{ 
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginTop: '30px',
+              paddingTop: '20px',
+              paddingBottom: '20px',
+              gap: '12px'
+            }}>
+              <div style={{ width: '100%', maxWidth: '400px' }}>
+                <label htmlFor="paymentMode">Payment Mode *</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-credit-card input-icon"></i>
+                  <select
+                    id="paymentMode"
+                    name="paymentMode"
+                    className="form-input"
+                    value={formData.paymentMode}
+                    onChange={handleInputChange}
+                    required
+                    disabled={!customerVerified}
+                    style={{ 
+                      background: !customerVerified ? '#f8f9fa' : '#fff',
+                      cursor: !customerVerified ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    <option value="">Select payment mode</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Card">Card</option>
+                    <option value="UPI">UPI</option>
+                    <option value="Net Banking">Net Banking</option>
+                    <option value="Wallet">Wallet</option>
+                    <option value="Credit">Credit</option>
+                  </select>
+                  <i className="fas fa-chevron-down dropdown-icon"></i>
                 </div>
               </div>
+
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={isLoading || !customerVerified || !formData.paymentMode || addedProducts.length === 0}
+                style={{
+                  width: '200px',
+                  maxWidth: '200px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  cursor: (isLoading || !customerVerified || !formData.paymentMode || addedProducts.length === 0) ? 'not-allowed' : 'pointer'
+                }}
+                onClick={(e) => {
+                  if (!customerVerified) {
+                    e.preventDefault();
+                    setError('Please verify the customer by entering a valid phone number or customer ID.');
+                    return;
+                  }
+                  if (!formData.paymentMode || !formData.paymentMode.trim()) {
+                    e.preventDefault();
+                    setError('Payment mode is required. Please select a payment mode.');
+                    return;
+                  }
+                  if (!addedProducts || addedProducts.length === 0) {
+                    e.preventDefault();
+                    setError('Please add at least one product to the summary before creating stock out.');
+                    return;
+                  }
+                }}
+              >
+                {isLoading ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin"></i> Removing Stock...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-minus"></i> Remove Stock
+                  </>
+                )}
+              </button>
             </div>
           )}
         </form>

@@ -46,7 +46,9 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     }
     setActiveNav(navItem);
     if (!onNavigate) return;
-    if (navItem === 'users') {
+    if (navItem === 'home') {
+      onNavigate('dashboard');
+    } else if (navItem === 'users') {
       onNavigate('users');
     } else if (navItem === 'staff') {
       onNavigate('staff');
@@ -764,6 +766,15 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     <div className="dashboard-container">
       {/* Left Sidebar Navigation */}
       <nav className={`sidebar-nav ${sidebarOpen ? 'open' : ''}`}>
+        <div 
+          className={`nav-item ${activeNav === 'home' ? 'active' : ''}`} 
+          onClick={(e) => handleNavClick('home', e)}
+        >
+          <div className="nav-icon">
+            <i className="fas fa-home"></i>
+          </div>
+          <span>Home</span>
+        </div>
         <div 
           className={`nav-item ${activeNav === 'users' ? 'active' : ''}`} 
           onClick={(e) => handleNavClick('users', e)}

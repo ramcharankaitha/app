@@ -42,6 +42,14 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
     fetchStaff();
   }, []);
 
+  const handleHome = () => {
+    if (onNavigate) {
+      onNavigate('dashboard');
+    } else if (onBack) {
+      onBack();
+    }
+  };
+
   const handleBack = () => {
     if (onNavigate) {
       onNavigate('dashboard');
@@ -244,6 +252,12 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
       />
       {/* Left Sidebar Navigation */}
       <nav className="sidebar-nav">
+        <div className="nav-item" onClick={handleHome}>
+          <div className="nav-icon">
+            <i className="fas fa-home"></i>
+          </div>
+          <span>Home</span>
+        </div>
         {userRole === 'admin' && (
           <div className="nav-item" onClick={handleManagers}>
             <div className="nav-icon">
