@@ -139,20 +139,33 @@
 }
 
 .upload-photo-btn {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 5px 12px;
-    background: #dc3545;
-    border: none;
-    border-radius: 5px;
-    color: #fff;
-    font-size: 10px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    white-space: nowrap;
-    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.25);
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    padding: 8px 16px !important;
+    background: #dc3545 !important;
+    border: none !important;
+    border-radius: 6px !important;
+    color: #fff !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    white-space: nowrap !important;
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.25) !important;
+    width: auto !important;
+    min-width: 140px !important;
+}
+
+.upload-photo-btn span {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.upload-photo-btn i {
+    font-size: 14px !important;
 }
 
 .upload-photo-btn:hover {
@@ -1126,14 +1139,27 @@ form.add-user-form>.form-actions {
     }
 
     .upload-photo-btn {
-        padding: 6px 16px;
-        font-size: 12px;
-        min-height: 36px;
-        min-width: 120px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 5px;
+        padding: 8px 16px !important;
+        font-size: 13px !important;
+        min-height: 40px !important;
+        min-width: 140px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;
+        background: #dc3545 !important;
+        color: #fff !important;
+    }
+
+    .upload-photo-btn span {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        font-size: 13px !important;
+    }
+
+    .upload-photo-btn i {
+        font-size: 14px !important;
     }
 
     /* Header - mobile optimized */

@@ -320,7 +320,6 @@ const AddStaff = ({ onBack, onCancel, onNavigate }) => {
                 type="button"
                 className="upload-photo-btn"
                 onClick={handlePhotoUpload}
-                style={{ cursor: 'pointer', border: 'none', background: 'transparent' }}
               >
                 <i className="fas fa-camera"></i>
                 <span>{photoPreview ? 'Change photo' : 'Upload photo'}</span>
