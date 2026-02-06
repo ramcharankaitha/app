@@ -1007,9 +1007,10 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
                   Add Product
                 </button>
               </div>
+            </div>
 
-              {/* Product Summary Section - Single Card */}
-              {addedProducts.length > 0 && (!isMobile || showSummaryOnMobile) && (
+            {/* Product Summary Section - Single Card */}
+            {addedProducts.length > 0 && (!isMobile || showSummaryOnMobile) && (
                 <div className="product-summary-section" style={{ 
                   marginTop: '20px',
                   clear: 'both',
@@ -1021,19 +1022,19 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
                   width: '100%',
                   display: 'block'
                 }}>
-                  <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: '0', width: '100%' }}>
+                  <div style={{ width: '100%', marginBottom: '0' }}>
                     <div style={{ 
                       width: '100%',
                       border: '1px solid #dee2e6',
                       borderRadius: '8px',
                       overflow: 'hidden',
-                      background: '#fff'
+                      background: '#fff',
+                      position: 'relative',
+                      zIndex: 1
                     }}>
                       {/* Scrollable Product Table */}
                       <div className="attendance-table-container" style={{ 
                         marginTop: '0', 
-                        maxHeight: '400px',
-                        overflowY: 'auto',
                         overflowX: 'auto',
                         width: '100%',
                         paddingRight: '8px'
@@ -1136,17 +1137,19 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
                   </div>
                 </div>
               )}
-
-            </div>
           </div>
 
           {/* Submit Button - only after products added */}
           {addedProducts.length > 0 && (
             <div className="form-actions" style={{ 
-              marginTop: '30px',
+              position: 'static',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginTop: '40px',
               clear: 'both',
               paddingTop: '20px',
-              paddingBottom: '20px'
+              paddingBottom: '40px'
             }}>
               <button
                 type="submit"

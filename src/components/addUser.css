@@ -927,6 +927,66 @@ form.add-user-form .form-grid>.form-group:first-child>label {
     z-index: 1;
 }
 
+@media (min-width: 769px) {
+    .add-stock-in-form .form-actions,
+    form.add-stock-in-form .form-actions {
+        position: static !important;
+        top: auto !important;
+        right: auto !important;
+        bottom: auto !important;
+        left: auto !important;
+        transform: none !important;
+    }
+
+    .add-stock-in-form .attendance-table-container,
+    form.add-stock-in-form .attendance-table-container {
+        max-height: none !important;
+        overflow-y: visible !important;
+    }
+}
+
+@media (min-width: 769px) {
+    .add-stock-in-form .product-summary-section,
+    form.add-stock-in-form .product-summary-section {
+        margin-bottom: 24px !important;
+        padding-bottom: 0 !important;
+        position: static !important;
+        z-index: auto !important;
+        overflow: visible !important;
+    }
+
+    .add-stock-in-form .product-summary-section + .form-actions,
+    form.add-stock-in-form .product-summary-section + .form-actions {
+        margin-top: 24px !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        z-index: auto !important;
+    }
+}
+
+@media (min-width: 769px) {
+    .dashboard-container .dashboard-main form.add-user-form.add-stock-in-form .attendance-table-container,
+    .dashboard-container .dashboard-main .add-stock-in-form .attendance-table-container {
+        max-height: unset !important;
+        height: auto !important;
+        overflow: visible !important;
+        overflow-y: visible !important;
+    }
+}
+
+@media (min-width: 769px) {
+    .add-quotation-form .form-actions,
+    form.add-user-form.add-quotation-form .form-actions {
+        position: static !important;
+        top: auto !important;
+        right: auto !important;
+        bottom: auto !important;
+        left: auto !important;
+        transform: none !important;
+        z-index: auto !important;
+    }
+}
+
 /* Ensure form-actions is not part of the grid and appears after all fields */
 .add-user-form .form-section+.form-actions,
 .add-user-form .form-actions {
@@ -1849,6 +1909,26 @@ form.add-user-form>.form-actions {
         transform: none !important;
     }
 
+    .add-stock-in-form .form-actions,
+    form.add-stock-in-form .form-actions {
+        position: static !important;
+        bottom: auto !important;
+        left: auto !important;
+        right: auto !important;
+        width: auto !important;
+        z-index: auto !important;
+        background: transparent !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        padding: 0 !important;
+        margin-top: 30px !important;
+        box-shadow: none !important;
+        border-top: none !important;
+        gap: 0 !important;
+        top: auto !important;
+        transform: none !important;
+    }
+
     /* Ensure buttons are full-width and properly styled */
     .add-user-form .form-actions .create-user-btn,
     .add-user-form .form-actions .cancel-btn,
@@ -2150,6 +2230,39 @@ form.add-user-form>.form-actions {
     position: static !important;
 }
 
+@media (min-width: 769px) {
+    .add-quotation-form .attendance-table-container {
+        max-height: none !important;
+        height: auto !important;
+        overflow-y: visible !important;
+    }
+
+    .add-quotation-form .product-summary-section > div > div {
+        overflow: visible !important;
+        max-height: none !important;
+        height: auto !important;
+    }
+
+    .add-quotation-form .form-actions,
+    form.add-user-form.add-quotation-form .form-actions {
+        margin-top: 24px !important;
+        clear: both !important;
+        z-index: 2 !important;
+    }
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .add-quotation-form .form-actions,
+    form.add-user-form.add-quotation-form .form-actions {
+        position: static !important;
+        top: auto !important;
+        right: auto !important;
+        bottom: auto !important;
+        left: auto !important;
+        transform: none !important;
+    }
+}
+
 @media (max-width: 768px) {
     .add-quotation-form .form-grid.four-col {
         grid-template-columns: 1fr !important;
@@ -2211,5 +2324,60 @@ form.add-user-form>.form-actions {
     .add-chit-entry-form .submit-bar .btn-primary {
         width: 100%;
         max-width: none;
+    }
+}
+
+.add-stock-in-form .form-actions,
+form.add-stock-in-form .form-actions {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    transform: none !important;
+}
+
+.add-stock-in-form .attendance-table-container,
+form.add-stock-in-form .attendance-table-container {
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    overflow-y: visible !important;
+    overflow-x: visible !important;
+}
+
+@media (min-width: 769px) {
+    .add-stock-in-form .product-summary-section > div > div,
+    form.add-stock-in-form .product-summary-section > div > div {
+        overflow: visible !important;
+        max-height: none !important;
+        height: auto !important;
+    }
+
+    .add-purchase-order-form .form-actions,
+    form.add-user-form.add-purchase-order-form .form-actions {
+        position: static !important;
+        top: auto !important;
+        right: auto !important;
+        bottom: auto !important;
+        left: auto !important;
+        transform: none !important;
+        z-index: auto !important;
+        margin-top: 24px !important;
+        clear: both !important;
+    }
+
+    .add-purchase-order-form .attendance-table-container,
+    form.add-purchase-order-form .attendance-table-container {
+        max-height: none !important;
+        height: auto !important;
+        overflow-y: visible !important;
+    }
+
+    .add-purchase-order-form .product-summary-section > div > div,
+    form.add-purchase-order-form .product-summary-section > div > div {
+        overflow: visible !important;
+        max-height: none !important;
+        height: auto !important;
     }
 }

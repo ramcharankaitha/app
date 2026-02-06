@@ -625,8 +625,6 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     {/* Scrollable Product Table */}
                     <div className="attendance-table-container" style={{ 
                       marginTop: '0', 
-                      maxHeight: '400px',
-                      overflowY: 'auto',
                       overflowX: 'auto',
                       width: '100%',
                       paddingRight: '8px'
@@ -738,6 +736,7 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
           {/* Stock In Button - At the bottom, only after products added */}
           {addedProducts.length > 0 && (
             <div className="form-actions" style={{ 
+              position: 'static',
               display: 'flex', 
               justifyContent: 'center', 
               alignItems: 'center',

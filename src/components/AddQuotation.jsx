@@ -591,8 +591,6 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                     {/* Scrollable Product Table */}
                     <div className="attendance-table-container" style={{ 
                       marginTop: '0', 
-                      maxHeight: '400px',
-                      overflowY: 'auto',
                       overflowX: 'auto',
                       width: '100%',
                       paddingRight: '8px'
@@ -699,7 +697,7 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
           </div>
 
           {/* Submit Button */}
-          <div className="form-actions" style={{ marginTop: '10px' }}>
+          <div className="form-actions" style={{ position: 'static', marginTop: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <button
               type="submit"
               disabled={isLoading || !formData.customerName || !formData.customerNumber || addedProducts.length === 0}
