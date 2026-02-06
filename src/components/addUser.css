@@ -1900,7 +1900,7 @@ form.add-user-form>.form-actions {
             overflow-y: auto !important;
             overflow-x: hidden !important;
             -webkit-overflow-scrolling: touch !important;
-            padding-bottom: 16px !important;
+            padding-bottom: 140px !important;
         }
 
         .add-stock-out-container .add-stock-out-form {
@@ -1922,19 +1922,21 @@ form.add-user-form>.form-actions {
         }
 
         .add-stock-out-form .stock-out-payment {
-            position: sticky !important;
-            top: 12px !important;
-            z-index: 20 !important;
+            position: fixed !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            z-index: 50 !important;
             background: var(--card-bg) !important;
-            padding-top: 6px !important;
-            padding-bottom: 6px !important;
-            border-bottom: 1px solid var(--border-light) !important;
+            padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)) 16px !important;
+            border-top: 1px solid var(--border-light) !important;
+            box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.08) !important;
         }
 
         .add-stock-out-form .stock-out-payment .form-actions {
             margin-top: 0 !important;
-            padding-top: 8px !important;
-            padding-bottom: 8px !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
             gap: 8px !important;
         }
 
