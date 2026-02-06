@@ -1163,6 +1163,24 @@ form.add-user-form>.form-actions {
         flex-direction: column !important;
     }
 
+    .add-purchase-order-form .form-grid.four-col {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+
+    .add-purchase-order-form .form-grid.four-col .form-group {
+        grid-column: 1 !important;
+        grid-row: auto !important;
+        width: 100% !important;
+    }
+
+    .add-purchase-order-form .form-grid.four-col .product-summary-section {
+        grid-column: 1 / -1 !important;
+        grid-row: auto !important;
+        width: 100% !important;
+        margin-top: 16px !important;
+    }
+
     .add-purchase-order-form .form-section {
         order: 1 !important;
     }
@@ -1182,13 +1200,20 @@ form.add-user-form>.form-actions {
         margin-top: 24px !important;
         margin-bottom: 20px !important;
         padding-top: 0 !important;
+        overflow: visible !important;
     }
 
     .add-purchase-order-form .product-summary-section .attendance-table-container {
         overflow-x: auto !important;
-        overflow-y: auto !important;
-        max-height: 300px !important;
+        overflow-y: visible !important;
+        max-height: none !important;
         -webkit-overflow-scrolling: touch !important;
+        width: 100% !important;
+    }
+
+    .add-purchase-order-form .product-summary-section + .form-grid,
+    .add-purchase-order-form .product-summary-section + .form-group {
+        margin-top: 16px !important;
     }
 
     .add-purchase-order-form .product-summary-section .attendance-table {
@@ -1894,6 +1919,24 @@ form.add-user-form>.form-actions {
     /* Stock In and Stock Out - Product List Table Mobile Fix - MOBILE ONLY */
     /* NOTE: React renders inline styles in kebab-case (e.g. "margin-top"), so style-attribute selectors
        like [style*="marginTop: 30px"] will NOT match in the browser. Use a stable class instead. */
+
+    .add-stock-in-form .form-grid.four-col {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+
+    .add-stock-in-form .form-grid.four-col .form-group {
+        grid-column: 1 !important;
+        grid-row: auto !important;
+        width: 100% !important;
+    }
+
+    .add-stock-in-form .form-grid.four-col .product-summary-section {
+        grid-column: 1 / -1 !important;
+        grid-row: auto !important;
+        width: 100% !important;
+        margin-top: 16px !important;
+    }
     .add-stock-in-form .product-summary-section,
     .add-stock-out-form .product-summary-section {
         margin-top: 40px !important;
@@ -1906,6 +1949,7 @@ form.add-user-form>.form-actions {
         width: 100% !important;
         display: block !important;
         float: none !important;
+        overflow: visible !important;
     }
 
     /* Ensure table container is properly styled on mobile */
@@ -1948,11 +1992,18 @@ form.add-user-form>.form-actions {
 
     .add-stock-in-form .attendance-table-container,
     .add-stock-out-form .attendance-table-container {
-        max-height: 300px !important;
-        overflow-y: auto !important;
+        max-height: none !important;
+        overflow-y: visible !important;
         overflow-x: auto !important;
         width: 100% !important;
         -webkit-overflow-scrolling: touch !important;
+    }
+
+    .add-stock-in-form .product-summary-section + .form-grid,
+    .add-stock-in-form .product-summary-section + .form-group,
+    .add-stock-out-form .product-summary-section + .form-grid,
+    .add-stock-out-form .product-summary-section + .form-group {
+        margin-top: 16px !important;
     }
 
     .add-stock-in-form .attendance-table,
@@ -2108,10 +2159,29 @@ form.add-user-form>.form-actions {
         grid-column: 1 !important;
         grid-row: auto !important;
     }
+    .add-quotation-form .form-grid.four-col .product-summary-section {
+        grid-column: 1 / -1 !important;
+        grid-row: auto !important;
+        width: 100% !important;
+        margin-top: 16px !important;
+    }
     .add-quotation-form .product-summary-section {
         margin-top: 24px !important;
         position: static !important;
         z-index: auto !important;
+        overflow: visible !important;
+    }
+
+    .add-quotation-form .attendance-table-container {
+        max-height: none !important;
+        overflow-y: visible !important;
+        overflow-x: auto !important;
+        width: 100% !important;
+    }
+
+    .add-quotation-form .product-summary-section + .form-grid,
+    .add-quotation-form .product-summary-section + .form-group {
+        margin-top: 16px !important;
     }
 }
 /* Chit Entry: Fixed submit bar on mobile, centered on desktop */

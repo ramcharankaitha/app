@@ -735,39 +735,41 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
             )}
           </div>
 
-          {/* Stock In Button - At the bottom */}
-          <div className="form-actions" style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center',
-            marginTop: '30px',
-            paddingTop: '20px',
-            paddingBottom: '20px'
-          }}>
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={isLoading || addedProducts.length === 0}
-              style={{
-                width: '200px',
-                maxWidth: '200px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px'
-              }}
-            >
-              {isLoading ? (
-                <>
-                  <i className="fas fa-spinner fa-spin"></i> Adding Stock...
-                </>
-              ) : (
-                <>
-                  <i className="fas fa-plus"></i> Stock In
-                </>
-              )}
-            </button>
-          </div>
+          {/* Stock In Button - At the bottom, only after products added */}
+          {addedProducts.length > 0 && (
+            <div className="form-actions" style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              marginTop: '30px',
+              paddingTop: '20px',
+              paddingBottom: '20px'
+            }}>
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={isLoading || addedProducts.length === 0}
+                style={{
+                  width: '200px',
+                  maxWidth: '200px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+              >
+                {isLoading ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin"></i> Adding Stock...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-plus"></i> Stock In
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </form>
       </main>
     </div>

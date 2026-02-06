@@ -1032,7 +1032,7 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
                       {/* Scrollable Product Table */}
                       <div className="attendance-table-container" style={{ 
                         marginTop: '0', 
-                        maxHeight: '300px',
+                        maxHeight: '400px',
                         overflowY: 'auto',
                         overflowX: 'auto',
                         width: '100%',
@@ -1140,46 +1140,49 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
             </div>
           </div>
 
-          {/* Submit Button */}
-          <div className="form-actions" style={{ 
-            marginTop: addedProducts.length > 0 ? '30px' : '20px',
-            clear: 'both',
-            paddingTop: '20px'
-          }}>
-            <button
-              type="submit"
-              disabled={isLoading || !formData.supplierName || formData.supplierName.trim() === '' || addedProducts.length === 0}
-              className="submit-btn"
-              style={{
-                width: '200px',
-                margin: '0 auto',
-                padding: '12px 24px',
-                background: (isLoading || !formData.supplierName || formData.supplierName.trim() === '' || addedProducts.length === 0) ? '#ccc' : '#dc3545',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '16px',
-                fontWeight: '600',
-                cursor: (isLoading || !formData.supplierName || formData.supplierName.trim() === '' || addedProducts.length === 0) ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px'
-              }}
-            >
-              {isLoading ? (
-                <>
-                  <i className="fas fa-spinner fa-spin"></i>
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <i className="fas fa-shopping-cart"></i>
-                  Create Purchase Order
-                </>
-              )}
-            </button>
-          </div>
+          {/* Submit Button - only after products added */}
+          {addedProducts.length > 0 && (
+            <div className="form-actions" style={{ 
+              marginTop: '30px',
+              clear: 'both',
+              paddingTop: '20px',
+              paddingBottom: '20px'
+            }}>
+              <button
+                type="submit"
+                disabled={isLoading || !formData.supplierName || formData.supplierName.trim() === '' || addedProducts.length === 0}
+                className="submit-btn"
+                style={{
+                  width: '200px',
+                  margin: '0 auto',
+                  padding: '12px 24px',
+                  background: (isLoading || !formData.supplierName || formData.supplierName.trim() === '' || addedProducts.length === 0) ? '#ccc' : '#dc3545',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  cursor: (isLoading || !formData.supplierName || formData.supplierName.trim() === '' || addedProducts.length === 0) ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+              >
+                {isLoading ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin"></i>
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-shopping-cart"></i>
+                    Create Purchase Order
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </form>
       </main>
     </div>
