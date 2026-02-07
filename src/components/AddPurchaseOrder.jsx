@@ -1142,7 +1142,7 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
           {/* Submit Button - only after products added */}
           {addedProducts.length > 0 && (
             <div className="form-actions" style={{ 
-              position: 'static',
+              ...(isMobile ? {} : { position: 'static' }),
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'center',

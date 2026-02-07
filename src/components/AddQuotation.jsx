@@ -28,6 +28,13 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleBack = () => {
     if (onNavigate) {
@@ -697,7 +704,7 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
           </div>
 
           {/* Submit Button */}
-          <div className="form-actions" style={{ position: 'static', marginTop: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <div className="form-actions" style={{ ...(isMobile ? {} : { position: 'static' }), marginTop: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <button
               type="submit"
               disabled={isLoading || !formData.customerName || !formData.customerNumber || addedProducts.length === 0}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { stockAPI, productsAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 
@@ -22,6 +22,13 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const getUserIdentifier = () => {
     const userDataStr = localStorage.getItem('userData');
@@ -289,7 +296,7 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
   };
 
   return (
-    <div className="add-user-container">
+    <div className="add-user-container stock-in-container">
       <ConfirmDialog
         open={confirmState.open}
         message={confirmState.message}
@@ -729,46 +736,44 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     </div>
                   </div>
                 </div>
+
+                {/* Stock In Button - right after the table */}
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'center', 
+                  alignItems: 'center',
+                  marginTop: '20px',
+                  paddingTop: '10px',
+                  paddingBottom: '20px',
+                  width: '100%'
+                }}>
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                    disabled={isLoading || addedProducts.length === 0}
+                    style={{
+                      width: '200px',
+                      maxWidth: '200px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    {isLoading ? (
+                      <>
+                        <i className="fas fa-spinner fa-spin"></i> Adding Stock...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-plus"></i> Stock In
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             )}
           </div>
-
-          {/* Stock In Button - At the bottom, only after products added */}
-          {addedProducts.length > 0 && (
-            <div className="form-actions" style={{ 
-              position: 'static',
-              display: 'flex', 
-              justifyContent: 'center', 
-              alignItems: 'center',
-              marginTop: '30px',
-              paddingTop: '20px',
-              paddingBottom: '20px'
-            }}>
-              <button
-                type="submit"
-                className="btn-primary"
-                disabled={isLoading || addedProducts.length === 0}
-                style={{
-                  width: '200px',
-                  maxWidth: '200px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px'
-                }}
-              >
-                {isLoading ? (
-                  <>
-                    <i className="fas fa-spinner fa-spin"></i> Adding Stock...
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-plus"></i> Stock In
-                  </>
-                )}
-              </button>
-            </div>
-          )}
         </form>
       </main>
     </div>

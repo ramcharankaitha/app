@@ -942,6 +942,7 @@ form.add-user-form .form-grid>.form-group:first-child>label {
     form.add-stock-in-form .attendance-table-container {
         max-height: none !important;
         overflow-y: visible !important;
+        overflow-x: auto !important;
     }
 }
 
@@ -969,8 +970,8 @@ form.add-user-form .form-grid>.form-group:first-child>label {
     .dashboard-container .dashboard-main .add-stock-in-form .attendance-table-container {
         max-height: unset !important;
         height: auto !important;
-        overflow: visible !important;
         overflow-y: visible !important;
+        overflow-x: auto !important;
     }
 }
 
@@ -1909,24 +1910,28 @@ form.add-user-form>.form-actions {
         transform: none !important;
     }
 
-    .add-stock-in-form .form-actions,
-    form.add-stock-in-form .form-actions {
+    .stock-in-container .add-stock-in-form .form-actions,
+    .stock-in-container form.add-user-form .form-actions,
+    form.add-user-form.add-stock-in-form .form-actions,
+    .stock-in-container .form-actions {
         position: static !important;
         bottom: auto !important;
         left: auto !important;
         right: auto !important;
-        width: auto !important;
+        width: 100% !important;
         z-index: auto !important;
         background: transparent !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
-        padding: 0 !important;
-        margin-top: 30px !important;
+        padding: 10px 0 !important;
+        margin-top: 16px !important;
         box-shadow: none !important;
         border-top: none !important;
         gap: 0 !important;
         top: auto !important;
         transform: none !important;
+        flex-direction: row !important;
+        justify-content: center !important;
     }
 
     /* Ensure buttons are full-width and properly styled */
@@ -2046,13 +2051,27 @@ form.add-user-form>.form-actions {
 
     /* Stock In button at bottom - mobile only */
     .add-stock-in-form .form-actions {
-        margin-top: 40px !important;
-        padding-top: 24px !important;
-        padding-bottom: 24px !important;
-        position: relative !important;
+        margin-top: 16px !important;
+        padding-top: 10px !important;
+        padding-bottom: 10px !important;
+        position: static !important;
         width: 100% !important;
         display: flex !important;
         justify-content: center !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    /* Remove white space below button on mobile */
+    form.add-stock-in-form,
+    .add-stock-in-form {
+        padding-bottom: 0 !important;
+        margin-bottom: 0 !important;
+    }
+
+    /* Stock In content - no extra bottom padding since button is not fixed */
+    .stock-in-container .add-user-content {
+        padding-bottom: 16px !important;
     }
 
     .add-stock-in-form .form-section[style*="marginTop: 40px"] > .form-group,
@@ -2335,15 +2354,18 @@ form.add-stock-in-form .form-actions {
     bottom: auto !important;
     left: auto !important;
     transform: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    z-index: auto !important;
 }
 
 .add-stock-in-form .attendance-table-container,
 form.add-stock-in-form .attendance-table-container {
     max-height: none !important;
     height: auto !important;
-    overflow: visible !important;
     overflow-y: visible !important;
-    overflow-x: visible !important;
+    overflow-x: auto !important;
 }
 
 @media (min-width: 769px) {
@@ -2379,5 +2401,27 @@ form.add-stock-in-form .attendance-table-container {
         overflow: visible !important;
         max-height: none !important;
         height: auto !important;
+    }
+}
+
+/* ===== Stock In mobile: remove white space at bottom (MUST be last) ===== */
+@media (max-width: 768px) {
+    .stock-in-container .add-user-content {
+        padding-bottom: 16px !important;
+    }
+    .stock-in-container .add-user-form,
+    .stock-in-container form.add-stock-in-form {
+        padding-bottom: 0 !important;
+        margin-bottom: 0 !important;
+    }
+    .stock-in-container .form-actions {
+        position: static !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+}
+@media (max-width: 480px) {
+    .stock-in-container .add-user-content {
+        padding-bottom: 12px !important;
     }
 }
