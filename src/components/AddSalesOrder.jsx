@@ -574,10 +574,9 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                       id="customerContact"
                       name="customerContact"
                       className="form-input"
-                      placeholder="Contact number (auto-filled)"
+                      placeholder="Enter contact number"
                       value={formData.customerContact}
-                      readOnly
-                      style={{ background: '#f5f5f5' }}
+                      onChange={handleInputChange}
                       required
                     />
                   </div>
@@ -616,10 +615,9 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                       id="handlerMobile"
                       name="handlerMobile"
                       className="form-input"
-                      placeholder="Phone number"
+                      placeholder="Enter phone number"
                       value={formData.handlerMobile}
-                      readOnly
-                      style={{ background: '#f5f5f5' }}
+                      onChange={handleInputChange}
                     />
                   </div>
                 </div>

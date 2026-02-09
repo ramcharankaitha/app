@@ -274,7 +274,6 @@ const ChitEntryMaster = ({ onBack, onAddChitEntry, onNavigate, userRole = 'admin
               </button>
               <div>
                 <h1 className="staff-title">Chit Receipt Master</h1>
-                <p className="staff-subtitle">View and manage all chit payment entries</p>
               </div>
             </div>
             <div className="header-right">

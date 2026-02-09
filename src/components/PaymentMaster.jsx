@@ -294,49 +294,9 @@ const PaymentMaster = ({ onBack, onAddPayment, onNavigate, userRole = 'admin' })
               </button>
               <div>
                 <h1 className="staff-title">Payment Master</h1>
-                <p className="staff-subtitle">View and manage all payment records</p>
               </div>
             </div>
-            <div className="header-right" style={{ display: 'flex', gap: '12px' }}>
-              <button 
-                className="add-btn" 
-                onClick={async () => {
-                  try {
-                    const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/payments/test-notification`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' }
-                    });
-                    const data = await response.json();
-                    if (data.success) {
-                      setSuccessMessage('Test notification sent! Check your notifications panel.');
-                      setTimeout(() => setSuccessMessage(''), 5000);
-                    } else {
-                      setError('Failed to send test notification');
-                      setTimeout(() => setError(''), 3000);
-                    }
-                  } catch (err) {
-                    console.error('Error sending test notification:', err);
-                    setError('Failed to send test notification');
-                    setTimeout(() => setError(''), 3000);
-                  }
-                }}
-                style={{ 
-                  background: '#ff9800', 
-                  border: 'none',
-                  color: '#fff',
-                  padding: '10px 20px',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                <i className="fas fa-bell"></i>
-                <span>Test Notification</span>
-              </button>
+            <div className="header-right">
               <button className="add-btn" onClick={handleAddPayment}>
                 <i className="fas fa-plus"></i>
                 <span>Add Payment</span>

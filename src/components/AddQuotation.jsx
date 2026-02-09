@@ -454,10 +454,9 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                     type="text"
                     id="productName"
                     className="form-input"
-                    placeholder="Product Name (auto-filled)"
+                    placeholder="Enter product name"
                     value={currentProduct.productName}
-                    readOnly
-                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                    onChange={(e) => handleProductChange('productName', e.target.value)}
                   />
                 </div>
               </div>
