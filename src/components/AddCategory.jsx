@@ -169,7 +169,6 @@ const AddCategory = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
             </button>
             <div className="header-content">
               <h1 className="page-title">Add Category</h1>
-              <p className="page-subtitle">Create a new product category</p>
             </div>
           </header>
 

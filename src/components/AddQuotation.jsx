@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { quotationsAPI, productsAPI } from '../services/api';
+import React, { useState, useEffect, useRef } from 'react';
+import { quotationsAPI, productsAPI, customersAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import './addUser.css';
 
@@ -23,6 +23,9 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   
   // Added products list
   const [addedProducts, setAddedProducts] = useState([]);
+  const [allCustomers, setAllCustomers] = useState([]);
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const customerDropdownRef = useRef(null);
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -30,11 +33,68 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
+  // Fetch all customers for typeahead
+  const fetchAllCustomers = async () => {
+    try {
+      const response = await customersAPI.getAll();
+      if (response.success) {
+        const uniqueCustomers = [];
+        const seenPhones = new Set();
+        response.customers.forEach(customer => {
+          if (customer.phone && !seenPhones.has(customer.phone)) {
+            seenPhones.add(customer.phone);
+            uniqueCustomers.push({
+              id: customer.id,
+              name: customer.full_name,
+              phone: customer.phone,
+              customer_unique_id: customer.customer_unique_id || ''
+            });
+          }
+        });
+        setAllCustomers(uniqueCustomers);
+      }
+    } catch (err) {
+      console.error('Error fetching customers:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchAllCustomers();
+  }, []);
+
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Close customer dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (customerDropdownRef.current && !customerDropdownRef.current.contains(event.target)) {
+        setShowCustomerDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Filter customers based on search
+  const filteredCustomers = allCustomers.filter(customer => {
+    const searchTerm = formData.customerName.toLowerCase();
+    return customer.name.toLowerCase().includes(searchTerm) ||
+           customer.phone.includes(searchTerm) ||
+           (customer.customer_unique_id && customer.customer_unique_id.toLowerCase().includes(searchTerm));
+  });
+
+  const handleCustomerSelect = (customer) => {
+    setFormData(prev => ({
+      ...prev,
+      customerName: customer.name,
+      customerNumber: customer.phone
+    }));
+    setShowCustomerDropdown(false);
+  };
 
   const handleBack = () => {
     if (onNavigate) {
@@ -58,6 +118,15 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
       ...prev,
       [name]: value
     }));
+
+    if (name === 'customerName') {
+      if (value.trim().length > 0) {
+        setShowCustomerDropdown(true);
+      } else {
+        setShowCustomerDropdown(false);
+        setFormData(prev => ({ ...prev, customerNumber: '' }));
+      }
+    }
   };
 
   // Handle product input changes
@@ -357,7 +426,7 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
           <div className="form-section">
             {/* Row 1: Customer Name, Customer Number, Item Code, Product Name */}
             <div className="form-grid four-col">
-              <div className="form-group">
+              <div className="form-group" ref={customerDropdownRef} style={{ position: 'relative', zIndex: 1000 }}>
                 <label htmlFor="customerName">Customer Name *</label>
                 <div className="input-wrapper">
                   <i className="fas fa-user input-icon"></i>
@@ -366,13 +435,37 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                     id="customerName"
                     name="customerName"
                     className="form-input"
-                    placeholder="Enter customer name"
+                    placeholder="Type customer name, phone, or ID to search..."
                     value={formData.customerName}
                     onChange={handleInputChange}
+                    onFocus={() => {
+                      if (formData.customerName.trim().length > 0 && filteredCustomers.length > 0) {
+                        setShowCustomerDropdown(true);
+                      }
+                    }}
                     required
+                    autoComplete="off"
                     autoFocus
                   />
+                  <i className="fas fa-chevron-down dropdown-icon"></i>
                 </div>
+                {showCustomerDropdown && filteredCustomers.length > 0 && (
+                  <div className="typeahead-dropdown">
+                    {filteredCustomers.map((customer) => (
+                      <div
+                        key={customer.id}
+                        onClick={() => handleCustomerSelect(customer)}
+                      >
+                        <div style={{ fontWeight: '600', fontSize: '14px', color: '#333' }}>
+                          {customer.name}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
+                          {customer.phone}{customer.customer_unique_id ? ` • ${customer.customer_unique_id}` : ''}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="form-group">

@@ -315,7 +315,6 @@ const AddProductPricing = ({ onBack, onCancel, onNavigate, userRole = 'admin' })
             </button>
             <div className="header-content">
               <h1 className="page-title">Add Product Pricing</h1>
-              <p className="page-subtitle">Add pricing details for products</p>
             </div>
           </header>
 

@@ -356,7 +356,6 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
             </button>
             <div className="header-content">
               <h1 className="page-title">Add Transport</h1>
-              <p className="page-subtitle">Create a new transport record.</p>
             </div>
           </header>
 

@@ -264,7 +264,6 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
         </button>
         <div className="header-content">
           <h1 className="page-title">Staff Details</h1>
-          <p className="page-subtitle">Manage store staff</p>
         </div>
       </header>
 

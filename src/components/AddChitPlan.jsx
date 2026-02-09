@@ -159,7 +159,6 @@ const AddChitPlan = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
             </button>
             <div className="header-content">
               <h1 className="page-title">Add Chit Plan</h1>
-              <p className="page-subtitle">Create a new chit plan for your store.</p>
             </div>
           </header>
 

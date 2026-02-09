@@ -494,7 +494,6 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
             </button>
             <div className="header-content">
               <h1 className="page-title">Create Sales Order</h1>
-              <p className="page-subtitle">Add a new sales order to the system.</p>
             </div>
           </header>
 
@@ -526,37 +525,16 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                     <i className="fas fa-chevron-down dropdown-icon"></i>
                   </div>
                   {showCustomerDropdown && filteredCustomers.length > 0 && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '100%',
-                      left: 0,
-                      right: 0,
-                      background: '#fff',
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      zIndex: 10000,
-                      maxHeight: '300px',
-                      overflowY: 'auto',
-                      marginTop: '4px'
-                    }}>
+                    <div className="typeahead-dropdown">
                       {filteredCustomers.map((customer) => (
                         <div
                           key={customer.id}
                           onClick={() => handleCustomerSelect(customer)}
-                          style={{
-                            padding: '12px 16px',
-                            cursor: 'pointer',
-                            borderBottom: '1px solid #f0f0f0',
-                            transition: 'background 0.2s'
-                          }}
-                          onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                          onMouseLeave={(e) => e.target.style.background = '#fff'}
                         >
                           <div style={{ fontWeight: '600', fontSize: '14px', color: '#333' }}>
                             {customer.name}
                           </div>
-                          <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                          <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
                             {customer.phone}
                           </div>
                         </div>
@@ -686,10 +664,9 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                       id="productName"
                       name="productName"
                       className="form-input"
-                      placeholder="Product name (auto-filled)"
+                      placeholder="Enter product name"
                       value={currentProduct.productName}
-                      readOnly
-                      style={{ background: '#f5f5f5' }}
+                      onChange={handleCurrentProductChange}
                     />
                   </div>
                 </div>

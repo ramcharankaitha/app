@@ -163,7 +163,6 @@ const SupplierTransactionMaster = ({ onBack, onAddTransaction, onNavigate, userR
               </button>
               <div>
                 <h1 className="staff-title">Supplier Transaction Master</h1>
-                <p className="staff-subtitle">View and manage all supplier transactions</p>
               </div>
             </div>
             <div className="header-right">

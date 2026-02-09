@@ -663,7 +663,6 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
             </button>
             <div className="header-content">
               <h1 className="page-title">Add Dispatch Record</h1>
-              <p className="page-subtitle">Create a new dispatch record.</p>
             </div>
           </header>
 

@@ -262,7 +262,6 @@ const PurchaseOrderMaster = ({ onBack, onAddPurchaseOrder, onNavigate, userRole 
               </button>
               <div>
                 <h1 className="staff-title">Purchase Order Master</h1>
-                <p className="staff-subtitle">View and manage all purchase orders</p>
               </div>
             </div>
             <div className="header-right">

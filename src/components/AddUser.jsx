@@ -177,7 +177,6 @@ const AddUser = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
             </button>
             <div className="header-content">
               <h1 className="page-title">Add Supervisor</h1>
-              <p className="page-subtitle">Create a new supervisor account for this store.</p>
             </div>
           </header>
 

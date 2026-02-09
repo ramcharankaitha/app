@@ -246,7 +246,6 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
         </button>
         <div className="header-content">
           <h1 className="page-title">Customer Details</h1>
-          <p className="page-subtitle">Manage store customers</p>
         </div>
       </header>
 

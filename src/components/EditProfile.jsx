@@ -383,7 +383,6 @@ const EditProfile = ({ onBack, onNavigate }) => {
             </div>
             <div className="header-content">
               <h1 className="page-title">Edit Profile</h1>
-              <p className="page-subtitle">Update your details</p>
             </div>
           </header>
 

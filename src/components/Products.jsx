@@ -314,7 +314,6 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
             </button>
             <div className="header-content">
               <h1 className="page-title">Product Details</h1>
-              <p className="page-subtitle">Manage inventory</p>
             </div>
           </header>
 

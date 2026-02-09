@@ -111,7 +111,6 @@ const ProductList = ({ onBack, onNavigate }) => {
             </button>
             <div className="header-content">
               <h1 className="page-title">All Products</h1>
-              <p className="page-subtitle">View all products in inventory</p>
             </div>
           </header>
 

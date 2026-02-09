@@ -80,7 +80,6 @@ const Profile = ({ onBack, onNavigate, userRole = 'admin' }) => {
             </div>
             <div className="header-content">
               <h1 className="page-title">Profile</h1>
-              <p className="page-subtitle">Manage your identity</p>
             </div>
           </header>
 

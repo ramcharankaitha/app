@@ -208,7 +208,6 @@ const TransactionProducts = ({ onBack, onAddPricing, onNavigate, userRole = 'adm
             </button>
             <div className="header-content">
               <h1 className="page-title">Product Pricing</h1>
-              <p className="page-subtitle">Manage product pricing details</p>
             </div>
           </header>
 

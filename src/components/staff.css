@@ -582,6 +582,33 @@
     .staff-controls {
         flex-direction: column;
     }
+
+    .staff-header {
+        padding: 12px 14px;
+        gap: 8px;
+    }
+
+    .staff-header .header-left {
+        gap: 8px;
+    }
+
+    .staff-header .back-btn {
+        width: 34px;
+        height: 34px;
+        font-size: 13px;
+    }
+
+    .staff-header .staff-title {
+        font-size: 16px;
+        white-space: nowrap;
+    }
+
+    .staff-header .add-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+        gap: 5px;
+        border-radius: 6px;
+    }
 }
 
 /* Premium Identity Cards Grid - 3 cards per row */

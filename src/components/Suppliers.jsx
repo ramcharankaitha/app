@@ -243,7 +243,6 @@ const Suppliers = ({ onBack, onAddSupplier, onNavigate, userRole = 'admin' }) =>
         </button>
         <div className="header-content">
           <h1 className="page-title">Supply Master</h1>
-          <p className="page-subtitle">Manage suppliers</p>
         </div>
       </header>
 

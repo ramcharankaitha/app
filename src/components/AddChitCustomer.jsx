@@ -209,7 +209,6 @@ const AddChitCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =
             </button>
             <div className="header-content">
               <h1 className="page-title">Add Chit Customer</h1>
-              <p className="page-subtitle">Enroll a new customer in a chit plan.</p>
             </div>
           </header>
 

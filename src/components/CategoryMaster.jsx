@@ -246,7 +246,6 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
             </button>
             <div className="header-content">
               <h1 className="page-title">Category Master</h1>
-              <p className="page-subtitle">Manage product categories</p>
             </div>
           </header>
 

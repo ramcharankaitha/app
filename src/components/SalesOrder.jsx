@@ -301,7 +301,6 @@ const SalesOrder = ({ onBack, onAddSalesOrder, onNavigate, userRole = 'admin' })
         </button>
         <div className="header-content">
           <h1 className="page-title">Sales Orders</h1>
-          <p className="page-subtitle">Manage sales transactions</p>
         </div>
       </header>
 

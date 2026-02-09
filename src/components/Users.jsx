@@ -305,7 +305,6 @@ const Supervisors = ({ onBack, onAddUser, onNavigate, userRole = 'admin' }) => {
         </button>
         <div className="header-content">
           <h1 className="page-title">Supervisors</h1>
-          <p className="page-subtitle">Manage store supervisors</p>
         </div>
       </header>
 

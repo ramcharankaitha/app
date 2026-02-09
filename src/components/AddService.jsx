@@ -486,7 +486,6 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
             </button>
             <div className="header-content">
               <h1 className="page-title">Create Service</h1>
-              <p className="page-subtitle">Add a new service to the system.</p>
             </div>
           </header>
 

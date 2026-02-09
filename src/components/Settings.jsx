@@ -282,7 +282,6 @@ const Settings = ({ onBack, onNavigate, onLogout, userRole = 'admin' }) => {
             </div>
             <div className="header-content">
               <h1 className="page-title">Settings</h1>
-              <p className="page-subtitle">Control account, security & app</p>
             </div>
           </header>
 

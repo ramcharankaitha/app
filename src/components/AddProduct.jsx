@@ -436,7 +436,6 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
             </button>
             <div className="header-content">
               <h1 className="page-title">Add New Product</h1>
-              <p className="page-subtitle">Create an item for your store</p>
             </div>
           </header>
 

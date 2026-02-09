@@ -238,7 +238,6 @@ const ChitPlanMaster = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' 
             </button>
             <div className="header-content">
               <h1 className="page-title">Chit Plan Master</h1>
-              <p className="page-subtitle">Manage chit plans</p>
             </div>
           </header>
 

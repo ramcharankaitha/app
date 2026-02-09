@@ -686,6 +686,21 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+    .products-header {
+        padding: 12px 14px;
+    }
+
+    .products-header .back-btn {
+        width: 34px;
+        height: 34px;
+        font-size: 13px;
+    }
+
+    .products-header .page-title {
+        font-size: 16px;
+        white-space: nowrap;
+    }
+
     .products-controls {
         flex-direction: column;
     }

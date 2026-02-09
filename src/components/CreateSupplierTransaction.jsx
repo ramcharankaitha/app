@@ -353,7 +353,6 @@ const CreateSupplierTransaction = ({ onBack, onCancel, onNavigate, userRole = 'a
             </button>
             <div className="header-content">
               <h1 className="page-title">Create Supplier Transaction</h1>
-              <p className="page-subtitle">Record products received from supplier.</p>
             </div>
           </header>
 

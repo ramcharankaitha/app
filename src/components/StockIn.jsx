@@ -423,10 +423,9 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     id="skuCode"
                     name="skuCode"
                     className="form-input"
-                    placeholder="SKU Code"
+                    placeholder="Enter SKU Code"
                     value={formData.skuCode}
-                    readOnly
-                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                    onChange={handleInputChange}
                   />
                 </div>
               </div>
@@ -440,10 +439,9 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     id="productName"
                     name="productName"
                     className="form-input"
-                    placeholder="Product Name"
+                    placeholder="Enter product name"
                     value={formData.productName}
-                    readOnly
-                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                    onChange={handleInputChange}
                   />
                 </div>
               </div>
@@ -495,10 +493,9 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     id="minQuantity"
                     name="minQuantity"
                     className="form-input"
-                    placeholder="Min Quantity"
+                    placeholder="Enter min quantity"
                     value={formData.minQuantity}
-                    readOnly
-                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                    onChange={handleInputChange}
                   />
                 </div>
               </div>
@@ -534,10 +531,9 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     id="mrp"
                     name="mrp"
                     className="form-input"
-                    placeholder="MRP"
+                    placeholder="Enter MRP"
                     value={formData.mrp}
-                    readOnly
-                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                    onChange={handleInputChange}
                   />
                 </div>
               </div>

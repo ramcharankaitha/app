@@ -866,6 +866,57 @@ form.add-user-form .form-grid>.form-group:first-child>label {
     transform: translateY(-50%);
 }
 
+/* Shared typeahead dropdown styles */
+.typeahead-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    z-index: 10000;
+    max-height: 250px;
+    overflow-y: auto;
+    margin-top: 4px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.typeahead-dropdown > div {
+    padding: 10px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.2s;
+}
+
+.typeahead-dropdown > div:last-child {
+    border-bottom: none;
+}
+
+.typeahead-dropdown > div:hover,
+.typeahead-dropdown > div:active {
+    background: #f8f9fa;
+}
+
+@media (max-width: 768px) {
+    .typeahead-dropdown {
+        max-height: 200px;
+        border-radius: 6px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .typeahead-dropdown > div {
+        padding: 12px 14px;
+        font-size: 14px;
+    }
+
+    /* Ensure form-group with dropdown has proper z-index on mobile */
+    .form-group[style*="z-index"] {
+        z-index: 1000 !important;
+    }
+}
+
 .password-toggle {
     position: absolute;
     right: 12px;
@@ -1369,6 +1420,7 @@ form.add-user-form>.form-actions {
     .add-user-header .page-title {
         font-size: 16px;
         line-height: 1.2;
+        white-space: nowrap;
     }
 
     .add-user-header .page-subtitle {

@@ -259,7 +259,6 @@ const DispatchDepartment = ({ onBack, onAddDispatch, onNavigate, userRole = 'adm
         </button>
         <div className="header-content">
           <h1 className="page-title">Dispatch Department</h1>
-          <p className="page-subtitle">Manage dispatch records</p>
         </div>
       </header>
 

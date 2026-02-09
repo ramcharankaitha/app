@@ -874,10 +874,9 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     type="text"
                     id="productName"
                     className="form-input"
-                    placeholder="Product Name (auto-filled)"
+                    placeholder="Enter product name"
                     value={currentProduct.productName}
-                    readOnly
-                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                    onChange={(e) => handleProductChange('productName', e.target.value)}
                   />
                 </div>
               </div>
@@ -890,10 +889,9 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     type="text"
                     id="skuCode"
                     className="form-input"
-                    placeholder="SKU Code (auto-filled)"
+                    placeholder="Enter SKU code"
                     value={currentProduct.skuCode}
-                    readOnly
-                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                    onChange={(e) => handleProductChange('skuCode', e.target.value)}
                   />
                 </div>
               </div>

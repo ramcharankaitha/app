@@ -308,7 +308,6 @@ const Handler = ({ onBack, onNavigate, userData, inline = false }) => {
             </button>
             <div>
               <h1 className="staff-title">Handler Module</h1>
-              <p className="staff-subtitle">View your assigned services, sales orders, and purchase orders</p>
             </div>
           </div>
         </header>

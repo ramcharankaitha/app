@@ -271,10 +271,9 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     id="customerName"
                     name="customerName"
                     className="form-input"
-                    placeholder="Customer name"
+                    placeholder="Enter customer name"
                     value={formData.customerName}
-                    readOnly
-                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                    onChange={handleInputChange}
                   />
                 </div>
               </div>
@@ -288,10 +287,9 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     id="customerPhone"
                     name="customerPhone"
                     className="form-input"
-                    placeholder="Phone number"
+                    placeholder="Enter phone number"
                     value={formData.customerPhone}
-                    readOnly
-                    style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                    onChange={handleInputChange}
                   />
                 </div>
               </div>

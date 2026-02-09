@@ -237,7 +237,6 @@ const AddPayment = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
             </button>
             <div className="header-content">
               <h1 className="page-title">Add Payment</h1>
-              <p className="page-subtitle">Record a new payment</p>
             </div>
           </header>
 
@@ -272,38 +271,17 @@ const AddPayment = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                     )}
                   </div>
                   {showSupplierDropdown && supplierSearchResults.length > 0 && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '100%',
-                      left: 0,
-                      right: 0,
-                      background: '#fff',
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      zIndex: 10000,
-                      maxHeight: '200px',
-                      overflowY: 'auto',
-                      marginTop: '4px'
-                    }}>
+                    <div className="typeahead-dropdown">
                       {supplierSearchResults.map(supplier => (
                         <div
                           key={supplier.id}
                           onClick={() => handleSupplierSelect(supplier)}
-                          style={{
-                            padding: '12px 16px',
-                            cursor: 'pointer',
-                            borderBottom: '1px solid #f0f0f0',
-                            transition: 'background 0.2s'
-                          }}
-                          onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                          onMouseLeave={(e) => e.target.style.background = '#fff'}
                         >
                           <div style={{ fontWeight: '600', fontSize: '14px', color: '#333' }}>
                             {supplier.name || supplier.supplier_name}
                           </div>
                           {(supplier.phone || supplier.phone_number_1) && (
-                            <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                            <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
                               {supplier.phone || supplier.phone_number_1}
                             </div>
                           )}

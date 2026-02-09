@@ -376,7 +376,6 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
         </button>
         <div className="header-content">
           <h1 className="page-title">Transport Master</h1>
-          <p className="page-subtitle">Manage transport services</p>
         </div>
       </header>
 

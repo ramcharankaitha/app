@@ -226,7 +226,6 @@ const AddStaff = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
             </button>
             <div className="header-content">
               <h1 className="page-title">Add Staff</h1>
-              <p className="page-subtitle">Create a new account for this store.</p>
             </div>
           </header>
 

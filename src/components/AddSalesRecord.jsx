@@ -550,7 +550,6 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
             </button>
             <div className="header-content">
               <h1 className="page-title">Create Sales Order</h1>
-              <p className="page-subtitle">Add a new sales order to the system.</p>
             </div>
           </header>
 
@@ -582,37 +581,16 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                     <i className="fas fa-chevron-down dropdown-icon"></i>
                   </div>
                   {showCustomerDropdown && filteredCustomers.length > 0 && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '100%',
-                      left: 0,
-                      right: 0,
-                      background: '#fff',
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      zIndex: 10000,
-                      maxHeight: '300px',
-                      overflowY: 'auto',
-                      marginTop: '4px'
-                    }}>
+                    <div className="typeahead-dropdown">
                       {filteredCustomers.map((customer) => (
                         <div
                           key={customer.id}
                           onClick={() => handleCustomerSelect(customer)}
-                          style={{
-                            padding: '12px 16px',
-                            cursor: 'pointer',
-                            borderBottom: '1px solid #f0f0f0',
-                            transition: 'background 0.2s'
-                          }}
-                          onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                          onMouseLeave={(e) => e.target.style.background = '#fff'}
                         >
                           <div style={{ fontWeight: '600', fontSize: '14px', color: '#333' }}>
                             {customer.name}
                           </div>
-                          <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                          <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
                             {customer.phone}
                           </div>
                         </div>
@@ -630,10 +608,9 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                       id="customerContact"
                       name="customerContact"
                       className="form-input"
-                      placeholder="Contact number (auto-filled)"
+                      placeholder="Enter contact number"
                       value={formData.customerContact}
-                      readOnly
-                      style={{ background: '#f5f5f5' }}
+                      onChange={handleInputChange}
                       required
                     />
                   </div>
@@ -666,38 +643,17 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                     <i className="fas fa-chevron-down dropdown-icon"></i>
                   </div>
                   {showSupplierDropdown && filteredSuppliers.length > 0 && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '100%',
-                      left: 0,
-                      right: 0,
-                      background: '#fff',
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      zIndex: 10000,
-                      maxHeight: '300px',
-                      overflowY: 'auto',
-                      marginTop: '4px'
-                    }}>
+                    <div className="typeahead-dropdown">
                       {filteredSuppliers.map((supplier) => (
                         <div
                           key={supplier.id}
                           onClick={() => handleSupplierSelect(supplier)}
-                          style={{
-                            padding: '12px 16px',
-                            cursor: 'pointer',
-                            borderBottom: '1px solid #f0f0f0',
-                            transition: 'background 0.2s'
-                          }}
-                          onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                          onMouseLeave={(e) => e.target.style.background = '#fff'}
                         >
                           <div style={{ fontWeight: '600', fontSize: '14px', color: '#333' }}>
                             {supplier.supplier_name || 'N/A'}
                           </div>
                           {supplier.phone && (
-                            <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                            <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
                               {supplier.phone}
                             </div>
                           )}
@@ -741,10 +697,9 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                       id="handlerMobile"
                       name="handlerMobile"
                       className="form-input"
-                      placeholder="Phone number"
+                      placeholder="Enter phone number"
                       value={formData.handlerMobile}
-                      readOnly
-                      style={{ background: '#f5f5f5' }}
+                      onChange={handleInputChange}
                     />
                   </div>
                 </div>
@@ -829,10 +784,9 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                       id="category"
                       name="category"
                       className="form-input"
-                      placeholder="Category (auto-filled)"
+                      placeholder="Enter category"
                       value={currentProduct.category}
-                      readOnly
-                      style={{ background: '#f5f5f5' }}
+                      onChange={handleCurrentProductChange}
                     />
                   </div>
                 </div>
@@ -846,10 +800,9 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                       id="productName"
                       name="productName"
                       className="form-input"
-                      placeholder="Product name (auto-filled)"
+                      placeholder="Enter product name"
                       value={currentProduct.productName}
-                      readOnly
-                      style={{ background: '#f5f5f5' }}
+                      onChange={handleCurrentProductChange}
                     />
                   </div>
                 </div>
@@ -883,10 +836,9 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                       id="mrp"
                       name="mrp"
                       className="form-input"
-                      placeholder="MRP (auto-filled)"
+                      placeholder="Enter MRP"
                       value={currentProduct.mrp}
-                      readOnly
-                      style={{ background: '#f5f5f5' }}
+                      onChange={handleCurrentProductChange}
                     />
                   </div>
                 </div>
@@ -900,10 +852,9 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                       id="sellRate"
                       name="sellRate"
                       className="form-input"
-                      placeholder="Sell rate (auto-filled)"
+                      placeholder="Enter sell rate"
                       value={currentProduct.sellRate}
-                      readOnly
-                      style={{ background: '#f5f5f5' }}
+                      onChange={handleCurrentProductChange}
                     />
                   </div>
                 </div>

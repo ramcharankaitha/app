@@ -188,7 +188,6 @@ const StockInMaster = ({ onBack, onAddStockIn, onNavigate, userRole = 'admin' })
               </button>
               <div>
                 <h1 className="staff-title">Stock In Master</h1>
-                <p className="staff-subtitle">View and manage all stock in transactions</p>
               </div>
             </div>
             <div className="header-right">

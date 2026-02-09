@@ -452,7 +452,6 @@ const QuotationMaster = ({ onBack, onAddQuotation, onNavigate, userRole = 'admin
             </button>
             <div className="header-content">
               <h1 className="page-title">Quotation Master</h1>
-              <p className="page-subtitle">Manage quotations</p>
             </div>
           </header>
 

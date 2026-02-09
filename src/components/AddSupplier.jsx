@@ -189,7 +189,6 @@ const AddSupplier = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
             </button>
             <div className="header-content">
               <h1 className="page-title">Add Supplier</h1>
-              <p className="page-subtitle">Create a new supplier for your store.</p>
             </div>
           </header>
 

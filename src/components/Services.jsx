@@ -276,7 +276,6 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
         </button>
         <div className="header-content">
           <h1 className="page-title">Services</h1>
-          <p className="page-subtitle">Manage service transactions</p>
         </div>
       </header>
 
