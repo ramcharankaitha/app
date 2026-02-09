@@ -220,7 +220,7 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
   };
 
   return (
-    <div className="dashboard-container">
+    <div className="dashboard-container supervisor-dashboard">
       {/* Left Sidebar Navigation */}
       <nav className={`sidebar-nav ${sidebarOpen ? 'open' : ''}`}>
         <div 
@@ -317,23 +317,7 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
             </div>
           </div>
           <div className="header-right">
-            <div 
-              className="notification-icon"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('🔔 Supervisor: Bell clicked, opening notifications panel');
-                setShowNotificationsPanel(true);
-              }}
-              style={{ cursor: 'pointer', position: 'relative', zIndex: 10 }}
-              title="View Notifications"
-            >
-              <i className="fas fa-bell"></i>
-              {unreadCount > 0 && (
-                <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
-              )}
-            </div>
-            <div className="menu-icon-container" ref={menuRef}>
+                        <div className="menu-icon-container" ref={menuRef}>
               <div className="menu-icon" onClick={() => setMenuOpen((p) => !p)}>
                 <i className="fas fa-bars"></i>
               </div>

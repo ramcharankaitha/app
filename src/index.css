@@ -176,14 +176,6 @@ body {
     flex-shrink: 0;
 }
 
-.back-btn::after {
-    content: '';
-    width: 8px;
-    height: 8px;
-    background: #fff;
-    border-radius: 50%;
-    position: absolute;
-}
 
 .back-btn:hover {
     background: #c82333;
