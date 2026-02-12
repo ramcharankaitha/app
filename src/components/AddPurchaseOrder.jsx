@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { suppliersAPI, purchaseOrdersAPI, productsAPI, salesOrdersAPI, staffAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
+import Toast from './Toast';
 import './addUser.css';
 
 const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
@@ -660,17 +661,8 @@ const AddPurchaseOrder = ({ onBack, onNavigate, userRole = 'admin' }) => {
       {/* Main Content */}
       <main className="add-user-content">
         <form onSubmit={handleSubmit} className="add-user-form add-purchase-order-form">
-          {error && (
-            <div className="alert alert-error" style={{ marginBottom: '20px' }}>
-              <i className="fas fa-exclamation-circle"></i> {error}
-            </div>
-          )}
-
-          {successMessage && (
-            <div className="alert alert-success" style={{ marginBottom: '20px' }}>
-              <i className="fas fa-check-circle"></i> {successMessage}
-            </div>
-          )}
+          <Toast message={error} type="error" onClose={() => setError('')} />
+          <Toast message={successMessage} type="success" onClose={() => setSuccessMessage('')} />
 
           <div className="form-section">
             <div className="form-grid four-col">

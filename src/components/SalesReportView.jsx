@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { exportAPI } from '../services/api';
 import { downloadCSV } from '../utils/fileDownload';
+import Toast from './Toast';
 import './staffAttendanceView.css';
 
 const SalesReportView = ({ onClose }) => {
@@ -387,11 +388,7 @@ const SalesReportView = ({ onClose }) => {
             </div>
           )}
 
-          {error && (
-            <div className="error-message" style={{ padding: '10px', background: '#fee', color: '#c33', borderRadius: '4px', marginBottom: '15px' }}>
-              {error}
-            </div>
-          )}
+          <Toast message={error} type="error" onClose={() => setError('')} />
 
           {loading ? (
             <div style={{ textAlign: 'center', padding: '40px' }}>

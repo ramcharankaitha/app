@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { servicesAPI, salesOrdersAPI, purchaseOrdersAPI } from '../services/api';
+import Toast from './Toast';
 import './products.css';
 
 const Handler = ({ onBack, onNavigate, userData, inline = false }) => {
@@ -320,18 +321,8 @@ const Handler = ({ onBack, onNavigate, userData, inline = false }) => {
         </div>
       )}
 
-          {/* Success/Error Messages */}
-          {successMessage && (
-            <div className="alert alert-success" style={{ margin: '16px 24px' }}>
-              <i className="fas fa-check-circle"></i> {successMessage}
-            </div>
-          )}
-
-          {error && (
-            <div className="alert alert-error" style={{ margin: '16px 24px' }}>
-              <i className="fas fa-exclamation-circle"></i> {error}
-            </div>
-          )}
+          <Toast message={successMessage} type="success" onClose={() => setSuccessMessage('')} />
+          <Toast message={error} type="error" onClose={() => setError('')} />
 
           {/* Tabs */}
           <div style={{ padding: '16px 24px', borderBottom: '1px solid #e0e0e0' }}>

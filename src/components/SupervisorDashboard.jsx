@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useProfile } from '../hooks/useProfile';
 import ConfirmDialog from './ConfirmDialog';
+import Toast from './Toast';
 import StaffAttendanceView from './StaffAttendanceView';
 import AttendanceModal from './AttendanceModal';
 import BestSalesPerson from './BestSalesPerson';
@@ -548,27 +549,7 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
         />
       )}
 
-      {/* Success/Warning Messages */}
-      {successMessage && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          background: '#d4edda',
-          color: '#155724',
-          padding: '15px 20px',
-          borderRadius: '8px',
-          boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-          zIndex: 10000,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          maxWidth: '400px'
-        }}>
-          <i className="fas fa-check-circle"></i>
-          <span>{successMessage}</span>
-        </div>
-      )}
+      <Toast message={successMessage} type="success" onClose={() => setSuccessMessage('')} />
 
       {warningMessage && (
         <div style={{

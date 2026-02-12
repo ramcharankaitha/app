@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { quotationsAPI, purchaseOrdersAPI, salesOrdersAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
+import Toast from './Toast';
 import './products.css';
 import './staff.css';
 
@@ -486,17 +487,8 @@ const QuotationMaster = ({ onBack, onAddQuotation, onNavigate, userRole = 'admin
               </div>
             </div>
 
-            {/* Messages */}
-            {successMessage && (
-              <div style={{ padding: '12px', background: '#d4edda', color: '#155724', borderRadius: '8px', marginBottom: '20px' }}>
-                <i className="fas fa-check-circle"></i> {successMessage}
-              </div>
-            )}
-            {error && (
-              <div style={{ padding: '12px', background: '#ffe0e0', color: '#dc3545', borderRadius: '8px', marginBottom: '20px' }}>
-                <i className="fas fa-exclamation-circle"></i> {error}
-              </div>
-            )}
+            <Toast message={successMessage} type="success" onClose={() => setSuccessMessage('')} />
+            <Toast message={error} type="error" onClose={() => setError('')} />
 
             {/* Results Count */}
             <div className="staff-count">
@@ -1057,11 +1049,7 @@ const QuotationMaster = ({ onBack, onAddQuotation, onNavigate, userRole = 'admin
               </button>
             </div>
             <div className="modal-content">
-              {error && (
-                <div className="alert alert-error" style={{ marginBottom: '15px' }}>
-                  <i className="fas fa-exclamation-circle"></i> {error}
-                </div>
-              )}
+              <Toast message={error} type="error" onClose={() => setError('')} />
               <div className="customer-detail-section">
                 <div className="detail-avatar">
                   <span>{editQuotationModal.customer_name

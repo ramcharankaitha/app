@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useProfile } from '../hooks/useProfile';
 import ConfirmDialog from './ConfirmDialog';
+import Toast from './Toast';
 import AttendanceModal from './AttendanceModal';
 import BestSalesPerson from './BestSalesPerson';
 import NotificationsPanel from './NotificationsPanel';
@@ -441,40 +442,8 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
 
         {/* Main Content */}
         <main className="dashboard-content">
-          {/* Success and Warning Messages */}
-          {successMessage && (
-            <div style={{ 
-              padding: '16px', 
-              background: '#d4edda', 
-              color: '#155724', 
-              borderRadius: '8px', 
-              marginBottom: '20px',
-              border: '1px solid #c3e6cb',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px'
-            }}>
-              <i className="fas fa-check-circle" style={{ fontSize: '20px' }}></i>
-              <span style={{ fontWeight: '500' }}>{successMessage}</span>
-            </div>
-          )}
-
-          {warningMessage && (
-            <div style={{ 
-              padding: '16px', 
-              background: '#fff3cd', 
-              color: '#856404', 
-              borderRadius: '8px', 
-              marginBottom: '20px',
-              border: '1px solid #ffeaa7',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px'
-            }}>
-              <i className="fas fa-exclamation-triangle" style={{ fontSize: '20px' }}></i>
-              <span style={{ fontWeight: '500' }}>{warningMessage}</span>
-            </div>
-          )}
+          <Toast message={successMessage} type="success" onClose={() => setSuccessMessage('')} />
+          <Toast message={warningMessage} type="error" onClose={() => setWarningMessage('')} />
 
           {activeNav === 'masterMenu' ? (
             <div className="master-menu-grid">

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { transportAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
+import Toast from './Toast';
 
 const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
@@ -272,11 +273,9 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
       });
 
       if (response.success) {
-        setSuccessMessage('Transport record created successfully');
-        setTimeout(() => {
-          setSuccessMessage('');
-          handleCancel();
-        }, 2000);
+        localStorage.setItem('transportSuccessMessage', 'Transport record created successfully!');
+        handleCancel();
+        return;
       }
     } catch (err) {
       setError(err.message || 'Failed to create transport record. Please try again.');
@@ -562,31 +561,7 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                 </div>
 
 
-                {/* Error Message */}
-                {error && (
-                  <div className="error-message" style={{ 
-                    padding: '12px', 
-                    background: '#ffe0e0', 
-                    color: '#dc3545', 
-                    borderRadius: '8px', 
-                    marginBottom: '20px' 
-                  }}>
-                    <i className="fas fa-exclamation-circle"></i> {error}
-                  </div>
-                )}
-
-                {/* Success Message */}
-                {successMessage && (
-                  <div className="success-message" style={{ 
-                    padding: '12px', 
-                    background: '#d4edda', 
-                    color: '#155724', 
-                    borderRadius: '8px', 
-                    marginBottom: '20px' 
-                  }}>
-                    <i className="fas fa-check-circle"></i> {successMessage}
-                  </div>
-                )}
+                <Toast message={error} type="error" onClose={() => setError('')} />
 
                 {/* Action Buttons */}
                 <div className="form-actions">

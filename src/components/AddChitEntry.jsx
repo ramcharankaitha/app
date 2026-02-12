@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { chitPlansAPI, customersAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
+import Toast from './Toast';
 
 const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
@@ -220,16 +221,8 @@ const AddChitEntry = ({ onBack, onNavigate, userRole = 'admin' }) => {
       {/* Main Content */}
       <main className="add-user-content">
         <form onSubmit={handleSubmit} className="add-user-form add-chit-entry-form">
-          {error && (
-            <div className="alert alert-error" style={{ marginBottom: '20px' }}>
-              <i className="fas fa-exclamation-circle"></i> {error}
-            </div>
-          )}
-          {successMessage && (
-            <div className="alert alert-success" style={{ marginBottom: '20px' }}>
-              <i className="fas fa-check-circle"></i> {successMessage}
-            </div>
-          )}
+          <Toast message={error} type="error" onClose={() => setError('')} />
+          <Toast message={successMessage} type="success" onClose={() => setSuccessMessage('')} />
 
           <div className="form-section">
             {/* First Row: Chit ID, Customer Name, Customer Phone Number, Chit Type */}

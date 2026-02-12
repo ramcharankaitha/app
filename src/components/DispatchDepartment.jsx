@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { dispatchAPI } from '../services/api';
+import Toast from './Toast';
 import './products.css';
 
 const DispatchDepartment = ({ onBack, onAddDispatch, onNavigate, userRole = 'admin' }) => {
@@ -300,18 +301,8 @@ const DispatchDepartment = ({ onBack, onAddDispatch, onNavigate, userRole = 'adm
           {`Showing ${filteredDispatches.length} of ${dispatches.length} dispatches`}
         </div>
 
-        {/* Success Message */}
-        {successMessage && (
-          <div style={{ padding: '12px', background: '#d4edda', color: '#155724', borderRadius: '8px', marginBottom: '20px' }}>
-            <i className="fas fa-check-circle"></i> {successMessage}
-          </div>
-        )}
-        {/* Error Message */}
-        {error && (
-          <div style={{ padding: '12px', background: '#ffe0e0', color: '#dc3545', borderRadius: '8px', marginBottom: '20px' }}>
-            <i className="fas fa-exclamation-circle"></i> {error}
-          </div>
-        )}
+        <Toast message={successMessage} type="success" onClose={() => setSuccessMessage('')} />
+        <Toast message={error} type="error" onClose={() => setError('')} />
 
         {/* Dispatches List */}
         <div className="staff-list-container" style={{ padding: '0 24px 24px' }}>
@@ -676,17 +667,7 @@ const DispatchDepartment = ({ onBack, onAddDispatch, onNavigate, userRole = 'adm
               </button>
             </div>
             <div className="modal-content">
-              {error && (
-                <div style={{ 
-                  padding: '12px', 
-                  background: '#ffe0e0', 
-                  color: '#dc3545', 
-                  borderRadius: '8px', 
-                  marginBottom: '20px' 
-                }}>
-                  <i className="fas fa-exclamation-circle"></i> {error}
-                </div>
-              )}
+              <Toast message={error} type="error" onClose={() => setError('')} />
               <div className="customer-detail-section">
                 <div className="detail-avatar">
                   <span>{editDispatchModal.name 

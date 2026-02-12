@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { chitPlansAPI } from '../services/api';
+import Toast from './Toast';
 import './products.css';
 import './staff.css';
 
@@ -284,18 +285,8 @@ const ChitEntryMaster = ({ onBack, onAddChitEntry, onNavigate, userRole = 'admin
             </div>
           </header>
 
-          {/* Success/Error Messages */}
-          {successMessage && (
-            <div className="alert alert-success" style={{ margin: '16px 24px' }}>
-              <i className="fas fa-check-circle"></i> {successMessage}
-            </div>
-          )}
-
-          {error && (
-            <div className="alert alert-error" style={{ margin: '16px 24px' }}>
-              <i className="fas fa-exclamation-circle"></i> {error}
-            </div>
-          )}
+          <Toast message={successMessage} type="success" onClose={() => setSuccessMessage('')} />
+          <Toast message={error} type="error" onClose={() => setError('')} />
 
           {/* Search Bar */}
           <div className="search-container" style={{ padding: '16px 24px' }}>

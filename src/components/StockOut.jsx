@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { stockAPI, productsAPI, customersAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
+import Toast from './Toast';
 
 const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
@@ -508,39 +509,8 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
 
       {/* Main Content */}
       <main className="add-user-content">
-        {/* Error and Success Messages */}
-        {error && (
-          <div style={{
-            padding: '12px 16px',
-            background: '#f8d7da',
-            color: '#721c24',
-            border: '1px solid #f5c6cb',
-            borderRadius: '6px',
-            marginBottom: '20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            <i className="fas fa-exclamation-circle"></i>
-            <span>{error}</span>
-          </div>
-        )}
-        {successMessage && (
-          <div style={{
-            padding: '12px 16px',
-            background: '#d4edda',
-            color: '#155724',
-            border: '1px solid #c3e6cb',
-            borderRadius: '6px',
-            marginBottom: '20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            <i className="fas fa-check-circle"></i>
-            <span>{successMessage}</span>
-          </div>
-        )}
+        <Toast message={error} type="error" onClose={() => setError('')} />
+        <Toast message={successMessage} type="success" onClose={() => setSuccessMessage('')} />
 
         <form onSubmit={handleSubmit} className="add-user-form add-stock-out-form" noValidate>
           {/* All fields in 4-column grid without section titles */}

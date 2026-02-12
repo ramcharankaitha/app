@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { quotationsAPI, productsAPI, customersAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
+import Toast from './Toast';
 import './addUser.css';
 
 const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
@@ -411,17 +412,8 @@ const AddQuotation = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
       {/* Main Content */}
       <main className="add-user-content">
         <form onSubmit={(e) => { e.preventDefault(); submitQuotation(); }} className="add-user-form add-quotation-form">
-          {error && (
-            <div className="alert alert-error" style={{ marginBottom: '20px' }}>
-              <i className="fas fa-exclamation-circle"></i> {error}
-            </div>
-          )}
-
-          {successMessage && (
-            <div className="alert alert-success" style={{ marginBottom: '20px' }}>
-              <i className="fas fa-check-circle"></i> {successMessage}
-            </div>
-          )}
+          <Toast message={error} type="error" onClose={() => setError('')} />
+          <Toast message={successMessage} type="success" onClose={() => setSuccessMessage('')} />
 
           <div className="form-section">
             {/* Row 1: Customer Name, Customer Number, Item Code, Product Name */}

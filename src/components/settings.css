@@ -48,6 +48,9 @@
 .settings-header .back-btn {
     width: 36px;
     height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    aspect-ratio: 1;
     border-radius: 50%;
     background: var(--accent-color);
     border: none;
@@ -57,6 +60,7 @@
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
+    flex-shrink: 0;
 }
 
 .settings-header .back-btn:hover {
@@ -162,6 +166,9 @@
 .profile-card .profile-badge {
     width: 44px;
     height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    aspect-ratio: 1;
     border-radius: 50%;
     background: var(--accent-color);
     color: #fff;
@@ -170,6 +177,7 @@
     justify-content: center;
     font-weight: 700;
     margin-right: 12px;
+    flex-shrink: 0;
     transition: background-color 0.3s ease;
 }
 

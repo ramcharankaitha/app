@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { chitPlansAPI } from '../services/api';
+import Toast from './Toast';
 import './staff.css';
 
 const ChitPlanList = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' }) => {
@@ -180,17 +181,8 @@ const ChitPlanList = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' })
               </div>
             </div>
 
-            {/* Messages */}
-            {successMessage && (
-              <div style={{ padding: '12px', background: '#d4edda', color: '#155724', borderRadius: '8px', marginBottom: '20px' }}>
-                <i className="fas fa-check-circle"></i> {successMessage}
-              </div>
-            )}
-            {error && (
-              <div style={{ padding: '12px', background: '#ffe0e0', color: '#dc3545', borderRadius: '8px', marginBottom: '20px' }}>
-                <i className="fas fa-exclamation-circle"></i> {error}
-              </div>
-            )}
+            <Toast message={successMessage} type="success" onClose={() => setSuccessMessage('')} />
+            <Toast message={error} type="error" onClose={() => setError('')} />
 
             {/* Results Count */}
             <div className="staff-count">

@@ -19,6 +19,9 @@
 .staff-header .back-btn {
     width: 36px;
     height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    aspect-ratio: 1;
     border-radius: 50%;
     background: #dc3545;
     border: none;
@@ -29,6 +32,7 @@
     justify-content: center;
     margin-right: 12px;
     transition: all 0.3s ease;
+    flex-shrink: 0;
 }
 
 .staff-header .back-btn:hover {
@@ -234,6 +238,9 @@
 .staff-avatar {
     width: 50px;
     height: 50px;
+    min-width: 50px;
+    min-height: 50px;
+    aspect-ratio: 1;
     border-radius: 50%;
     background: #dc3545;
     color: #fff;
@@ -457,6 +464,9 @@
 .detail-avatar {
     width: 80px;
     height: 80px;
+    min-width: 80px;
+    min-height: 80px;
+    aspect-ratio: 1;
     border-radius: 50%;
     background: #dc3545;
     color: #fff;
@@ -465,6 +475,7 @@
     justify-content: center;
     font-size: 32px;
     font-weight: 700;
+    flex-shrink: 0;
 }
 
 .detail-info {
@@ -668,6 +679,17 @@
     }
 }
 
+@keyframes toastSlideDown {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
 .premium-menu-item {
     display: flex;
     align-items: center;
@@ -727,6 +749,9 @@
 .premium-avatar {
     width: 64px;
     height: 64px;
+    min-width: 64px;
+    min-height: 64px;
+    aspect-ratio: 1;
     border-radius: 50%;
     background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
     color: #ffffff;

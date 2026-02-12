@@ -51,6 +51,9 @@
 .settings-circle {
     width: 40px;
     height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    aspect-ratio: 1;
     border-radius: 50%;
     background: var(--card-bg);
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
@@ -59,6 +62,7 @@
     justify-content: center;
     position: relative;
     cursor: pointer;
+    flex-shrink: 0;
 }
 
 .profile-circle img {
@@ -241,6 +245,9 @@
 .status-face {
     width: 52px;
     height: 52px;
+    min-width: 52px;
+    min-height: 52px;
+    aspect-ratio: 1;
     border-radius: 50%;
     border: 2px solid #ffb5b5;
     display: flex;
@@ -248,6 +255,7 @@
     justify-content: center;
     color: #dc3545;
     font-size: 20px;
+    flex-shrink: 0;
 }
 
 .status-pill {

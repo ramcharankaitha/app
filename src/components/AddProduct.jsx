@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { productsAPI, categoriesAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
+import Toast from './Toast';
 
 const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
@@ -893,37 +894,8 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                   </div>
                 </div>
 
-                {/* Error Message */}
-                {error && (
-                  <div className="error-message" style={{ 
-                    padding: '12px', 
-                    background: '#ffe0e0', 
-                    color: '#dc3545', 
-                    borderRadius: '8px', 
-                    marginBottom: '20px',
-                    marginLeft: 'auto',
-                    marginRight: '0',
-                    textAlign: 'right',
-                    maxWidth: '50%',
-                    float: 'right',
-                    clear: 'both'
-                  }}>
-                    <i className="fas fa-exclamation-circle"></i> {error}
-                  </div>
-                )}
-
-                {/* Success Message */}
-                {successMessage && (
-                  <div className="success-message" style={{ 
-                    padding: '12px', 
-                    background: '#d4edda', 
-                    color: '#155724', 
-                    borderRadius: '8px', 
-                    marginBottom: '20px' 
-                  }}>
-                    <i className="fas fa-check-circle"></i> {successMessage}
-                  </div>
-                )}
+                <Toast message={error} type="error" onClose={() => setError('')} />
+                <Toast message={successMessage} type="success" onClose={() => setSuccessMessage('')} />
 
                 {/* Action Buttons */}
                 <div className="form-actions">

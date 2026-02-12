@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { paymentsAPI } from '../services/api';
+import Toast from './Toast';
 import './products.css';
 import './staff.css';
 
@@ -304,18 +305,8 @@ const PaymentMaster = ({ onBack, onAddPayment, onNavigate, userRole = 'admin' })
             </div>
           </header>
 
-          {/* Success/Error Messages */}
-          {successMessage && (
-            <div className="alert alert-success" style={{ margin: '16px 24px' }}>
-              <i className="fas fa-check-circle"></i> {successMessage}
-            </div>
-          )}
-
-          {error && (
-            <div className="alert alert-error" style={{ margin: '16px 24px' }}>
-              <i className="fas fa-exclamation-circle"></i> {error}
-            </div>
-          )}
+          <Toast message={successMessage} type="success" onClose={() => setSuccessMessage('')} />
+          <Toast message={error} type="error" onClose={() => setError('')} />
 
           {/* Search Bar */}
           <div className="search-container" style={{ padding: '16px 24px' }}>
@@ -750,11 +741,7 @@ const PaymentMaster = ({ onBack, onAddPayment, onNavigate, userRole = 'admin' })
               </button>
             </div>
             <div className="modal-content">
-              {error && (
-                <div className="alert alert-error" style={{ marginBottom: '15px' }}>
-                  <i className="fas fa-exclamation-circle"></i> {error}
-                </div>
-              )}
+              <Toast message={error} type="error" onClose={() => setError('')} />
               <div className="customer-detail-section">
                 <div className="detail-avatar">
                   <span>{editPaymentModal.supplier_name

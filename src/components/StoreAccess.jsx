@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { storesAPI, profileAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
+import Toast from './Toast';
 
 const StoreAccess = ({ onClose, onNavigate, onProfileUpdate }) => {
   const [stores, setStores] = useState([]);
@@ -173,33 +174,8 @@ const StoreAccess = ({ onClose, onNavigate, onProfileUpdate }) => {
           </button>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div style={{ 
-            padding: '12px', 
-            background: '#ffe0e0', 
-            color: '#dc3545', 
-            borderRadius: '8px', 
-            marginBottom: '16px',
-            fontSize: '13px'
-          }}>
-            <i className="fas fa-exclamation-circle"></i> {error}
-          </div>
-        )}
-
-        {/* Success Message */}
-        {successMessage && (
-          <div style={{ 
-            padding: '12px', 
-            background: '#d4edda', 
-            color: '#155724', 
-            borderRadius: '8px', 
-            marginBottom: '16px',
-            fontSize: '13px'
-          }}>
-            <i className="fas fa-check-circle"></i> {successMessage}
-          </div>
-        )}
+        <Toast message={error} type="error" onClose={() => setError('')} />
+        <Toast message={successMessage} type="success" onClose={() => setSuccessMessage('')} />
 
         {/* Store Scope Selection */}
         <div style={{ marginBottom: '24px' }}>

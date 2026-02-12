@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { chitPlansAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
+import Toast from './Toast';
 import './chitPlans.css';
 
 const ChitPlans = ({ onBack, onAddChitCustomer, onNavigate, userRole = 'admin' }) => {
@@ -318,12 +319,7 @@ const ChitPlans = ({ onBack, onAddChitCustomer, onNavigate, userRole = 'admin' }
           {`Showing ${filteredCustomers.length} of ${customers.length} customers`}
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div style={{ padding: '12px', background: '#ffe0e0', color: '#dc3545', borderRadius: '8px', marginBottom: '20px' }}>
-            <i className="fas fa-exclamation-circle"></i> {error}
-          </div>
-        )}
+        <Toast message={error} type="error" onClose={() => setError('')} />
 
         {/* Customers List */}
         <div className="staff-list">

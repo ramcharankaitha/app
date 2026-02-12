@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { stockAPI } from '../services/api';
+import Toast from './Toast';
 import './products.css';
 
 const StockInMaster = ({ onBack, onAddStockIn, onNavigate, userRole = 'admin' }) => {
@@ -198,18 +199,8 @@ const StockInMaster = ({ onBack, onAddStockIn, onNavigate, userRole = 'admin' })
             </div>
           </header>
 
-          {/* Success/Error Messages */}
-          {successMessage && (
-            <div className="alert alert-success" style={{ margin: '16px 24px' }}>
-              <i className="fas fa-check-circle"></i> {successMessage}
-            </div>
-          )}
-
-          {error && (
-            <div className="alert alert-error" style={{ margin: '16px 24px' }}>
-              <i className="fas fa-exclamation-circle"></i> {error}
-            </div>
-          )}
+          <Toast message={successMessage} type="success" onClose={() => setSuccessMessage('')} />
+          <Toast message={error} type="error" onClose={() => setError('')} />
 
           {/* Search Bar */}
           <div className="search-container" style={{ padding: '16px 24px' }}>

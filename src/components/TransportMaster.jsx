@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { transportAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
+import Toast from './Toast';
 import './suppliers.css';
 
 const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin' }) => {
@@ -111,6 +112,13 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
 
   useEffect(() => {
     fetchTransports();
+    // Check for flash success message from AddTransport
+    const flashMsg = localStorage.getItem('transportSuccessMessage');
+    if (flashMsg) {
+      setSuccessMessage(flashMsg);
+      localStorage.removeItem('transportSuccessMessage');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    }
   }, []);
 
   // Filter transports based on search
@@ -417,19 +425,33 @@ const TransportMaster = ({ onBack, onAddTransport, onNavigate, userRole = 'admin
           {`Showing ${filteredTransports.length} of ${transports.length} transports`}
         </div>
 
-        {/* Success Message */}
+        {/* Success Toast */}
         {successMessage && (
-          <div style={{ padding: '12px', background: '#d4edda', color: '#155724', borderRadius: '8px', marginBottom: '20px', margin: '0 24px 20px' }}>
+          <div style={{
+            position: 'fixed',
+            top: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 9999,
+            padding: '14px 28px',
+            background: '#28a745',
+            color: '#fff',
+            borderRadius: '10px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
+            fontSize: '15px',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            animation: 'toastSlideDown 0.4s ease',
+            maxWidth: '90vw',
+            textAlign: 'center'
+          }}>
             <i className="fas fa-check-circle"></i> {successMessage}
           </div>
         )}
 
-        {/* Error Message */}
-        {error && (
-          <div style={{ padding: '12px', background: '#ffe0e0', color: '#dc3545', borderRadius: '8px', marginBottom: '20px' }}>
-            <i className="fas fa-exclamation-circle"></i> {error}
-          </div>
-        )}
+        <Toast message={error} type="error" onClose={() => setError('')} />
 
         {/* Transports List */}
         <div className="staff-list-container" style={{ padding: '0 24px 24px' }}>

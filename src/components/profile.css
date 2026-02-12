@@ -46,6 +46,9 @@
 .profile-header .back-btn {
     width: 36px;
     height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    aspect-ratio: 1;
     border-radius: 50%;
     background: #dc3545;
     border: none;
@@ -55,6 +58,7 @@
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
+    flex-shrink: 0;
 }
 
 .profile-header .back-btn:hover {
@@ -117,6 +121,9 @@
 .admin-avatar-large {
     width: 100px;
     height: 100px;
+    min-width: 100px;
+    min-height: 100px;
+    aspect-ratio: 1;
     border-radius: 50%;
     background: #dc3545;
     color: #fff;
@@ -230,6 +237,9 @@
 .contact-icon {
     width: 40px;
     height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    aspect-ratio: 1;
     border-radius: 50%;
     background: var(--accent-light);
     color: #dc3545;
@@ -309,6 +319,9 @@
 .action-icon {
     width: 40px;
     height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    aspect-ratio: 1;
     border-radius: 50%;
     background: var(--accent-light);
     color: #dc3545;

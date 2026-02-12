@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import Toast from './Toast';
 
 const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
   const [stream, setStream] = useState(null);
@@ -178,11 +179,7 @@ const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
                   style={{ width: '100%', maxWidth: '500px', borderRadius: '8px' }}
                 />
               </div>
-              {error && (
-                <div className="error-message" style={{ marginTop: '15px', padding: '10px', background: '#fee', color: '#c33', borderRadius: '4px' }}>
-                  {error}
-                </div>
-              )}
+              <Toast message={error} type="error" onClose={() => setError('')} />
               <div className="attendance-actions">
                 <button className="btn-secondary" onClick={handleClose}>
                   Cancel
@@ -197,11 +194,7 @@ const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
               <div className="captured-image-preview">
                 <img src={capturedImage} alt="Captured" style={{ width: '100%', maxWidth: '500px', borderRadius: '8px' }} />
               </div>
-              {error && (
-                <div className="error-message" style={{ marginTop: '15px', padding: '10px', background: '#fee', color: '#c33', borderRadius: '4px' }}>
-                  <i className="fas fa-exclamation-circle"></i> {error}
-                </div>
-              )}
+              <Toast message={error} type="error" onClose={() => setError('')} />
               {isProcessing && !error && (
                 <div style={{ 
                   padding: '12px 16px',

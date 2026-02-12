@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { servicesAPI } from '../services/api';
+import Toast from './Toast';
 import './products.css';
 
 const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
@@ -317,12 +318,7 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
           {`Showing ${filteredServices.length} of ${services.length} services`}
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div style={{ padding: '12px', background: '#ffe0e0', color: '#dc3545', borderRadius: '8px', marginBottom: '20px' }}>
-            <i className="fas fa-exclamation-circle"></i> {error}
-          </div>
-        )}
+        <Toast message={error} type="error" onClose={() => setError('')} />
 
         {/* Services List */}
         <div className="staff-list-container" style={{ padding: '0 24px 24px' }}>
@@ -683,17 +679,7 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
               </button>
             </div>
             <div className="modal-content">
-              {error && (
-                <div style={{ 
-                  padding: '12px', 
-                  background: '#ffe0e0', 
-                  color: '#dc3545', 
-                  borderRadius: '8px', 
-                  marginBottom: '20px' 
-                }}>
-                  <i className="fas fa-exclamation-circle"></i> {error}
-                </div>
-              )}
+              <Toast message={error} type="error" onClose={() => setError('')} />
               <div className="customer-detail-section">
                 <div className="detail-avatar">
                   <span>{editServiceModal.customer_name 

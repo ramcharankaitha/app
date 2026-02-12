@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { usersAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
+import Toast from './Toast';
 import SidebarNav from './SidebarNav';
 
 const Supervisors = ({ onBack, onAddUser, onNavigate, userRole = 'admin' }) => {
@@ -346,12 +347,7 @@ const Supervisors = ({ onBack, onAddUser, onNavigate, userRole = 'admin' }) => {
           {`Showing ${filteredUsers.length} of ${users.length} users`}
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div style={{ padding: '12px', background: '#ffe0e0', color: '#dc3545', borderRadius: '8px', marginBottom: '20px' }}>
-            <i className="fas fa-exclamation-circle"></i> {error}
-          </div>
-        )}
+        <Toast message={error} type="error" onClose={() => setError('')} />
 
         {/* Users List */}
         <div className="staff-list-container" style={{ padding: '0 24px 24px' }}>

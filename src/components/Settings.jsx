@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useProfile } from '../hooks/useProfile';
 import { useTheme } from '../contexts/ThemeContext';
 import { exportAPI } from '../services/api';
+import Toast from './Toast';
 import StoreAccess from './StoreAccess';
 import RolePermissions from './RolePermissions';
 import ConfirmDialog from './ConfirmDialog';
@@ -297,19 +298,7 @@ const Settings = ({ onBack, onNavigate, onLogout, userRole = 'admin' }) => {
               <p>Update profile, security and app preferences.</p>
             </div>
 
-            {/* Export Message */}
-            {exportMessage && (
-              <div style={{ 
-                padding: '12px', 
-                background: exportMessage.includes('successfully') ? '#d4edda' : '#ffe0e0', 
-                color: exportMessage.includes('successfully') ? '#155724' : '#dc3545', 
-                borderRadius: '8px', 
-                marginBottom: '16px',
-                fontSize: '13px'
-              }}>
-                <i className={`fas ${exportMessage.includes('successfully') ? 'fa-check-circle' : 'fa-exclamation-circle'}`}></i> {exportMessage}
-              </div>
-            )}
+            <Toast message={exportMessage} type={exportMessage && exportMessage.includes('successfully') ? 'success' : 'error'} onClose={() => setExportMessage('')} />
 
             {sections.map((section) => (
               <div key={section.title} className="settings-section">

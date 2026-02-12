@@ -46,6 +46,9 @@
 .edit-profile-header .back-btn {
     width: 36px;
     height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    aspect-ratio: 1;
     border-radius: 50%;
     background: var(--accent-light);
     border: 1px solid var(--accent-lighter);
@@ -55,6 +58,7 @@
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
+    flex-shrink: 0;
 }
 
 .edit-profile-header .back-btn:hover {
@@ -103,6 +107,9 @@
 .profile-avatar-large {
     width: 100px;
     height: 100px;
+    min-width: 100px;
+    min-height: 100px;
+    aspect-ratio: 1;
     border-radius: 50%;
     background: #dc3545;
     color: #fff;

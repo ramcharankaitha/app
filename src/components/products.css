@@ -24,6 +24,9 @@
 .products-header .back-btn {
     width: 36px;
     height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    aspect-ratio: 1;
     border-radius: 50%;
     background: #dc3545;
     border: none;
@@ -34,6 +37,7 @@
     justify-content: center;
     margin-right: 12px;
     transition: all 0.3s ease;
+    flex-shrink: 0;
 }
 
 .products-header .back-btn:hover {
@@ -693,6 +697,8 @@
     .products-header .back-btn {
         width: 34px;
         height: 34px;
+        min-width: 34px;
+        min-height: 34px;
         font-size: 13px;
     }
 

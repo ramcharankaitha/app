@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { salesOrdersAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
+import Toast from './Toast';
 import './staff.css';
 
 const SalesOrder = ({ onBack, onAddSalesOrder, onNavigate, userRole = 'admin' }) => {
@@ -342,12 +343,7 @@ const SalesOrder = ({ onBack, onAddSalesOrder, onNavigate, userRole = 'admin' })
           {`Showing ${filteredSalesOrders.length} of ${salesOrders.length} sales orders`}
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div style={{ padding: '12px', background: '#ffe0e0', color: '#dc3545', borderRadius: '8px', marginBottom: '20px' }}>
-            <i className="fas fa-exclamation-circle"></i> {error}
-          </div>
-        )}
+        <Toast message={error} type="error" onClose={() => setError('')} />
 
         {/* Sales Orders List */}
         <div className="staff-list-container" style={{ padding: '0 24px 24px' }}>
@@ -808,17 +804,7 @@ const SalesOrder = ({ onBack, onAddSalesOrder, onNavigate, userRole = 'admin' })
               </button>
             </div>
             <div className="modal-content">
-              {error && (
-                <div style={{ 
-                  padding: '12px', 
-                  background: '#ffe0e0', 
-                  color: '#dc3545', 
-                  borderRadius: '8px', 
-                  marginBottom: '20px' 
-                }}>
-                  <i className="fas fa-exclamation-circle"></i> {error}
-                </div>
-              )}
+              <Toast message={error} type="error" onClose={() => setError('')} />
               <div className="customer-detail-section">
                 <div className="detail-avatar">
                   <span>{editSalesOrderModal.customer_name 

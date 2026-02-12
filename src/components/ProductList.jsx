@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { productsAPI } from '../services/api';
+import Toast from './Toast';
 import './products.css';
 
 const ProductList = ({ onBack, onNavigate }) => {
@@ -145,18 +146,7 @@ const ProductList = ({ onBack, onNavigate }) => {
               )}
             </div>
 
-            {/* Error Message */}
-            {error && !loading && (
-              <div style={{ 
-                padding: '12px', 
-                background: '#ffe0e0', 
-                color: '#dc3545', 
-                borderRadius: '8px', 
-                marginBottom: '20px' 
-              }}>
-                {error}
-              </div>
-            )}
+            {!loading && <Toast message={error} type="error" onClose={() => setError('')} />}
 
             {/* Loading State */}
             {loading && (

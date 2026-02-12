@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { customersAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
+import Toast from './Toast';
 import SidebarNav from './SidebarNav';
 import './customers.css';
 
@@ -292,19 +293,8 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
           {`Showing ${filteredCustomers.length} of ${customers.length} customers`}
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div style={{ padding: '12px', background: '#ffe0e0', color: '#dc3545', borderRadius: '8px', marginBottom: '20px' }}>
-            <i className="fas fa-exclamation-circle"></i> {error}
-          </div>
-        )}
-
-        {/* Success Message */}
-        {successMessage && (
-          <div style={{ padding: '12px', background: '#d4edda', color: '#155724', borderRadius: '8px', marginBottom: '20px' }}>
-            <i className="fas fa-check-circle"></i> {successMessage}
-          </div>
-        )}
+        <Toast message={error} type="error" onClose={() => setError('')} />
+        <Toast message={successMessage} type="success" onClose={() => setSuccessMessage('')} />
 
         {/* Customers List */}
         <div className="staff-list-container" style={{ padding: '0 24px 24px' }}>
@@ -709,17 +699,7 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
               </button>
             </div>
             <div className="modal-content">
-              {error && (
-                <div style={{ 
-                  padding: '12px', 
-                  background: '#ffe0e0', 
-                  color: '#dc3545', 
-                  borderRadius: '8px', 
-                  marginBottom: '20px' 
-                }}>
-                  <i className="fas fa-exclamation-circle"></i> {error}
-                </div>
-              )}
+              <Toast message={error} type="error" onClose={() => setError('')} />
               <div className="customer-detail-section">
                 <div className="detail-avatar">
                   <span>{editCustomerModal.full_name 

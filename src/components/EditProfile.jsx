@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { profileAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import FaceCaptureModal from './FaceCaptureModal';
+import Toast from './Toast';
 
 const EditProfile = ({ onBack, onNavigate }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -593,31 +594,8 @@ const EditProfile = ({ onBack, onNavigate }) => {
                 </div>
               </div>
 
-                {/* Error Message */}
-                {error && (
-                  <div className="error-message" style={{ 
-                    padding: '12px', 
-                    background: '#ffe0e0', 
-                    color: '#dc3545', 
-                    borderRadius: '8px', 
-                    marginBottom: '20px' 
-                  }}>
-                    <i className="fas fa-exclamation-circle"></i> {error}
-                  </div>
-                )}
-
-                {/* Success Message */}
-                {successMessage && (
-                  <div className="success-message" style={{ 
-                    padding: '12px', 
-                    background: '#d4edda', 
-                    color: '#155724', 
-                    borderRadius: '8px', 
-                    marginBottom: '20px' 
-                  }}>
-                    <i className="fas fa-check-circle"></i> {successMessage}
-                  </div>
-                )}
+                <Toast message={error} type="error" onClose={() => setError('')} />
+                <Toast message={successMessage} type="success" onClose={() => setSuccessMessage('')} />
 
                 {/* Action Buttons */}
                 <div className="form-actions">

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { usersAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
+import Toast from './Toast';
 import { pickPhotoWithSource } from '../utils/photoUpload';
 import SidebarNav from './SidebarNav';
 
@@ -399,18 +400,7 @@ const AddUser = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                   </div>
                 </div>
 
-                {/* Error Message */}
-                {error && (
-                  <div className="error-message" style={{ 
-                    padding: '12px', 
-                    background: '#ffe0e0', 
-                    color: '#dc3545', 
-                    borderRadius: '8px', 
-                    marginBottom: '20px' 
-                  }}>
-                    <i className="fas fa-exclamation-circle"></i> {error}
-                  </div>
-                )}
+                <Toast message={error} type="error" onClose={() => setError('')} />
 
                 {/* Success Message */}
                 {successMessage && (
