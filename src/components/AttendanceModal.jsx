@@ -6,11 +6,11 @@ const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
   const [isCapturing, setIsCapturing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
+  const [cameraStarted, setCameraStarted] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
   useEffect(() => {
-    startCamera();
     return () => {
       stopCamera();
     };
@@ -29,7 +29,8 @@ const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
     setError('');
   };
 
-  const startCamera = async () => {
+  const handleStartCamera = async () => {
+    setCameraStarted(true);
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
 
@@ -164,20 +165,35 @@ const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
         <div className="attendance-modal-body">
           {!capturedImage ? (
             <>
-              <div className="camera-preview">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  style={{ width: '100%', maxWidth: '500px', borderRadius: '8px' }}
-                />
-              </div>
-              {!stream && (
-                <div style={{ textAlign: 'center', padding: '10px' }}>
-                  <i className="fas fa-spinner fa-spin" style={{ fontSize: '20px', color: '#dc3545' }}></i>
-                  <p style={{ fontSize: '13px', color: '#888', margin: '8px 0 0' }}>Starting camera...</p>
+              {!cameraStarted ? (
+                <div
+                  onClick={handleStartCamera}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '50px 20px', cursor: 'pointer', background: '#f5f5f5', borderRadius: '12px', margin: '10px 0' }}
+                >
+                  <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#dc3545', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                    <i className="fas fa-camera" style={{ fontSize: '32px', color: '#fff' }}></i>
+                  </div>
+                  <p style={{ fontSize: '16px', fontWeight: '600', color: '#333', margin: '0 0 4px' }}>Tap to open camera</p>
+                  <p style={{ fontSize: '13px', color: '#888', margin: 0 }}>Camera will open for {type === 'checkin' ? 'check in' : 'check out'}</p>
                 </div>
+              ) : (
+                <>
+                  <div className="camera-preview">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      style={{ width: '100%', maxWidth: '500px', borderRadius: '8px' }}
+                    />
+                  </div>
+                  {!stream && (
+                    <div style={{ textAlign: 'center', padding: '10px' }}>
+                      <i className="fas fa-spinner fa-spin" style={{ fontSize: '20px', color: '#dc3545' }}></i>
+                      <p style={{ fontSize: '13px', color: '#888', margin: '8px 0 0' }}>Starting camera...</p>
+                    </div>
+                  )}
+                </>
               )}
               <div className="attendance-actions">
                 <button className="btn-secondary" onClick={handleClose}>

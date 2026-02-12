@@ -7,11 +7,11 @@ const FaceCaptureModal = ({ onSuccess, onClose, userRole, username }) => {
   const [isCapturing, setIsCapturing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
+  const [cameraStarted, setCameraStarted] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
   useEffect(() => {
-    startCamera();
     return () => {
       stopCamera();
     };
@@ -30,7 +30,8 @@ const FaceCaptureModal = ({ onSuccess, onClose, userRole, username }) => {
     setError('');
   };
 
-  const startCamera = async () => {
+  const handleStartCamera = async () => {
+    setCameraStarted(true);
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
 
@@ -219,23 +220,38 @@ const FaceCaptureModal = ({ onSuccess, onClose, userRole, username }) => {
 
           {!capturedImage ? (
             <>
-              <div className="face-capture-preview">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="face-video"
-                />
-                <div className="face-guide-overlay">
-                  <div className="face-guide-circle"></div>
+              {!cameraStarted ? (
+                <div
+                  onClick={handleStartCamera}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '50px 20px', cursor: 'pointer', background: '#f5f5f5', borderRadius: '12px', margin: '10px 0' }}
+                >
+                  <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#dc3545', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                    <i className="fas fa-camera" style={{ fontSize: '32px', color: '#fff' }}></i>
+                  </div>
+                  <p style={{ fontSize: '16px', fontWeight: '600', color: '#333', margin: '0 0 4px' }}>Tap to open camera</p>
+                  <p style={{ fontSize: '13px', color: '#888', margin: 0 }}>Position your face clearly for capture</p>
                 </div>
-              </div>
-              {!stream && (
-                <div style={{ textAlign: 'center', padding: '10px' }}>
-                  <i className="fas fa-spinner fa-spin" style={{ fontSize: '20px', color: '#dc3545' }}></i>
-                  <p style={{ fontSize: '13px', color: '#888', margin: '8px 0 0' }}>Starting camera...</p>
-                </div>
+              ) : (
+                <>
+                  <div className="face-capture-preview">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="face-video"
+                    />
+                    <div className="face-guide-overlay">
+                      <div className="face-guide-circle"></div>
+                    </div>
+                  </div>
+                  {!stream && (
+                    <div style={{ textAlign: 'center', padding: '10px' }}>
+                      <i className="fas fa-spinner fa-spin" style={{ fontSize: '20px', color: '#dc3545' }}></i>
+                      <p style={{ fontSize: '13px', color: '#888', margin: '8px 0 0' }}>Starting camera...</p>
+                    </div>
+                  )}
+                </>
               )}
               <div className="face-capture-actions">
                 <button className="btn-secondary" onClick={handleClose}>
