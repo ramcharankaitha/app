@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import Toast from './Toast';
 
 const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
   const [stream, setStream] = useState(null);
@@ -45,19 +44,6 @@ const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
       if (!isSecure) {
         setError('Camera access requires a secure connection (HTTPS). Please access the site via HTTPS.');
         return;
-      }
-
-      // Check permission state first (if supported)
-      if (navigator.permissions && navigator.permissions.query) {
-        try {
-          const permResult = await navigator.permissions.query({ name: 'camera' });
-          if (permResult.state === 'denied') {
-            setError('Camera permission is blocked. Please go to your browser settings, allow camera access for this site, then reload the page.');
-            return;
-          }
-        } catch (permErr) {
-          // permissions.query for camera not supported in all browsers
-        }
       }
 
       // Try with multiple constraint levels
@@ -224,12 +210,16 @@ const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
                     <i className="fas fa-camera" style={{ fontSize: '40px', color: '#dc3545' }}></i>
                   </div>
                   <p style={{ textAlign: 'center', color: '#666', fontSize: '14px', margin: 0 }}>Tap the button below to open your camera</p>
-                  <Toast message={error} type="error" onClose={() => setError('')} />
+                  {error && (
+                    <div style={{ padding: '10px 14px', background: '#f8d7da', color: '#721c24', borderRadius: '8px', fontSize: '13px', textAlign: 'center', width: '100%', maxWidth: '400px' }}>
+                      <i className="fas fa-exclamation-circle" style={{ marginRight: '6px' }}></i>{error}
+                    </div>
+                  )}
                   <div className="attendance-actions">
                     <button className="btn-secondary" onClick={handleClose}>
                       Cancel
                     </button>
-                    <button className="btn-primary" onClick={async () => { await startCamera(); }}>
+                    <button className="btn-primary" onClick={async () => { setError(''); await startCamera(); }}>
                       <i className="fas fa-video"></i> Open Camera
                     </button>
                   </div>
@@ -245,7 +235,11 @@ const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
                       style={{ width: '100%', maxWidth: '500px', borderRadius: '8px' }}
                     />
                   </div>
-                  <Toast message={error} type="error" onClose={() => setError('')} />
+                  {error && (
+                    <div style={{ padding: '10px 14px', background: '#f8d7da', color: '#721c24', borderRadius: '8px', fontSize: '13px', textAlign: 'center', width: '100%', maxWidth: '400px' }}>
+                      <i className="fas fa-exclamation-circle" style={{ marginRight: '6px' }}></i>{error}
+                    </div>
+                  )}
                   <div className="attendance-actions">
                     <button className="btn-secondary" onClick={handleClose}>
                       Cancel
@@ -262,7 +256,11 @@ const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
               <div className="captured-image-preview">
                 <img src={capturedImage} alt="Captured" style={{ width: '100%', maxWidth: '500px', borderRadius: '8px' }} />
               </div>
-              <Toast message={error} type="error" onClose={() => setError('')} />
+              {error && (
+                <div style={{ padding: '10px 14px', background: '#f8d7da', color: '#721c24', borderRadius: '8px', fontSize: '13px', textAlign: 'center', width: '100%', maxWidth: '400px', marginTop: '12px' }}>
+                  <i className="fas fa-exclamation-circle" style={{ marginRight: '6px' }}></i>{error}
+                </div>
+              )}
               {isProcessing && !error && (
                 <div style={{ 
                   padding: '12px 16px',

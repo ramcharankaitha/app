@@ -48,20 +48,7 @@ const FaceCaptureModal = ({ onSuccess, onClose, userRole, username }) => {
         return;
       }
 
-      // Check permission state first (if supported) to give better error messages
-      if (navigator.permissions && navigator.permissions.query) {
-        try {
-          const permResult = await navigator.permissions.query({ name: 'camera' });
-          if (permResult.state === 'denied') {
-            setError('Camera permission is blocked. Please go to your browser settings, allow camera access for this site, then reload the page.');
-            return;
-          }
-        } catch (permErr) {
-          // permissions.query for camera not supported in all browsers — continue normally
-        }
-      }
-
-      // Try with ideal constraints first
+      // Try with multiple constraint levels
       const constraintsList = [
         { video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } },
         { video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } },
@@ -294,7 +281,7 @@ const FaceCaptureModal = ({ onSuccess, onClose, userRole, username }) => {
                       <button className="btn-secondary" onClick={handleClose}>
                         Cancel
                       </button>
-                      <button className="btn-primary" onClick={async () => { await startCamera(); }}>
+                      <button className="btn-primary" onClick={async () => { setError(''); await startCamera(); }}>
                         <i className="fas fa-video"></i> Open Camera
                       </button>
                     </div>
