@@ -7,11 +7,11 @@ const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
   const [isCapturing, setIsCapturing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
+  const [cameraReady, setCameraReady] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
   useEffect(() => {
-    startCamera();
     return () => {
       stopCamera();
     };
@@ -19,6 +19,8 @@ const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
 
   const attachStream = async (mediaStream) => {
     setStream(mediaStream);
+    setCameraReady(true);
+    await new Promise(resolve => setTimeout(resolve, 50));
     if (videoRef.current) {
       videoRef.current.srcObject = mediaStream;
       try {
@@ -216,24 +218,44 @@ const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
         <div className="attendance-modal-body">
           {!capturedImage ? (
             <>
-              <div className="camera-preview">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  style={{ width: '100%', maxWidth: '500px', borderRadius: '8px' }}
-                />
-              </div>
-              <Toast message={error} type="error" onClose={() => setError('')} />
-              <div className="attendance-actions">
-                <button className="btn-secondary" onClick={handleClose}>
-                  Cancel
-                </button>
-                <button className="btn-primary" onClick={capturePhoto} disabled={!stream}>
-                  <i className="fas fa-camera"></i> Capture Photo
-                </button>
-              </div>
+              {!cameraReady ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px', gap: '20px' }}>
+                  <div style={{ width: '100px', height: '100px', borderRadius: '50%', background: '#f8d7da', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <i className="fas fa-camera" style={{ fontSize: '40px', color: '#dc3545' }}></i>
+                  </div>
+                  <p style={{ textAlign: 'center', color: '#666', fontSize: '14px', margin: 0 }}>Tap the button below to open your camera</p>
+                  <Toast message={error} type="error" onClose={() => setError('')} />
+                  <div className="attendance-actions">
+                    <button className="btn-secondary" onClick={handleClose}>
+                      Cancel
+                    </button>
+                    <button className="btn-primary" onClick={async () => { await startCamera(); }}>
+                      <i className="fas fa-video"></i> Open Camera
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="camera-preview">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      style={{ width: '100%', maxWidth: '500px', borderRadius: '8px' }}
+                    />
+                  </div>
+                  <Toast message={error} type="error" onClose={() => setError('')} />
+                  <div className="attendance-actions">
+                    <button className="btn-secondary" onClick={handleClose}>
+                      Cancel
+                    </button>
+                    <button className="btn-primary" onClick={capturePhoto} disabled={!stream}>
+                      <i className="fas fa-camera"></i> Capture Photo
+                    </button>
+                  </div>
+                </>
+              )}
             </>
           ) : (
             <>

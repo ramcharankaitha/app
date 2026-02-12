@@ -7,11 +7,11 @@ const FaceCaptureModal = ({ onSuccess, onClose, userRole, username }) => {
   const [isCapturing, setIsCapturing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
+  const [cameraReady, setCameraReady] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
   useEffect(() => {
-    startCamera();
     return () => {
       stopCamera();
     };
@@ -19,13 +19,15 @@ const FaceCaptureModal = ({ onSuccess, onClose, userRole, username }) => {
 
   const attachStream = async (mediaStream) => {
     setStream(mediaStream);
+    setCameraReady(true);
+    // Wait a tick for the video element to render before attaching stream
+    await new Promise(resolve => setTimeout(resolve, 50));
     if (videoRef.current) {
       videoRef.current.srcObject = mediaStream;
-      // Explicit play() is required on many mobile/hosted browsers
       try {
         await videoRef.current.play();
       } catch (playErr) {
-        console.warn('Auto-play failed, user interaction may be needed:', playErr);
+        console.warn('Auto-play failed:', playErr);
       }
     }
     setError('');
@@ -276,31 +278,57 @@ const FaceCaptureModal = ({ onSuccess, onClose, userRole, username }) => {
 
           {!capturedImage ? (
             <>
-              <div className="face-capture-preview">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="face-video"
-                />
-                <div className="face-guide-overlay">
-                  <div className="face-guide-circle"></div>
-                </div>
-              </div>
-              {error && (
-                <div className="error-message">
-                  <i className="fas fa-exclamation-circle"></i> {error}
-                </div>
+              {!cameraReady ? (
+                <>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px', gap: '20px' }}>
+                    <div style={{ width: '100px', height: '100px', borderRadius: '50%', background: '#f8d7da', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <i className="fas fa-camera" style={{ fontSize: '40px', color: '#dc3545' }}></i>
+                    </div>
+                    <p style={{ textAlign: 'center', color: '#666', fontSize: '14px', margin: 0 }}>Tap the button below to open your camera</p>
+                    {error && (
+                      <div className="error-message">
+                        <i className="fas fa-exclamation-circle"></i> {error}
+                      </div>
+                    )}
+                    <div className="face-capture-actions">
+                      <button className="btn-secondary" onClick={handleClose}>
+                        Cancel
+                      </button>
+                      <button className="btn-primary" onClick={async () => { await startCamera(); }}>
+                        <i className="fas fa-video"></i> Open Camera
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="face-capture-preview">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="face-video"
+                    />
+                    <div className="face-guide-overlay">
+                      <div className="face-guide-circle"></div>
+                    </div>
+                  </div>
+                  {error && (
+                    <div className="error-message">
+                      <i className="fas fa-exclamation-circle"></i> {error}
+                    </div>
+                  )}
+                  <div className="face-capture-actions">
+                    <button className="btn-secondary" onClick={handleClose}>
+                      Cancel
+                    </button>
+                    <button className="btn-primary" onClick={capturePhoto} disabled={!stream}>
+                      <i className="fas fa-camera"></i> Capture Face
+                    </button>
+                  </div>
+                </>
               )}
-              <div className="face-capture-actions">
-                <button className="btn-secondary" onClick={handleClose}>
-                  Cancel
-                </button>
-                <button className="btn-primary" onClick={capturePhoto} disabled={!stream}>
-                  <i className="fas fa-camera"></i> Capture Face
-                </button>
-              </div>
             </>
           ) : (
             <>
