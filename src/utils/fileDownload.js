@@ -1,118 +1,84 @@
 /**
  * Mobile-friendly file download utility
- * Works in web browsers and mobile APK/webview contexts
+ * Works in web browsers and Android APK/WebView contexts
+ * 
+ * Android WebView cannot handle blob: URLs for downloads.
+ * When running inside the APK, we use the AndroidBridge JS interface
+ * to pass base64-encoded file data directly to native Android code,
+ * which saves it to the Downloads folder via MediaStore / FileOutputStream.
  */
-import { API_BASE_URL } from '../services/api';
 
 /**
- * Download CSV file with mobile APK compatibility
- * For mobile APK/webview, we use server-side download to ensure it works
- * @param {string} csvContent - The CSV content as a string
- * @param {string} filename - The filename for the downloaded file
+ * Check if the Android native bridge is available (running inside the APK)
+ */
+const hasAndroidBridge = () =>
+  typeof window !== 'undefined' && window.AndroidBridge && typeof window.AndroidBridge.downloadFile === 'function';
+
+/**
+ * Convert a string to base64 (handles UTF-8 / BOM correctly)
+ */
+const stringToBase64 = (str) => {
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+};
+
+/**
+ * Convert a Blob to base64
+ */
+const blobToBase64 = (blob) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      // result is "data:<mime>;base64,XXXX" – strip the prefix
+      const base64 = reader.result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+
+/**
+ * Desktop / normal-browser blob download (fallback)
+ */
+const downloadViaBlob = (blob, filename) => {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  setTimeout(() => {
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, 200);
+};
+
+/**
+ * Download CSV content as a file.
+ * @param {string} csvContent - Raw CSV text
+ * @param {string} filename   - e.g. "report_2026-02-12.csv"
  */
 export const downloadCSV = async (csvContent, filename) => {
   try {
     // Add BOM for Excel UTF-8 support
     const BOM = '\uFEFF';
     const contentWithBOM = BOM + csvContent;
-    
-    // Check if we're in a mobile/webview context
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const isWebView = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
-    
-    // For mobile APK/webview, use server-side download approach (most reliable)
-    if (isMobile || isWebView) {
-      try {
-        // Send CSV content to server endpoint which will return it as a downloadable file
-        const response = await fetch(`${API_BASE_URL}/export/download-csv`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-          },
-          body: JSON.stringify({
-            content: contentWithBOM,
-            filename: filename
-          })
-        });
 
-        if (response.ok) {
-          // Get the blob from response
-          const blob = await response.blob();
-          
-          // Create object URL from blob
-          const blobUrl = URL.createObjectURL(blob);
-          
-          // Create a temporary link element
-          const link = document.createElement('a');
-          link.href = blobUrl;
-          link.download = filename;
-          link.style.display = 'none';
-          link.target = '_self'; // Important for mobile
-          
-          // Append to body and click
-          document.body.appendChild(link);
-          
-          // Use a small delay to ensure link is ready
-          requestAnimationFrame(() => {
-            try {
-              link.click();
-            } catch (clickError) {
-              // Alternative: dispatch mouse event
-              const event = new MouseEvent('click', {
-                view: window,
-                bubbles: true,
-                cancelable: true
-              });
-              link.dispatchEvent(event);
-            }
-            
-            // Clean up after delay
-            setTimeout(() => {
-              try {
-                document.body.removeChild(link);
-              } catch (e) {
-                // Link might have been removed already
-              }
-              URL.revokeObjectURL(blobUrl);
-            }, 1000);
-          });
-          
-          return;
-        } else {
-          throw new Error('Server download failed');
-        }
-      } catch (serverError) {
-        console.warn('Server download failed, trying direct blob download:', serverError);
-        // Fallback to direct blob download
-      }
+    // ---- Android APK path (no blob: URLs) ----
+    if (hasAndroidBridge()) {
+      const base64 = stringToBase64(contentWithBOM);
+      window.AndroidBridge.downloadFile(base64, filename, 'text/csv');
+      return;
     }
-    
-    // For desktop browsers or fallback, use Blob API
-    try {
-      const blob = new Blob([contentWithBOM], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      
-      link.href = url;
-      link.download = filename;
-      link.style.display = 'none';
-      link.target = '_self';
-      
-      document.body.appendChild(link);
-      
-      // Use requestAnimationFrame for better browser compatibility
-      requestAnimationFrame(() => {
-        link.click();
-        setTimeout(() => {
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-        }, 100);
-      });
-    } catch (blobError) {
-      console.error('Blob download failed:', blobError);
-      alert('Download failed. Please try again or contact support.');
-    }
+
+    // ---- Desktop / normal browser path ----
+    const blob = new Blob([contentWithBOM], { type: 'text/csv;charset=utf-8;' });
+    downloadViaBlob(blob, filename);
   } catch (error) {
     console.error('Download CSV error:', error);
     alert('Download failed. Please try again or contact support.');
@@ -120,11 +86,11 @@ export const downloadCSV = async (csvContent, filename) => {
 };
 
 /**
- * Download file from server endpoint (for server-generated files)
- * This works better in mobile APK/webview contexts
- * @param {string} url - The server endpoint URL
- * @param {string} filename - The filename for the downloaded file
- * @param {object} options - Fetch options (headers, method, etc.)
+ * Download a file that is fetched from a server endpoint.
+ * Used for server-generated exports (attendance CSV, etc.)
+ * @param {string} url      - Full API endpoint URL
+ * @param {string} filename - Desired filename
+ * @param {object} options  - Extra fetch options
  */
 export const downloadFileFromServer = async (url, filename, options = {}) => {
   try {
@@ -140,47 +106,18 @@ export const downloadFileFromServer = async (url, filename, options = {}) => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    // Get the blob data
     const blob = await response.blob();
-    
-    // Create object URL from blob (works in most contexts)
-    const blobUrl = URL.createObjectURL(blob);
-    
-    // Create download link
-    const link = document.createElement('a');
-    link.href = blobUrl;
-    link.download = filename;
-    link.style.display = 'none';
-    link.target = '_self'; // Important for mobile compatibility
-    
-    // Append to body (required for iOS and webview)
-    document.body.appendChild(link);
-    
-    // Use requestAnimationFrame for better compatibility
-    requestAnimationFrame(() => {
-      try {
-        link.click();
-      } catch (clickError) {
-        console.warn('Link click failed, trying programmatic approach:', clickError);
-        // Alternative: dispatch mouse event
-        const event = new MouseEvent('click', {
-          view: window,
-          bubbles: true,
-          cancelable: true
-        });
-        link.dispatchEvent(event);
-      }
-      
-      // Clean up after delay
-      setTimeout(() => {
-        try {
-          document.body.removeChild(link);
-        } catch (e) {
-          // Link might have been removed already
-        }
-        URL.revokeObjectURL(blobUrl);
-      }, 1000);
-    });
+
+    // ---- Android APK path ----
+    if (hasAndroidBridge()) {
+      const base64 = await blobToBase64(blob);
+      const mimeType = blob.type || 'application/octet-stream';
+      window.AndroidBridge.downloadFile(base64, filename, mimeType);
+      return;
+    }
+
+    // ---- Desktop / normal browser path ----
+    downloadViaBlob(blob, filename);
   } catch (error) {
     console.error('Download file from server error:', error);
     throw error;
