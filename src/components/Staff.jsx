@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { staffAPI } from '../services/api';
+import { staffAPI, API_BASE_URL } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import Toast from './Toast';
 import SidebarNav from './SidebarNav';
@@ -376,7 +376,7 @@ const Staff = ({ onBack, onAddStaff, onNavigate, userRole = 'admin' }) => {
                             }}>
                               {member.avatar_url ? (
                                 <img 
-                                  src={member.avatar_url.startsWith('data:') ? member.avatar_url : (member.avatar_url.startsWith('/') ? `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000'}${member.avatar_url}` : member.avatar_url)}
+                                  src={member.avatar_url.startsWith('data:') ? member.avatar_url : (member.avatar_url.startsWith('/') ? `${API_BASE_URL.replace('/api', '')}${member.avatar_url}` : member.avatar_url)}
                                   alt={member.name}
                                   style={{
                                     width: '100%',

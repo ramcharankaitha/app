@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { API_BASE_URL } from '../services/api';
 
 const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
   const [stream, setStream] = useState(null);
@@ -101,8 +102,8 @@ const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
 
       // Use supervisor-attendance routes for supervisors, attendance routes for staff
       const apiEndpoint = userRole === 'supervisor' 
-        ? `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/supervisor-attendance/${type}`
-        : `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/attendance/${type}`;
+        ? `${API_BASE_URL}/supervisor-attendance/${type}`
+        : `${API_BASE_URL}/attendance/${type}`;
 
       const response = await fetch(apiEndpoint, {
         method: 'POST',

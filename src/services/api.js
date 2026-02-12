@@ -23,6 +23,7 @@ const getApiBaseUrl = () => {
 };
 
 const API_BASE_URL = getApiBaseUrl();
+export { API_BASE_URL };
 
 const apiCall = async (endpoint, options = {}, retryCount = 0) => {
   const maxRetries = 3;
@@ -373,7 +374,6 @@ export const profileAPI = {
       const formData = new FormData();
       formData.append('avatar', file);
       
-      const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       const response = await fetch(`${API_BASE_URL}/profile/upload-avatar`, {
         method: 'POST',
         body: formData,

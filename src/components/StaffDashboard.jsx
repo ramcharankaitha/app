@@ -6,7 +6,7 @@ import AttendanceModal from './AttendanceModal';
 import BestSalesPerson from './BestSalesPerson';
 import NotificationsPanel from './NotificationsPanel';
 import Handler from './Handler';
-import { stockAPI, productsAPI } from '../services/api';
+import { stockAPI, productsAPI, API_BASE_URL } from '../services/api';
 import './attendanceModal.css';
 
 const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
@@ -52,7 +52,7 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
     const fetchTodayAttendance = async () => {
       try {
         const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/attendance/today?username=${userData.username || ''}`, {
+        const response = await fetch(`${API_BASE_URL}/attendance/today?username=${userData.username || ''}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
           }
@@ -78,7 +78,7 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
       try {
         const userData = JSON.parse(localStorage.getItem('userData') || '{}');
         if (userData.id) {
-          const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/notifications?userId=${userData.id}&userType=staff`, {
+          const response = await fetch(`${API_BASE_URL}/notifications?userId=${userData.id}&userType=staff`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
             }
@@ -159,7 +159,7 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
         const userId = storedUserData.id || userData?.id;
         
         if (userId) {
-          const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/staff/${userId}`, {
+          const response = await fetch(`${API_BASE_URL}/staff/${userId}`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
             }
@@ -295,7 +295,7 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
       setTimeout(() => {
         const userData = JSON.parse(localStorage.getItem('userData') || '{}');
         if (userData.id) {
-          fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/notifications?userId=${userData.id}&userType=staff`)
+          fetch(`${API_BASE_URL}/notifications?userId=${userData.id}&userType=staff`)
             .then(res => res.json())
             .then(data => {
               if (data.success) {

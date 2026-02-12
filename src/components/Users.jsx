@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { usersAPI } from '../services/api';
+import { usersAPI, API_BASE_URL } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import Toast from './Toast';
 import SidebarNav from './SidebarNav';
@@ -417,7 +417,7 @@ const Supervisors = ({ onBack, onAddUser, onNavigate, userRole = 'admin' }) => {
                             }}>
                               {user.avatar_url ? (
                                 <img 
-                                  src={user.avatar_url.startsWith('data:') ? user.avatar_url : (user.avatar_url.startsWith('/') ? `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000'}${user.avatar_url}` : user.avatar_url)}
+                                  src={user.avatar_url.startsWith('data:') ? user.avatar_url : (user.avatar_url.startsWith('/') ? `${API_BASE_URL.replace('/api', '')}${user.avatar_url}` : user.avatar_url)}
                                   alt={user.name}
                                   style={{
                                     width: '100%',

@@ -6,6 +6,7 @@ import StaffAttendanceView from './StaffAttendanceView';
 import AttendanceModal from './AttendanceModal';
 import BestSalesPerson from './BestSalesPerson';
 import NotificationsPanel from './NotificationsPanel';
+import { API_BASE_URL } from '../services/api';
 import './attendanceModal.css';
 
 const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
@@ -43,7 +44,7 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
     const fetchTodayAttendance = async () => {
       try {
         const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/supervisor-attendance/today?username=${userData.username || ''}`, {
+        const response = await fetch(`${API_BASE_URL}/supervisor-attendance/today?username=${userData.username || ''}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
           }
@@ -69,7 +70,7 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
       try {
         const userData = JSON.parse(localStorage.getItem('userData') || '{}');
         if (userData.id) {
-          const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/notifications?userId=${userData.id}&userType=supervisor`, {
+          const response = await fetch(`${API_BASE_URL}/notifications?userId=${userData.id}&userType=supervisor`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
             }
@@ -180,7 +181,7 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
       setTimeout(() => {
         const userData = JSON.parse(localStorage.getItem('userData') || '{}');
         if (userData.id) {
-          fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/notifications?userId=${userData.id}&userType=supervisor`)
+          fetch(`${API_BASE_URL}/notifications?userId=${userData.id}&userType=supervisor`)
             .then(res => res.json())
             .then(data => {
               if (data.success) {

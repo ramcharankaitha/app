@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { staffAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import Toast from './Toast';
+import SuccessPopup from './SuccessPopup';
 import { pickPhotoWithSource, pickPhoto, pickDocument } from '../utils/photoUpload';
 import SidebarNav from './SidebarNav';
 
@@ -188,12 +189,7 @@ const AddStaff = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
       }
 
       if (response.success) {
-        setSuccessMessage('Save changes are done');
-        // Clear success message and navigate after 2 seconds
-        setTimeout(() => {
-          setSuccessMessage('');
-          handleCancel();
-        }, 2000);
+        setSuccessMessage('Staff created successfully!');
       }
     } catch (err) {
       setError(err.message || 'Failed to create staff. Please try again.');
@@ -580,7 +576,6 @@ const AddStaff = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                 </div>
 
                 <Toast message={error} type="error" onClose={() => setError('')} />
-                <Toast message={successMessage} type="success" onClose={() => setSuccessMessage('')} />
 
                 {/* Action Buttons */}
                 <div className="form-actions">
@@ -607,6 +602,14 @@ const AddStaff = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
           if (confirmState.onConfirm) confirmState.onConfirm();
         }}
         onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
+      />
+
+      <SuccessPopup
+        message={successMessage}
+        onClose={() => {
+          setSuccessMessage('');
+          handleCancel();
+        }}
       />
     </div>
   );

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { API_BASE_URL } from '../services/api';
 import './faceCaptureModal.css';
 
 const FaceCaptureModal = ({ onSuccess, onClose, userRole, username }) => {
@@ -134,7 +135,7 @@ const FaceCaptureModal = ({ onSuccess, onClose, userRole, username }) => {
       
       console.log('Final username being sent:', currentUsername);
 
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = API_BASE_URL;
       const endpoint = userRole === 'staff' ? '/staff/face-data' : '/users/face-data';
       
       console.log('Sending face data to:', `${apiUrl}${endpoint}`);

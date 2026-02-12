@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { customersAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import Toast from './Toast';
+import SuccessPopup from './SuccessPopup';
 
 const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [formData, setFormData] = useState({
@@ -233,10 +234,6 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
           ? `Customer created successfully! Customer ID: ${uniqueId}`
           : 'Customer created successfully!';
         setSuccessMessage(message);
-        setTimeout(() => {
-          setSuccessMessage('');
-          handleCancel();
-        }, 4000);
       } else {
         setError('Failed to create customer. Please try again.');
       }
@@ -499,7 +496,6 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
 
 
                 <Toast message={error} type="error" onClose={() => setError('')} />
-                <Toast message={successMessage} type="success" onClose={() => setSuccessMessage('')} />
 
                 {/* Action Buttons */}
                 <div className="form-actions">
@@ -526,6 +522,14 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
           if (confirmState.onConfirm) confirmState.onConfirm();
         }}
         onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
+      />
+
+      <SuccessPopup
+        message={successMessage}
+        onClose={() => {
+          setSuccessMessage('');
+          handleCancel();
+        }}
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { profileAPI } from '../services/api';
+import { profileAPI, API_BASE_URL } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import FaceCaptureModal from './FaceCaptureModal';
 import Toast from './Toast';
@@ -88,7 +88,7 @@ const EditProfile = ({ onBack, onNavigate }) => {
           if (profile.avatar_url) {
             setAvatarUrl(profile.avatar_url);
             // Construct full URL for preview
-            const apiBase = process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000';
+            const apiBase = API_BASE_URL.replace('/api', '');
             const fullUrl = profile.avatar_url.startsWith('http') 
               ? profile.avatar_url 
               : `${apiBase}${profile.avatar_url}`;
@@ -151,7 +151,7 @@ const EditProfile = ({ onBack, onNavigate }) => {
         if (response.fullAvatarUrl) {
           setAvatarPreview(response.fullAvatarUrl);
         } else {
-          const apiBase = process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000';
+          const apiBase = API_BASE_URL.replace('/api', '');
           setAvatarPreview(`${apiBase}${response.avatarUrl}`);
         }
         setSuccessMessage('Profile photo updated successfully');
@@ -166,7 +166,7 @@ const EditProfile = ({ onBack, onNavigate }) => {
       setError(err.message || 'Failed to upload photo. Please try again.');
       // Revert preview to previous avatar or empty
       if (avatarUrl) {
-        const apiBase = process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000';
+        const apiBase = API_BASE_URL.replace('/api', '');
         const fullUrl = avatarUrl.startsWith('http') 
           ? avatarUrl 
           : `${apiBase}${avatarUrl}`;
@@ -286,7 +286,7 @@ const EditProfile = ({ onBack, onNavigate }) => {
           // Update avatar if changed
           if (profile.avatar_url) {
             setAvatarUrl(profile.avatar_url);
-            const apiBase = process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000';
+            const apiBase = API_BASE_URL.replace('/api', '');
             const fullUrl = profile.avatar_url.startsWith('http') 
               ? profile.avatar_url 
               : `${apiBase}${profile.avatar_url}`;
@@ -389,7 +389,7 @@ const EditProfile = ({ onBack, onNavigate }) => {
                     <img 
                       src={avatarPreview.startsWith('http') || avatarPreview.startsWith('data:') 
                         ? avatarPreview 
-                        : `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000'}${avatarPreview}`}
+                        : `${API_BASE_URL.replace('/api', '')}${avatarPreview}`}
                       alt="Profile"
                       style={{
                         width: '100%',

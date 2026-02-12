@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { usersAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import Toast from './Toast';
+import SuccessPopup from './SuccessPopup';
 import { pickPhotoWithSource } from '../utils/photoUpload';
 import SidebarNav from './SidebarNav';
 
@@ -22,6 +23,7 @@ const AddUser = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [successCredentials, setSuccessCredentials] = useState(null);
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
@@ -138,13 +140,8 @@ const AddUser = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
       });
 
       if (response.success) {
-        const credentialsMessage = `Supervisor created successfully!\n\nLogin Credentials:\nUsername: ${formData.username}\nPassword: ${formData.password}\n\nPlease save these credentials. They cannot be viewed again.`;
-        setSuccessMessage(credentialsMessage);
-        // Clear success message and navigate after 5 seconds (longer to read credentials)
-        setTimeout(() => {
-          setSuccessMessage('');
-          handleCancel();
-        }, 5000);
+        setSuccessMessage('Supervisor created successfully!');
+        setSuccessCredentials({ username: formData.username, password: formData.password });
       }
     } catch (err) {
       setError(err.message || 'Failed to create user. Please try again.');
@@ -402,47 +399,6 @@ const AddUser = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
 
                 <Toast message={error} type="error" onClose={() => setError('')} />
 
-                {/* Success Message */}
-                {successMessage && (
-                  <div className="success-message" style={{ 
-                    padding: '16px', 
-                    background: '#d4edda', 
-                    color: '#155724', 
-                    borderRadius: '8px', 
-                    marginBottom: '20px',
-                    border: '2px solid #28a745'
-                  }}>
-                    <div style={{ marginBottom: '12px', fontWeight: '600', fontSize: '16px' }}>
-                      <i className="fas fa-check-circle"></i> {successMessage.split('\n')[0]}
-                    </div>
-                    {successMessage.includes('Login Credentials') && (
-                      <div style={{ 
-                        marginTop: '12px', 
-                        padding: '12px', 
-                        background: '#fff', 
-                        borderRadius: '6px', 
-                        border: '1px solid #28a745',
-                        fontFamily: 'monospace',
-                        fontSize: '14px'
-                      }}>
-                        <div style={{ marginBottom: '8px', fontWeight: '600' }}>Login Credentials:</div>
-                        <div style={{ marginBottom: '4px' }}><strong>Username:</strong> {formData.username}</div>
-                        <div style={{ marginBottom: '8px' }}><strong>Password:</strong> {formData.password}</div>
-                        <div style={{ 
-                          marginTop: '8px', 
-                          padding: '8px', 
-                          background: '#fff3cd', 
-                          borderRadius: '4px',
-                          fontSize: '12px',
-                          color: '#856404'
-                        }}>
-                          <i className="fas fa-exclamation-triangle"></i> <strong>Important:</strong> Save these credentials now. They cannot be viewed again after closing.
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
                 {/* Action Buttons */}
                 <div className="form-actions">
                   <button type="submit" className="create-user-btn" disabled={isLoading}>
@@ -468,6 +424,16 @@ const AddUser = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
           if (confirmState.onConfirm) confirmState.onConfirm();
         }}
         onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
+      />
+
+      <SuccessPopup
+        message={successMessage}
+        credentials={successCredentials}
+        onClose={() => {
+          setSuccessMessage('');
+          setSuccessCredentials(null);
+          handleCancel();
+        }}
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { productsAPI } from '../services/api';
+import { productsAPI, API_BASE_URL } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import Toast from './Toast';
 
@@ -227,7 +227,7 @@ const CreateSupplierTransaction = ({ onBack, onCancel, onNavigate, userRole = 'a
     }
 
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = API_BASE_URL;
       
       // Get user identifier
       const userDataStr = localStorage.getItem('userData');

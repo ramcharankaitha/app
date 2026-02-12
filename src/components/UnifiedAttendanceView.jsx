@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../services/api';
 import Toast from './Toast';
 import './staffAttendanceView.css';
 
@@ -17,7 +18,7 @@ const UnifiedAttendanceView = ({ onClose }) => {
   const fetchAttendance = async () => {
     setLoading(true);
     setError('');
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+    const apiUrl = API_BASE_URL;
     
     try {
       // Fetch both staff and supervisor attendance in parallel
@@ -59,7 +60,7 @@ const UnifiedAttendanceView = ({ onClose }) => {
   const handleExportCSV = async (type = 'all') => {
     try {
       setError('');
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = API_BASE_URL;
       const timestamp = selectedDate || new Date().toISOString().split('T')[0];
       
       if (type === 'all') {
@@ -84,7 +85,7 @@ const UnifiedAttendanceView = ({ onClose }) => {
 
   const exportCombinedCSV = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = API_BASE_URL;
       const timestamp = selectedDate || new Date().toISOString().split('T')[0];
       
       // Fetch both attendance data

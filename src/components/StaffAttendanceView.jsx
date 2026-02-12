@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../services/api';
 import Toast from './Toast';
 import './staffAttendanceView.css';
 
@@ -17,7 +18,7 @@ const StaffAttendanceView = ({ onClose }) => {
     setError('');
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/attendance/all?date=${selectedDate}`,
+        `${API_BASE_URL}/attendance/all?date=${selectedDate}`,
         {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
@@ -46,7 +47,7 @@ const StaffAttendanceView = ({ onClose }) => {
   const handleExportCSV = async () => {
     try {
       setError('');
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = API_BASE_URL;
       const url = `${apiUrl}/attendance/export?date=${selectedDate}`;
       
       // Use downloadFileFromServer for mobile APK compatibility

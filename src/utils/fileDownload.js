@@ -2,6 +2,7 @@
  * Mobile-friendly file download utility
  * Works in web browsers and mobile APK/webview contexts
  */
+import { API_BASE_URL } from '../services/api';
 
 /**
  * Download CSV file with mobile APK compatibility
@@ -23,8 +24,7 @@ export const downloadCSV = async (csvContent, filename) => {
     if (isMobile || isWebView) {
       try {
         // Send CSV content to server endpoint which will return it as a downloadable file
-        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-        const response = await fetch(`${apiUrl}/export/download-csv`, {
+        const response = await fetch(`${API_BASE_URL}/export/download-csv`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

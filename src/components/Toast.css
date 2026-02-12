@@ -1,127 +1,117 @@
-.toast-notification {
+.toast-popup-overlay {
     position: fixed;
-    top: 18px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 99999;
-    min-width: 280px;
-    max-width: 92vw;
-    padding: 14px 18px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22);
-    font-size: 14px;
-    font-weight: 600;
-    line-height: 1.4;
-    pointer-events: auto;
-}
-
-.toast-notification.toast-error {
-    background: #dc3545;
-    color: #fff;
-}
-
-.toast-notification.toast-success {
-    background: #28a745;
-    color: #fff;
-}
-
-.toast-notification.toast-warning {
-    background: #f59e0b;
-    color: #fff;
-}
-
-.toast-content {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex: 1;
-    min-width: 0;
-}
-
-.toast-icon {
-    font-size: 18px;
-    flex-shrink: 0;
-}
-
-.toast-message {
-    word-break: break-word;
-}
-
-.toast-close {
-    background: none;
-    border: none;
-    color: rgba(255, 255, 255, 0.8);
-    cursor: pointer;
-    padding: 4px;
-    font-size: 14px;
-    flex-shrink: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    transition: background 0.2s ease;
+    z-index: 100000;
+    padding: 20px;
+    animation: toastFadeIn 0.25s ease;
 }
 
-.toast-close:hover {
-    background: rgba(255, 255, 255, 0.2);
+.toast-popup {
+    background: #fff;
+    border-radius: 16px;
+    padding: 32px 28px 24px;
+    max-width: 380px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: toastScaleIn 0.3s ease;
+}
+
+.toast-popup-icon {
+    font-size: 52px;
+    margin-bottom: 16px;
+}
+
+.toast-popup-icon-error {
+    color: #dc3545;
+}
+
+.toast-popup-icon-success {
+    color: #28a745;
+}
+
+.toast-popup-icon-warning {
+    color: #f59e0b;
+}
+
+.toast-popup-message {
+    font-size: 15px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 24px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.toast-popup-btn {
+    border: none;
+    border-radius: 10px;
+    padding: 12px 48px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
     color: #fff;
 }
 
-/* Animations */
-.toast-enter {
-    animation: toastIn 0.35s ease forwards;
+.toast-popup-error .toast-popup-btn {
+    background: #dc3545;
 }
 
-.toast-exit {
-    animation: toastOut 0.3s ease forwards;
+.toast-popup-error .toast-popup-btn:hover {
+    background: #c82333;
 }
 
-@keyframes toastIn {
+.toast-popup-success .toast-popup-btn {
+    background: #28a745;
+}
+
+.toast-popup-success .toast-popup-btn:hover {
+    background: #218838;
+}
+
+.toast-popup-warning .toast-popup-btn {
+    background: #f59e0b;
+}
+
+.toast-popup-warning .toast-popup-btn:hover {
+    background: #d97706;
+}
+
+@keyframes toastFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes toastScaleIn {
     from {
         opacity: 0;
-        transform: translateX(-50%) translateY(-30px) scale(0.95);
+        transform: scale(0.85);
     }
     to {
         opacity: 1;
-        transform: translateX(-50%) translateY(0) scale(1);
+        transform: scale(1);
     }
 }
 
-@keyframes toastOut {
-    from {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0) scale(1);
-    }
-    to {
-        opacity: 0;
-        transform: translateX(-50%) translateY(-20px) scale(0.95);
-    }
-}
-
-/* Mobile adjustments */
 @media (max-width: 768px) {
-    .toast-notification {
-        top: 10px;
-        min-width: unset;
-        max-width: 94vw;
-        padding: 12px 14px;
-        font-size: 13px;
-        border-radius: 10px;
+    .toast-popup {
+        padding: 28px 22px 20px;
+        max-width: 340px;
     }
 
-    .toast-icon {
-        font-size: 16px;
+    .toast-popup-icon {
+        font-size: 44px;
     }
 
-    .toast-close {
-        width: 26px;
-        height: 26px;
-        font-size: 12px;
+    .toast-popup-message {
+        font-size: 14px;
     }
 }

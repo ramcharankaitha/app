@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { exportAPI } from '../services/api';
+import { exportAPI, API_BASE_URL } from '../services/api';
 import './BestSalesPerson.css';
 
 const BestSalesPerson = () => {
@@ -81,7 +81,7 @@ const BestSalesPerson = () => {
         <div className="best-sales-photo">
           {bestPerson.photo ? (
             <img 
-              src={bestPerson.photo.startsWith('http') ? bestPerson.photo : `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000'}${bestPerson.photo}`} 
+              src={bestPerson.photo.startsWith('http') ? bestPerson.photo : `${API_BASE_URL.replace('/api', '')}${bestPerson.photo}`} 
               alt={bestPerson.name}
               onError={(e) => {
                 e.target.style.display = 'none';
