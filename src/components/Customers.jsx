@@ -7,7 +7,6 @@ import './customers.css';
 
 const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStore, setSelectedStore] = useState('All Stores');
   const [customers, setCustomers] = useState([]);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -86,14 +85,12 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
     fetchCustomers();
   }, []);
 
-  // Filter customers based on search and store
+  // Filter customers based on search
   const filteredCustomers = customers.filter(customer => {
-    const matchesSearch = customer.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         customer.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         customer.customer_unique_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         customer.address?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStore = selectedStore === 'All Stores' || customer.store === selectedStore;
-    return matchesSearch && matchesStore;
+    return customer.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           customer.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           customer.customer_unique_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           customer.address?.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   // Handle menu toggle
@@ -281,11 +278,7 @@ const Customers = ({ onBack, onAddCustomer, onNavigate, userRole = 'admin' }) =>
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <button className="store-filter-btn">
-            <i className="fas fa-store"></i>
-            <span>{selectedStore}</span>
-            <i className="fas fa-chevron-down"></i>
-          </button>
+          
         </div>
 
         {/* Results Count */}

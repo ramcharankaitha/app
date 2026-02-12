@@ -3,8 +3,6 @@ import { useProfile } from '../hooks/useProfile';
 import { useTheme } from '../contexts/ThemeContext';
 import { exportAPI } from '../services/api';
 import Toast from './Toast';
-import StoreAccess from './StoreAccess';
-import RolePermissions from './RolePermissions';
 import ConfirmDialog from './ConfirmDialog';
 import { downloadCSV } from '../utils/fileDownload';
 
@@ -12,8 +10,6 @@ const Settings = ({ onBack, onNavigate, onLogout, userRole = 'admin' }) => {
   const [notificationsOn, setNotificationsOn] = useState(true);
   const [twoFactorOn, setTwoFactorOn] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showStoreAccess, setShowStoreAccess] = useState(false);
-  const [showRolePermissions, setShowRolePermissions] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [exportMessage, setExportMessage] = useState('');
   const [showExportConfirm, setShowExportConfirm] = useState(false);
@@ -47,13 +43,6 @@ const Settings = ({ onBack, onNavigate, onLogout, userRole = 'admin' }) => {
           subtitle: `${displayRole} • ${profile.store_scope || 'Global'}`,
           action: 'Edit Profile',
         },
-      ],
-    },
-    {
-      title: 'STORES & ROLES',
-      items: [
-        { type: 'link', title: 'Store Access', desc: `Choose stores this ${userRole === 'supervisor' ? 'supervisor' : userRole === 'staff' ? 'staff' : 'admin'} can manage` },
-        { type: 'link', title: 'Role Permissions', desc: `Define access for ${userRole === 'supervisor' ? 'Supervisor / Staff' : userRole === 'staff' ? 'Staff' : 'Admin / Staff'}` },
       ],
     },
     {
@@ -350,12 +339,7 @@ const Settings = ({ onBack, onNavigate, onLogout, userRole = 'admin' }) => {
                     }
                     if (item.type === 'link') {
                       const handleLinkClick = () => {
-                        if (item.title === 'Store Access') {
-                          setShowStoreAccess(true);
-                        } else if (item.title === 'Role Permissions') {
-                          setShowRolePermissions(true);
-                        } else if (item.title === 'Change Password') {
-                          // Navigate to edit profile for password change
+                        if (item.title === 'Change Password') {
                           if (onNavigate) onNavigate('editProfile');
                         } else if (item.title === 'Data & Backup') {
                           setShowExportConfirm(true);
@@ -443,26 +427,6 @@ const Settings = ({ onBack, onNavigate, onLogout, userRole = 'admin' }) => {
           </main>
         </div>
       </div>
-
-      {/* Store Access Modal */}
-      {showStoreAccess && (
-        <StoreAccess
-          onClose={() => {
-            setShowStoreAccess(false);
-            refreshProfile(); // Refresh profile to show updated store scope
-          }}
-          onNavigate={onNavigate}
-          onProfileUpdate={refreshProfile}
-        />
-      )}
-
-      {/* Role Permissions Modal */}
-      {showRolePermissions && (
-        <RolePermissions
-          onClose={() => setShowRolePermissions(false)}
-          onNavigate={onNavigate}
-        />
-      )}
 
       {/* Export Confirmation Dialog */}
       <ConfirmDialog

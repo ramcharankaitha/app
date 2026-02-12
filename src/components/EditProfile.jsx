@@ -11,8 +11,6 @@ const EditProfile = ({ onBack, onNavigate }) => {
     role: 'Super Admin',
     email: '',
     phone: '',
-    primaryStore: '',
-    storeScope: 'All stores • Global scope',
     timezone: 'IST (GMT+05:30)'
   });
   const [avatarUrl, setAvatarUrl] = useState('');
@@ -85,8 +83,6 @@ const EditProfile = ({ onBack, onNavigate }) => {
             role: profile.role || 'Super Admin',
             email: profile.email || '',
             phone: profile.phone || '',
-            primaryStore: profile.primary_store || '',
-            storeScope: profile.store_scope || 'All stores • Global scope',
             timezone: profile.timezone || 'IST (GMT+05:30)'
           });
           if (profile.avatar_url) {
@@ -265,8 +261,6 @@ const EditProfile = ({ onBack, onNavigate }) => {
         fullName: formData.fullName,
         email: formData.email,
         phone: formData.phone,
-        primaryStore: formData.primaryStore,
-        storeScope: formData.storeScope,
         timezone: formData.timezone
       };
       
@@ -287,8 +281,6 @@ const EditProfile = ({ onBack, onNavigate }) => {
             fullName: profile.full_name || prev.fullName,
             email: profile.email || prev.email,
             phone: profile.phone || prev.phone,
-            primaryStore: profile.primary_store || prev.primaryStore,
-            storeScope: profile.store_scope || prev.storeScope,
             timezone: profile.timezone || prev.timezone
           }));
           // Update avatar if changed
@@ -531,46 +523,6 @@ const EditProfile = ({ onBack, onNavigate }) => {
                 </div>
               </div>
 
-              {/* Store Scope Section */}
-              <div className="form-section">
-                <h3 className="section-title">Store scope</h3>
-                <div className="form-group">
-                  <label htmlFor="primaryStore">Primary store</label>
-                  <div className="input-wrapper">
-                    <i className="fas fa-building input-icon"></i>
-                    <select
-                      id="primaryStore"
-                      name="primaryStore"
-                      className="form-input"
-                      value={formData.primaryStore}
-                      onChange={handleInputChange}
-                    >
-                      <option value="Hyderabad Mart">Hyderabad Mart</option>
-                      <option value="Mumbai Mart">Mumbai Mart</option>
-                      <option value="Delhi Mart">Delhi Mart</option>
-                    </select>
-                    <i className="fas fa-chevron-down dropdown-icon"></i>
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label htmlFor="storeScope">Store scope</label>
-                  <div className="input-wrapper">
-                    <i className="fas fa-circle input-icon scope-icon"></i>
-                    <select
-                      id="storeScope"
-                      name="storeScope"
-                      className="form-input"
-                      value={formData.storeScope}
-                      onChange={handleInputChange}
-                    >
-                      <option value="All stores • Global scope">All stores • Global scope</option>
-                      <option value="Selected stores">Selected stores</option>
-                    </select>
-                    <i className="fas fa-chevron-down dropdown-icon"></i>
-                  </div>
-                </div>
-              </div>
-
               {/* Timezone Section */}
               <div className="form-section">
                 <h3 className="section-title">Timezone</h3>
@@ -607,7 +559,6 @@ const EditProfile = ({ onBack, onNavigate }) => {
                   </button>
                 </div>
               </form>
-            )}
           </main>
         </div>
       </div>

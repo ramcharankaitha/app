@@ -156,23 +156,6 @@ const Profile = ({ onBack, onNavigate, userRole = 'admin' }) => {
               )}
             </div>
 
-            {/* Role & Access Card */}
-            <div className="profile-card role-access-card">
-              <div className="card-header">
-                <h3 className="card-title">Role & access</h3>
-                <p className="card-subtitle">Controls what this account can see and do.</p>
-                <a href="#" className="manage-link">Manage &gt;&gt;</a>
-              </div>
-              <div className="role-item">
-                <div className="role-label">Role</div>
-                <div className="role-badge">{profile.role || 'Super Admin'}</div>
-              </div>
-              <div className="role-item">
-                <div className="role-label">Store access</div>
-                <div className="role-badge">{profile.store_scope || 'All stores • Global scope'}</div>
-              </div>
-            </div>
-
             {/* Quick Actions Card */}
             <div className="profile-card quick-actions-card">
               <div className="card-header">
