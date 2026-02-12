@@ -12,7 +12,6 @@ import { downloadCSV } from '../utils/fileDownload';
 
 const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
   const [activeScope, setActiveScope] = useState('All stores • Global scope');
-  const [timeRange, setTimeRange] = useState('Live');
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeNav, setActiveNav] = useState('home');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -36,6 +35,8 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     criticalProducts: 0
   });
   const [loadingStats, setLoadingStats] = useState(true);
+  const [dailyActivity, setDailyActivity] = useState([]);
+  const [chartMode, setChartMode] = useState('total');
   const menuRef = useRef(null);
   const { profile, avatarUrl, initials } = useProfile();
 
@@ -184,8 +185,25 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
     }
   };
 
-  // Mock chart data for horizontal bars (12 data points for 24 hours)
-  const chartData = [45, 60, 55, 70, 65, 80, 75, 90, 85, 70, 65, 75, 80, 85, 75, 70, 65, 60, 55, 50, 45, 50, 55, 60];
+  // Fetch daily activity for chart
+  useEffect(() => {
+    const fetchDailyActivity = async () => {
+      try {
+        const response = await stockAPI.getDailyActivity();
+        if (response && response.success) {
+          setDailyActivity(response.days || []);
+        }
+      } catch (err) {
+        console.error('Error fetching daily activity:', err);
+      }
+    };
+    fetchDailyActivity();
+  }, []);
+
+  // Compute chart data from daily activity
+  const chartDays = dailyActivity.length > 0 ? dailyActivity : [];
+  const chartValues = chartDays.map(d => chartMode === 'stockIn' ? d.stockIn : chartMode === 'stockOut' ? d.stockOut : d.total);
+  const maxChartValue = Math.max(...chartValues, 1);
 
   // Convert sales data to CSV
   const convertSalesToCSV = (sales) => {
@@ -605,43 +623,68 @@ const Dashboard = ({ onLogout, onNavigate, currentPage }) => {
           </div>
         </div>
 
-        {/* Store Performance Chart */}
+        {/* Stock Activity Chart */}
         <div className="chart-card">
           <div className="chart-header">
             <div>
-              <h3>Store Performance</h3>
-              <p>Last 24 hours across selected scope</p>
+              <h3>Stock Activity</h3>
+              <p>Last 30 days — day-wise transactions</p>
             </div>
             <div className="time-range-selector">
               <button 
-                className={timeRange === 'Live' ? 'active' : ''}
-                onClick={() => setTimeRange('Live')}
+                className={chartMode === 'total' ? 'active' : ''}
+                onClick={() => setChartMode('total')}
               >
-                Live
+                All
               </button>
               <button 
-                className={timeRange === '24h' ? 'active' : ''}
-                onClick={() => setTimeRange('24h')}
+                className={chartMode === 'stockIn' ? 'active' : ''}
+                onClick={() => setChartMode('stockIn')}
               >
-                24h
+                In
+              </button>
+              <button 
+                className={chartMode === 'stockOut' ? 'active' : ''}
+                onClick={() => setChartMode('stockOut')}
+              >
+                Out
               </button>
             </div>
           </div>
           <div className="chart-container">
-            <div className="chart-bars">
-              {chartData.map((height, index) => (
-                <div key={index} className="chart-bar">
-                  <div className="bar-fill" style={{ height: `${height}%` }}></div>
+            {chartDays.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '30px', color: '#999' }}>
+                <i className="fas fa-chart-bar" style={{ fontSize: '24px', marginBottom: '8px', opacity: 0.4 }}></i>
+                <p style={{ margin: 0, fontSize: '13px' }}>No activity data</p>
+              </div>
+            ) : (
+              <>
+                <div className="chart-bars">
+                  {chartDays.map((day, index) => {
+                    const value = chartMode === 'stockIn' ? day.stockIn : chartMode === 'stockOut' ? day.stockOut : day.total;
+                    const heightPercent = maxChartValue > 0 ? (value / maxChartValue) * 100 : 0;
+                    return (
+                      <div key={day.date} className="chart-bar" title={`${day.label}: ${value} transactions`}>
+                        <div 
+                          className="bar-fill" 
+                          style={{ 
+                            height: `${Math.max(heightPercent, 2)}%`,
+                            background: chartMode === 'stockIn' ? 'linear-gradient(to top, #28a745, #5cb85c)' 
+                              : chartMode === 'stockOut' ? 'linear-gradient(to top, #dc3545, #e74c5e)' 
+                              : undefined
+                          }}
+                        ></div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
-            <div className="chart-labels">
-              <span>00</span>
-              <span>06</span>
-              <span>12</span>
-              <span>18</span>
-              <span>24</span>
-            </div>
+                <div className="chart-labels">
+                  {chartDays.filter((_, i) => i % 5 === 0 || i === chartDays.length - 1).map(day => (
+                    <span key={day.date}>{day.label.split(' ')[1]}</span>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
 

@@ -17,6 +17,19 @@ const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
     };
   }, []);
 
+  const attachStream = async (mediaStream) => {
+    setStream(mediaStream);
+    if (videoRef.current) {
+      videoRef.current.srcObject = mediaStream;
+      try {
+        await videoRef.current.play();
+      } catch (playErr) {
+        console.warn('Auto-play failed:', playErr);
+      }
+    }
+    setError('');
+  };
+
   const startCamera = async () => {
     try {
       // Check if getUserMedia is available
@@ -32,32 +45,64 @@ const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
         return;
       }
 
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user' }
-      });
-      setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
+      // Check permission state first (if supported)
+      if (navigator.permissions && navigator.permissions.query) {
+        try {
+          const permResult = await navigator.permissions.query({ name: 'camera' });
+          if (permResult.state === 'denied') {
+            setError('Camera permission is blocked. Please go to your browser settings, allow camera access for this site, then reload the page.');
+            return;
+          }
+        } catch (permErr) {
+          // permissions.query for camera not supported in all browsers
+        }
       }
-      setError(''); // Clear any previous errors
-    } catch (err) {
-      console.error('Error accessing camera:', err);
-      
+
+      // Try with multiple constraint levels
+      const constraintsList = [
+        { video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } },
+        { video: { facingMode: 'user' } },
+        { video: true }
+      ];
+
+      let mediaStream = null;
+      let lastErr = null;
+
+      for (const constraints of constraintsList) {
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+          break;
+        } catch (err) {
+          lastErr = err;
+          if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            break;
+          }
+          continue;
+        }
+      }
+
+      if (mediaStream) {
+        await attachStream(mediaStream);
+        return;
+      }
+
+      const err = lastErr;
       let errorMessage = 'Unable to access camera. ';
       
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        errorMessage += 'Please allow camera permissions in your browser settings and try again.';
+        errorMessage = 'Camera permission denied. Please tap the lock/info icon in your browser\'s address bar, allow Camera access, then reload the page.';
       } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
         errorMessage += 'No camera found. Please connect a camera and try again.';
       } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-        errorMessage += 'Camera is already in use by another application. Please close other apps using the camera.';
-      } else if (err.name === 'OverconstrainedError' || err.name === 'ConstraintNotSatisfiedError') {
-        errorMessage += 'Camera does not support the required settings. Please try again.';
+        errorMessage += 'Camera is already in use by another application. Please close other apps using the camera and try again.';
       } else {
-        errorMessage += 'Please check your camera permissions and try again.';
+        errorMessage += `Error: ${err.message || 'Unknown error'}. Please check your browser settings and try again.`;
       }
       
       setError(errorMessage);
+    } catch (err) {
+      console.error('Error accessing camera:', err);
+      setError(`Unable to access camera: ${err.message || 'Unknown error'}. Please check your browser settings.`);
     }
   };
 
@@ -176,6 +221,7 @@ const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
                   ref={videoRef}
                   autoPlay
                   playsInline
+                  muted
                   style={{ width: '100%', maxWidth: '500px', borderRadius: '8px' }}
                 />
               </div>

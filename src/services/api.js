@@ -688,6 +688,9 @@ export const stockAPI = {
   getDashboardStats: async () => {
     return apiCall('/stock/dashboard-stats');
   },
+  getDailyActivity: async () => {
+    return apiCall('/stock/daily-activity');
+  },
 };
 
 export const servicesAPI = {

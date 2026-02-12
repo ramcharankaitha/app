@@ -583,8 +583,8 @@
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    height: 150px;
-    gap: 6px;
+    height: 160px;
+    gap: 3px;
     margin-bottom: 15px;
     padding: 0 4px;
 }

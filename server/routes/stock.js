@@ -771,6 +771,52 @@ router.get('/dashboard-stats', async (req, res) => {
   }
 });
 
+// Get day-wise stock activity for chart (last 30 days)
+router.get('/daily-activity', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT 
+        DATE(created_at) as activity_date,
+        COUNT(*) FILTER (WHERE transaction_type = 'STOCK_IN') as stock_in,
+        COUNT(*) FILTER (WHERE transaction_type IN ('STOCK_OUT', 'SALE')) as stock_out,
+        COUNT(*) as total
+      FROM stock_transactions
+      WHERE created_at >= NOW() - INTERVAL '30 days'
+      GROUP BY DATE(created_at)
+      ORDER BY activity_date ASC`
+    );
+
+    // Fill in missing days with zero values
+    const days = [];
+    const now = new Date();
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const found = result.rows.find(r => {
+        const rd = new Date(r.activity_date).toISOString().split('T')[0];
+        return rd === dateStr;
+      });
+      days.push({
+        date: dateStr,
+        label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        dayLabel: d.toLocaleDateString('en-US', { weekday: 'short' }),
+        stockIn: found ? parseInt(found.stock_in) : 0,
+        stockOut: found ? parseInt(found.stock_out) : 0,
+        total: found ? parseInt(found.total) : 0
+      });
+    }
+
+    res.json({ success: true, days });
+  } catch (error) {
+    console.error('Get daily activity error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
 // Verify stock in transaction (admin/supervisor only) - MUST come before other /:id routes
 router.put('/in/:id/verify', async (req, res) => {
   try {

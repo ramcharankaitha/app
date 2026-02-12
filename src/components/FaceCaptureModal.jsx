@@ -17,6 +17,20 @@ const FaceCaptureModal = ({ onSuccess, onClose, userRole, username }) => {
     };
   }, []);
 
+  const attachStream = async (mediaStream) => {
+    setStream(mediaStream);
+    if (videoRef.current) {
+      videoRef.current.srcObject = mediaStream;
+      // Explicit play() is required on many mobile/hosted browsers
+      try {
+        await videoRef.current.play();
+      } catch (playErr) {
+        console.warn('Auto-play failed, user interaction may be needed:', playErr);
+      }
+    }
+    setError('');
+  };
+
   const startCamera = async () => {
     try {
       // Check if getUserMedia is available
@@ -32,50 +46,69 @@ const FaceCaptureModal = ({ onSuccess, onClose, userRole, username }) => {
         return;
       }
 
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: 'user', 
-          width: { ideal: 1280 }, 
-          height: { ideal: 720 } 
+      // Check permission state first (if supported) to give better error messages
+      if (navigator.permissions && navigator.permissions.query) {
+        try {
+          const permResult = await navigator.permissions.query({ name: 'camera' });
+          if (permResult.state === 'denied') {
+            setError('Camera permission is blocked. Please go to your browser settings, allow camera access for this site, then reload the page.');
+            return;
+          }
+        } catch (permErr) {
+          // permissions.query for camera not supported in all browsers — continue normally
         }
-      });
-      setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
       }
-      setError(''); // Clear any previous errors
-    } catch (err) {
-      console.error('Error accessing camera:', err);
-      
+
+      // Try with ideal constraints first
+      const constraintsList = [
+        { video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } },
+        { video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } },
+        { video: { facingMode: 'user' } },
+        { video: true }
+      ];
+
+      let mediaStream = null;
+      let lastErr = null;
+
+      for (const constraints of constraintsList) {
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+          break;
+        } catch (err) {
+          lastErr = err;
+          // If permission denied, don't retry with other constraints
+          if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            break;
+          }
+          continue;
+        }
+      }
+
+      if (mediaStream) {
+        await attachStream(mediaStream);
+        return;
+      }
+
+      // All attempts failed — show appropriate error
+      const err = lastErr;
       let errorMessage = 'Unable to access camera. ';
       
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        errorMessage += 'Please allow camera permissions in your browser settings and try again.';
+        errorMessage = 'Camera permission denied. Please tap the lock/info icon in your browser\'s address bar, allow Camera access, then reload the page.';
       } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
         errorMessage += 'No camera found. Please connect a camera and try again.';
       } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-        errorMessage += 'Camera is already in use by another application. Please close other apps using the camera.';
-      } else if (err.name === 'OverconstrainedError' || err.name === 'ConstraintNotSatisfiedError') {
-        errorMessage += 'Camera does not support the required settings. Trying with default settings...';
-        // Retry with simpler constraints
-        try {
-          const mediaStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'user' }
-          });
-          setStream(mediaStream);
-          if (videoRef.current) {
-            videoRef.current.srcObject = mediaStream;
-          }
-          setError('');
-          return;
-        } catch (retryErr) {
-          errorMessage = 'Unable to access camera. Please check your camera settings.';
-        }
+        errorMessage += 'Camera is already in use by another application. Please close other apps using the camera and try again.';
+      } else if (err.name === 'AbortError') {
+        errorMessage += 'Camera access was interrupted. Please try again.';
       } else {
-        errorMessage += 'Please check your camera permissions and try again.';
+        errorMessage += `Error: ${err.message || 'Unknown error'}. Please check your browser settings and try again.`;
       }
       
       setError(errorMessage);
+    } catch (err) {
+      console.error('Error accessing camera:', err);
+      setError(`Unable to access camera: ${err.message || 'Unknown error'}. Please check your browser settings.`);
     }
   };
 
@@ -248,6 +281,7 @@ const FaceCaptureModal = ({ onSuccess, onClose, userRole, username }) => {
                   ref={videoRef}
                   autoPlay
                   playsInline
+                  muted
                   className="face-video"
                 />
                 <div className="face-guide-overlay">
