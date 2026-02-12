@@ -6,11 +6,11 @@ const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
   const [isCapturing, setIsCapturing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
-  const [cameraReady, setCameraReady] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
   useEffect(() => {
+    startCamera();
     return () => {
       stopCamera();
     };
@@ -18,8 +18,6 @@ const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
 
   const attachStream = async (mediaStream) => {
     setStream(mediaStream);
-    setCameraReady(true);
-    await new Promise(resolve => setTimeout(resolve, 50));
     if (videoRef.current) {
       videoRef.current.srcObject = mediaStream;
       try {
@@ -33,64 +31,26 @@ const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
 
   const startCamera = async () => {
     try {
-      // Check if getUserMedia is available
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setError('Camera access is not supported in this browser. Please use a modern browser like Chrome, Firefox, or Safari.');
-        return;
-      }
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
 
-      // Check if we're on HTTPS or localhost (required for camera access)
-      const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      if (!isSecure) {
-        setError('Camera access requires a secure connection (HTTPS). Please access the site via HTTPS.');
-        return;
-      }
-
-      // Try with multiple constraint levels
       const constraintsList = [
         { video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } },
         { video: { facingMode: 'user' } },
         { video: true }
       ];
 
-      let mediaStream = null;
-      let lastErr = null;
-
       for (const constraints of constraintsList) {
         try {
-          mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-          break;
+          const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+          await attachStream(mediaStream);
+          return;
         } catch (err) {
-          lastErr = err;
-          if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-            break;
-          }
+          if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') break;
           continue;
         }
       }
-
-      if (mediaStream) {
-        await attachStream(mediaStream);
-        return;
-      }
-
-      const err = lastErr;
-      let errorMessage = 'Unable to access camera. ';
-      
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        errorMessage = 'Camera permission denied. Please tap the lock/info icon in your browser\'s address bar, allow Camera access, then reload the page.';
-      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-        errorMessage += 'No camera found. Please connect a camera and try again.';
-      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-        errorMessage += 'Camera is already in use by another application. Please close other apps using the camera and try again.';
-      } else {
-        errorMessage += `Error: ${err.message || 'Unknown error'}. Please check your browser settings and try again.`;
-      }
-      
-      setError(errorMessage);
     } catch (err) {
-      console.error('Error accessing camera:', err);
-      setError(`Unable to access camera: ${err.message || 'Unknown error'}. Please check your browser settings.`);
+      console.error('Camera error:', err);
     }
   };
 
@@ -204,64 +164,36 @@ const AttendanceModal = ({ type, onSuccess, onClose, userRole = 'staff' }) => {
         <div className="attendance-modal-body">
           {!capturedImage ? (
             <>
-              {!cameraReady ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px', gap: '20px' }}>
-                  <div style={{ width: '100px', height: '100px', borderRadius: '50%', background: '#f8d7da', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <i className="fas fa-camera" style={{ fontSize: '40px', color: '#dc3545' }}></i>
-                  </div>
-                  <p style={{ textAlign: 'center', color: '#666', fontSize: '14px', margin: 0 }}>Tap the button below to open your camera</p>
-                  {error && (
-                    <div style={{ padding: '10px 14px', background: '#f8d7da', color: '#721c24', borderRadius: '8px', fontSize: '13px', textAlign: 'center', width: '100%', maxWidth: '400px' }}>
-                      <i className="fas fa-exclamation-circle" style={{ marginRight: '6px' }}></i>{error}
-                    </div>
-                  )}
-                  <div className="attendance-actions">
-                    <button className="btn-secondary" onClick={handleClose}>
-                      Cancel
-                    </button>
-                    <button className="btn-primary" onClick={async () => { setError(''); await startCamera(); }}>
-                      <i className="fas fa-video"></i> Open Camera
-                    </button>
-                  </div>
+              <div className="camera-preview">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  style={{ width: '100%', maxWidth: '500px', borderRadius: '8px' }}
+                />
+              </div>
+              {!stream && (
+                <div style={{ textAlign: 'center', padding: '10px' }}>
+                  <i className="fas fa-spinner fa-spin" style={{ fontSize: '20px', color: '#dc3545' }}></i>
+                  <p style={{ fontSize: '13px', color: '#888', margin: '8px 0 0' }}>Starting camera...</p>
                 </div>
-              ) : (
-                <>
-                  <div className="camera-preview">
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      style={{ width: '100%', maxWidth: '500px', borderRadius: '8px' }}
-                    />
-                  </div>
-                  {error && (
-                    <div style={{ padding: '10px 14px', background: '#f8d7da', color: '#721c24', borderRadius: '8px', fontSize: '13px', textAlign: 'center', width: '100%', maxWidth: '400px' }}>
-                      <i className="fas fa-exclamation-circle" style={{ marginRight: '6px' }}></i>{error}
-                    </div>
-                  )}
-                  <div className="attendance-actions">
-                    <button className="btn-secondary" onClick={handleClose}>
-                      Cancel
-                    </button>
-                    <button className="btn-primary" onClick={capturePhoto} disabled={!stream}>
-                      <i className="fas fa-camera"></i> Capture Photo
-                    </button>
-                  </div>
-                </>
               )}
+              <div className="attendance-actions">
+                <button className="btn-secondary" onClick={handleClose}>
+                  Cancel
+                </button>
+                <button className="btn-primary" onClick={capturePhoto} disabled={!stream}>
+                  <i className="fas fa-camera"></i> Capture Photo
+                </button>
+              </div>
             </>
           ) : (
             <>
               <div className="captured-image-preview">
                 <img src={capturedImage} alt="Captured" style={{ width: '100%', maxWidth: '500px', borderRadius: '8px' }} />
               </div>
-              {error && (
-                <div style={{ padding: '10px 14px', background: '#f8d7da', color: '#721c24', borderRadius: '8px', fontSize: '13px', textAlign: 'center', width: '100%', maxWidth: '400px', marginTop: '12px' }}>
-                  <i className="fas fa-exclamation-circle" style={{ marginRight: '6px' }}></i>{error}
-                </div>
-              )}
-              {isProcessing && !error && (
+              {isProcessing && (
                 <div style={{ 
                   padding: '12px 16px',
                   background: '#d1ecf1',
