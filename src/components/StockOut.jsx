@@ -200,7 +200,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
     if (field === 'sellRate' || field === 'stockOutQuantity') {
       setTimeout(() => {
         setCurrentProduct(prev => {
-          const sellRate = parseFloat(prev.sellRate) || 0;
+          const sellRate = parseFloat(prev.sellRate) || parseFloat(prev.mrp) || 0; // Fallback to MRP
           const qty = parseInt(prev.stockOutQuantity) || 0;
           const totalAmount = sellRate * qty;
           // For every 1000 of sales, 0.5 points
@@ -239,7 +239,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
         };
         
         setCurrentProduct(prev => {
-          const sellRate = parseFloat(productData.sellRate) || 0;
+          const sellRate = parseFloat(productData.sellRate) || parseFloat(productData.mrp) || 0; // Fallback to MRP if sellRate is 0
           const qty = parseInt(prev.stockOutQuantity) || 0;
           const totalAmount = sellRate * qty;
           const calculatedPoints = (totalAmount / 1000) * 0.5;
@@ -252,7 +252,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
             modelNumber: productData.modelNumber,
             quantity: productData.currentQuantity.toString(),
             mrp: productData.mrp.toString(),
-            sellRate: productData.sellRate.toString(),
+            sellRate: (parseFloat(productData.sellRate) || parseFloat(productData.mrp) || 0).toString(), // Fallback to MRP
             discount: productData.discount.toString(),
             points: calculatedPoints.toFixed(2),
             isFetching: false
@@ -326,7 +326,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
       : 1;
     
     // Calculate amount and points for the product
-    const sellRate = parseFloat(currentProduct.sellRate) || 0;
+    const sellRate = parseFloat(currentProduct.sellRate) || parseFloat(currentProduct.mrp) || 0; // Fallback to MRP if sellRate is 0
     const amount = sellRate * stockOutQty;
     const points = (amount / 1000) * 0.5;
     
@@ -882,12 +882,14 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                       <i className="fas fa-rupee-sign input-icon"></i>
                       <input
                         type="number"
-                    id="sellRate"
+                        id="sellRate"
+                        name="sellRate"
                         className="form-input"
                         placeholder="Sell Rate"
-                    value={currentProduct.sellRate}
-                        readOnly
-                        style={{ background: '#f8f9fa', cursor: 'not-allowed' }}
+                        value={currentProduct.sellRate}
+                        onChange={(e) => handleProductChange('sellRate', e.target.value)}
+                        step="0.01"
+                        min="0"
                       />
                     </div>
                   </div>

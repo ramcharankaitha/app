@@ -447,7 +447,8 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
 
       // Calculate total amount
       const totalAmount = products.reduce((total, product) => {
-        return total + (product.sellRate * product.quantity);
+        const sellRate = product.sellRate || product.mrp || 0; // Fallback to MRP if sellRate is 0
+        return total + (sellRate * product.quantity);
       }, 0);
 
       const userData = JSON.parse(localStorage.getItem('userData') || '{}');

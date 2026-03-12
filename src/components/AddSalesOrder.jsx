@@ -381,7 +381,7 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
           },
           productName: product.product_name || product.productName || '',
           mrp: (product.mrp || 0).toString(),
-          sellRate: (product.sell_rate || product.sellRate || 0).toString(),
+          sellRate: ((product.sell_rate || product.sellRate) || product.mrp || 0).toString(), // Fallback to MRP if sellRate is 0
           isFetching: false
         }));
         setSuccessMessage('✓ Product found! You can add it to the order.');
@@ -472,7 +472,7 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
       productName: currentProduct.productName,
       quantity: parseFloat(currentProduct.quantity) || 0,
       mrp: parseFloat(currentProduct.mrp) || 0,
-      sellRate: parseFloat(currentProduct.sellRate) || 0,
+      sellRate: parseFloat(currentProduct.sellRate) || parseFloat(currentProduct.mrp) || 0, // Fallback to MRP
       productInfo: currentProduct.productInfo
     }]);
     
@@ -615,7 +615,7 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
       // Calculate total amount from products
       const totalAmount = products.reduce((total, product) => {
         const quantity = parseFloat(product.quantity) || 0;
-        const sellRate = parseFloat(product.sellRate) || 0;
+        const sellRate = parseFloat(product.sellRate) || parseFloat(product.mrp) || 0; // Fallback to MRP
         return total + (quantity * sellRate);
       }, 0);
 
@@ -1001,10 +1001,10 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                                   {product.quantity}
                                 </td>
                                 <td style={{ textAlign: 'center', fontWeight: '500', color: '#333' }}>
-                                  ₹{parseFloat(product.sellRate || 0).toFixed(2)}
+                                  ₹{parseFloat(product.sellRate || product.mrp || 0).toFixed(2)}
                                 </td>
                                 <td style={{ textAlign: 'center', fontWeight: '600', color: '#0066cc' }}>
-                                  ₹{((parseFloat(product.quantity) || 0) * (parseFloat(product.sellRate) || 0)).toFixed(2)}
+                                  ₹{((parseFloat(product.quantity) || 0) * (parseFloat(product.sellRate) || parseFloat(product.mrp) || 0)).toFixed(2)}
                                 </td>
                                 <td style={{ textAlign: 'center' }}>
                                   <button
@@ -1063,7 +1063,7 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                           fontWeight: 'bold',
                           minWidth: '150px'
                         }}>
-                          ₹{addedProducts.reduce((sum, product) => sum + ((parseFloat(product.quantity) || 0) * (parseFloat(product.sellRate) || 0)), 0).toFixed(2)}
+                          ₹{addedProducts.reduce((sum, product) => sum + ((parseFloat(product.quantity) || 0) * (parseFloat(product.sellRate) || parseFloat(product.mrp) || 0)), 0).toFixed(2)}
                         </div>
                         <div style={{ minWidth: '100px' }}></div>
                       </div>

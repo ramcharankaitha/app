@@ -14,6 +14,7 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
     pincode: '',
     material: '',
     packaging: '',
+    bookingTo: '',
     bookingCityNumber: '',
     transportName: '',
     transportPhone: '',
@@ -395,6 +396,7 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
         pincode: formData.pincode,
         material: formData.material,
         packaging: formData.packaging,
+        bookingTo: formData.bookingTo,
         bookingCityNumber: formData.bookingCityNumber,
         transportName: formData.transportName,
         transportPhone: formData.transportPhone,
@@ -634,7 +636,7 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                       </div>
                     </div>
 
-                    {/* Row 2: Address, Material, Packaging, Pincode */}
+                    {/* Row 2: Address, Material, Packaging, Pincode, Booking To */}
                     <div className="form-group">
                       <label htmlFor="address">Address</label>
                       <div className="input-wrapper">
@@ -696,6 +698,28 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                           value={formData.pincode}
                           onChange={handleInputChange}
                         />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="bookingTo">Booking To</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-map-marker-alt input-icon"></i>
+                        <input
+                          type="text"
+                          id="bookingTo"
+                          name="bookingTo"
+                          className="form-input"
+                          placeholder="Enter or select booking destination city"
+                          value={formData.bookingTo}
+                          onChange={handleInputChange}
+                          list="booking-cities-list"
+                        />
+                        <datalist id="booking-cities-list">
+                          {cities.map((city, index) => (
+                            <option key={`booking-${index}`} value={city} />
+                          ))}
+                        </datalist>
                       </div>
                     </div>
 
