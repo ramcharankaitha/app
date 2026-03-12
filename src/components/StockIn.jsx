@@ -14,9 +14,17 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
     minQuantity: '', // Minimum quantity from product
     mrp: '', // MRP from product
     totalAfterAdding: '', // Calculated total
-    notes: ''
+    notes: '',
+    // Additional fields for new product creation
+    modelNumber: '',
+    category: '',
+    discount1: '',
+    discount2: '',
+    sellRate: '',
+    purchaseRate: ''
   });
   const [productInfo, setProductInfo] = useState(null);
+  const [isNewProduct, setIsNewProduct] = useState(false);
   const [addedProducts, setAddedProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingProduct, setIsFetchingProduct] = useState(false);
@@ -24,11 +32,32 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
   const [successMessage, setSuccessMessage] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [suppliers, setSuppliers] = useState([]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Fetch suppliers on component mount
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const API_BASE_URL = process.env.REACT_APP_API_URL?.trim().replace(/\/+$/, '') || 'http://localhost:5000/api';
+        const response = await fetch(`${API_BASE_URL}/suppliers`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.suppliers) {
+            setSuppliers(data.suppliers);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching suppliers:', err);
+        // Don't show error to user, just log it
+      }
+    };
+    fetchSuppliers();
   }, []);
 
   const getUserIdentifier = () => {
@@ -62,15 +91,22 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
     // Reset product info if item code changes
     if (name === 'itemCode') {
       setProductInfo(null);
+      setIsNewProduct(false);
       setFormData(prev => ({
         ...prev,
         productName: '',
         skuCode: '',
-        quantity: '',
+        quantity: '0', // Set to 0 for new products
         stockInQuantity: '',
         minQuantity: '',
         mrp: '',
-        totalAfterAdding: ''
+        totalAfterAdding: '',
+        modelNumber: '',
+        category: '',
+        discount1: '',
+        discount2: '',
+        sellRate: '',
+        purchaseRate: ''
       }));
       setError('');
       setSuccessMessage('');
@@ -91,35 +127,56 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
 
   const addProduct = () => {
     if (!formData.itemCode || !formData.itemCode.trim()) {
+      setError('Item code is required');
       return;
     }
 
-    if (!productInfo) {
+    if (!formData.productName || !formData.productName.trim()) {
+      setError('Product name is required');
       return;
     }
 
     if (!formData.stockInQuantity || parseFloat(formData.stockInQuantity) <= 0) {
+      setError('Stock in quantity must be greater than 0');
       return;
+    }
+
+    // For new products, validate required fields
+    if (isNewProduct) {
+      if (!formData.mrp || parseFloat(formData.mrp) <= 0) {
+        setError('MRP is required for new products');
+        return;
+      }
     }
 
     // Check if product already added - silently skip if duplicate
     const isDuplicate = addedProducts.some(p => p.itemCode === formData.itemCode.trim());
     if (isDuplicate) {
+      setError('Product already added to the list');
       return;
     }
 
     const newProduct = {
       id: Date.now(),
       itemCode: formData.itemCode.trim(),
-      productName: formData.productName,
-      skuCode: formData.skuCode,
-      supplierName: formData.supplierName,
+      productName: formData.productName.trim(),
+      skuCode: formData.skuCode.trim(),
+      supplierName: formData.supplierName.trim(),
       currentQuantity: parseInt(formData.quantity) || 0,
       stockInQuantity: parseInt(formData.stockInQuantity),
       totalAfterAdding: parseInt(formData.totalAfterAdding) || 0,
       mrp: parseFloat(formData.mrp) || 0,
       amount: (parseInt(formData.stockInQuantity) || 0) * (parseFloat(formData.mrp) || 0),
-      productInfo: productInfo
+      productInfo: productInfo,
+      isNewProduct: isNewProduct,
+      // Additional fields for new product
+      modelNumber: formData.modelNumber || '',
+      category: formData.category || '',
+      minQuantity: parseInt(formData.minQuantity) || 0,
+      discount1: parseFloat(formData.discount1) || 0,
+      discount2: parseFloat(formData.discount2) || 0,
+      sellRate: parseFloat(formData.sellRate) || 0,
+      purchaseRate: parseFloat(formData.purchaseRate) || 0
     };
 
     setAddedProducts(prev => [...prev, newProduct]);
@@ -130,15 +187,23 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
       itemCode: '',
       productName: '',
       skuCode: '',
-      quantity: '',
+      quantity: '0',
       stockInQuantity: '',
       minQuantity: '',
       mrp: '',
-      totalAfterAdding: ''
+      totalAfterAdding: '',
+      modelNumber: '',
+      category: '',
+      discount1: '',
+      discount2: '',
+      sellRate: '',
+      purchaseRate: ''
     }));
     setProductInfo(null);
+    setIsNewProduct(false);
     setError('');
-    setSuccessMessage('');
+    setSuccessMessage('Product added to list');
+    setTimeout(() => setSuccessMessage(''), 2000);
   };
 
   const removeProduct = (id) => {
@@ -169,11 +234,36 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
     setError('');
     setSuccessMessage('');
     
+    console.log('🔍 Fetching product with item code:', itemCode);
+    
     try {
-      const response = await productsAPI.getByItemCode(itemCode);
+      // Import API_BASE_URL at the top if not already imported
+      const API_BASE_URL = process.env.REACT_APP_API_URL?.trim().replace(/\/+$/, '') || 'http://localhost:5000/api';
       
-      if (response.success && response.product) {
-        const product = response.product;
+      console.log('📡 API URL:', `${API_BASE_URL}/products/item-code/${encodeURIComponent(itemCode)}`);
+      
+      // Use direct fetch to handle 404 gracefully without throwing
+      const response = await fetch(`${API_BASE_URL}/products/item-code/${encodeURIComponent(itemCode)}`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('📥 Response status:', response.status, response.ok);
+
+      let data = null;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      }
+
+      console.log('📦 Response data:', data);
+
+      // Check if product exists - handle both success flag and actual product data
+      if (response.ok && data && data.success && data.product) {
+        // Existing product found
+        console.log('✅ Product found:', data.product.product_name);
+        const product = data.product;
         const productData = {
           id: product.id,
           productName: product.product_name || product.productName || '',
@@ -181,9 +271,16 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
           skuCode: product.sku_code || product.skuCode || '',
           currentQuantity: product.current_quantity || 0,
           minQuantity: product.min_quantity || product.minQuantity || 0,
-          mrp: product.mrp || 0
+          mrp: product.mrp || 0,
+          modelNumber: product.model_number || product.modelNumber || '',
+          category: product.category || '',
+          discount1: product.discount_1 || product.discount1 || 0,
+          discount2: product.discount_2 || product.discount2 || 0,
+          sellRate: product.sell_rate || product.sellRate || 0,
+          purchaseRate: product.purchase_rate || product.purchaseRate || 0
         };
         setProductInfo(productData);
+        setIsNewProduct(false);
         
         // Auto-populate form fields
         const currentQty = productData.currentQuantity;
@@ -197,18 +294,42 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
           quantity: currentQty.toString(),
           minQuantity: productData.minQuantity.toString(),
           mrp: productData.mrp.toString(),
-          totalAfterAdding: totalAfter.toString()
+          totalAfterAdding: totalAfter.toString(),
+          modelNumber: productData.modelNumber || '',
+          category: productData.category || '',
+          discount1: productData.discount1.toString(),
+          discount2: productData.discount2.toString(),
+          sellRate: productData.sellRate.toString(),
+          purchaseRate: productData.purchaseRate.toString()
         }));
         
-        setSuccessMessage('');
+        setSuccessMessage('✓ Product found! You can stock in now or edit details.');
       } else {
+        // Product not found (404 or success: false) - enable new product mode
+        console.log('🆕 Product not found, enabling new product mode for:', itemCode);
         setProductInfo(null);
+        setIsNewProduct(true);
+        setFormData(prev => ({
+          ...prev,
+          quantity: '0', // New product starts with 0 stock
+          totalAfterAdding: (parseInt(prev.stockInQuantity) || 0).toString()
+        }));
+        setSuccessMessage('✓ New product! Enter all details to create and stock in.');
       }
     } catch (err) {
-      console.error('Fetch product error:', err);
+      // Any error means product doesn't exist - enable new product mode
+      console.log('❌ Product fetch error (likely not found), enabling new product mode:', err.message);
       setProductInfo(null);
+      setIsNewProduct(true);
+      setFormData(prev => ({
+        ...prev,
+        quantity: '0',
+        totalAfterAdding: (parseInt(prev.stockInQuantity) || 0).toString()
+      }));
+      setSuccessMessage('✓ New product! Enter all details to create and stock in.');
     } finally {
       setIsFetchingProduct(false);
+      console.log('✅ Fetch complete. isNewProduct:', isNewProduct);
     }
   };
 
@@ -234,7 +355,14 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
       return;
     }
 
-    const confirmMessage = `Add stock for ${addedProducts.length} product(s)?\n\n${addedProducts.map((p, i) => `${i + 1}. ${p.productName} (+${p.stockInQuantity})`).join('\n')}`;
+    const newProductsCount = addedProducts.filter(p => p.isNewProduct).length;
+    const existingProductsCount = addedProducts.length - newProductsCount;
+    
+    let confirmMessage = `Stock in ${addedProducts.length} product(s)?`;
+    if (newProductsCount > 0) {
+      confirmMessage += `\n\n${newProductsCount} new product(s) will be created.`;
+    }
+    confirmMessage += `\n\n${addedProducts.map((p, i) => `${i + 1}. ${p.productName} (+${p.stockInQuantity})${p.isNewProduct ? ' [NEW]' : ''}`).join('\n')}`;
     
     setConfirmState({
       open: true,
@@ -246,48 +374,120 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
         
         try {
           const createdBy = getUserIdentifier();
-          const promises = addedProducts.map(product =>
-            stockAPI.stockIn(
-              product.itemCode,
-              product.stockInQuantity,
-              formData.supplierName ? `Supplier: ${formData.supplierName}` : null,
-              createdBy
-            )
-          );
-
-          const results = await Promise.all(promises);
-          const allSuccess = results.every(result => result.success);
-
-          if (allSuccess) {
-            setError('');
-            const productCount = addedProducts.length;
-            // Reset form
-            setFormData({
-              supplierName: '',
-              itemCode: '',
-              productName: '',
-              skuCode: '',
-              quantity: '',
-              stockInQuantity: '',
-              minQuantity: '',
-              mrp: '',
-              totalAfterAdding: '',
-              notes: ''
-            });
-            setProductInfo(null);
-            setAddedProducts([]);
-            setSuccessMessage(`Successfully added stock for ${productCount} product(s)!`);
-            setTimeout(() => {
-              setSuccessMessage('');
-              // Navigate back after showing success message
-              handleBack();
-            }, 2000);
-          } else {
-            setError('Some products failed to add. Please try again.');
+          const API_BASE_URL = process.env.REACT_APP_API_URL?.trim().replace(/\/+$/, '') || 'http://localhost:5000/api';
+          
+          console.log('🚀 Starting stock in process for', addedProducts.length, 'products');
+          
+          // Process each product
+          for (const product of addedProducts) {
+            try {
+              console.log('📦 Processing product:', product.productName, 'isNew:', product.isNewProduct);
+              
+              // If new product, create it first
+              if (product.isNewProduct) {
+                console.log('🆕 Creating new product:', product.productName);
+                
+                const createResponse = await fetch(`${API_BASE_URL}/products`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    productName: product.productName,
+                    itemCode: product.itemCode,
+                    skuCode: product.skuCode || '',
+                    modelNumber: product.modelNumber || '',
+                    category: product.category || '',
+                    minimumQuantity: product.minQuantity || 0,
+                    maintainingQuantity: product.minQuantity || 0,
+                    currentQuantity: 0, // Will be set by stock in
+                    mrp: product.mrp,
+                    discount1: product.discount1 || 0,
+                    discount2: product.discount2 || 0,
+                    sellRate: product.sellRate || 0,
+                    purchaseRate: product.purchaseRate || 0,
+                    supplierName: product.supplierName || ''
+                  }),
+                });
+                
+                const createData = await createResponse.json();
+                console.log('📥 Create product response:', createData);
+                
+                if (!createResponse.ok || !createData.success) {
+                  throw new Error(`Failed to create product ${product.productName}: ${createData.error || 'Unknown error'}`);
+                }
+                
+                console.log('✅ Product created successfully');
+              }
+              
+              // Now do stock in
+              console.log('📈 Performing stock in for:', product.productName);
+              
+              const stockInResponse = await fetch(`${API_BASE_URL}/stock/in`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  itemCode: product.itemCode,
+                  quantity: product.stockInQuantity,
+                  notes: formData.supplierName ? `Supplier: ${formData.supplierName}` : null,
+                  createdBy: createdBy
+                }),
+              });
+              
+              const stockInData = await stockInResponse.json();
+              console.log('📥 Stock in response:', stockInData);
+              
+              if (!stockInResponse.ok || !stockInData.success) {
+                throw new Error(`Failed to stock in ${product.productName}: ${stockInData.error || 'Unknown error'}`);
+              }
+              
+              console.log('✅ Stock in successful');
+            } catch (productError) {
+              console.error(`❌ Error processing product ${product.productName}:`, productError);
+              throw productError;
+            }
           }
+
+          // All successful
+          setError('');
+          const productCount = addedProducts.length;
+          const message = newProductsCount > 0 
+            ? `Successfully created ${newProductsCount} new product(s) and added stock for ${productCount} product(s)!`
+            : `Successfully added stock for ${productCount} product(s)!`;
+          
+          // Reset form
+          setFormData({
+            supplierName: '',
+            itemCode: '',
+            productName: '',
+            skuCode: '',
+            quantity: '0',
+            stockInQuantity: '',
+            minQuantity: '',
+            mrp: '',
+            totalAfterAdding: '',
+            notes: '',
+            modelNumber: '',
+            category: '',
+            discount1: '',
+            discount2: '',
+            sellRate: '',
+            purchaseRate: ''
+          });
+          setProductInfo(null);
+          setIsNewProduct(false);
+          setAddedProducts([]);
+          setSuccessMessage(message);
+          setTimeout(() => {
+            setSuccessMessage('');
+            // Navigate back after showing success message
+            handleBack();
+          }, 2000);
         } catch (err) {
           console.error('Stock In error:', err);
-          setError('An error occurred while adding stock. Please try again.');
+          setError(err.message || 'An error occurred while processing. Please try again.');
         } finally {
           setIsLoading(false);
           setConfirmState({ open: false, message: '', onConfirm: null });
@@ -425,10 +625,17 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     id="supplierName"
                     name="supplierName"
                     className="form-input"
-                    placeholder="Enter supplier name"
+                    placeholder="Enter or select supplier name"
                     value={formData.supplierName}
                     onChange={handleInputChange}
+                    list="suppliers-list"
+                    autoComplete="off"
                   />
+                  <datalist id="suppliers-list">
+                    {suppliers.map((supplier, index) => (
+                      <option key={supplier.id || index} value={supplier.supplier_name || supplier.name} />
+                    ))}
+                  </datalist>
                 </div>
               </div>
             </div>
@@ -449,7 +656,6 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     onChange={handleInputChange}
                     min="1"
                     step="1"
-                    disabled={!productInfo}
                   />
                 </div>
               </div>
@@ -493,7 +699,7 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="mrp">MRP</label>
+                <label htmlFor="mrp">MRP *</label>
                 <div className="input-wrapper">
                   <i className="fas fa-rupee-sign input-icon"></i>
                   <input
@@ -508,6 +714,75 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 </div>
               </div>
             </div>
+
+            {/* Additional fields for new products */}
+            {isNewProduct && (
+              <div className="form-grid four-col" style={{ marginTop: '12px', padding: '16px', background: '#fff3cd', borderRadius: '8px', border: '2px dashed #ffc107' }}>
+                <div className="form-group">
+                  <label htmlFor="modelNumber">Model Number</label>
+                  <div className="input-wrapper">
+                    <i className="fas fa-tag input-icon"></i>
+                    <input
+                      type="text"
+                      id="modelNumber"
+                      name="modelNumber"
+                      className="form-input"
+                      placeholder="Enter model number"
+                      value={formData.modelNumber}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="category">Category</label>
+                  <div className="input-wrapper">
+                    <i className="fas fa-folder input-icon"></i>
+                    <input
+                      type="text"
+                      id="category"
+                      name="category"
+                      className="form-input"
+                      placeholder="Enter category"
+                      value={formData.category}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="sellRate">Sell Rate</label>
+                  <div className="input-wrapper">
+                    <i className="fas fa-rupee-sign input-icon"></i>
+                    <input
+                      type="number"
+                      id="sellRate"
+                      name="sellRate"
+                      className="form-input"
+                      placeholder="Enter sell rate"
+                      value={formData.sellRate}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="purchaseRate">Purchase Rate</label>
+                  <div className="input-wrapper">
+                    <i className="fas fa-rupee-sign input-icon"></i>
+                    <input
+                      type="number"
+                      id="purchaseRate"
+                      name="purchaseRate"
+                      className="form-input"
+                      placeholder="Enter purchase rate"
+                      value={formData.purchaseRate}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Third Row: Total After Adding, Add Product Button */}
             <div className="form-grid four-col" style={{ marginTop: '12px' }}>
@@ -538,15 +813,15 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                 <button
                   type="button"
                   onClick={addProduct}
-                  disabled={!productInfo || !formData.stockInQuantity || parseFloat(formData.stockInQuantity) <= 0}
+                  disabled={!formData.itemCode || !formData.productName || !formData.stockInQuantity || parseFloat(formData.stockInQuantity) <= 0}
                   style={{
                     width: '100%',
                     padding: '10px',
-                    background: productInfo && formData.stockInQuantity && parseFloat(formData.stockInQuantity) > 0 ? '#dc3545' : '#ccc',
+                    background: (formData.itemCode && formData.productName && formData.stockInQuantity && parseFloat(formData.stockInQuantity) > 0) ? '#dc3545' : '#ccc',
                     color: '#fff',
                     border: 'none',
                     borderRadius: '8px',
-                    cursor: productInfo && formData.stockInQuantity && parseFloat(formData.stockInQuantity) > 0 ? 'pointer' : 'not-allowed',
+                    cursor: (formData.itemCode && formData.productName && formData.stockInQuantity && parseFloat(formData.stockInQuantity) > 0) ? 'pointer' : 'not-allowed',
                     fontSize: '14px',
                     fontWeight: '600',
                     display: 'flex',
@@ -556,18 +831,18 @@ const StockIn = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     transition: 'all 0.2s ease'
                   }}
                   onMouseEnter={(e) => {
-                    if (productInfo && formData.stockInQuantity && parseFloat(formData.stockInQuantity) > 0) {
+                    if (formData.itemCode && formData.productName && formData.stockInQuantity && parseFloat(formData.stockInQuantity) > 0) {
                       e.target.style.background = '#c82333';
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (productInfo && formData.stockInQuantity && parseFloat(formData.stockInQuantity) > 0) {
+                    if (formData.itemCode && formData.productName && formData.stockInQuantity && parseFloat(formData.stockInQuantity) > 0) {
                       e.target.style.background = '#dc3545';
                     }
                   }}
                 >
                   <i className="fas fa-plus"></i>
-                  Add Product
+                  {isNewProduct ? 'Add New Product' : 'Add Product'}
                 </button>
               </div>
             </div>

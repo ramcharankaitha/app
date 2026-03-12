@@ -327,7 +327,7 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
               </div>
               <button className="add-product-btn" onClick={handleAdd}>
                 <i className="fas fa-plus"></i>
-                <span>+ Add New Product</span>
+                <span>Add New Product</span>
               </button>
             </div>
 

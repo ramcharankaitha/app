@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { stockAPI, productsAPI, customersAPI } from '../services/api';
+import { stockAPI, productsAPI, customersAPI, transportAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import Toast from './Toast';
 
@@ -17,6 +17,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
   const [customerVerified, setCustomerVerified] = useState(false);
   const [isCheckingCustomer, setIsCheckingCustomer] = useState(false);
   const [customerDetails, setCustomerDetails] = useState(null);
+  const [isNewCustomer, setIsNewCustomer] = useState(false);
   // Current product being entered (single form)
   const [currentProduct, setCurrentProduct] = useState({
       itemCode: '', 
@@ -35,6 +36,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
   
   // Added products (displayed as cards)
   const [addedProducts, setAddedProducts] = useState([]);
+  const [cities, setCities] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -68,33 +70,12 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
       [name]: value
     }));
     
-    // Reset customer verification when name or phone changes
-    if (name === 'customerName' || name === 'customerPhone') {
+    // Don't reset anything when customer details change - allow free editing
+    // Only reset customer verification status when phone changes
+    if (name === 'customerPhone') {
       setCustomerVerified(false);
       setCustomerDetails(null);
-      // Clear customer details
-      setFormData(prev => ({
-        ...prev,
-        customerAddress: '',
-        customerCity: '',
-        customerState: '',
-        customerPincode: ''
-      }));
-      // Clear all products when customer changes
-      setCurrentProduct({
-        itemCode: '',
-        productName: '',
-        skuCode: '',
-        modelNumber: '',
-        quantity: '',
-        stockOutQuantity: '',
-        mrp: '',
-        sellRate: '',
-        discount: '',
-        productInfo: null,
-        isFetching: false
-      });
-      setAddedProducts([]);
+      setIsNewCustomer(false);
     }
   };
 
@@ -105,12 +86,15 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
       if (!formData.customerPhone.trim() || formData.customerPhone.trim().length < 4) {
         setCustomerVerified(false);
         setCustomerDetails(null);
+        setIsNewCustomer(false);
         return;
       }
 
       setIsCheckingCustomer(true);
       
       try {
+        console.log('🔍 Checking customer:', formData.customerPhone.trim());
+        
         // Search by phone or unique ID
         const searchResponse = await customersAPI.search(formData.customerPhone.trim());
         
@@ -126,29 +110,44 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
           const customer = matchingCustomer || searchResponse.customers[0];
           
           if (customer) {
+            console.log('✅ Customer found:', customer.full_name);
             setCustomerVerified(true);
             setCustomerDetails(customer);
+            setIsNewCustomer(false);
             // Auto-fill all customer details
             setFormData(prev => ({
               ...prev,
-              customerName: customer.full_name || prev.customerName, // Don't overwrite if name already entered
+              customerName: customer.full_name || prev.customerName,
               customerAddress: customer.address || '',
               customerCity: customer.city || '',
               customerState: customer.state || '',
               customerPincode: customer.pincode || ''
             }));
+            setSuccessMessage('✓ Customer found! You can proceed with stock out.');
+            setTimeout(() => setSuccessMessage(''), 2000);
           } else {
+            console.log('🆕 Customer not found, enabling new customer mode');
             setCustomerVerified(false);
             setCustomerDetails(null);
+            setIsNewCustomer(true);
+            setSuccessMessage('✓ New customer! Enter all details to create and stock out.');
+            setTimeout(() => setSuccessMessage(''), 3000);
           }
         } else {
+          console.log('🆕 Customer not found, enabling new customer mode');
           setCustomerVerified(false);
           setCustomerDetails(null);
+          setIsNewCustomer(true);
+          setSuccessMessage('✓ New customer! Enter all details to create and stock out.');
+          setTimeout(() => setSuccessMessage(''), 3000);
         }
       } catch (err) {
-        console.error('Error fetching customer:', err);
+        console.error('❌ Error fetching customer:', err);
         setCustomerVerified(false);
         setCustomerDetails(null);
+        setIsNewCustomer(true);
+        setSuccessMessage('✓ New customer! Enter all details to create and stock out.');
+        setTimeout(() => setSuccessMessage(''), 3000);
       } finally {
         setIsCheckingCustomer(false);
       }
@@ -161,6 +160,21 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
 
     return () => clearTimeout(timer);
   }, [formData.customerPhone]);
+
+  // Fetch cities for dropdown
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const response = await transportAPI.getCities('');
+        if (response.success) {
+          setCities(response.cities || []);
+        }
+      } catch (err) {
+        console.error('Error fetching cities:', err);
+      }
+    };
+    fetchCities();
+  }, []);
 
   const handleProductChange = (field, value) => {
     setCurrentProduct(prev => {
@@ -261,29 +275,39 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
   };
 
   const addProduct = () => {
-    // Validate that customer is verified
-    if (!customerVerified) {
+    // Validate that customer name and phone are entered (don't require verification)
+    if (!formData.customerName || !formData.customerName.trim()) {
+      setError('Customer name is required');
+      return;
+    }
+    
+    if (!formData.customerPhone || !formData.customerPhone.trim()) {
+      setError('Customer phone is required');
       return;
     }
     
     // Validate that product info exists
     if (!currentProduct.productInfo) {
+      setError('Please fetch product details first');
       return;
     }
     
     // Validate stock out quantity
     if (!currentProduct.stockOutQuantity || currentProduct.stockOutQuantity.trim() === '') {
+      setError('Stock out quantity is required');
       return;
     }
     
     const stockOutQty = parseInt(currentProduct.stockOutQuantity);
     if (isNaN(stockOutQty) || stockOutQty <= 0) {
+      setError('Stock out quantity must be greater than 0');
       return;
     }
     
     // Validate stock availability
     const currentStock = parseInt(currentProduct.quantity) || 0;
     if (stockOutQty > currentStock) {
+      setError(`Insufficient stock. Available: ${currentStock}`);
       return;
     }
     
@@ -293,6 +317,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
     );
     
     if (isDuplicate) {
+      setError('Product already added to the list');
       return;
     }
     
@@ -329,6 +354,10 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
       productInfo: null,
       isFetching: false
     });
+    
+    setError('');
+    setSuccessMessage('Product added to list');
+    setTimeout(() => setSuccessMessage(''), 2000);
   };
 
   const removeProduct = (productId) => {
@@ -352,11 +381,11 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
       return;
     }
 
-    // Validate customer is verified
-    if (!customerVerified) {
-      setError('Please verify the customer by entering a valid phone number or customer ID.');
-      return;
-    }
+    // Remove customer verification requirement - allow new customers
+    // if (!customerVerified) {
+    //   setError('Please verify the customer by entering a valid phone number or customer ID.');
+    //   return;
+    // }
 
     // Validate payment mode
     if (!formData.paymentMode || !formData.paymentMode.trim()) {
@@ -382,102 +411,139 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
       return;
     }
 
-    const confirmMessage = `Remove stock for ${addedProducts.length} item(s) for customer ${formData.customerName}?`;
+    let confirmMessage = `Stock out ${addedProducts.length} item(s) for customer ${formData.customerName}?`;
+    if (isNewCustomer) {
+      confirmMessage += '\n\nNew customer will be created.';
+    }
     
     setConfirmState({
       open: true,
       message: confirmMessage,
       onConfirm: async () => {
         setIsLoading(true);
+        setError('');
+        setSuccessMessage('');
         
         try {
           const createdBy = getUserIdentifier();
+          const API_BASE_URL = process.env.REACT_APP_API_URL?.trim().replace(/\/+$/, '') || 'http://localhost:5000/api';
           
-          // Validate each product before submitting
+          console.log('🚀 Starting stock out process for', addedProducts.length, 'products');
+          
+          // If new customer, create customer first
+          if (isNewCustomer) {
+            console.log('🆕 Creating new customer:', formData.customerName);
+            
+            const createCustomerResponse = await fetch(`${API_BASE_URL}/customers`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                fullName: formData.customerName.trim(),
+                phone: formData.customerPhone.trim(),
+                address: formData.customerAddress?.trim() || '',
+                city: formData.customerCity?.trim() || '',
+                state: formData.customerState?.trim() || '',
+                pincode: formData.customerPincode?.trim() || '',
+                email: '', // Optional
+                type: 'walkin' // Default type
+              }),
+            });
+            
+            const customerData = await createCustomerResponse.json();
+            console.log('📥 Create customer response:', customerData);
+            
+            if (!createCustomerResponse.ok || !customerData.success) {
+              throw new Error(`Failed to create customer: ${customerData.error || 'Unknown error'}`);
+            }
+            
+            console.log('✅ Customer created successfully');
+          }
+          
+          // Process each product for stock out
           for (const item of addedProducts) {
-            if (!item.itemCode || !item.itemCode.trim()) {
-              setIsLoading(false);
-              setConfirmState({ open: false, message: '', onConfirm: null });
-              return;
+            console.log('📦 Processing stock out for:', item.productName);
+            
+            const stockOutResponse = await fetch(`${API_BASE_URL}/stock/out`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                itemCode: item.itemCode.trim(),
+                quantity: item.stockOutQuantity,
+                notes: null,
+                createdBy: createdBy,
+                customerName: formData.customerName.trim(),
+                customerPhone: formData.customerPhone.trim(),
+                paymentMode: formData.paymentMode || 'Cash',
+                mrp: parseFloat(item.mrp) || 0,
+                sellRate: parseFloat(item.sellRate) || 0,
+                discount: parseFloat(item.discount) || 0
+              }),
+            });
+            
+            const stockOutData = await stockOutResponse.json();
+            console.log('📥 Stock out response:', stockOutData);
+            
+            if (!stockOutResponse.ok || !stockOutData.success) {
+              throw new Error(`Failed to stock out ${item.productName}: ${stockOutData.error || 'Unknown error'}`);
             }
             
-            if (!item.stockOutQuantity || item.stockOutQuantity <= 0) {
-              setIsLoading(false);
-              setConfirmState({ open: false, message: '', onConfirm: null });
-              return;
-            }
-            
-            if (!item.productInfo) {
-              setIsLoading(false);
-              setConfirmState({ open: false, message: '', onConfirm: null });
-              return;
-            }
+            console.log('✅ Stock out successful');
           }
+
+          // All successful
+          setError('');
+          const message = isNewCustomer 
+            ? `Successfully created customer and removed stock for ${addedProducts.length} item(s)!`
+            : `Successfully removed stock for ${addedProducts.length} item(s)!`;
           
-          const promises = addedProducts.map(item =>
-            stockAPI.stockOut(
-              item.itemCode.trim(),
-              item.stockOutQuantity,
-              null,
-              createdBy,
-              formData.customerName.trim(),
-              formData.customerPhone.trim(),
-              formData.paymentMode || 'Cash',
-              parseFloat(item.mrp) || 0,
-              parseFloat(item.sellRate) || 0,
-              parseFloat(item.discount) || 0
-            )
-          );
-
-          const results = await Promise.all(promises);
-          console.log('Stock out results:', results);
-          const allSuccess = results.every(result => result && result.success !== false);
-
-          if (allSuccess) {
-            setError('');
-            setSuccessMessage(`Successfully removed stock for ${addedProducts.length} item(s)!`);
-            // Reset form after successful stock out
-            setFormData({
-              customerName: '',
-              customerPhone: '',
-              customerAddress: '',
-              customerCity: '',
-              customerState: '',
-              customerPincode: '',
-              paymentMode: '',
-              notes: ''
-            });
-            setCustomerVerified(false);
-            setCustomerDetails(null);
-            setCurrentProduct({
-              itemCode: '',
-              productName: '',
-              skuCode: '',
-              modelNumber: '',
-              quantity: '',
-              stockOutQuantity: '',
-              mrp: '',
-              sellRate: '',
-              discount: '',
-              points: '',
-              productInfo: null,
-              isFetching: false
-            });
-            setAddedProducts([]);
-            // Wait a bit for backend to commit, then dispatch event and navigate
+          setSuccessMessage(message);
+          
+          // Reset form after successful stock out
+          setFormData({
+            customerName: '',
+            customerPhone: '',
+            customerAddress: '',
+            customerCity: '',
+            customerState: '',
+            customerPincode: '',
+            paymentMode: '',
+            notes: ''
+          });
+          setCustomerVerified(false);
+          setCustomerDetails(null);
+          setIsNewCustomer(false);
+          setCurrentProduct({
+            itemCode: '',
+            productName: '',
+            skuCode: '',
+            modelNumber: '',
+            quantity: '',
+            stockOutQuantity: '',
+            mrp: '',
+            sellRate: '',
+            discount: '',
+            points: '',
+            productInfo: null,
+            isFetching: false
+          });
+          setAddedProducts([]);
+          
+          // Wait a bit for backend to commit, then dispatch event and navigate
+          setTimeout(() => {
+            // Dispatch event to trigger refresh in StockOutMaster
+            window.dispatchEvent(new Event('stockOutCompleted'));
+            // Navigate after a short delay to allow refresh to happen
             setTimeout(() => {
-              // Dispatch event to trigger refresh in StockOutMaster
-              window.dispatchEvent(new Event('stockOutCompleted'));
-              // Navigate after a short delay to allow refresh to happen
-              setTimeout(() => {
-                handleBack();
-              }, 500);
-            }, 1500);
-          } else {
-            setError('Some products failed to remove. Please try again.');
-          }
+              handleBack();
+            }, 500);
+          }, 1500);
         } catch (err) {
-          console.error('Stock Out error:', err);
+          console.error('❌ Stock Out error:', err);
+          setError(err.message || 'An error occurred while processing. Please try again.');
         } finally {
           setIsLoading(false);
           setConfirmState({ open: false, message: '', onConfirm: null });
@@ -572,6 +638,80 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     }}></i>
                   )}
                 </div>
+              </div>
+
+              {/* Customer Address Fields - Always Accessible */}
+              <div className="form-group">
+                <label htmlFor="customerAddress">Address</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-map-marker-alt input-icon"></i>
+                  <input
+                    type="text"
+                    id="customerAddress"
+                    name="customerAddress"
+                    className="form-input"
+                    placeholder="Enter address"
+                    value={formData.customerAddress}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="customerCity">City</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-city input-icon"></i>
+                  <input
+                    type="text"
+                    id="customerCity"
+                    name="customerCity"
+                    className="form-input"
+                    placeholder="Enter or select city"
+                    value={formData.customerCity}
+                    onChange={handleInputChange}
+                    list="cities-list"
+                  />
+                  <datalist id="cities-list">
+                    {cities.map((city, index) => (
+                      <option key={index} value={city} />
+                    ))}
+                  </datalist>
+                </div>
+              </div>
+            </div>
+
+            {/* Second Row: State, Pincode, Item Code, Product Name */}
+            <div className="form-grid four-col" style={{ marginTop: '12px' }}>
+              <div className="form-group">
+                <label htmlFor="customerState">State</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-map input-icon"></i>
+                  <input
+                    type="text"
+                    id="customerState"
+                    name="customerState"
+                    className="form-input"
+                    placeholder="Enter state"
+                    value={formData.customerState}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="customerPincode">Pincode</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-mail-bulk input-icon"></i>
+                  <input
+                    type="text"
+                    id="customerPincode"
+                    name="customerPincode"
+                    className="form-input"
+                    placeholder="Enter pincode"
+                    value={formData.customerPincode}
+                    onChange={handleInputChange}
+                  />
+                </div>
           </div>
 
               {/* Row 2: Item Code, Product Name */}
@@ -587,7 +727,6 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     value={currentProduct.itemCode}
                     onChange={(e) => handleProductChange('itemCode', e.target.value)}
                     onKeyPress={handleItemCodeKeyPress}
-                    disabled={!customerVerified}
                     style={{ paddingRight: currentProduct.isFetching ? '40px' : '50px' }}
                       />
                   {currentProduct.isFetching ? (
@@ -604,7 +743,6 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                         <button
                           type="button"
                       onClick={fetchProductByItemCode}
-                      disabled={!customerVerified}
                           style={{
                             position: 'absolute',
                             right: '8px',
@@ -613,11 +751,11 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                             padding: '6px 8px',
                             width: '32px',
                             height: '32px',
-                        background: customerVerified ? '#dc3545' : '#ccc',
+                        background: '#dc3545',
                             color: '#fff',
                             border: 'none',
                             borderRadius: '6px',
-                        cursor: customerVerified ? 'pointer' : 'not-allowed',
+                        cursor: 'pointer',
                             fontSize: '12px',
                             display: 'flex',
                             alignItems: 'center',
@@ -699,7 +837,6 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                         min="1"
                     max={currentProduct.productInfo ? currentProduct.productInfo.currentQuantity : undefined}
                         step="1"
-                    disabled={!currentProduct.productInfo || !customerVerified}
                       />
                     </div>
                   </div>
@@ -786,15 +923,15 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                       <button
                         type="button"
                         onClick={addProduct}
-                        disabled={!customerVerified || !currentProduct.productInfo || !currentProduct.stockOutQuantity}
+                        disabled={!currentProduct.productInfo || !currentProduct.stockOutQuantity}
                         style={{
                           marginTop: '0',
                           padding: '8px 12px',
-                          background: (customerVerified && currentProduct.productInfo && currentProduct.stockOutQuantity) ? '#28a745' : '#ccc',
+                          background: (currentProduct.productInfo && currentProduct.stockOutQuantity) ? '#28a745' : '#ccc',
                           color: '#fff',
                           border: 'none',
                           borderRadius: '6px',
-                          cursor: (customerVerified && currentProduct.productInfo && currentProduct.stockOutQuantity) ? 'pointer' : 'not-allowed',
+                          cursor: (currentProduct.productInfo && currentProduct.stockOutQuantity) ? 'pointer' : 'not-allowed',
                           fontSize: '12px',
                           width: '100%',
                           display: 'flex',
@@ -964,9 +1101,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                             value={formData.paymentMode}
                             onChange={handleInputChange}
                             required
-                            disabled={!customerVerified}
-                            style={{ 
-                              background: !customerVerified ? '#f8f9fa' : '#fff',
+                            style={{
                               cursor: !customerVerified ? 'not-allowed' : 'pointer'
                             }}
                           >
@@ -985,7 +1120,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                       <button
                         type="submit"
                         className="btn-primary"
-                        disabled={isLoading || !customerVerified || !formData.paymentMode || addedProducts.length === 0}
+                        disabled={isLoading || !formData.paymentMode || addedProducts.length === 0}
                         style={{
                           width: '200px',
                           maxWidth: '200px',
@@ -993,14 +1128,9 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                           alignItems: 'center',
                           justifyContent: 'center',
                           gap: '8px',
-                          cursor: (isLoading || !customerVerified || !formData.paymentMode || addedProducts.length === 0) ? 'not-allowed' : 'pointer'
+                          cursor: (isLoading || !formData.paymentMode || addedProducts.length === 0) ? 'not-allowed' : 'pointer'
                         }}
                         onClick={(e) => {
-                          if (!customerVerified) {
-                            e.preventDefault();
-                            setError('Please verify the customer by entering a valid phone number or customer ID.');
-                            return;
-                          }
                           if (!formData.paymentMode || !formData.paymentMode.trim()) {
                             e.preventDefault();
                             setError('Payment mode is required. Please select a payment mode.');
@@ -1015,11 +1145,11 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                       >
                         {isLoading ? (
                           <>
-                            <i className="fas fa-spinner fa-spin"></i> Removing Stock...
+                            <i className="fas fa-spinner fa-spin"></i> Processing Stock Out...
                           </>
                         ) : (
                           <>
-                            <i className="fas fa-minus"></i> Remove Stock
+                            <i className="fas fa-minus"></i> Stock Out
                           </>
                         )}
                       </button>

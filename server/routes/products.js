@@ -1,8 +1,41 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const { pool } = require('../config/database');
 const { createCriticalAlert } = require('../services/notificationService');
 const { ensureVerificationColumn, shouldBeVerified, notifyStaffCreation } = require('../utils/verification');
+
+// Configure multer for product image uploads
+const productImageStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../uploads/products');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'product-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const uploadProductImage = multer({
+  storage: productImageStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'));
+    }
+  }
+});
 
 // Public endpoint for storefront - only returns available products
 router.get('/public', async (req, res) => {
@@ -58,7 +91,8 @@ router.get('/item-code/:itemCode', async (req, res) => {
     );
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Product not found' });
+      // Return success: false instead of 404 error to allow frontend to handle gracefully
+      return res.json({ success: false, product: null, message: 'Product not found' });
     }
     
     res.json({ success: true, product: result.rows[0] });
@@ -68,9 +102,37 @@ router.get('/item-code/:itemCode', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+// Upload product image endpoint
+router.post('/upload-image', uploadProductImage.single('productImage'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const fileUrl = `/uploads/products/${req.file.filename}`;
+    const fullUrl = `${req.protocol}://${req.get('host')}${fileUrl}`;
+    
+    res.json({
+      success: true,
+      imageUrl: fileUrl,
+      fullImageUrl: fullUrl,
+      message: 'Product image uploaded successfully'
+    });
+  } catch (error) {
+    console.error('Upload product image error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/', uploadProductImage.single('productImage'), async (req, res) => {
   try {
     const { productName, itemCode, skuCode, modelNumber, minimumQuantity, maintainingQuantity, currentQuantity, supplierName, category, mrp, discount, discount1, discount2, sellRate, purchaseRate, points, imageUrl, userRole, createdBy } = req.body;
+    
+    // Handle uploaded image file
+    let finalImageUrl = imageUrl;
+    if (req.file) {
+      finalImageUrl = `/uploads/products/${req.file.filename}`;
+    }
     
     // Ensure verification columns exist
     await ensureVerificationColumn('products');
@@ -196,7 +258,7 @@ router.post('/', async (req, res) => {
     
     if (hasImageUrl) {
       columns.push('image_url');
-      values.push(imageUrl || null);
+      values.push(finalImageUrl || null);
       paramIndex++;
     }
     

@@ -227,28 +227,32 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     setSuccessMessage('');
 
     try {
-      // Validate all 10 cities are filled
-      const emptyCities = formData.cities.filter(city => 
-        !city.city || !city.city.trim() || !city.phoneNumber || !city.phoneNumber.trim()
+      // Filter out only filled cities (both city and phone number must be filled if one is filled)
+      const filledCities = formData.cities.filter(city => 
+        city.city && city.city.trim()
       );
 
-      if (emptyCities.length > 0) {
-        setError('All 10 cities and their phone numbers are required.');
+      // Validate that if city is filled, phone number should also be filled
+      const incompleteCities = filledCities.filter(city => 
+        !city.phoneNumber || !city.phoneNumber.trim()
+      );
+
+      if (incompleteCities.length > 0) {
+        setError('If you enter a city, please also enter its phone number.');
         setIsLoading(false);
         isSubmittingRef.current = false;
         return;
       }
 
-      // Check for duplicate cities (case-insensitive)
-      const cityNames = formData.cities
-        .map(c => c.city ? c.city.trim().toLowerCase() : '')
-        .filter(name => name.length > 0);
+      // Check for duplicate cities (case-insensitive) - only among filled cities
+      const cityNames = filledCities
+        .map(c => c.city.trim().toLowerCase());
       const uniqueCities = new Set(cityNames);
       
       if (cityNames.length !== uniqueCities.size) {
         const duplicates = cityNames.filter((city, index) => cityNames.indexOf(city) !== index);
         const duplicateNames = [...new Set(duplicates)].map(dup => {
-          const found = formData.cities.find(c => c.city && c.city.toLowerCase().trim() === dup);
+          const found = filledCities.find(c => c.city && c.city.toLowerCase().trim() === dup);
           return found ? found.city : dup;
         });
         setError(`Duplicate cities found: ${duplicateNames.join(', ')}. Please use different cities.`);
@@ -257,8 +261,8 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
         return;
       }
 
-      // Prepare addresses array
-      const addresses = formData.cities.map(city => ({
+      // Prepare addresses array - only include filled cities
+      const addresses = filledCities.map(city => ({
         city: city.city.trim(),
         phoneNumber: city.phoneNumber.trim()
       }));
@@ -302,51 +306,8 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   };
 
   return (
-    <div className="dashboard-container">
+    <>
       {/* Left Sidebar Navigation */}
-      <nav className="sidebar-nav">
-        <div className="nav-item" onClick={handleHome}>
-          <div className="nav-icon">
-            <i className="fas fa-home"></i>
-          </div>
-          <span>Home</span>
-        </div>
-        {userRole === 'admin' && (
-          <div className="nav-item" onClick={handleManagers}>
-            <div className="nav-icon">
-              <i className="fas fa-users"></i>
-            </div>
-            <span>Supervisors</span>
-          </div>
-        )}
-        <div className="nav-item" onClick={handleStaff}>
-          <div className="nav-icon">
-            <i className="fas fa-user-tie"></i>
-          </div>
-          <span>Staff</span>
-        </div>
-        <div className="nav-item active" onClick={() => onNavigate && onNavigate('masterMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-th-large"></i>
-          </div>
-          <span>Master Menu</span>
-        </div>
-        <div className="nav-item" onClick={() => onNavigate && onNavigate('transactionMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-exchange-alt"></i>
-          </div>
-          <span>Transaction</span>
-        </div>
-        <div className="nav-item" onClick={handleSettings}>
-          <div className="nav-icon">
-            <i className="fas fa-cog"></i>
-          </div>
-          <span>Settings</span>
-        </div>
-      </nav>
-
-      {/* Main Content Area */}
-      <div className="dashboard-main">
         <div className="add-user-container">
           {/* Header */}
           <header className="add-user-header">
@@ -399,7 +360,7 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="phoneNumber2">Phone Number 2 <span style={{ color: '#dc3545' }}>*</span></label>
+                      <label htmlFor="phoneNumber2">Phone Number 2</label>
                       <div className="input-wrapper">
                         <i className="fas fa-phone input-icon"></i>
                         <input
@@ -410,7 +371,6 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           placeholder="Enter phone number 2"
                           value={formData.phoneNumber2}
                           onChange={handleInputChange}
-                          required
                         />
                       </div>
                     </div>
@@ -446,7 +406,7 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                         <div key={cityIndex} className="form-grid two-col" style={{ marginBottom: cityIndex === 9 ? '0' : '8px' }}>
                           <div className="form-group" style={{ position: 'relative' }}>
                             <label htmlFor={`city${cityIndex + 1}`}>
-                              City {cityIndex + 1} <span style={{ color: '#dc3545' }}>*</span>
+                              City {cityIndex + 1}
                             </label>
                             <div className="input-wrapper" ref={el => cityInputRefs.current[cityIndex] = el}>
                               <i className="fas fa-city input-icon"></i>
@@ -487,7 +447,6 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                                     }));
                                   }
                                 }}
-                                required
                               />
                             </div>
                             {showCityDropdown[cityIndex] && citySuggestions[cityIndex] && citySuggestions[cityIndex].length > 0 && dropdownPositions[cityIndex] && createPortal(
@@ -539,7 +498,7 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
 
                           <div className="form-group">
                             <label htmlFor={`cityPhone${cityIndex + 1}`}>
-                              City {cityIndex + 1} Phone Number <span style={{ color: '#dc3545' }}>*</span>
+                              City {cityIndex + 1} Phone Number
                             </label>
                             <div className="input-wrapper">
                               <i className="fas fa-phone input-icon"></i>
@@ -550,7 +509,6 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                                 placeholder={`Enter phone number for city ${cityIndex + 1}`}
                                 value={formData.cities[cityIndex].phoneNumber}
                                 onChange={(e) => handleCityChange(cityIndex, 'phoneNumber', e.target.value)}
-                                required
                               />
                             </div>
                           </div>
@@ -575,8 +533,6 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
               </form>
           </main>
         </div>
-      </div>
-
       <ConfirmDialog
         isOpen={confirmState.open}
         title="Confirm Submission"
@@ -593,7 +549,7 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
           setConfirmState({ open: false, message: '', onConfirm: null });
         }}
       />
-    </div>
+    </>
   );
 };
 

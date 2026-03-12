@@ -28,6 +28,7 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     handlerName: '',
     handlerPhone: '',
     productComplaint: '',
+    amountEstimated: '',
     estimatedDate: ''
   });
   const [handlers, setHandlers] = useState([]);
@@ -386,15 +387,15 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
         customerName: formData.customerName,
         warranty: formData.warrantyStatus === 'Warranty',
         unwarranty: formData.warrantyStatus === 'Unwarranty',
-        itemCode: formData.itemCode || null,
-        brandName: formData.brandName || null,
         productName: formData.productName || formData.product || null,
+        brandName: formData.brandName || null,
         serialNumber: formData.serialNumber || null,
         serviceDate: formData.estimatedDate || formData.serviceDate,
         handlerId: formData.handlerId ? parseInt(formData.handlerId) : null,
         handlerName: formData.handlerName || null,
         handlerPhone: null,
         productComplaint: formData.productComplaint || null,
+        amountEstimated: formData.amountEstimated ? parseFloat(formData.amountEstimated) : null,
         estimatedDate: formData.estimatedDate || null,
         createdBy: createdBy
       };
@@ -432,53 +433,8 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   };
 
   return (
-    <div className="dashboard-container">
+    <>
       {/* Left Sidebar Navigation */}
-      <nav className="sidebar-nav">
-        <div className="nav-item" onClick={handleHome}>
-          <div className="nav-icon">
-            <i className="fas fa-home"></i>
-          </div>
-          <span>Home</span>
-        </div>
-        {userRole === 'admin' && (
-          <div className="nav-item" onClick={handleManagers}>
-            <div className="nav-icon">
-              <i className="fas fa-users"></i>
-            </div>
-            <span>Supervisors</span>
-          </div>
-        )}
-        {userRole !== 'staff' && (
-          <div className="nav-item" onClick={handleStaff}>
-            <div className="nav-icon">
-              <i className="fas fa-user-tie"></i>
-            </div>
-            <span>Staff</span>
-          </div>
-        )}
-        <div className="nav-item" onClick={() => onNavigate && onNavigate('masterMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-th-large"></i>
-          </div>
-          <span>Master Menu</span>
-        </div>
-        <div className="nav-item active" onClick={() => onNavigate && onNavigate('transactionMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-exchange-alt"></i>
-          </div>
-          <span>Transaction</span>
-        </div>
-        <div className="nav-item" onClick={handleSettings}>
-          <div className="nav-icon">
-            <i className="fas fa-cog"></i>
-          </div>
-          <span>Settings</span>
-        </div>
-      </nav>
-
-      {/* Main Content Area */}
-      <div className="dashboard-main">
         <div className="add-user-container">
           {/* Header */}
           <header className="add-user-header">
@@ -666,31 +622,19 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
 
                 {formData.warrantyStatus === 'Warranty' && (
                   <div className="form-group">
-                    <label htmlFor="itemCode">Item Code *</label>
-                    <div className="input-wrapper" style={{ position: 'relative' }}>
-                      <i className="fas fa-barcode input-icon"></i>
+                    <label htmlFor="productName">Product Name</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-box input-icon"></i>
                       <input
                         type="text"
-                        id="itemCode"
-                        name="itemCode"
+                        id="productName"
+                        name="productName"
                         className="form-input"
-                        placeholder="Enter item code"
-                        value={formData.itemCode}
-                        onChange={handleItemCodeChange}
-                        required
-                        disabled={isFetchingProduct}
+                        placeholder="Enter product name"
+                        value={formData.productName}
+                        onChange={handleInputChange}
                         autoFocus
-                        style={{ paddingRight: isFetchingProduct ? '40px' : '50px' }}
                       />
-                      {isFetchingProduct && (
-                        <i className="fas fa-spinner fa-spin" style={{ 
-                          position: 'absolute', 
-                          right: '12px', 
-                          top: '50%', 
-                          transform: 'translateY(-50%)',
-                          color: '#666'
-                        }}></i>
-                      )}
                     </div>
                   </div>
                 )}
@@ -719,7 +663,7 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
               {formData.warrantyStatus === 'Warranty' && (
                 <div className="form-grid four-col" style={{ marginTop: '12px' }}>
                   <div className="form-group">
-                    <label htmlFor="serialNumber">Serial Number *</label>
+                    <label htmlFor="serialNumber">Serial Number</label>
                     <div className="input-wrapper">
                       <i className="fas fa-hashtag input-icon"></i>
                       <input
@@ -730,13 +674,46 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                         placeholder="Enter serial number"
                         value={formData.serialNumber}
                         onChange={handleInputChange}
-                        required
                       />
                     </div>
                   </div>
 
                   <div className="form-group">
-                    <label htmlFor="handlerName">Handler Name *</label>
+                    <label htmlFor="productComplaint">Product Complaint</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-comment-alt input-icon"></i>
+                      <input
+                        type="text"
+                        id="productComplaint"
+                        name="productComplaint"
+                        className="form-input"
+                        placeholder="Enter product complaint"
+                        value={formData.productComplaint}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="amountEstimated">Amount Estimated</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-rupee-sign input-icon"></i>
+                      <input
+                        type="number"
+                        id="amountEstimated"
+                        name="amountEstimated"
+                        className="form-input"
+                        placeholder="Enter estimated amount"
+                        value={formData.amountEstimated}
+                        onChange={handleInputChange}
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="handlerName">Handler Name</label>
                     <div className="input-wrapper">
                       <i className="fas fa-user-tie input-icon"></i>
                       <select
@@ -745,7 +722,6 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                         className="form-input"
                         value={formData.handlerId}
                         onChange={handleHandlerChange}
-                        required
                         style={{ paddingLeft: '50px', appearance: 'auto', cursor: 'pointer' }}
                       >
                         <option value="">Select handler</option>
@@ -760,7 +736,7 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                   </div>
 
                   <div className="form-group">
-                    <label htmlFor="estimatedDate">Estimate Date *</label>
+                    <label htmlFor="estimatedDate">Estimate Date</label>
                     <div className="input-wrapper">
                       <i className="fas fa-calendar input-icon"></i>
                       <input
@@ -771,7 +747,6 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                         value={formData.estimatedDate}
                         onChange={handleInputChange}
                         min={minServiceDate}
-                        required
                       />
                     </div>
                   </div>
@@ -792,6 +767,25 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                         placeholder="Enter product complaint"
                         value={formData.productComplaint}
                         onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="amountEstimated">Amount Estimated *</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-rupee-sign input-icon"></i>
+                      <input
+                        type="number"
+                        id="amountEstimated"
+                        name="amountEstimated"
+                        className="form-input"
+                        placeholder="Enter estimated amount"
+                        value={formData.amountEstimated}
+                        onChange={handleInputChange}
+                        min="0"
+                        step="0.01"
                         required
                       />
                     </div>
@@ -832,8 +826,6 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
             </form>
           </main>
         </div>
-      </div>
-
       <ConfirmDialog
         isOpen={confirmState.open}
         title="Confirm Creation"
@@ -846,7 +838,7 @@ const AddService = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
         }}
         onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
       />
-    </div>
+    </>
   );
 };
 

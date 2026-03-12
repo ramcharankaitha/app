@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { chitPlansAPI } from '../services/api';
+import { chitPlansAPI, transportAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import Toast from './Toast';
 
@@ -20,6 +20,7 @@ const AddChitCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
+  const [cities, setCities] = useState([]);
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -41,6 +42,21 @@ const AddChitCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =
       }
     };
     fetchPlans();
+  }, []);
+
+  // Fetch cities for dropdown
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const response = await transportAPI.getCities('');
+        if (response.success) {
+          setCities(response.cities || []);
+        }
+      } catch (err) {
+        console.error('Error fetching cities:', err);
+      }
+    };
+    fetchCities();
   }, []);
 
   const handleBack = () => {
@@ -157,51 +173,8 @@ const AddChitCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =
   const selectedPlan = plans.find(p => p.id === parseInt(formData.chitPlanId));
 
   return (
-    <div className="dashboard-container">
+    <>
       {/* Left Sidebar Navigation */}
-      <nav className="sidebar-nav">
-        <div className="nav-item" onClick={handleHome}>
-          <div className="nav-icon">
-            <i className="fas fa-home"></i>
-          </div>
-          <span>Home</span>
-        </div>
-        {userRole === 'admin' && (
-          <div className="nav-item" onClick={handleManagers}>
-            <div className="nav-icon">
-              <i className="fas fa-users"></i>
-            </div>
-            <span>Supervisors</span>
-          </div>
-        )}
-        <div className="nav-item" onClick={handleStaff}>
-          <div className="nav-icon">
-            <i className="fas fa-user-tie"></i>
-          </div>
-          <span>Staff</span>
-        </div>
-        <div className="nav-item active" onClick={() => onNavigate && onNavigate('masterMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-th-large"></i>
-          </div>
-          <span>Master Menu</span>
-        </div>
-        <div className="nav-item" onClick={() => onNavigate && onNavigate('transactionMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-exchange-alt"></i>
-          </div>
-          <span>Transaction</span>
-        </div>
-        <div className="nav-item" onClick={handleSettings}>
-          <div className="nav-icon">
-            <i className="fas fa-cog"></i>
-          </div>
-          <span>Settings</span>
-        </div>
-      </nav>
-
-      {/* Main Content Area */}
-      <div className="dashboard-main">
         <div className="add-user-container">
           {/* Header */}
           <header className="add-user-header">
@@ -295,10 +268,16 @@ const AddChitCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =
                           id="city"
                           name="city"
                           className="form-input"
-                          placeholder="Enter city"
+                          placeholder="Enter or select city"
                           value={formData.city}
                           onChange={handleInputChange}
+                          list="cities-list"
                         />
+                        <datalist id="cities-list">
+                          {cities.map((city, index) => (
+                            <option key={index} value={city} />
+                          ))}
+                        </datalist>
                       </div>
                     </div>
 
@@ -408,8 +387,6 @@ const AddChitCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =
               </form>
           </main>
         </div>
-      </div>
-
       <ConfirmDialog
         isOpen={confirmState.open}
         title="Confirm Submission"
@@ -422,7 +399,7 @@ const AddChitCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) =
         }}
         onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
       />
-    </div>
+    </>
   );
 };
 

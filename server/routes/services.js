@@ -173,14 +173,8 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Customer name is required' });
     }
 
-    // Validate based on warranty status
-    if (warranty && (!itemCode || !serialNumber || !handlerId || !estimatedDate)) {
-      return res.status(400).json({ error: 'For warranty services: Item Code, Serial Number, Handler Name, and Estimate Date are required' });
-    }
-
-    if (unwarranty && (!productComplaint || !estimatedDate)) {
-      return res.status(400).json({ error: 'For unwarranty services: Product Complaint and Estimated Date are required' });
-    }
+    // No field validation - accept whatever fields are provided
+    // Products can be existing or new, all should be accepted
 
     // Ensure handler_id is ALWAYS set if handlerName is provided
     let finalHandlerId = handlerId ? parseInt(handlerId) : null;

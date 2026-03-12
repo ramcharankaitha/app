@@ -190,47 +190,8 @@ const ChitPlanMaster = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' 
   });
 
   return (
-    <div className="dashboard-container">
+    <>
       {/* Sidebar */}
-      <nav className="sidebar-nav">
-        {userRole === 'admin' && (
-          <div className="nav-item" onClick={() => onNavigate && onNavigate('users')}>
-            <div className="nav-icon">
-              <i className="fas fa-users"></i>
-            </div>
-            <span>Supervisors</span>
-          </div>
-        )}
-        {userRole !== 'staff' && (
-          <div className="nav-item" onClick={handleStaff}>
-            <div className="nav-icon">
-              <i className="fas fa-user-tie"></i>
-            </div>
-            <span>Staff</span>
-          </div>
-        )}
-        <div className="nav-item active" onClick={() => onNavigate && onNavigate('masterMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-th-large"></i>
-          </div>
-          <span>Master Menu</span>
-        </div>
-        <div className="nav-item" onClick={() => onNavigate && onNavigate('transactionMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-exchange-alt"></i>
-          </div>
-          <span>Transaction</span>
-        </div>
-        <div className="nav-item" onClick={handleSettings}>
-          <div className="nav-icon">
-            <i className="fas fa-cog"></i>
-          </div>
-          <span>Settings</span>
-        </div>
-      </nav>
-
-      {/* Main */}
-      <div className="dashboard-main">
         <div className="staff-container">
           {/* Header */}
           <header className="staff-header">
@@ -427,7 +388,6 @@ const ChitPlanMaster = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' 
             </div>
           </main>
         </div>
-      </div>
 
       {/* Confirmation Dialog */}
       <ConfirmDialog
@@ -611,11 +571,11 @@ const ChitPlanMaster = ({ onBack, onAddChitPlan, onNavigate, userRole = 'admin' 
               >
                 {isSaving ? 'Saving...' : 'Save Changes'}
               </button>
-            </div>
+          </div>
           </div>
         </div>
-      )}
-    </div>
+              )}
+    </>
   );
 };
 

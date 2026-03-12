@@ -108,53 +108,8 @@ const SupplierTransactionMaster = ({ onBack, onAddTransaction, onNavigate, userR
   };
 
   return (
-    <div className="dashboard-container">
+    <>
       {/* Left Sidebar Navigation */}
-      <nav className="sidebar-nav">
-        <div className="nav-item" onClick={handleBack}>
-          <div className="nav-icon">
-            <i className="fas fa-home"></i>
-          </div>
-          <span>Home</span>
-        </div>
-        {userRole === 'admin' && (
-          <div className="nav-item" onClick={() => onNavigate && onNavigate('users')}>
-            <div className="nav-icon">
-              <i className="fas fa-users"></i>
-            </div>
-            <span>Supervisors</span>
-          </div>
-        )}
-        {userRole !== 'staff' && (
-          <div className="nav-item" onClick={() => onNavigate && onNavigate('staff')}>
-            <div className="nav-icon">
-              <i className="fas fa-user-tie"></i>
-            </div>
-            <span>Staff</span>
-          </div>
-        )}
-        <div className="nav-item" onClick={() => onNavigate && onNavigate('masterMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-th-large"></i>
-          </div>
-          <span>Master Menu</span>
-        </div>
-        <div className="nav-item active" onClick={() => onNavigate && onNavigate('transactionMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-exchange-alt"></i>
-          </div>
-          <span>Transaction</span>
-        </div>
-        <div className="nav-item" onClick={() => onNavigate && onNavigate('settings')}>
-          <div className="nav-icon">
-            <i className="fas fa-cog"></i>
-          </div>
-          <span>Settings</span>
-        </div>
-      </nav>
-
-      {/* Main Content Area */}
-      <div className="dashboard-main">
         <div className="staff-container">
           {/* Header */}
           <header className="staff-header">
@@ -279,7 +234,6 @@ const SupplierTransactionMaster = ({ onBack, onAddTransaction, onNavigate, userR
             )}
           </div>
         </div>
-      </div>
 
       {/* View Transaction Modal */}
       {showViewModal && selectedTransaction && (
@@ -366,11 +320,11 @@ const SupplierTransactionMaster = ({ onBack, onAddTransaction, onNavigate, userR
                   <strong>Notes:</strong> {selectedTransaction.notes}
                 </div>
               )}
-            </div>
+          </div>
           </div>
         </div>
-      )}
-    </div>
+              )}
+    </>
   );
 };
 

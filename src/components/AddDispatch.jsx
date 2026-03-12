@@ -9,13 +9,11 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
     customer: '',
     phone: '',
     address: '',
-    area: '',
     city: '',
     state: '',
     pincode: '',
     material: '',
     packaging: '',
-    bookingToCity: '',
     bookingCityNumber: '',
     transportName: '',
     transportPhone: '',
@@ -33,21 +31,28 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
   const customerDropdownRef = useRef(null);
   const [customerDropdownPosition, setCustomerDropdownPosition] = useState(null);
   
-  // Booking city autocomplete states
-  const [citySuggestions, setCitySuggestions] = useState([]);
-  const [showCityDropdown, setShowCityDropdown] = useState(false);
-  const [isLoadingCities, setIsLoadingCities] = useState(false);
-  const [isLoadingCityNumber, setIsLoadingCityNumber] = useState(false);
-  const [cityNumberFound, setCityNumberFound] = useState(false);
-  const cityDropdownRef = useRef(null);
-  const cityInputRef = useRef(null);
-  const [cityDropdownPosition, setCityDropdownPosition] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
   const [isFetchingCustomerByPhone, setIsFetchingCustomerByPhone] = useState(false);
   const [customerVerifiedByPhone, setCustomerVerifiedByPhone] = useState(false);
+  const [cities, setCities] = useState([]);
+
+  // Fetch cities for dropdown
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const response = await transportAPI.getCities('');
+        if (response.success) {
+          setCities(response.cities || []);
+        }
+      } catch (err) {
+        console.error('Error fetching cities:', err);
+      }
+    };
+    fetchCities();
+  }, []);
 
   const handleBack = () => {
     if (onNavigate) {
@@ -149,144 +154,10 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
       return;
     }
     
-    // Handle booking city search
-    if (name === 'bookingToCity') {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value,
-        bookingCityNumber: '', // Clear booking city number when city changes
-        transportName: '', // Clear transport name when city changes
-        transportPhone: '' // Clear transport phone when city changes
-      }));
-      
-      if (value.trim().length >= 1) {
-        // Calculate dropdown position
-        if (cityInputRef.current) {
-          const rect = cityInputRef.current.getBoundingClientRect();
-          setCityDropdownPosition({
-            top: rect.bottom + 4,
-            left: rect.left,
-            width: rect.width
-          });
-        }
-        setShowCityDropdown(true);
-        searchCities(value);
-      } else {
-        setShowCityDropdown(false);
-        setCitySuggestions([]);
-        setCityDropdownPosition(null);
-      }
-      
-      // If city is manually entered and not from dropdown, try to fetch phone number
-      if (value.trim().length > 0 && !citySuggestions.includes(value)) {
-        fetchBookingCityNumber(value);
-      }
-      return;
-    }
-    
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-  };
-
-  // Search cities from transport master
-  const searchCities = async (searchTerm) => {
-    if (!searchTerm || searchTerm.trim().length < 1) {
-      setCitySuggestions([]);
-      return;
-    }
-
-    try {
-      setIsLoadingCities(true);
-      const response = await transportAPI.getCities(searchTerm);
-      if (response.success) {
-        setCitySuggestions(response.cities || []);
-      }
-    } catch (err) {
-      console.error('Error searching cities:', err);
-      setCitySuggestions([]);
-    } finally {
-      setIsLoadingCities(false);
-    }
-  };
-
-  // Fetch booking city number, transport name, and transport phone from transport master
-  const fetchBookingCityNumber = async (cityName) => {
-    if (!cityName || !cityName.trim()) {
-      return;
-    }
-
-    try {
-      setIsLoadingCityNumber(true);
-      const response = await transportAPI.getByAddress(cityName.trim(), null, null);
-      if (response.success && response.transports && response.transports.length > 0) {
-        // Find the city in the addresses array and get its phone number, transport name, and transport phone
-        for (const transport of response.transports) {
-          if (transport.addresses && Array.isArray(transport.addresses)) {
-            const cityAddress = transport.addresses.find(addr => 
-              addr.city && addr.city.toLowerCase().trim() === cityName.toLowerCase().trim()
-            );
-            if (cityAddress && cityAddress.phoneNumber) {
-              setFormData(prev => ({
-                ...prev,
-                bookingCityNumber: cityAddress.phoneNumber,
-                transportName: transport.travels_name || transport.name || '',
-                transportPhone: transport.phone_number || ''
-              }));
-              setCityNumberFound(true);
-              setIsLoadingCityNumber(false);
-              return;
-            }
-          }
-        }
-        // If no exact match found, try partial match
-        for (const transport of response.transports) {
-          if (transport.addresses && Array.isArray(transport.addresses)) {
-            const cityAddress = transport.addresses.find(addr => 
-              addr.city && addr.city.toLowerCase().trim().includes(cityName.toLowerCase().trim())
-            );
-            if (cityAddress && cityAddress.phoneNumber) {
-              setFormData(prev => ({
-                ...prev,
-                bookingCityNumber: cityAddress.phoneNumber,
-                transportName: transport.travels_name || transport.name || '',
-                transportPhone: transport.phone_number || ''
-              }));
-              setCityNumberFound(true);
-              setIsLoadingCityNumber(false);
-              return;
-            }
-          }
-        }
-      }
-      // If no phone number found, clear it
-      setFormData(prev => ({
-        ...prev,
-        bookingCityNumber: '',
-        transportName: '',
-        transportPhone: ''
-      }));
-      setCityNumberFound(false);
-    } catch (err) {
-      console.error('Error fetching booking city number:', err);
-      setCityNumberFound(false);
-    } finally {
-      setIsLoadingCityNumber(false);
-    }
-  };
-
-  // Handle city selection from dropdown
-  const handleCitySelect = (city) => {
-    setFormData(prev => ({
-      ...prev,
-      bookingToCity: city
-    }));
-    setShowCityDropdown(false);
-    setCitySuggestions([]);
-    setCityDropdownPosition(null);
-    // Fetch phone number, transport name, and transport phone for selected city
-    fetchBookingCityNumber(city);
   };
 
   // Search customers by name
@@ -341,7 +212,6 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
               phone: customer.phone || prev.phone,
               address: customer.address || '',
               city: customer.city || '',
-              area: customer.state || '',
               state: customer.state || '',
               pincode: customer.pincode || ''
             }));
@@ -397,7 +267,6 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
       phone: customer.phone || '',
       address: customer.address || '',
       city: customer.city || '',
-      area: customer.state || '',
       state: customer.state || '',
       pincode: customer.pincode || ''
     }));
@@ -432,7 +301,7 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
 
   };
 
-  // Close customer and city dropdowns when clicking outside and update positions
+  // Close customer dropdown when clicking outside and update positions
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -444,16 +313,6 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
         setShowCustomerDropdown(false);
         setCustomerDropdownPosition(null);
       }
-      
-      if (
-        cityInputRef.current && 
-        !cityInputRef.current.contains(event.target) &&
-        cityDropdownRef.current &&
-        !cityDropdownRef.current.contains(event.target)
-      ) {
-        setShowCityDropdown(false);
-        setCityDropdownPosition(null);
-      }
     };
 
     // Update dropdown positions on scroll/resize
@@ -461,14 +320,6 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
       if (customerInputRef.current && showCustomerDropdown) {
         const rect = customerInputRef.current.getBoundingClientRect();
         setCustomerDropdownPosition({
-          top: rect.bottom + 4,
-          left: rect.left,
-          width: rect.width
-        });
-      }
-      if (cityInputRef.current && showCityDropdown) {
-        const rect = cityInputRef.current.getBoundingClientRect();
-        setCityDropdownPosition({
           top: rect.bottom + 4,
           left: rect.left,
           width: rect.width
@@ -485,12 +336,12 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
       window.removeEventListener('scroll', handleScroll, true);
       window.removeEventListener('resize', handleScroll);
     };
-  }, [showCustomerDropdown, showCityDropdown]);
+  }, [showCustomerDropdown]);
 
-  // Fetch matching transports when city or area changes
+  // Fetch matching transports when city changes
   useEffect(() => {
-    // Only fetch if at least one address field is provided
-    if (!formData.city && !formData.area) {
+    // Only fetch if city is provided
+    if (!formData.city) {
       setMatchingTransports([]);
       return;
     }
@@ -499,10 +350,10 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
     const timer = setTimeout(async () => {
       try {
         setIsLoadingTransports(true);
-        console.log('Fetching transports for:', { city: formData.city, area: formData.area });
+        console.log('Fetching transports for:', { city: formData.city });
         const response = await transportAPI.getByAddress(
           formData.city || null,
-          formData.area || null,
+          null,
           null
         );
         
@@ -520,27 +371,7 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
     }, 500); // 500ms debounce
 
     return () => clearTimeout(timer);
-  }, [formData.city, formData.area]);
-
-  // Auto-fetch booking city phone number when bookingToCity changes
-  useEffect(() => {
-    // Only fetch if city name is entered (at least 2 characters)
-    if (!formData.bookingToCity || formData.bookingToCity.trim().length < 2) {
-      setCityNumberFound(false);
-      setFormData(prev => ({
-        ...prev,
-        bookingCityNumber: ''
-      }));
-      return;
-    }
-
-    // Don't fetch if user is still typing (wait for them to finish)
-    const timer = setTimeout(async () => {
-      await fetchBookingCityNumber(formData.bookingToCity);
-    }, 500); // 500ms debounce
-
-    return () => clearTimeout(timer);
-  }, [formData.bookingToCity]);
+  }, [formData.city]);
 
   const submitDispatch = async () => {
     setIsLoading(true);
@@ -559,13 +390,11 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
         name: formData.customer, // Use customer name as the name field
         phone: formData.phone,
         address: formData.address,
-        area: formData.area,
         city: formData.city,
         state: formData.state,
         pincode: formData.pincode,
         material: formData.material,
         packaging: formData.packaging,
-        bookingToCity: formData.bookingToCity,
         bookingCityNumber: formData.bookingCityNumber,
         transportName: formData.transportName,
         transportPhone: formData.transportPhone,
@@ -613,49 +442,8 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
   };
 
   return (
-    <div className="dashboard-container">
+    <>
       {/* Left Sidebar Navigation */}
-      <nav className="sidebar-nav">
-        <div className="nav-item" onClick={handleHome}>
-          <div className="nav-icon">
-            <i className="fas fa-home"></i>
-          </div>
-          <span>Home</span>
-        </div>
-        <div className="nav-item" onClick={handleManagers}>
-          <div className="nav-icon">
-            <i className="fas fa-users"></i>
-          </div>
-          <span>Supervisors</span>
-        </div>
-        <div className="nav-item" onClick={handleStaff}>
-          <div className="nav-icon">
-            <i className="fas fa-user-tie"></i>
-          </div>
-          <span>Staff</span>
-        </div>
-        <div className="nav-item" onClick={() => onNavigate && onNavigate('masterMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-th-large"></i>
-          </div>
-          <span>Master Menu</span>
-        </div>
-        <div className="nav-item active" onClick={() => onNavigate && onNavigate('transactionMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-exchange-alt"></i>
-          </div>
-          <span>Transaction</span>
-        </div>
-        <div className="nav-item" onClick={handleSettings}>
-          <div className="nav-icon">
-            <i className="fas fa-cog"></i>
-          </div>
-          <span>Settings</span>
-        </div>
-      </nav>
-
-      {/* Main Content Area */}
-      <div className="dashboard-main">
         <div className="add-user-container">
           {/* Header */}
           <header className="add-user-header">
@@ -673,7 +461,7 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                 {/* All fields in 3-column grid without section titles */}
                 <div className="form-section">
                   <div className="form-grid four-col">
-                    {/* Row 1: Customer Name, Customer Phone Number, Street, Area */}
+                    {/* Row 1: Customer Name, Customer Phone Number, City, State */}
                       <div className="form-group" style={{ position: 'relative' }}>
                       <label htmlFor="customer">Customer Name</label>
                         <div className="input-wrapper" ref={customerInputRef}>
@@ -809,39 +597,6 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                       </div>
 
                     <div className="form-group">
-                      <label htmlFor="address">Street</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-map-marker-alt input-icon"></i>
-                        <input
-                          type="text"
-                          id="address"
-                          name="address"
-                          className="form-input"
-                          placeholder="Enter street address"
-                          value={formData.address}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="area">Area</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-map input-icon"></i>
-                        <input
-                          type="text"
-                          id="area"
-                          name="area"
-                          className="form-input"
-                          placeholder="Enter area"
-                          value={formData.area}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Row 2: City, Material, Packaging, Booking to City */}
-                    <div className="form-group">
                       <label htmlFor="city">City</label>
                       <div className="input-wrapper">
                         <i className="fas fa-city input-icon"></i>
@@ -850,10 +605,16 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                           id="city"
                           name="city"
                           className="form-input"
-                          placeholder="Enter city"
+                          placeholder="Enter or select city"
                           value={formData.city}
                           onChange={handleInputChange}
+                          list="cities-list"
                         />
+                        <datalist id="cities-list">
+                          {cities.map((city, index) => (
+                            <option key={index} value={city} />
+                          ))}
+                        </datalist>
                       </div>
                     </div>
 
@@ -873,19 +634,19 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                       </div>
                     </div>
 
+                    {/* Row 2: Address, Material, Packaging, Pincode */}
                     <div className="form-group">
-                      <label htmlFor="pincode">Pincode</label>
+                      <label htmlFor="address">Address</label>
                       <div className="input-wrapper">
-                        <i className="fas fa-mail-bulk input-icon"></i>
+                        <i className="fas fa-map-marker-alt input-icon"></i>
                         <input
                           type="text"
-                          id="pincode"
-                          name="pincode"
+                          id="address"
+                          name="address"
                           className="form-input"
-                          placeholder="Enter pincode"
-                          value={formData.pincode}
+                          placeholder="Enter address"
+                          value={formData.address}
                           onChange={handleInputChange}
-                          maxLength="10"
                         />
                       </div>
                     </div>
@@ -922,127 +683,19 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                       </div>
                     </div>
 
-                    <div className="form-group" style={{ position: 'relative' }}>
-                      <label htmlFor="bookingToCity">Booking to City</label>
-                      <div className="input-wrapper" ref={cityInputRef}>
-                        <i className="fas fa-city input-icon"></i>
+                    <div className="form-group">
+                      <label htmlFor="pincode">Pincode</label>
+                      <div className="input-wrapper">
+                        <i className="fas fa-mail-bulk input-icon"></i>
                         <input
                           type="text"
-                          id="bookingToCity"
-                          name="bookingToCity"
+                          id="pincode"
+                          name="pincode"
                           className="form-input"
-                          placeholder="Enter or select city"
-                          value={formData.bookingToCity}
+                          placeholder="Enter pincode"
+                          value={formData.pincode}
                           onChange={handleInputChange}
-                          onFocus={(e) => {
-                            // Calculate dropdown position on focus
-                            const rect = e.target.getBoundingClientRect();
-                            setCityDropdownPosition({
-                              top: rect.bottom + 4,
-                              left: rect.left,
-                              width: rect.width
-                            });
-                            if (formData.bookingToCity.trim().length >= 1) {
-                              setShowCityDropdown(true);
-                              searchCities(formData.bookingToCity);
-                            }
-                          }}
                         />
-                        {isLoadingCities && (
-                          <div style={{ 
-                            position: 'absolute', 
-                            right: '10px', 
-                            top: '50%', 
-                            transform: 'translateY(-50%)',
-                            color: '#999'
-                          }}>
-                            <i className="fas fa-spinner fa-spin"></i>
-                          </div>
-                        )}
-                      </div>
-                      {showCityDropdown && citySuggestions.length > 0 && cityDropdownPosition && createPortal(
-                        <div 
-                          ref={cityDropdownRef}
-                          style={{
-                            position: 'fixed',
-                            top: `${cityDropdownPosition.top}px`,
-                            left: `${cityDropdownPosition.left}px`,
-                            width: `${cityDropdownPosition.width}px`,
-                            backgroundColor: '#fff',
-                            border: '1px solid #e0e0e0',
-                            borderRadius: '8px',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                            zIndex: 99999,
-                            maxHeight: '200px',
-                            overflowY: 'auto',
-                            marginTop: '0'
-                          }}
-                          onMouseDown={(e) => e.preventDefault()}
-                        >
-                          {isLoadingCities ? (
-                            <div style={{ padding: '12px 16px', textAlign: 'center', color: '#666' }}>
-                              <i className="fas fa-spinner fa-spin"></i> Searching...
-                            </div>
-                          ) : (
-                            citySuggestions.map((city, index) => (
-                              <div
-                                key={index}
-                                onClick={() => handleCitySelect(city)}
-                                style={{
-                                  padding: '12px 16px',
-                                  cursor: 'pointer',
-                                  borderBottom: index < citySuggestions.length - 1 ? '1px solid #f0f0f0' : 'none',
-                                  background: '#fff',
-                                  color: '#333'
-                                }}
-                                onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                                onMouseLeave={(e) => e.target.style.background = '#fff'}
-                              >
-                                {city}
-                              </div>
-                            ))
-                          )}
-                        </div>,
-                        document.body
-                      )}
-                    </div>
-
-                    <div className="form-group" style={{ position: 'relative' }}>
-                      <label htmlFor="bookingCityNumber">Booking City Number</label>
-                      <div className="input-wrapper" style={{ position: 'relative' }}>
-                        <i className="fas fa-phone input-icon"></i>
-                        <input
-                          type="tel"
-                          id="bookingCityNumber"
-                          name="bookingCityNumber"
-                          className="form-input"
-                          placeholder="Auto-fetched from transport master"
-                          value={formData.bookingCityNumber}
-                          readOnly
-                          style={{
-                            background: '#f5f5f5',
-                            paddingRight: isLoadingCityNumber || cityNumberFound ? '40px' : '18px',
-                            borderColor: cityNumberFound ? '#28a745' : undefined
-                          }}
-                        />
-                        {isLoadingCityNumber && (
-                          <i className="fas fa-spinner fa-spin" style={{ 
-                            position: 'absolute', 
-                            right: '12px', 
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            color: '#666' 
-                          }}></i>
-                        )}
-                        {!isLoadingCityNumber && cityNumberFound && formData.bookingCityNumber && (
-                          <i className="fas fa-check-circle" style={{ 
-                            position: 'absolute', 
-                            right: '12px', 
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            color: '#28a745' 
-                          }}></i>
-                        )}
                       </div>
                     </div>
 
@@ -1232,10 +885,6 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                   </div>
                 </div>
 
-
-                <Toast message={error} type="error" onClose={() => setError('')} />
-                <Toast message={successMessage} type="success" onClose={() => setSuccessMessage('')} />
-
                 {/* Action Buttons */}
                 <div className="form-actions">
                   <button type="submit" className="create-user-btn" disabled={isLoading}>
@@ -1246,10 +895,11 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
                   </button>
                 </div>
               </form>
+
+              <Toast message={error} type="error" onClose={() => setError('')} />
+              <Toast message={successMessage} type="success" onClose={() => setSuccessMessage('')} />
           </main>
         </div>
-      </div>
-
       <ConfirmDialog
         isOpen={confirmState.open}
         title="Confirm Submission"
@@ -1262,7 +912,7 @@ const AddDispatch = ({ onBack, onCancel, onNavigate }) => {
         }}
         onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
       />
-    </div>
+    </>
   );
 };
 

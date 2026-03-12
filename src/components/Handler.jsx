@@ -829,22 +829,10 @@ const Handler = ({ onBack, onNavigate, userData, inline = false }) => {
   }
 
   return (
-    <div className="dashboard-container">
+    <>
       {/* Sidebar */}
-      <nav className="sidebar-nav">
-        <div className="nav-item" onClick={onBack}>
-          <div className="nav-icon">
-            <i className="fas fa-home"></i>
-          </div>
-          <span>Home</span>
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <div className="dashboard-main">
         {content}
-      </div>
-    </div>
+    </>
   );
 };
 

@@ -148,14 +148,14 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
         customerPhone: editServiceModal.customer_phone,
         warranty: editServiceModal.warranty || false,
         unwarranty: editServiceModal.unwarranty || false,
-        itemCode: editServiceModal.item_code,
-        brandName: editServiceModal.brand_name,
         productName: editServiceModal.product_name,
+        brandName: editServiceModal.brand_name,
         serialNumber: editServiceModal.serial_number,
         serviceDate: editServiceModal.service_date,
         handlerId: editServiceModal.handler_id,
         handlerName: editServiceModal.handler_name,
         productComplaint: editServiceModal.product_complaint,
+        amountEstimated: editServiceModal.amount_estimated,
         estimatedDate: editServiceModal.estimated_date
       });
       
@@ -222,53 +222,8 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
   };
 
   return (
-    <div className="dashboard-container">
+    <>
       {/* Left Sidebar Navigation */}
-      <nav className="sidebar-nav">
-        <div className="nav-item" onClick={handleBack}>
-          <div className="nav-icon">
-            <i className="fas fa-home"></i>
-          </div>
-          <span>Home</span>
-        </div>
-        {userRole === 'admin' && (
-          <div className="nav-item" onClick={handleManagers}>
-            <div className="nav-icon">
-              <i className="fas fa-users"></i>
-            </div>
-            <span>Supervisors</span>
-          </div>
-        )}
-        {userRole !== 'staff' && (
-          <div className="nav-item" onClick={handleStaff}>
-            <div className="nav-icon">
-              <i className="fas fa-user-tie"></i>
-            </div>
-            <span>Staff</span>
-          </div>
-        )}
-        <div className="nav-item" onClick={() => onNavigate && onNavigate('masterMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-th-large"></i>
-          </div>
-          <span>Master Menu</span>
-        </div>
-        <div className="nav-item active" onClick={() => onNavigate && onNavigate('transactionMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-exchange-alt"></i>
-          </div>
-          <span>Transaction</span>
-        </div>
-        <div className="nav-item" onClick={handleSettings}>
-          <div className="nav-icon">
-            <i className="fas fa-cog"></i>
-          </div>
-          <span>Settings</span>
-        </div>
-      </nav>
-
-      {/* Main Content Area */}
-      <div className="dashboard-main">
       <div className="staff-container">
       {/* Header */}
       <header className="staff-header">
@@ -577,7 +532,6 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
         </div>
       </main>
       </div>
-      </div>
 
       {/* View Service Details Modal */}
       {viewServiceModal && (
@@ -720,22 +674,6 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
                     />
                   </div>
                   <div className="detail-row">
-                    <span className="detail-label">Item Code:</span>
-                    <input
-                      type="text"
-                      value={editServiceModal.item_code || ''}
-                      onChange={(e) => handleEditInputChange('item_code', e.target.value)}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        width: '100%',
-                        maxWidth: '300px'
-                      }}
-                    />
-                  </div>
-                  <div className="detail-row">
                     <span className="detail-label">Product Name:</span>
                     <input
                       type="text"
@@ -781,6 +719,43 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
                         width: '100%',
                         maxWidth: '300px'
                       }}
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Product Complaint:</span>
+                    <textarea
+                      value={editServiceModal.product_complaint || ''}
+                      onChange={(e) => handleEditInputChange('product_complaint', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px',
+                        minHeight: '80px',
+                        resize: 'vertical'
+                      }}
+                      placeholder="Enter product complaint details"
+                    />
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Amount Estimated:</span>
+                    <input
+                      type="number"
+                      value={editServiceModal.amount_estimated || ''}
+                      onChange={(e) => handleEditInputChange('amount_estimated', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '100%',
+                        maxWidth: '300px'
+                      }}
+                      placeholder="Enter estimated amount"
+                      min="0"
+                      step="0.01"
                     />
                   </div>
                   <div className="detail-row">
@@ -844,11 +819,11 @@ const Services = ({ onBack, onAddService, onNavigate, userRole = 'admin' }) => {
               >
                 {isSaving ? 'Saving...' : 'Save Changes'}
               </button>
-            </div>
+          </div>
           </div>
         </div>
-      )}
-    </div>
+              )}
+    </>
   );
 };
 

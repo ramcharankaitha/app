@@ -338,33 +338,58 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
         return isNaN(parsed) ? null : parsed;
       };
 
-      // Trim all string values and convert empty strings to null
-      const response = await productsAPI.create({
-        productName: formData.productName?.trim() || null,
-        itemCode: formData.itemCode?.trim() || null,
-        skuCode: formData.skuCode?.trim() || null,
-        modelNumber: formData.modelNumber?.trim() || null,
-        minimumQuantity: formData.minQuantity ? parseInt(formData.minQuantity) : 0,
-        maintainingQuantity: formData.maintainingQuantity ? parseInt(formData.maintainingQuantity) : 0,
-        currentQuantity: formData.openingQuantity ? parseInt(formData.openingQuantity) : 0,
-        supplierName: formData.supplierName?.trim() || null,
-        category: formData.category?.trim() || null,
-        mrp: parseNumericValue(formData.mrp),
-        discount1: parseNumericValue(formData.discount1),
-        discount2: parseNumericValue(formData.discount2),
-        sellRate: parseNumericValue(formData.sellRate),
-        purchaseRate: parseNumericValue(formData.purchaseRate),
-        points: formData.points ? parseInt(formData.points) : 0,
-        imageUrl: formData.image?.trim() || null
+      // Create FormData for file upload
+      const formDataToSend = new FormData();
+      
+      // Add all form fields
+      if (formData.productName?.trim()) formDataToSend.append('productName', formData.productName.trim());
+      if (formData.itemCode?.trim()) formDataToSend.append('itemCode', formData.itemCode.trim());
+      if (formData.skuCode?.trim()) formDataToSend.append('skuCode', formData.skuCode.trim());
+      if (formData.modelNumber?.trim()) formDataToSend.append('modelNumber', formData.modelNumber.trim());
+      if (formData.minQuantity) formDataToSend.append('minimumQuantity', parseInt(formData.minQuantity));
+      if (formData.maintainingQuantity) formDataToSend.append('maintainingQuantity', parseInt(formData.maintainingQuantity));
+      if (formData.openingQuantity) formDataToSend.append('currentQuantity', parseInt(formData.openingQuantity));
+      if (formData.supplierName?.trim()) formDataToSend.append('supplierName', formData.supplierName.trim());
+      if (formData.category?.trim()) formDataToSend.append('category', formData.category.trim());
+      
+      const mrpValue = parseNumericValue(formData.mrp);
+      const discount1Value = parseNumericValue(formData.discount1);
+      const discount2Value = parseNumericValue(formData.discount2);
+      const sellRateValue = parseNumericValue(formData.sellRate);
+      const purchaseRateValue = parseNumericValue(formData.purchaseRate);
+      const pointsValue = formData.points ? parseInt(formData.points) : 0;
+      
+      if (mrpValue !== null) formDataToSend.append('mrp', mrpValue);
+      if (discount1Value !== null) formDataToSend.append('discount1', discount1Value);
+      if (discount2Value !== null) formDataToSend.append('discount2', discount2Value);
+      if (sellRateValue !== null) formDataToSend.append('sellRate', sellRateValue);
+      if (purchaseRateValue !== null) formDataToSend.append('purchaseRate', purchaseRateValue);
+      formDataToSend.append('points', pointsValue);
+      
+      // Add image file if exists
+      if (imageFile) {
+        formDataToSend.append('productImage', imageFile);
+      }
+
+      // Use fetch instead of productsAPI to send FormData
+      const API_BASE_URL = process.env.REACT_APP_API_URL?.trim().replace(/\/+$/, '') || 'http://localhost:5000/api';
+      const response = await fetch(`${API_BASE_URL}/products`, {
+        method: 'POST',
+        body: formDataToSend
+        // Don't set Content-Type header - browser will set it with boundary for multipart/form-data
       });
 
-      if (response.success) {
+      const data = await response.json();
+
+      if (response.ok && data.success) {
         setSuccessMessage('Save changes are done');
         // Clear success message and navigate after 2 seconds
         setTimeout(() => {
           setSuccessMessage('');
           handleCancel();
         }, 2000);
+      } else {
+        throw new Error(data.error || 'Failed to create product');
       }
     } catch (err) {
       setError(err.message || 'Failed to create product. Please try again.');
@@ -384,51 +409,8 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   };
 
   return (
-    <div className="dashboard-container">
+    <>
       {/* Left Sidebar Navigation */}
-      <nav className="sidebar-nav">
-        <div className="nav-item" onClick={handleHome}>
-          <div className="nav-icon">
-            <i className="fas fa-home"></i>
-          </div>
-          <span>Home</span>
-        </div>
-        {userRole === 'admin' && (
-          <div className="nav-item" onClick={handleManagers}>
-            <div className="nav-icon">
-              <i className="fas fa-users"></i>
-            </div>
-            <span>Supervisors</span>
-          </div>
-        )}
-        <div className="nav-item" onClick={handleStaff}>
-          <div className="nav-icon">
-            <i className="fas fa-user-tie"></i>
-          </div>
-          <span>Staff</span>
-        </div>
-        <div className="nav-item active" onClick={handleProducts}>
-          <div className="nav-icon">
-            <i className="fas fa-th-large"></i>
-          </div>
-          <span>Master Menu</span>
-        </div>
-        <div className="nav-item" onClick={() => onNavigate && onNavigate('transactionMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-exchange-alt"></i>
-          </div>
-          <span>Transaction</span>
-        </div>
-        <div className="nav-item" onClick={handleSettings}>
-          <div className="nav-icon">
-            <i className="fas fa-cog"></i>
-          </div>
-          <span>Settings</span>
-        </div>
-      </nav>
-
-      {/* Main Content Area */}
-      <div className="dashboard-main">
         <div className="add-user-container">
           {/* Header */}
           <header className="add-user-header">
@@ -787,6 +769,36 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           type="file"
                           id="imageUpload"
                           accept="image/*"
+                          capture="environment"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              // Validate file size (max 5MB)
+                              if (file.size > 5 * 1024 * 1024) {
+                                setError('Image size should be less than 5MB');
+                                return;
+                              }
+                              // Validate file type
+                              if (!file.type.startsWith('image/')) {
+                                setError('Please select a valid image file');
+                                return;
+                              }
+                              setImageFile(file);
+                              // Create preview
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                setImagePreview(reader.result);
+                                setFormData(prev => ({ ...prev, image: reader.result }));
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                        <input
+                          type="file"
+                          id="galleryUpload"
+                          accept="image/*"
                           style={{ display: 'none' }}
                           onChange={(e) => {
                             const file = e.target.files[0];
@@ -857,37 +869,72 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                             </button>
                           </div>
                         ) : (
-                          <label
-                            htmlFor="imageUpload"
-                            style={{
-                              cursor: 'pointer',
-                              padding: '8px 12px',
-                              border: '2px dashed #dc3545',
-                              borderRadius: '8px',
-                              textAlign: 'center',
-                              background: '#fff',
-                              transition: 'all 0.3s ease',
-                              minHeight: '38px',
-                              height: '38px',
-                              display: 'flex',
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '6px',
-                              fontSize: '12px'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.target.style.background = '#f8f9fa';
-                              e.target.style.borderColor = '#c82333';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.target.style.background = '#fff';
-                              e.target.style.borderColor = '#dc3545';
-                            }}
-                          >
-                            <i className="fas fa-camera" style={{ fontSize: '14px' }}></i>
-                            <span>Click to upload product image</span>
-                          </label>
+                          <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                            <label
+                              htmlFor="imageUpload"
+                              style={{
+                                cursor: 'pointer',
+                                padding: '8px 12px',
+                                border: '2px dashed #dc3545',
+                                borderRadius: '8px',
+                                textAlign: 'center',
+                                background: '#fff',
+                                transition: 'all 0.3s ease',
+                                minHeight: '38px',
+                                height: '38px',
+                                display: 'flex',
+                                flex: 1,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '6px',
+                                fontSize: '12px'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#f8f9fa';
+                                e.target.style.borderColor = '#c82333';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#fff';
+                                e.target.style.borderColor = '#dc3545';
+                              }}
+                            >
+                              <i className="fas fa-camera" style={{ fontSize: '14px' }}></i>
+                              <span>Camera</span>
+                            </label>
+                            <label
+                              htmlFor="galleryUpload"
+                              style={{
+                                cursor: 'pointer',
+                                padding: '8px 12px',
+                                border: '2px dashed #28a745',
+                                borderRadius: '8px',
+                                textAlign: 'center',
+                                background: '#fff',
+                                transition: 'all 0.3s ease',
+                                minHeight: '38px',
+                                height: '38px',
+                                display: 'flex',
+                                flex: 1,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '6px',
+                                fontSize: '12px'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = '#f8f9fa';
+                                e.target.style.borderColor = '#218838';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = '#fff';
+                                e.target.style.borderColor = '#28a745';
+                              }}
+                            >
+                              <i className="fas fa-images" style={{ fontSize: '14px' }}></i>
+                              <span>Gallery</span>
+                            </label>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -909,8 +956,6 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
               </form>
           </main>
         </div>
-      </div>
-
       <ConfirmDialog
         isOpen={confirmState.open}
         title="Confirm Submission"
@@ -923,7 +968,7 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
         }}
         onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
       />
-    </div>
+    </>
   );
 };
 

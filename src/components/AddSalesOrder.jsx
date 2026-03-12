@@ -29,6 +29,10 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
   const [handlers, setHandlers] = useState([]);
   const [allCustomers, setAllCustomers] = useState([]);
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [isCheckingCustomer, setIsCheckingCustomer] = useState(false);
+  const [customerVerified, setCustomerVerified] = useState(false);
+  const [customerDetails, setCustomerDetails] = useState(null);
+  const [isNewCustomer, setIsNewCustomer] = useState(false);
   const customerDropdownRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -190,7 +194,7 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
       [name]: value
     }));
 
-    // Show dropdowns when typing
+    // Show dropdowns when typing customer name
     if (name === 'customerName') {
       if (value.trim().length > 0) {
         setShowCustomerDropdown(true);
@@ -199,7 +203,93 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
         setFormData(prev => ({ ...prev, customerContact: '' }));
       }
     }
+
+    // Reset customer verification status when phone changes
+    if (name === 'customerContact') {
+      setCustomerVerified(false);
+      setCustomerDetails(null);
+      setIsNewCustomer(false);
+    }
   };
+
+  // Auto-fetch customer details when phone is entered
+  useEffect(() => {
+    const fetchCustomerByPhone = async () => {
+      // Only proceed if phone is entered (at least 4 characters)
+      if (!formData.customerContact.trim() || formData.customerContact.trim().length < 4) {
+        setCustomerVerified(false);
+        setCustomerDetails(null);
+        setIsNewCustomer(false);
+        return;
+      }
+
+      setIsCheckingCustomer(true);
+      
+      try {
+        console.log('🔍 Checking customer:', formData.customerContact.trim());
+        
+        // Search by phone
+        const searchResponse = await customersAPI.search(formData.customerContact.trim());
+        
+        if (searchResponse.success && searchResponse.customers && searchResponse.customers.length > 0) {
+          // Find exact match by phone
+          const phoneNumber = formData.customerContact.trim();
+          const matchingCustomer = searchResponse.customers.find(c => 
+            c.phone === phoneNumber
+          );
+          
+          // If exact match found, use it; otherwise use first result
+          const customer = matchingCustomer || searchResponse.customers[0];
+          
+          if (customer) {
+            console.log('✅ Customer found:', customer.full_name);
+            setCustomerVerified(true);
+            setCustomerDetails(customer);
+            setIsNewCustomer(false);
+            // Auto-fill customer name if not already filled
+            if (!formData.customerName || formData.customerName.trim() === '') {
+              setFormData(prev => ({
+                ...prev,
+                customerName: customer.full_name || prev.customerName
+              }));
+            }
+            setSuccessMessage('✓ Customer found! You can proceed with the order.');
+            setTimeout(() => setSuccessMessage(''), 2000);
+          } else {
+            console.log('🆕 Customer not found, enabling new customer mode');
+            setCustomerVerified(false);
+            setCustomerDetails(null);
+            setIsNewCustomer(true);
+            setSuccessMessage('✓ New customer! Enter name to create and add to order.');
+            setTimeout(() => setSuccessMessage(''), 3000);
+          }
+        } else {
+          console.log('🆕 Customer not found, enabling new customer mode');
+          setCustomerVerified(false);
+          setCustomerDetails(null);
+          setIsNewCustomer(true);
+          setSuccessMessage('✓ New customer! Enter name to create and add to order.');
+          setTimeout(() => setSuccessMessage(''), 3000);
+        }
+      } catch (err) {
+        console.error('❌ Error fetching customer:', err);
+        setCustomerVerified(false);
+        setCustomerDetails(null);
+        setIsNewCustomer(true);
+        setSuccessMessage('✓ New customer! Enter name to create and add to order.');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } finally {
+        setIsCheckingCustomer(false);
+      }
+    };
+
+    // Debounce the check
+    const timer = setTimeout(() => {
+      fetchCustomerByPhone();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [formData.customerContact]);
 
   // Handle customer selection
   const handleCustomerSelect = (customer) => {
@@ -254,11 +344,31 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
     setCurrentProduct(prev => ({ ...prev, isFetching: true }));
     setError('');
     
+    console.log('🔍 Fetching product with item code:', currentProduct.itemCode.trim());
+    
     try {
-      const response = await productsAPI.getByItemCode(currentProduct.itemCode.trim());
+      // Use direct fetch to handle 404 gracefully without throwing
+      const API_BASE_URL = process.env.REACT_APP_API_URL?.trim().replace(/\/+$/, '') || 'http://localhost:5000/api';
       
-      if (response.success && response.product) {
-        const product = response.product;
+      const response = await fetch(`${API_BASE_URL}/products/item-code/${encodeURIComponent(currentProduct.itemCode.trim())}`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      let data = null;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      }
+
+      console.log('📦 Response data:', data);
+
+      // Check if product exists
+      if (response.ok && data && data.success && data.product) {
+        // Existing product found
+        console.log('✅ Product found:', data.product.product_name);
+        const product = data.product;
         setCurrentProduct(prev => ({
           ...prev,
           productInfo: {
@@ -266,31 +376,42 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
             productName: product.product_name || product.productName || '',
             itemCode: product.item_code || product.itemCode || '',
             mrp: product.mrp || 0,
-            sellRate: product.sell_rate || product.sellRate || 0
+            sellRate: product.sell_rate || product.sellRate || 0,
+            isNewProduct: false
           },
           productName: product.product_name || product.productName || '',
           mrp: (product.mrp || 0).toString(),
           sellRate: (product.sell_rate || product.sellRate || 0).toString(),
           isFetching: false
         }));
+        setSuccessMessage('✓ Product found! You can add it to the order.');
       } else {
-        setError('Product not found with this item code');
+        // Product not found - enable new product mode
+        console.log('🆕 Product not found, enabling new product mode for:', currentProduct.itemCode.trim());
         setCurrentProduct(prev => ({ 
           ...prev, 
-          productInfo: null, 
-          productName: '',
-          isFetching: false 
+          productInfo: {
+            itemCode: currentProduct.itemCode.trim(),
+            isNewProduct: true
+          },
+          isFetching: false
         }));
+        setSuccessMessage('✓ New product! Enter all details to create and add to order.');
       }
     } catch (err) {
-      console.error('Fetch product error:', err);
-      setError(err.message || 'Product not found. Please check the item code and try again.');
+      // Any error means product doesn't exist - enable new product mode
+      console.log('❌ Product fetch error (likely not found), enabling new product mode:', err.message);
       setCurrentProduct(prev => ({ 
         ...prev, 
-        productInfo: null, 
-        productName: '',
-        isFetching: false 
+        productInfo: {
+          itemCode: currentProduct.itemCode.trim(),
+          isNewProduct: true
+        },
+        isFetching: false
       }));
+      setSuccessMessage('✓ New product! Enter all details to create and add to order.');
+    } finally {
+      setTimeout(() => setSuccessMessage(''), 3000);
     }
   };
 
@@ -303,9 +424,32 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
 
   // Add product to the list
   const addProduct = () => {
-    if (!currentProduct.productInfo || !currentProduct.quantity || parseFloat(currentProduct.quantity) <= 0) {
-      setError('Please fetch product and enter a valid quantity');
+    // Validate required fields
+    if (!currentProduct.itemCode || !currentProduct.itemCode.trim()) {
+      setError('Please enter item code');
       return;
+    }
+
+    if (!currentProduct.productName || !currentProduct.productName.trim()) {
+      setError('Please enter product name');
+      return;
+    }
+
+    if (!currentProduct.quantity || parseFloat(currentProduct.quantity) <= 0) {
+      setError('Please enter a valid quantity');
+      return;
+    }
+
+    // For new products, validate required pricing fields
+    if (currentProduct.productInfo?.isNewProduct) {
+      if (!currentProduct.mrp || parseFloat(currentProduct.mrp) <= 0) {
+        setError('MRP is required for new products');
+        return;
+      }
+      if (!currentProduct.sellRate || parseFloat(currentProduct.sellRate) <= 0) {
+        setError('Sell Rate is required for new products');
+        return;
+      }
     }
 
     // Check for duplicate item codes
@@ -342,6 +486,10 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
       isFetching: false,
       productInfo: null
     });
+
+    setError('');
+    setSuccessMessage('Product added to order');
+    setTimeout(() => setSuccessMessage(''), 2000);
     setError('');
   };
 
@@ -380,6 +528,81 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
         return;
       }
 
+      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+      const createdBy = userData.username || userData.email || 'system';
+      const API_BASE_URL = process.env.REACT_APP_API_URL?.trim().replace(/\/+$/, '') || 'http://localhost:5000/api';
+
+      console.log('🚀 Starting sales order process for', addedProducts.length, 'products');
+
+      // If new customer, create customer first
+      if (isNewCustomer) {
+        console.log('🆕 Creating new customer:', formData.customerName);
+        
+        const createCustomerResponse = await fetch(`${API_BASE_URL}/customers`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            fullName: formData.customerName.trim(),
+            phone: formData.customerContact.trim(),
+            address: '',
+            city: '',
+            state: '',
+            pincode: '',
+            email: '',
+            type: 'walkin'
+          }),
+        });
+        
+        const customerData = await createCustomerResponse.json();
+        console.log('📥 Create customer response:', customerData);
+        
+        if (!createCustomerResponse.ok || !customerData.success) {
+          throw new Error(`Failed to create customer: ${customerData.error || 'Unknown error'}`);
+        }
+        
+        console.log('✅ Customer created successfully');
+      }
+
+      // Process new products first
+      const newProducts = addedProducts.filter(p => p.productInfo?.isNewProduct);
+      for (const product of newProducts) {
+        console.log('🆕 Creating new product:', product.productName);
+        
+        const createResponse = await fetch(`${API_BASE_URL}/products`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            productName: product.productName,
+            itemCode: product.itemCode,
+            skuCode: '',
+            modelNumber: '',
+            category: '',
+            minimumQuantity: 0,
+            maintainingQuantity: 0,
+            currentQuantity: 0,
+            mrp: parseFloat(product.mrp) || 0,
+            discount1: 0,
+            discount2: 0,
+            sellRate: parseFloat(product.sellRate) || 0,
+            purchaseRate: 0,
+            supplierName: ''
+          }),
+        });
+        
+        const createData = await createResponse.json();
+        console.log('📥 Create product response:', createData);
+        
+        if (!createResponse.ok || !createData.success) {
+          throw new Error(`Failed to create product ${product.productName}: ${createData.error || 'Unknown error'}`);
+        }
+        
+        console.log('✅ Product created successfully');
+      }
+
       // Prepare products array with pricing
       const products = addedProducts.map(item => ({
         itemCode: item.itemCode.trim(),
@@ -395,9 +618,6 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
         const sellRate = parseFloat(product.sellRate) || 0;
         return total + (quantity * sellRate);
       }, 0);
-
-      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-      const createdBy = userData.username || userData.email || 'system';
 
       const response = await salesOrdersAPI.create({
         customerName: formData.customerName.trim(),
@@ -440,53 +660,8 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
   };
 
   return (
-    <div className="dashboard-container">
+    <>
       {/* Left Sidebar Navigation */}
-      <nav className="sidebar-nav">
-        <div className="nav-item" onClick={handleHome}>
-          <div className="nav-icon">
-            <i className="fas fa-home"></i>
-          </div>
-          <span>Home</span>
-        </div>
-        {userRole === 'admin' && (
-          <div className="nav-item" onClick={handleManagers}>
-            <div className="nav-icon">
-              <i className="fas fa-users"></i>
-            </div>
-            <span>Supervisors</span>
-          </div>
-        )}
-        {userRole !== 'staff' && (
-          <div className="nav-item" onClick={handleStaff}>
-            <div className="nav-icon">
-              <i className="fas fa-user-tie"></i>
-            </div>
-            <span>Staff</span>
-          </div>
-        )}
-        <div className="nav-item" onClick={() => onNavigate && onNavigate('masterMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-th-large"></i>
-          </div>
-          <span>Master Menu</span>
-        </div>
-        <div className="nav-item active" onClick={() => onNavigate && onNavigate('transactionMenu')}>
-          <div className="nav-icon">
-            <i className="fas fa-exchange-alt"></i>
-          </div>
-          <span>Transaction</span>
-        </div>
-        <div className="nav-item" onClick={handleSettings}>
-          <div className="nav-icon">
-            <i className="fas fa-cog"></i>
-          </div>
-          <span>Settings</span>
-        </div>
-      </nav>
-
-      {/* Main Content Area */}
-      <div className="dashboard-main">
         <div className="add-user-container">
           {/* Header */}
           <header className="add-user-header">
@@ -546,7 +721,7 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
 
                 <div className="form-group">
                   <label htmlFor="customerContact">Customer Phone Number *</label>
-                  <div className="input-wrapper">
+                  <div className="input-wrapper" style={{ position: 'relative' }}>
                     <i className="fas fa-phone input-icon"></i>
                     <input
                       type="tel"
@@ -557,7 +732,29 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                       value={formData.customerContact}
                       onChange={handleInputChange}
                       required
+                      style={{
+                        paddingRight: customerVerified || isCheckingCustomer ? '40px' : '18px',
+                        borderColor: customerVerified ? '#28a745' : undefined
+                      }}
                     />
+                    {isCheckingCustomer && (
+                      <i className="fas fa-spinner fa-spin" style={{ 
+                        position: 'absolute', 
+                        right: '12px', 
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: '#666' 
+                      }}></i>
+                    )}
+                    {!isCheckingCustomer && customerVerified && (
+                      <i className="fas fa-check-circle" style={{ 
+                        position: 'absolute', 
+                        right: '12px', 
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: '#28a745' 
+                      }}></i>
+                    )}
                   </div>
                 </div>
 
@@ -686,7 +883,6 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                       onChange={handleCurrentProductChange}
                       min="1"
                       step="1"
-                      disabled={!currentProduct.productInfo}
                     />
                   </div>
                 </div>
@@ -713,15 +909,15 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                   <button
                     type="button"
                     onClick={addProduct}
-                    disabled={!currentProduct.productInfo || !currentProduct.quantity || parseFloat(currentProduct.quantity) <= 0}
+                    disabled={!currentProduct.itemCode || !currentProduct.productName || !currentProduct.quantity || parseFloat(currentProduct.quantity) <= 0}
                     style={{
                       width: '100%',
                       padding: '10px',
-                      background: (currentProduct.productInfo && currentProduct.quantity && parseFloat(currentProduct.quantity) > 0) ? '#dc3545' : '#ccc',
+                      background: (currentProduct.itemCode && currentProduct.productName && currentProduct.quantity && parseFloat(currentProduct.quantity) > 0) ? '#dc3545' : '#ccc',
                       color: '#fff',
                       border: 'none',
                       borderRadius: '8px',
-                      cursor: (currentProduct.productInfo && currentProduct.quantity && parseFloat(currentProduct.quantity) > 0) ? 'pointer' : 'not-allowed',
+                      cursor: (currentProduct.itemCode && currentProduct.productName && currentProduct.quantity && parseFloat(currentProduct.quantity) > 0) ? 'pointer' : 'not-allowed',
                       fontSize: '14px',
                       fontWeight: '600',
                       display: 'flex',
@@ -731,18 +927,18 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
                       transition: 'all 0.2s ease'
                     }}
                     onMouseEnter={(e) => {
-                      if (currentProduct.productInfo && currentProduct.quantity && parseFloat(currentProduct.quantity) > 0) {
+                      if (currentProduct.itemCode && currentProduct.productName && currentProduct.quantity && parseFloat(currentProduct.quantity) > 0) {
                         e.target.style.background = '#c82333';
                       }
                     }}
                     onMouseLeave={(e) => {
-                      if (currentProduct.productInfo && currentProduct.quantity && parseFloat(currentProduct.quantity) > 0) {
+                      if (currentProduct.itemCode && currentProduct.productName && currentProduct.quantity && parseFloat(currentProduct.quantity) > 0) {
                         e.target.style.background = '#dc3545';
                       }
                     }}
                   >
                     <i className="fas fa-plus"></i>
-                    Add Item
+                    {currentProduct.productInfo?.isNewProduct ? 'Add New Item' : 'Add Item'}
                   </button>
                 </div>
               </div>
@@ -904,8 +1100,6 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
             </form>
           </main>
         </div>
-      </div>
-
       <ConfirmDialog
         isOpen={confirmState.open}
         title="Confirm Creation"
@@ -918,7 +1112,7 @@ const AddSalesOrder = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => 
         }}
         onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
       />
-    </div>
+    </>
   );
 };
 

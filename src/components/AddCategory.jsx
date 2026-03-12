@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { categoriesAPI } from '../services/api';
+import React, { useState, useEffect } from 'react';
+import { categoriesAPI, transportAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import Toast from './Toast';
 import './addUser.css';
@@ -15,6 +15,22 @@ const AddCategory = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
+  const [cities, setCities] = useState([]);
+
+  // Fetch cities for dropdown
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const response = await transportAPI.getCities('');
+        if (response.success) {
+          setCities(response.cities || []);
+        }
+      } catch (err) {
+        console.error('Error fetching cities:', err);
+      }
+    };
+    fetchCities();
+  }, []);
 
   const handleBack = () => {
     if (onNavigate) {
@@ -239,10 +255,16 @@ const AddCategory = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           id="city"
                           name="city"
                           className="form-input"
-                          placeholder="Enter city"
+                          placeholder="Enter or select city"
                           value={formData.city}
                           onChange={handleInputChange}
+                          list="cities-list"
                         />
+                        <datalist id="cities-list">
+                          {cities.map((city, index) => (
+                            <option key={index} value={city} />
+                          ))}
+                        </datalist>
                       </div>
                     </div>
                   </div>
