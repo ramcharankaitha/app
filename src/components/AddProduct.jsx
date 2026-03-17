@@ -10,7 +10,6 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     skuCode: '',
     modelNumber: '',
     minQuantity: '',
-    maintainingQuantity: '',
     openingQuantity: '',
     supplierName: '',
     category: '',
@@ -347,7 +346,7 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
       if (formData.skuCode?.trim()) formDataToSend.append('skuCode', formData.skuCode.trim());
       if (formData.modelNumber?.trim()) formDataToSend.append('modelNumber', formData.modelNumber.trim());
       if (formData.minQuantity) formDataToSend.append('minimumQuantity', parseInt(formData.minQuantity));
-      if (formData.maintainingQuantity) formDataToSend.append('maintainingQuantity', parseInt(formData.maintainingQuantity));
+
       if (formData.openingQuantity) formDataToSend.append('currentQuantity', parseInt(formData.openingQuantity));
       if (formData.supplierName?.trim()) formDataToSend.append('supplierName', formData.supplierName.trim());
       if (formData.category?.trim()) formDataToSend.append('category', formData.category.trim());
@@ -590,23 +589,7 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                     </div>
 
 
-                    {/* Row 4: Maintaining Quantity, Minimum Quantity, MRP */}
-                    <div className="form-group">
-                      <label htmlFor="maintainingQuantity">Maintaining Quantity</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-cubes input-icon"></i>
-                        <input
-                          type="number"
-                          id="maintainingQuantity"
-                          name="maintainingQuantity"
-                          className="form-input"
-                          placeholder="Enter maintaining quantity"
-                          value={formData.maintainingQuantity}
-                          onChange={handleInputChange}
-                          min="0"
-                        />
-                      </div>
-                    </div>
+
 
                     <div className="form-group">
                       <label htmlFor="minQuantity">Minimum Quantity</label>

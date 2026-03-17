@@ -155,17 +155,13 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'At least one city is required' });
     }
 
-    // Validate that all 10 cities have both city name and phone number
-    if (addresses.length !== 10) {
-      return res.status(400).json({ error: 'Exactly 10 cities are required' });
-    }
-
+    // Validate that cities have both city name and phone number if provided
     const invalidCities = addresses.filter(addr => 
       !addr.city || !addr.city.trim() || !addr.phoneNumber || !addr.phoneNumber.trim()
     );
 
     if (invalidCities.length > 0) {
-      return res.status(400).json({ error: 'All 10 cities and their phone numbers are required' });
+      return res.status(400).json({ error: 'All provided cities must have both city name and phone number' });
     }
 
     // Check for duplicate transport name
@@ -296,16 +292,12 @@ router.put('/:id', async (req, res) => {
     }
 
     // Validate that all 10 cities have both city name and phone number
-    if (addresses.length !== 10) {
-      return res.status(400).json({ error: 'Exactly 10 cities are required' });
-    }
-
     const invalidCities = addresses.filter(addr => 
       !addr.city || !addr.city.trim() || !addr.phoneNumber || !addr.phoneNumber.trim()
     );
 
     if (invalidCities.length > 0) {
-      return res.status(400).json({ error: 'All 10 cities and their phone numbers are required' });
+      return res.status(400).json({ error: 'All provided cities must have both city name and phone number' });
     }
 
     // Store addresses as JSONB, also keep first address in legacy fields for backward compatibility

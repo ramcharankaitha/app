@@ -326,7 +326,7 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                   {/* Row 1: Transport Name, Phone Number 1, Phone Number 2, Address */}
                   <div className="form-grid four-col">
                     <div className="form-group">
-                      <label htmlFor="travelsName">Transport Name</label>
+                      <label htmlFor="travelsName">Transport Name <span style={{ color: '#dc3545' }}>*</span></label>
                       <div className="input-wrapper">
                         <i className="fas fa-building input-icon"></i>
                         <input
@@ -337,12 +337,13 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           placeholder="Enter transport name"
                           value={formData.travelsName}
                           onChange={handleInputChange}
+                          required
                         />
                       </div>
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="phoneNumber1">Phone Number 1</label>
+                      <label htmlFor="phoneNumber1">Phone Number 1 <span style={{ color: '#dc3545' }}>*</span></label>
                       <div className="input-wrapper">
                         <i className="fas fa-phone input-icon"></i>
                         <input
@@ -353,6 +354,7 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           placeholder="Enter phone number 1"
                           value={formData.phoneNumber1}
                           onChange={handleInputChange}
+                          required
                         />
                       </div>
                     </div>
@@ -374,7 +376,7 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="address">Address</label>
+                      <label htmlFor="address">Address <span style={{ color: '#dc3545' }}>*</span></label>
                       <div className="input-wrapper">
                         <i className="fas fa-map-marker-alt input-icon"></i>
                         <input
@@ -385,6 +387,7 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           placeholder="Enter address"
                           value={formData.address}
                           onChange={handleInputChange}
+                          required
                         />
                       </div>
                     </div>

@@ -583,7 +583,7 @@
 }
 
 .form-section .form-grid {
-    margin-top: 20px;
+    margin-top: 0px;
     padding-top: 0;
 }
 
@@ -969,13 +969,13 @@ form.add-user-form .form-grid>.form-group:first-child>label {
     display: flex;
     flex-direction: row;
     gap: 6px;
-    margin-top: 24px;
+    margin-top: 0px;
     margin-bottom: 100;
     align-items: center;
     width: 100%;
     justify-content: flex-end;
     flex-shrink: 0;
-    padding-top: 8px;
+    padding-top: 0px;
     clear: both;
     position: relative;
     z-index: 1;
@@ -1963,6 +1963,16 @@ form.add-user-form>.form-actions {
         gap: 5px !important;
         top: auto !important;
         transform: none !important;
+    }
+
+    /* Add bottom padding to form content to prevent overlap with fixed buttons */
+    .add-user-form {
+        padding-bottom: 120px !important;
+    }
+
+    /* Ensure image upload section has extra margin in mobile */
+    .add-user-form .form-group:has([id="imageUpload"]) {
+        margin-bottom: 20px !important;
     }
 
     .stock-in-container .add-stock-in-form .form-actions,
