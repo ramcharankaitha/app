@@ -343,7 +343,7 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="phoneNumber1">Phone Number 1 <span style={{ color: '#dc3545' }}>*</span></label>
+                      <label htmlFor="phoneNumber1">Phone Number 1</label>
                       <div className="input-wrapper">
                         <i className="fas fa-phone input-icon"></i>
                         <input
@@ -354,7 +354,6 @@ const AddTransport = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           placeholder="Enter phone number 1"
                           value={formData.phoneNumber1}
                           onChange={handleInputChange}
-                          required
                         />
                       </div>
                     </div>
