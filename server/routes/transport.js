@@ -139,14 +139,6 @@ router.post('/', async (req, res) => {
     // Determine verification status based on user role
     const isVerified = shouldBeVerified(userRole || 'staff');
 
-    if (!travelsName) {
-      return res.status(400).json({ error: 'Required fields: travelsName' });
-    }
-
-    if (!address) {
-      return res.status(400).json({ error: 'Address is required' });
-    }
-
     if (!addresses || !Array.isArray(addresses) || addresses.length === 0) {
       return res.status(400).json({ error: 'At least one city is required' });
     }
@@ -270,18 +262,6 @@ router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { travelsName, phoneNumber1, phoneNumber2, address, addresses } = req.body;
-
-    if (!travelsName) {
-      return res.status(400).json({ error: 'Required fields: travelsName' });
-    }
-
-    if (!phoneNumber1 || !phoneNumber2) {
-      return res.status(400).json({ error: 'Phone Number 1 and Phone Number 2 are required' });
-    }
-
-    if (!address) {
-      return res.status(400).json({ error: 'Address is required' });
-    }
 
     if (!addresses || !Array.isArray(addresses) || addresses.length === 0) {
       return res.status(400).json({ error: 'At least one city is required' });
