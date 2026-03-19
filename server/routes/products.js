@@ -425,14 +425,17 @@ router.put('/:id', async (req, res) => {
     const prevQty = parseInt(prevProduct.current_quantity) || 0;
     const prevMinQty = parseInt(prevProduct.minimum_quantity) || 0;
 
-    // Check if model_number column exists
+    // Check which columns exist
     const columnCheck = await pool.query(`
       SELECT column_name 
       FROM information_schema.columns 
       WHERE table_name = 'products' 
-      AND column_name = 'model_number'
+      AND column_name IN ('model_number', 'discount_1', 'discount_2')
     `);
-    const hasModelNumber = columnCheck.rows.length > 0;
+    const existingColumns = columnCheck.rows.map(row => row.column_name);
+    const hasModelNumber = existingColumns.includes('model_number');
+    const hasDiscount1 = existingColumns.includes('discount_1');
+    const hasDiscount2 = existingColumns.includes('discount_2');
 
     // Trim and handle optional fields
     const trimmedSkuCode = skuCode ? skuCode.trim() : null;
@@ -440,54 +443,66 @@ router.put('/:id', async (req, res) => {
     const trimmedModelNumber = modelNumber ? modelNumber.trim() : null;
     const finalModelNumber = (trimmedModelNumber && trimmedModelNumber.length > 0) ? trimmedModelNumber : null;
 
-    // Build update query dynamically based on whether model_number column exists
+    // Build update query dynamically based on which columns exist
     let updateQuery;
     let updateValues;
     
+    // Base columns that always exist
+    let columns = ['product_name = $1', 'item_code = $2', 'sku_code = $3'];
+    let values = [productName, itemCode, finalSkuCode];
+    let paramIndex = 4;
+    
     if (hasModelNumber) {
-      updateQuery = `UPDATE products 
-       SET product_name = $1, item_code = $2, sku_code = $3, model_number = $4, minimum_quantity = $5, 
-           mrp = $6, discount = $7, sell_rate = $8, current_quantity = $9, status = $10, supplier_name = $11, category = $12, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $13
-       RETURNING *`;
-      updateValues = [
-        productName,
-        itemCode,
-        finalSkuCode,
-        finalModelNumber,
-        minimumQuantity || 0,
-        mrp || null,
-        discount || 0,
-        sellRate || null,
-        currentQuantity !== undefined ? currentQuantity : null,
-        status || 'STOCK',
-        supplierName || null,
-        category && category.trim() !== '' ? category.trim() : null,
-        id
-      ];
-    } else {
-      updateQuery = `UPDATE products 
-       SET product_name = $1, item_code = $2, sku_code = $3, minimum_quantity = $4, 
-           mrp = $5, discount = $6, sell_rate = $7, current_quantity = $8, status = $9, supplier_name = $10, category = $11, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $12
-       RETURNING *`;
-      updateValues = [
-        productName,
-        itemCode,
-        finalSkuCode,
-        minimumQuantity || 0,
-        mrp || null,
-        discount || 0,
-        sellRate || null,
-        currentQuantity !== undefined ? currentQuantity : null,
-        status || 'STOCK',
-        supplierName || null,
-        category && category.trim() !== '' ? category.trim() : null,
-        id
-      ];
+      columns.push(`model_number = $${paramIndex}`);
+      values.push(finalModelNumber);
+      paramIndex++;
     }
+    
+    columns.push(`minimum_quantity = $${paramIndex}`);
+    values.push(minimumQuantity || 0);
+    paramIndex++;
+    
+    columns.push(`mrp = $${paramIndex}`);
+    values.push(mrp || null);
+    paramIndex++;
+    
+    columns.push(`discount = $${paramIndex}`);
+    values.push(discount || 0);
+    paramIndex++;
+    
+    // Update discount_1 with the same value as discount if column exists
+    if (hasDiscount1) {
+      columns.push(`discount_1 = $${paramIndex}`);
+      values.push(discount || 0);
+      paramIndex++;
+    }
+    
+    columns.push(`sell_rate = $${paramIndex}`);
+    values.push(sellRate || null);
+    paramIndex++;
+    
+    columns.push(`current_quantity = $${paramIndex}`);
+    values.push(currentQuantity !== undefined ? currentQuantity : null);
+    paramIndex++;
+    
+    columns.push(`status = $${paramIndex}`);
+    values.push(status || 'STOCK');
+    paramIndex++;
+    
+    columns.push(`supplier_name = $${paramIndex}`);
+    values.push(supplierName || null);
+    paramIndex++;
+    
+    columns.push(`category = $${paramIndex}`);
+    values.push(category && category.trim() !== '' ? category.trim() : null);
+    paramIndex++;
+    
+    columns.push('updated_at = CURRENT_TIMESTAMP');
+    
+    updateQuery = `UPDATE products SET ${columns.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
+    values.push(id);
 
-    const result = await pool.query(updateQuery, updateValues);
+    const result = await pool.query(updateQuery, values);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Product not found' });

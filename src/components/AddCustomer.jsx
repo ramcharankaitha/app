@@ -9,7 +9,6 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
     fullName: '',
     phone: '',
     address: '',
-    city: '',
     state: '',
     pincode: '',
     whatsapp: ''
@@ -23,23 +22,6 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
-  const [cities, setCities] = useState([]);
-
-  // Fetch cities for dropdown
-  useEffect(() => {
-    const fetchCities = async () => {
-      try {
-        const response = await transportAPI.getCities('');
-        if (response.success) {
-          setCities(response.cities || []);
-        }
-      } catch (err) {
-        console.error('Error fetching cities:', err);
-      }
-    };
-    fetchCities();
-  }, []);
-
   const handleBack = () => {
     if (onNavigate) {
       onNavigate('customers');
@@ -225,7 +207,6 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
         fullName: formData.fullName,
         phone: formData.phone,
         address: formData.address,
-        city: formData.city,
         state: formData.state,
         pincode: formData.pincode,
         whatsapp: formData.whatsapp,
@@ -385,9 +366,9 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                     </div>
 
 
-                    {/* Row 2: Street, City, State */}
+                    {/* Row 2: Address, State, Pincode */}
                     <div className="form-group">
-                      <label htmlFor="address">Street</label>
+                      <label htmlFor="address">Address</label>
                       <div className="input-wrapper">
                         <i className="fas fa-map-marker-alt input-icon"></i>
                         <input
@@ -395,32 +376,10 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           id="address"
                           name="address"
                           className="form-input"
-                          placeholder="Enter street address"
+                          placeholder="Enter address"
                           value={formData.address}
                           onChange={handleInputChange}
                         />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="city">City</label>
-                      <div className="input-wrapper">
-                        <i className="fas fa-city input-icon"></i>
-                        <input
-                          type="text"
-                          id="city"
-                          name="city"
-                          className="form-input"
-                          placeholder="Enter or select city"
-                          value={formData.city}
-                          onChange={handleInputChange}
-                          list="cities-list"
-                        />
-                        <datalist id="cities-list">
-                          {cities.map((city, index) => (
-                            <option key={index} value={city} />
-                          ))}
-                        </datalist>
                       </div>
                     </div>
 
@@ -440,7 +399,6 @@ const AddCustomer = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                       </div>
                     </div>
 
-                    {/* Row 3: Pincode (alone) */}
                     <div className="form-group">
                       <label htmlFor="pincode">Pincode</label>
                       <div className="input-wrapper">

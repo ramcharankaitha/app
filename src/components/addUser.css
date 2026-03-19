@@ -2392,22 +2392,30 @@ form.add-user-form>.form-actions {
 
 @media (max-width: 768px) {
     .add-chit-entry-form {
-        padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+        padding-bottom: 120px !important;
     }
+    
     .add-chit-entry-form .submit-bar {
-        position: sticky;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        margin-top: 0;
-        padding: 12px 16px;
-        background: #fff;
-        border-top: 1px solid var(--border-light);
-        z-index: 10;
+        position: fixed !important;
+        bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        margin-top: 0 !important;
+        padding: 8px 12px !important;
+        background: rgba(255, 255, 255, 0.98) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
+        box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06) !important;
+        z-index: 999 !important;
     }
+    
     .add-chit-entry-form .submit-bar .btn-primary {
-        width: 100%;
-        max-width: none;
+        width: 100% !important;
+        max-width: none !important;
+        padding: 12px 16px !important;
+        font-size: 16px !important;
     }
 }
 
