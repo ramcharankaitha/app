@@ -119,22 +119,18 @@ router.post('/', async (req, res) => {
   try {
     const { main, sub, common, city, userRole, createdBy } = req.body;
 
-    if (!main || !sub || !common) {
-      return res.status(400).json({ error: 'Main, Sub, and Common categories are required' });
-    }
-
     // Ensure verification columns exist
     await ensureVerificationColumn('categories');
     
     // Determine verification status based on user role
     const isVerified = shouldBeVerified(userRole || 'staff');
-    const categoryName = `${main.trim()} - ${sub.trim()} - ${common.trim()}`;
+    const categoryName = `${(main || '').trim()} - ${(sub || '').trim()} - ${(common || '').trim()}`;
 
     const result = await pool.query(
       `INSERT INTO categories (main, sub, common, city, is_verified, created_by)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [main.trim(), sub.trim(), common.trim(), city ? city.trim() : null, isVerified, createdBy || null]
+      [(main || '').trim(), (sub || '').trim(), (common || '').trim(), city ? city.trim() : null, isVerified, createdBy || null]
     );
 
     // Send notification if created by staff
@@ -202,16 +198,12 @@ router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const { main, sub, common, city } = req.body;
 
-    if (!main || !sub || !common) {
-      return res.status(400).json({ error: 'Main, Sub, and Common categories are required' });
-    }
-
     const result = await pool.query(
       `UPDATE categories 
        SET main = $1, sub = $2, common = $3, city = $4, updated_at = CURRENT_TIMESTAMP
        WHERE id = $5
        RETURNING *`,
-      [main.trim(), sub.trim(), common.trim(), city ? city.trim() : null, id]
+      [(main || '').trim(), (sub || '').trim(), (common || '').trim(), city ? city.trim() : null, id]
     );
 
     if (result.rows.length === 0) {

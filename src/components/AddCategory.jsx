@@ -207,7 +207,6 @@ const AddCategory = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           placeholder="e.g., Utensils"
                           value={formData.main}
                           onChange={handleInputChange}
-                          required
                         />
                       </div>
                     </div>
@@ -224,7 +223,6 @@ const AddCategory = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           placeholder="e.g., Kitchen"
                           value={formData.sub}
                           onChange={handleInputChange}
-                          required
                         />
                       </div>
                     </div>
@@ -241,7 +239,6 @@ const AddCategory = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           placeholder="e.g., Daily Use"
                           value={formData.common}
                           onChange={handleInputChange}
-                          required
                         />
                       </div>
                     </div>
