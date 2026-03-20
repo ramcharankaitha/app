@@ -125,6 +125,7 @@ const AddCategory = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    // Allow submission with any combination of fields
     setConfirmState({
       open: true,
       message: 'Are you sure you want to create this category?',
@@ -191,7 +192,7 @@ const AddCategory = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
 
           {/* Main Content */}
           <main className="add-user-content">
-            <form onSubmit={handleSubmit} className="add-user-form">
+            <form onSubmit={handleSubmit} className="add-user-form" noValidate>
                 {/* Category Fields - No section title */}
                 <div className="form-section">
                   <div className="form-grid">
