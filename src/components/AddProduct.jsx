@@ -36,72 +36,23 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   
   // Removed search/filter states - using standard select dropdowns now
 
-  // Fetch main categories on component mount
+  // Fetch all categories on mount and extract unique main/sub/common values independently
   useEffect(() => {
-    const fetchMainCategories = async () => {
+    const fetchAllCategories = async () => {
       try {
-        const response = await categoriesAPI.getMainCategories();
+        const response = await categoriesAPI.getAll();
         if (response && response.success) {
-          setMainCategories(response.mainCategories || []);
+          const cats = response.categories || [];
+          setMainCategories([...new Set(cats.map(c => c.main).filter(Boolean))].sort());
+          setSubCategories([...new Set(cats.map(c => c.sub).filter(Boolean))].sort());
+          setCommonCategories([...new Set(cats.map(c => c.common).filter(Boolean))].sort());
         }
       } catch (err) {
-        console.error('Error fetching main categories:', err);
+        console.error('Error fetching categories:', err);
       }
     };
-    fetchMainCategories();
+    fetchAllCategories();
   }, []);
-
-  // Fetch sub categories when main category is selected
-  useEffect(() => {
-    const fetchSubCategories = async () => {
-      if (!selectedMainCategory) {
-        setSubCategories([]);
-        setCommonCategories([]);
-        setSelectedSubCategory('');
-        setSelectedCommonCategory('');
-        return;
-      }
-
-      try {
-        const subResponse = await categoriesAPI.getSubCategories(selectedMainCategory);
-        if (subResponse && subResponse.success) {
-          setSubCategories(subResponse.subCategories || []);
-        }
-        // Clear sub and common selections when main changes
-        setSelectedSubCategory('');
-        setSelectedCommonCategory('');
-        setCommonCategories([]);
-      } catch (err) {
-        console.error('Error fetching sub categories:', err);
-      }
-    };
-
-    fetchSubCategories();
-  }, [selectedMainCategory]);
-
-  // Fetch common categories when both main and sub categories are selected
-  useEffect(() => {
-    const fetchCommonCategories = async () => {
-      if (!selectedMainCategory || !selectedSubCategory) {
-        setCommonCategories([]);
-        setSelectedCommonCategory('');
-        return;
-      }
-
-      try {
-        const commonResponse = await categoriesAPI.getCommonCategories(selectedMainCategory, selectedSubCategory);
-        if (commonResponse && commonResponse.success) {
-          setCommonCategories(commonResponse.commonCategories || []);
-        }
-        // Clear common selection when sub changes
-        setSelectedCommonCategory('');
-      } catch (err) {
-        console.error('Error fetching common categories:', err);
-      }
-    };
-
-    fetchCommonCategories();
-  }, [selectedMainCategory, selectedSubCategory]);
 
   const handleBack = () => {
     if (onNavigate) {
@@ -439,7 +390,6 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           className="form-input"
                           value={selectedMainCategory}
                           onChange={handleMainCategoryChange}
-                          required
                         >
                           <option value="">Select Main Category</option>
                           {mainCategories.map((main, index) => (
@@ -463,9 +413,8 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           className="form-input"
                           value={selectedSubCategory}
                           onChange={handleSubCategoryChange}
-                          disabled={!selectedMainCategory}
                         >
-                          <option value="">{selectedMainCategory ? "Select Sub Category" : "Select main category first"}</option>
+                          <option value="">Select Sub Category</option>
                           {subCategories.map((sub, index) => (
                             <option key={index} value={sub}>
                               {sub}
@@ -487,9 +436,8 @@ const AddProduct = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           className="form-input"
                           value={selectedCommonCategory}
                           onChange={handleCommonCategoryChange}
-                          disabled={!selectedSubCategory}
                         >
-                          <option value="">{selectedSubCategory ? "Select Common Category" : "Select sub category first"}</option>
+                          <option value="">Select Common Category</option>
                           {commonCategories.map((common, index) => (
                             <option key={index} value={common}>
                               {common}

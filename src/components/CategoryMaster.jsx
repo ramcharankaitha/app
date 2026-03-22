@@ -487,6 +487,8 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
                       type="text"
                       value={editCategoryModal.main || ''}
                       onChange={(e) => handleEditInputChange('main', e.target.value)}
+                      list="edit-main-list"
+                      autoComplete="off"
                       style={{
                         padding: '8px 12px',
                         border: '1px solid #ddd',
@@ -496,6 +498,9 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
                         maxWidth: '300px'
                       }}
                     />
+                    <datalist id="edit-main-list">
+                      {[...new Set(categories.map(c => c.main).filter(Boolean))].sort().map((v, i) => <option key={i} value={v} />)}
+                    </datalist>
                   </div>
                   <div className="detail-row" style={{ marginBottom: '16px' }}>
                     <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Sub Category:</span>
@@ -503,6 +508,8 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
                       type="text"
                       value={editCategoryModal.sub || ''}
                       onChange={(e) => handleEditInputChange('sub', e.target.value)}
+                      list="edit-sub-list"
+                      autoComplete="off"
                       style={{
                         padding: '8px 12px',
                         border: '1px solid #ddd',
@@ -512,6 +519,9 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
                         maxWidth: '300px'
                       }}
                     />
+                    <datalist id="edit-sub-list">
+                      {[...new Set(categories.map(c => c.sub).filter(Boolean))].sort().map((v, i) => <option key={i} value={v} />)}
+                    </datalist>
                   </div>
                   <div className="detail-row" style={{ marginBottom: '16px' }}>
                     <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>Common Category:</span>
@@ -519,6 +529,8 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
                       type="text"
                       value={editCategoryModal.common || ''}
                       onChange={(e) => handleEditInputChange('common', e.target.value)}
+                      list="edit-common-list"
+                      autoComplete="off"
                       style={{
                         padding: '8px 12px',
                         border: '1px solid #ddd',
@@ -528,6 +540,9 @@ const CategoryMaster = ({ onBack, onAddCategory, onNavigate, userRole = 'admin' 
                         maxWidth: '300px'
                       }}
                     />
+                    <datalist id="edit-common-list">
+                      {[...new Set(categories.map(c => c.common).filter(Boolean))].sort().map((v, i) => <option key={i} value={v} />)}
+                    </datalist>
                   </div>
                   <div className="detail-row" style={{ marginBottom: '16px' }}>
                     <span className="detail-label" style={{ minWidth: '140px', marginRight: '12px' }}>City:</span>

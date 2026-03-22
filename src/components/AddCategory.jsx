@@ -16,8 +16,11 @@ const AddCategory = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
   const [successMessage, setSuccessMessage] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
   const [cities, setCities] = useState([]);
+  const [existingMain, setExistingMain] = useState([]);
+  const [existingSub, setExistingSub] = useState([]);
+  const [existingCommon, setExistingCommon] = useState([]);
 
-  // Fetch cities for dropdown
+  // Fetch cities and existing category values for dropdowns
   useEffect(() => {
     const fetchCities = async () => {
       try {
@@ -29,7 +32,21 @@ const AddCategory = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
         console.error('Error fetching cities:', err);
       }
     };
+    const fetchExistingCategories = async () => {
+      try {
+        const response = await categoriesAPI.getAll();
+        if (response && response.success) {
+          const cats = response.categories || [];
+          setExistingMain([...new Set(cats.map(c => c.main).filter(Boolean))].sort());
+          setExistingSub([...new Set(cats.map(c => c.sub).filter(Boolean))].sort());
+          setExistingCommon([...new Set(cats.map(c => c.common).filter(Boolean))].sort());
+        }
+      } catch (err) {
+        console.error('Error fetching existing categories:', err);
+      }
+    };
     fetchCities();
+    fetchExistingCategories();
   }, []);
 
   const handleBack = () => {
@@ -208,7 +225,12 @@ const AddCategory = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           placeholder="e.g., Utensils"
                           value={formData.main}
                           onChange={handleInputChange}
+                          list="add-main-list"
+                          autoComplete="off"
                         />
+                        <datalist id="add-main-list">
+                          {existingMain.map((val, i) => <option key={i} value={val} />)}
+                        </datalist>
                       </div>
                     </div>
 
@@ -224,7 +246,12 @@ const AddCategory = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           placeholder="e.g., Kitchen"
                           value={formData.sub}
                           onChange={handleInputChange}
+                          list="add-sub-list"
+                          autoComplete="off"
                         />
+                        <datalist id="add-sub-list">
+                          {existingSub.map((val, i) => <option key={i} value={val} />)}
+                        </datalist>
                       </div>
                     </div>
 
@@ -240,7 +267,12 @@ const AddCategory = ({ onBack, onCancel, onNavigate, userRole = 'admin' }) => {
                           placeholder="e.g., Daily Use"
                           value={formData.common}
                           onChange={handleInputChange}
+                          list="add-common-list"
+                          autoComplete="off"
                         />
+                        <datalist id="add-common-list">
+                          {existingCommon.map((val, i) => <option key={i} value={val} />)}
+                        </datalist>
                       </div>
                     </div>
 
