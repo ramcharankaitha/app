@@ -34,6 +34,8 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
   });
   const [handlerExplicitlySelected, setHandlerExplicitlySelected] = useState(false);
   const menuRef = useRef(null);
+  const activeNavRef = useRef(activeNav);
+  useEffect(() => { activeNavRef.current = activeNav; });
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -181,13 +183,12 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
 
   // Sync activeNav with currentPage
   useEffect(() => {
-    // If handler is explicitly selected, keep it active (handler is now in master menu)
-    if (handlerExplicitlySelected && activeNav === 'handler') {
-      // Handler is explicitly selected, keep it active
+    // If handler view is active and explicitly selected, keep it
+    if (handlerExplicitlySelected && activeNavRef.current === 'handler') {
       return;
     }
 
-    // Reset handler flag when navigating to a different page (but not when clicking master menu)
+    // Reset handler flag when navigating to a transaction or unrelated page
     if (currentPage !== 'staffHome' && currentPage !== 'handler' && currentPage !== 'masterMenu' && 
         currentPage !== 'products' && currentPage !== 'suppliers' && currentPage !== 'transport' && 
         currentPage !== 'chitPlans' && currentPage !== 'addChitCustomer' && currentPage !== 'chitPlanMaster' && 
@@ -196,9 +197,14 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
     }
 
     if (currentPage === 'staffHome') {
-      // Only set to home if handler wasn't explicitly selected
       if (!handlerExplicitlySelected) {
-        setActiveNav('home');
+        // Restore last explicitly chosen menu instead of always defaulting to home
+        const savedMenu = sessionStorage.getItem('staffLastActiveMenu');
+        if (savedMenu === 'masterMenu' || savedMenu === 'transactionMenu') {
+          setActiveNav(savedMenu);
+        } else {
+          setActiveNav('home');
+        }
       }
     } else if (currentPage === 'handler') {
       setActiveNav('handler');
@@ -208,8 +214,8 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
     } else if (currentPage === 'products' || currentPage === 'suppliers' || currentPage === 'transport' || 
                currentPage === 'chitPlans' || currentPage === 'addChitCustomer' || currentPage === 'chitPlanMaster' || 
                currentPage === 'addChitPlan' || currentPage === 'categoryMaster' || currentPage === 'masterMenu') {
-      // Only set to masterMenu if handler isn't active
-      if (activeNav !== 'handler') {
+      if (!handlerExplicitlySelected) {
+        sessionStorage.setItem('staffLastActiveMenu', 'masterMenu');
         setActiveNav('masterMenu');
       }
     } else if (currentPage === 'dispatch' || currentPage === 'transactionMenu' || currentPage === 'stockIn' || 
@@ -217,11 +223,12 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
                currentPage === 'transactionProducts' || currentPage === 'addProductPricing' || currentPage === 'services' ||
                currentPage === 'salesOrder' || currentPage === 'chitEntryMaster' || currentPage === 'purchaseOrderMaster' ||
                currentPage === 'paymentMaster' || currentPage === 'quotationMaster') {
+      sessionStorage.setItem('staffLastActiveMenu', 'transactionMenu');
       setActiveNav('transactionMenu');
     } else if (currentPage === 'settings') {
       setActiveNav('settings');
     }
-  }, [currentPage, handlerExplicitlySelected, activeNav]);
+  }, [currentPage, handlerExplicitlySelected]);
 
   const workingStore = useMemo(() => {
     return profile?.primary_store || 'Hyderabad Store';
@@ -237,19 +244,16 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
     setActiveNav(navItem);
     if (!onNavigate) return;
     if (navItem === 'home') {
+      sessionStorage.removeItem('staffLastActiveMenu');
       onNavigate('staffHome');
     } else if (navItem === 'handler') {
-      // Handle handler as internal state, don't navigate away
-      // Mark handler as explicitly selected so it stays active when navigating to other pages
       setHandlerExplicitlySelected(true);
     } else if (navItem === 'customers') {
       onNavigate('customers');
     } else if (navItem === 'masterMenu') {
-      // Handle masterMenu as internal state, don't navigate away
-      // Just update the activeNav state, which is already done above
+      sessionStorage.setItem('staffLastActiveMenu', 'masterMenu');
     } else if (navItem === 'transactionMenu') {
-      // Handle transactionMenu as internal state, don't navigate away
-      // Just update the activeNav state, which is already done above
+      sessionStorage.setItem('staffLastActiveMenu', 'transactionMenu');
     } else if (navItem === 'settings') {
       onNavigate('settings');
     }

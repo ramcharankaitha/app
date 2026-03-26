@@ -15,6 +15,15 @@ const hasAndroidBridge = () =>
   typeof window !== 'undefined' && window.AndroidBridge && typeof window.AndroidBridge.downloadFile === 'function';
 
 /**
+ * Detect Android WebView environment (APK without native bridge)
+ */
+const isAndroidWebView = () => {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent.toLowerCase();
+  return ua.includes('android') && (ua.includes('; wv)') || ua.includes('version/') || !ua.includes('chrome/'));
+};
+
+/**
  * Convert a string to base64 (handles UTF-8 / BOM correctly)
  */
 const stringToBase64 = (str) => {
@@ -74,6 +83,24 @@ export const downloadCSV = async (csvContent, filename) => {
       const base64 = stringToBase64(contentWithBOM);
       window.AndroidBridge.downloadFile(base64, filename, 'text/csv');
       return;
+    }
+
+    // ---- Android WebView without native bridge: use data URI ----
+    if (isAndroidWebView()) {
+      try {
+        const base64 = stringToBase64(contentWithBOM);
+        const dataUri = `data:text/csv;charset=utf-8;base64,${base64}`;
+        const link = document.createElement('a');
+        link.href = dataUri;
+        link.download = filename;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => document.body.removeChild(link), 200);
+        return;
+      } catch (e) {
+        // Fall through to blob approach
+      }
     }
 
     // ---- Desktop / normal browser path ----

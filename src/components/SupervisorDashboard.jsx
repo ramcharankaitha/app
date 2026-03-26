@@ -111,26 +111,27 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
   // Sync activeNav with currentPage
   useEffect(() => {
     if (currentPage === 'supervisorHome') {
-      setActiveNav('home');
+      const savedMenu = sessionStorage.getItem('supervisorLastActiveMenu');
+      if (savedMenu === 'masterMenu' || savedMenu === 'transactionMenu') {
+        setActiveNav(savedMenu);
+      } else {
+        setActiveNav('home');
+      }
     } else if (currentPage === 'staff') {
       setActiveNav('staff');
     } else if (currentPage === 'customers') {
       setActiveNav('customers');
-    } else if (currentPage === 'products') {
+    } else if (currentPage === 'products' || currentPage === 'suppliers' || currentPage === 'transport' ||
+               currentPage === 'chitPlans' || currentPage === 'addChitCustomer' || currentPage === 'chitPlanMaster' ||
+               currentPage === 'addChitPlan' || currentPage === 'categoryMaster' || currentPage === 'masterMenu') {
+      sessionStorage.setItem('supervisorLastActiveMenu', 'masterMenu');
       setActiveNav('masterMenu');
-    } else if (currentPage === 'suppliers') {
-      setActiveNav('masterMenu');
-    } else if (currentPage === 'dispatch') {
-      setActiveNav('transactionMenu');
-    } else if (currentPage === 'transport') {
-      setActiveNav('masterMenu');
-    } else if (currentPage === 'chitPlans' || currentPage === 'addChitCustomer' || currentPage === 'chitPlanMaster' || currentPage === 'addChitPlan') {
-      setActiveNav('masterMenu');
-    } else if (currentPage === 'categoryMaster') {
-      setActiveNav('masterMenu');
-    } else if (currentPage === 'masterMenu') {
-      setActiveNav('masterMenu');
-    } else if (currentPage === 'transactionMenu' || currentPage === 'stockIn' || currentPage === 'stockOut' || currentPage === 'createSupplier' || currentPage === 'supplierTransactionMaster' || currentPage === 'transactionProducts' || currentPage === 'addProductPricing') {
+    } else if (currentPage === 'dispatch' || currentPage === 'transactionMenu' || currentPage === 'stockIn' ||
+               currentPage === 'stockOut' || currentPage === 'createSupplier' || currentPage === 'supplierTransactionMaster' ||
+               currentPage === 'transactionProducts' || currentPage === 'addProductPricing' || currentPage === 'services' ||
+               currentPage === 'salesOrder' || currentPage === 'chitEntryMaster' || currentPage === 'purchaseOrderMaster' ||
+               currentPage === 'paymentMaster' || currentPage === 'quotationMaster') {
+      sessionStorage.setItem('supervisorLastActiveMenu', 'transactionMenu');
       setActiveNav('transactionMenu');
     } else if (currentPage === 'settings') {
       setActiveNav('settings');
@@ -209,11 +210,9 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
     } else if (navItem === 'customers') {
       onNavigate('customers');
     } else if (navItem === 'masterMenu') {
-      // Handle masterMenu as internal state, don't navigate away
-      // Just update the activeNav state, which is already done above
+      sessionStorage.setItem('supervisorLastActiveMenu', 'masterMenu');
     } else if (navItem === 'transactionMenu') {
-      // Handle transactionMenu as internal state, don't navigate away
-      // Just update the activeNav state, which is already done above
+      sessionStorage.setItem('supervisorLastActiveMenu', 'transactionMenu');
     } else if (navItem === 'settings') {
       onNavigate('settings');
     }

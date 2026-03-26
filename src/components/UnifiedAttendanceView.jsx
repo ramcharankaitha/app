@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../services/api';
+import { downloadCSV, downloadFileFromServer } from '../utils/fileDownload';
 import Toast from './Toast';
 import './staffAttendanceView.css';
 
@@ -64,16 +65,13 @@ const UnifiedAttendanceView = ({ onClose }) => {
       const timestamp = selectedDate || new Date().toISOString().split('T')[0];
       
       if (type === 'all') {
-        // Export combined attendance
         await exportCombinedCSV();
       } else if (type === 'staff') {
         const url = `${apiUrl}/attendance/export?date=${selectedDate}`;
-        const { downloadFileFromServer } = await import('../utils/fileDownload');
         const filename = `staff_attendance_${timestamp}.csv`;
         await downloadFileFromServer(url, filename);
       } else if (type === 'supervisor') {
         const url = `${apiUrl}/supervisor-attendance/export?date=${selectedDate}`;
-        const { downloadFileFromServer } = await import('../utils/fileDownload');
         const filename = `supervisor_attendance_${timestamp}.csv`;
         await downloadFileFromServer(url, filename);
       }
@@ -140,17 +138,8 @@ const UnifiedAttendanceView = ({ onClose }) => {
       }).join('\n');
 
       const csv = csvHeader + csvRows;
-      
-      // Download CSV
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `combined_attendance_${timestamp}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+
+      await downloadCSV(csv, `combined_attendance_${timestamp}.csv`);
     } catch (err) {
       console.error('Error exporting combined CSV:', err);
       throw err;
