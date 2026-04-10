@@ -85,21 +85,20 @@ export const downloadCSV = async (csvContent, filename) => {
       return;
     }
 
-    // ---- Android WebView without native bridge: use data URI ----
-    if (isAndroidWebView()) {
-      try {
-        const base64 = stringToBase64(contentWithBOM);
-        const dataUri = `data:text/csv;charset=utf-8;base64,${base64}`;
-        const link = document.createElement('a');
-        link.href = dataUri;
-        link.download = filename;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        setTimeout(() => document.body.removeChild(link), 200);
-        return;
-      } catch (e) {
-        // Fall through to blob approach
+    // ---- Mobile (Android / iOS): try Web Share API with file ----
+    if (isAndroidWebView() || /android|iphone|ipad|ipod/i.test(navigator.userAgent || '')) {
+      if (typeof navigator.share === 'function') {
+        try {
+          const blob = new Blob([contentWithBOM], { type: 'text/csv;charset=utf-8;' });
+          const file = new File([blob], filename, { type: 'text/csv;charset=utf-8' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: filename });
+            return;
+          }
+        } catch (shareErr) {
+          if (shareErr.name === 'AbortError') return; // user cancelled share sheet
+          // fall through to blob
+        }
       }
     }
 
@@ -141,6 +140,22 @@ export const downloadFileFromServer = async (url, filename, options = {}) => {
       const mimeType = blob.type || 'application/octet-stream';
       window.AndroidBridge.downloadFile(base64, filename, mimeType);
       return;
+    }
+
+    // ---- Mobile (Android / iOS): try Web Share API with file ----
+    if (isAndroidWebView() || /android|iphone|ipad|ipod/i.test(navigator.userAgent || '')) {
+      if (typeof navigator.share === 'function') {
+        try {
+          const file = new File([blob], filename, { type: blob.type || 'text/csv' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: filename });
+            return;
+          }
+        } catch (shareErr) {
+          if (shareErr.name === 'AbortError') return; // user cancelled share sheet
+          // fall through to blob
+        }
+      }
     }
 
     // ---- Desktop / normal browser path ----

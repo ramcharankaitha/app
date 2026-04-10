@@ -949,6 +949,12 @@ export const notificationsAPI = {
   },
 };
 
+export const adminAPI = {
+  getStorageStats: async () => {
+    return apiCall('/admin/storage-stats');
+  },
+};
+
 export const paymentsAPI = {
   getAll: async () => {
     return apiCall('/payments');

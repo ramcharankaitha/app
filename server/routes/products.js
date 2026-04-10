@@ -513,10 +513,10 @@ router.put('/:id', async (req, res) => {
     const minQty = parseInt(updatedProduct.minimum_quantity) || 0;
     
     // Check if stock went from above minimum to below minimum
-    const wasAboveMin = prevQty > prevMinQty;
-    const isNowBelowMin = newQty <= minQty;
+    const wasAboveMin = prevQty >= prevMinQty;
+    const isNowBelowMin = minQty > 0 && newQty < minQty;
     
-    // Create critical alert if stock is low
+    // Create critical alert only when stock crosses below the minimum threshold
     if (isNowBelowMin && (wasAboveMin || newQty < prevQty)) {
       try {
         await createCriticalAlert(

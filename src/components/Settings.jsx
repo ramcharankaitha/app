@@ -81,6 +81,7 @@ const Settings = ({ onBack, onNavigate, onLogout, userRole = 'admin' }) => {
       title: 'DATA & SUPPORT',
       items: [
         { type: 'link', title: 'Data & Backup', desc: 'Export or backup store data' },
+        { type: 'link', title: 'Database Storage', desc: 'Live usage — how much space each table uses' },
       ],
     },
   ], [profile, displayName, displayRole, userRole, notificationsOn, isDark, twoFactorOn]);
@@ -295,6 +296,8 @@ const Settings = ({ onBack, onNavigate, onLogout, userRole = 'admin' }) => {
                           if (onNavigate) onNavigate('editProfile');
                         } else if (item.title === 'Data & Backup') {
                           setShowExportConfirm(true);
+                        } else if (item.title === 'Database Storage') {
+                          if (onNavigate) onNavigate('storageStats');
                         }
                       };
                       

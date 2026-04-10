@@ -32,6 +32,7 @@ const purchaseOrdersRoutes = require('./routes/purchaseOrders');
 const smsRoutes = require('./routes/sms');
 const quotationsRoutes = require('./routes/quotations');
 const paymentsRoutes = require('./routes/payments');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -157,6 +158,7 @@ app.use('/api/purchase-orders', purchaseOrdersRoutes);
 app.use('/api/sms', smsRoutes);
 app.use('/api/quotations', quotationsRoutes);
 app.use('/api/payments', paymentsRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Global error handler (must be last)
 app.use(errorHandler);

@@ -357,6 +357,24 @@ const initDatabase = async () => {
       console.warn('⚠️  Chit plan initialization warning:', chitPlanError.message);
     }
 
+    // Ensure is_critical column exists in notifications table — required by notificationService
+    try {
+      await pool.query(`
+        ALTER TABLE notifications ADD COLUMN IF NOT EXISTS is_critical BOOLEAN DEFAULT FALSE;
+      `);
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_notifications_critical 
+        ON notifications(is_critical, created_at DESC) WHERE is_critical = TRUE;
+      `);
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_notifications_user 
+        ON notifications(user_id, user_type, is_read, created_at DESC);
+      `);
+      console.log('✅ Notifications table: is_critical column verified');
+    } catch (notifMigrationError) {
+      console.warn('⚠️  Notifications migration warning:', notifMigrationError.message);
+    }
+
     console.log('✅ Database initialization completed');
   } catch (error) {
     console.error('❌ Error initializing database:', error);

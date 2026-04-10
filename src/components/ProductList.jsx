@@ -241,7 +241,7 @@ const ProductList = ({ onBack, onNavigate }) => {
                         {filteredProducts.map((product, index) => {
                           const currentQty = parseInt(product.current_quantity) || 0;
                           const minQty = parseInt(product.minimum_quantity) || 0;
-                          const isLowStock = currentQty <= minQty && currentQty > 0;
+                          const isLowStock = minQty > 0 && currentQty < minQty && currentQty > 0;
                           const isOutOfStock = currentQty === 0;
                           
                           return (

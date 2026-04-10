@@ -26,28 +26,24 @@ async function createNotification({
   relatedId = null
 }) {
   try {
-    // If userType is 'all', create notifications for all admins
+    // If userType is 'all', create notifications for all admins AND all supervisors
     if (userType === 'all') {
-      const admins = await pool.query(
-        'SELECT id FROM admin_profile'
-      );
-      
-      const notifications = admins.rows.map(admin => ({
-        userId: admin.id,
-        userType: 'admin',
-        type,
-        title,
-        message,
-        isCritical,
-        relatedId
-      }));
+      const [admins, supervisors] = await Promise.all([
+        pool.query('SELECT id FROM admin_profile'),
+        pool.query("SELECT id FROM users WHERE role = 'Supervisor'")
+      ]);
+
+      const notifications = [
+        ...admins.rows.map(admin => ({ userId: admin.id, userType: 'admin' })),
+        ...supervisors.rows.map(sup => ({ userId: sup.id, userType: 'supervisor' }))
+      ];
 
       // Insert all notifications
       for (const notif of notifications) {
         await pool.query(
           `INSERT INTO notifications (user_id, user_type, notification_type, title, message, is_critical, related_id)
            VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [notif.userId, notif.userType, notif.type, notif.title, notif.message, notif.isCritical, notif.relatedId]
+          [notif.userId, notif.userType, type, title, message, isCritical, relatedId]
         );
       }
       

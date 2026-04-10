@@ -54,6 +54,7 @@ import Settings from './components/Settings';
 import Profile from './components/Profile';
 import EditProfile from './components/EditProfile';
 import PrivacyPolicy from './components/PrivacyPolicy';
+import StorageStats from './components/StorageStats';
 import './components/dashboard.css';
 import './components/users.css';
 import './components/addUser.css';
@@ -320,6 +321,15 @@ const AdminRoutes = () => {
         element={
           <ProtectedRoute>
             <EditProfile onBack={() => handleNavigation('profile')} onNavigate={handleNavigation} />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/storageStats"
+        element={
+          <ProtectedRoute>
+            <StorageStats onBack={() => handleNavigation('settings')} />
           </ProtectedRoute>
         }
       />

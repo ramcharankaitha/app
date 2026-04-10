@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { productsAPI, categoriesAPI } from '../services/api';
+import { productsAPI, categoriesAPI, stockAPI } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import Toast from './Toast';
 import SidebarNav from './SidebarNav';
@@ -19,6 +19,8 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [categories, setCategories] = useState([]);
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null, product: null });
+  const [scanning, setScanning] = useState(false);
+  const [scanResult, setScanResult] = useState('');
   const menuRefs = useRef({});
   const categoryMenuRef = useRef(null);
 
@@ -325,11 +327,39 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
                 <span className="tab-dot"></span>
                 <span className="tab-label">STORES</span>
               </div>
-              <button className="add-product-btn" onClick={handleAdd}>
-                <i className="fas fa-plus"></i>
-                <span>Add New Product</span>
-              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={async () => {
+                    setScanning(true);
+                    setScanResult('');
+                    try {
+                      const res = await stockAPI.checkLowStock();
+                      setScanResult(res.message || `Found ${res.totalChecked || 0} low stock items`);
+                      setTimeout(() => setScanResult(''), 5000);
+                    } catch (e) {
+                      setScanResult('Scan failed. Please try again.');
+                      setTimeout(() => setScanResult(''), 4000);
+                    } finally {
+                      setScanning(false);
+                    }
+                  }}
+                  disabled={scanning}
+                  style={{ padding: '8px 14px', background: '#fff3cd', color: '#856404', border: '1px solid #ffc107', borderRadius: '8px', cursor: scanning ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <i className={`fas fa-search ${scanning ? 'fa-spin' : ''}`}></i>
+                  {scanning ? 'Scanning...' : 'Scan Low Stock'}
+                </button>
+                <button className="add-product-btn" onClick={handleAdd}>
+                  <i className="fas fa-plus"></i>
+                  <span>Add New Product</span>
+                </button>
+              </div>
             </div>
+            {scanResult && (
+              <div style={{ background: '#fff3cd', border: '1px solid #ffc107', borderRadius: '8px', padding: '10px 16px', marginBottom: '12px', fontSize: '13px', color: '#856404', fontWeight: '500' }}>
+                <i className="fas fa-bell" style={{ marginRight: '8px' }}></i>{scanResult}
+              </div>
+            )}
 
             <div className="products-heading">
               <h2>Manage Store Products</h2>
@@ -490,11 +520,11 @@ const Products = ({ onBack, onAddProduct, onNavigate, userRole = 'admin' }) => {
                             padding: '12px 8px',
                             fontSize: '14px',
                             fontWeight: '600',
-                            color: p.qty <= 0 ? '#dc3545' : p.qty <= 10 ? '#856404' : '#28a745'
+                            color: p.qty <= 0 ? '#dc3545' : (p.minimum_quantity > 0 && p.qty < p.minimum_quantity) ? '#856404' : '#28a745'
                           }}>
                             {p.qty || 0}
                             {p.qty <= 0 && ' (OUT)'}
-                            {p.qty > 0 && p.qty <= 10 && ' (LOW)'}
+                            {p.qty > 0 && p.minimum_quantity > 0 && p.qty < p.minimum_quantity && ' (LOW)'}
                           </td>
                           <td style={{ 
                             textAlign: 'center',

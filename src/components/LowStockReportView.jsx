@@ -10,17 +10,16 @@ const LowStockReportView = ({ onClose }) => {
   const [error, setError] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [threshold, setThreshold] = useState(10);
 
   useEffect(() => {
     fetchLowStock();
-  }, [threshold]);
+  }, []);
 
   const fetchLowStock = async () => {
     setLoading(true);
     setError('');
     try {
-      const response = await exportAPI.getLowStock(threshold);
+      const response = await exportAPI.getLowStock();
       if (response && response.success) {
         setLowStockItems(response.items || []);
       } else {
@@ -36,17 +35,19 @@ const LowStockReportView = ({ onClose }) => {
 
   const convertToCSV = (data) => {
     if (!data || data.length === 0) return 'No data available\n';
-    const headers = ['Item Code', 'Product Name', 'Category', 'Current Stock', 'MRP', 'Status', 'Action Required'];
+    const headers = ['Item Code', 'Product Name', 'Category', 'Current Stock', 'Min Qty', 'MRP', 'Status', 'Action Required'];
     const csvRows = [headers.join(',')];
     data.forEach(item => {
+      const isOut = (item.current_quantity || 0) <= 0;
       const row = [
         `"${(item.item_code || '').replace(/"/g, '""')}"`,
         `"${(item.product_name || '').replace(/"/g, '""')}"`,
         `"${(item.category || '').replace(/"/g, '""')}"`,
         item.current_quantity || 0,
+        item.minimum_quantity || 0,
         item.mrp || 0,
-        `"${(item.current_quantity <= 0 ? 'Out of Stock' : 'Low Stock').replace(/"/g, '""')}"`,
-        `"${(item.current_quantity <= 0 ? 'URGENT: Restock immediately' : 'Consider restocking').replace(/"/g, '""')}"`
+        `"${isOut ? 'Out of Stock' : 'Low Stock'}"`,
+        `"${isOut ? 'URGENT: Restock immediately' : 'Restock needed — below minimum quantity'}"`
       ];
       csvRows.push(row.join(','));
     });
@@ -86,7 +87,7 @@ const LowStockReportView = ({ onClose }) => {
   const calculateTotals = () => {
     const filtered = getFilteredItems();
     const outOfStock = filtered.filter(item => (item.current_quantity || 0) <= 0).length;
-    const lowStock = filtered.filter(item => (item.current_quantity || 0) > 0 && (item.current_quantity || 0) <= threshold).length;
+    const lowStock = filtered.filter(item => (item.current_quantity || 0) > 0).length;
     return { total: filtered.length, outOfStock, lowStock };
   };
 
@@ -96,16 +97,6 @@ const LowStockReportView = ({ onClose }) => {
   return (
     <div>
       <div className="attendance-controls" style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '20px' }}>
-        <div className="date-selector">
-          <label>Stock Threshold:</label>
-          <input
-            type="number"
-            value={threshold}
-            onChange={(e) => setThreshold(parseInt(e.target.value) || 10)}
-            min="0"
-            style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd', width: '100px' }}
-          />
-        </div>
         <div className="date-selector" style={{ flex: 1, minWidth: '200px' }}>
           <label>Search:</label>
           <input
@@ -132,7 +123,7 @@ const LowStockReportView = ({ onClose }) => {
           <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#dc3545' }}>{totals.outOfStock}</div>
         </div>
         <div style={{ background: '#fff3cd', padding: '16px', borderRadius: '8px', border: '2px solid #ffc107' }}>
-          <div style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>Low Stock (≤{threshold})</div>
+          <div style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>Below Min Quantity</div>
           <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#856404' }}>{totals.lowStock}</div>
         </div>
         <div style={{ background: '#e8f5e9', padding: '16px', borderRadius: '8px', border: '2px solid #4caf50' }}>
@@ -162,9 +153,9 @@ const LowStockReportView = ({ onClose }) => {
                 <th>Product Name</th>
                 <th>Category</th>
                 <th>Current Stock</th>
+                <th>Min Qty</th>
                 <th>MRP</th>
                 <th>Status</th>
-                <th>Action Required</th>
               </tr>
             </thead>
             <tbody>
@@ -178,6 +169,9 @@ const LowStockReportView = ({ onClose }) => {
                     <td style={{ textAlign: 'center', fontWeight: 'bold', color: isOutOfStock ? '#dc3545' : '#856404' }}>
                       {item.current_quantity || 0}
                     </td>
+                    <td style={{ textAlign: 'center', color: '#666' }}>
+                      {item.minimum_quantity || 0}
+                    </td>
                     <td style={{ textAlign: 'right' }}>{formatCurrency(item.mrp)}</td>
                     <td>
                       <span style={{
@@ -190,9 +184,6 @@ const LowStockReportView = ({ onClose }) => {
                       }}>
                         {isOutOfStock ? 'Out of Stock' : 'Low Stock'}
                       </span>
-                    </td>
-                    <td style={{ color: isOutOfStock ? '#dc3545' : '#856404', fontWeight: '600' }}>
-                      {isOutOfStock ? 'URGENT: Restock immediately' : 'Consider restocking'}
                     </td>
                   </tr>
                 );

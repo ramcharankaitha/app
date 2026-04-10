@@ -691,14 +691,14 @@ router.get('/stock-details', async (req, res) => {
         mrp,
         CASE 
           WHEN current_quantity <= 0 THEN 'Out of Stock'
-          WHEN current_quantity <= minimum_quantity OR (minimum_quantity = 0 AND current_quantity <= 10) THEN 'Low Stock'
+          WHEN minimum_quantity > 0 AND current_quantity < minimum_quantity THEN 'Low Stock'
           ELSE 'In Stock'
         END as status
       FROM products
       ORDER BY 
         CASE 
           WHEN current_quantity <= 0 THEN 1
-          WHEN current_quantity <= minimum_quantity OR (minimum_quantity = 0 AND current_quantity <= 10) THEN 2
+          WHEN minimum_quantity > 0 AND current_quantity < minimum_quantity THEN 2
           ELSE 3
         END,
         product_name ASC`
@@ -714,12 +714,9 @@ router.get('/stock-details', async (req, res) => {
   }
 });
 
-// Get Low Stock Report
+// Get Low Stock Report — uses each product's own minimum_quantity
 router.get('/low-stock', async (req, res) => {
   try {
-    const { threshold } = req.query;
-    const stockThreshold = threshold ? parseInt(threshold) : 10;
-
     const result = await pool.query(
       `SELECT 
         id,
@@ -731,15 +728,14 @@ router.get('/low-stock', async (req, res) => {
         minimum_quantity,
         mrp
       FROM products
-      WHERE current_quantity <= $1
+      WHERE minimum_quantity > 0 AND current_quantity < minimum_quantity
       ORDER BY 
         CASE 
           WHEN current_quantity <= 0 THEN 1
           ELSE 2
         END,
         current_quantity ASC,
-        product_name ASC`,
-      [stockThreshold]
+        product_name ASC`
     );
 
     res.json({
