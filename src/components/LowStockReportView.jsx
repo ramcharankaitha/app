@@ -35,14 +35,13 @@ const LowStockReportView = ({ onClose }) => {
 
   const convertToCSV = (data) => {
     if (!data || data.length === 0) return 'No data available\n';
-    const headers = ['Item Code', 'Product Name', 'Category', 'Current Stock', 'Min Qty', 'MRP', 'Status', 'Action Required'];
+    const headers = ['Item Code', 'Product Name', 'Current Stock', 'Min Qty', 'MRP', 'Status', 'Action Required'];
     const csvRows = [headers.join(',')];
     data.forEach(item => {
       const isOut = (item.current_quantity || 0) <= 0;
       const row = [
         `"${(item.item_code || '').replace(/"/g, '""')}"`,
         `"${(item.product_name || '').replace(/"/g, '""')}"`,
-        `"${(item.category || '').replace(/"/g, '""')}"`,
         item.current_quantity || 0,
         item.minimum_quantity || 0,
         item.mrp || 0,
@@ -74,8 +73,7 @@ const LowStockReportView = ({ onClose }) => {
     const query = searchQuery.toLowerCase();
     return lowStockItems.filter(item =>
       (item.item_code && item.item_code.toLowerCase().includes(query)) ||
-      (item.product_name && item.product_name.toLowerCase().includes(query)) ||
-      (item.category && item.category.toLowerCase().includes(query))
+      (item.product_name && item.product_name.toLowerCase().includes(query))
     );
   };
 
@@ -151,7 +149,6 @@ const LowStockReportView = ({ onClose }) => {
               <tr>
                 <th>Item Code</th>
                 <th>Product Name</th>
-                <th>Category</th>
                 <th>Current Stock</th>
                 <th>Min Qty</th>
                 <th>MRP</th>
@@ -165,7 +162,6 @@ const LowStockReportView = ({ onClose }) => {
                   <tr key={item.id || item.item_code} style={isOutOfStock ? { background: '#fff5f5' } : {}}>
                     <td>{item.item_code || '-'}</td>
                     <td style={{ fontWeight: '600' }}>{item.product_name || '-'}</td>
-                    <td>{item.category || '-'}</td>
                     <td style={{ textAlign: 'center', fontWeight: 'bold', color: isOutOfStock ? '#dc3545' : '#856404' }}>
                       {item.current_quantity || 0}
                     </td>

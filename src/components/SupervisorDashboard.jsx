@@ -1,12 +1,10 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useProfile } from '../hooks/useProfile';
 import ConfirmDialog from './ConfirmDialog';
-import Toast from './Toast';
 import StaffAttendanceView from './StaffAttendanceView';
 import AttendanceModal from './AttendanceModal';
 import BestSalesPerson from './BestSalesPerson';
 import NotificationsPanel from './NotificationsPanel';
-import { API_BASE_URL } from '../services/api';
 import './attendanceModal.css';
 
 const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
@@ -44,7 +42,7 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
     const fetchTodayAttendance = async () => {
       try {
         const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-        const response = await fetch(`${API_BASE_URL}/supervisor-attendance/today?username=${userData.username || ''}`, {
+        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/supervisor-attendance/today?username=${userData.username || ''}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
           }
@@ -70,7 +68,7 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
       try {
         const userData = JSON.parse(localStorage.getItem('userData') || '{}');
         if (userData.id) {
-          const response = await fetch(`${API_BASE_URL}/notifications?userId=${userData.id}&userType=supervisor`, {
+          const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/notifications?userId=${userData.id}&userType=supervisor`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
             }
@@ -111,27 +109,26 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
   // Sync activeNav with currentPage
   useEffect(() => {
     if (currentPage === 'supervisorHome') {
-      const savedMenu = sessionStorage.getItem('supervisorLastActiveMenu');
-      if (savedMenu === 'masterMenu' || savedMenu === 'transactionMenu') {
-        setActiveNav(savedMenu);
-      } else {
-        setActiveNav('home');
-      }
+      setActiveNav('home');
     } else if (currentPage === 'staff') {
       setActiveNav('staff');
     } else if (currentPage === 'customers') {
       setActiveNav('customers');
-    } else if (currentPage === 'products' || currentPage === 'suppliers' || currentPage === 'transport' ||
-               currentPage === 'chitPlans' || currentPage === 'addChitCustomer' || currentPage === 'chitPlanMaster' ||
-               currentPage === 'addChitPlan' || currentPage === 'categoryMaster' || currentPage === 'masterMenu') {
-      sessionStorage.setItem('supervisorLastActiveMenu', 'masterMenu');
+    } else if (currentPage === 'products') {
       setActiveNav('masterMenu');
-    } else if (currentPage === 'dispatch' || currentPage === 'transactionMenu' || currentPage === 'stockIn' ||
-               currentPage === 'stockOut' || currentPage === 'createSupplier' || currentPage === 'supplierTransactionMaster' ||
-               currentPage === 'transactionProducts' || currentPage === 'addProductPricing' || currentPage === 'services' ||
-               currentPage === 'salesOrder' || currentPage === 'chitEntryMaster' || currentPage === 'purchaseOrderMaster' ||
-               currentPage === 'paymentMaster' || currentPage === 'quotationMaster') {
-      sessionStorage.setItem('supervisorLastActiveMenu', 'transactionMenu');
+    } else if (currentPage === 'suppliers') {
+      setActiveNav('masterMenu');
+    } else if (currentPage === 'dispatch') {
+      setActiveNav('transactionMenu');
+    } else if (currentPage === 'transport') {
+      setActiveNav('masterMenu');
+    } else if (currentPage === 'chitPlans' || currentPage === 'addChitCustomer' || currentPage === 'chitPlanMaster' || currentPage === 'addChitPlan') {
+      setActiveNav('masterMenu');
+    } else if (currentPage === 'categoryMaster') {
+      setActiveNav('masterMenu');
+    } else if (currentPage === 'masterMenu') {
+      setActiveNav('masterMenu');
+    } else if (currentPage === 'transactionMenu' || currentPage === 'stockIn' || currentPage === 'stockOut' || currentPage === 'createSupplier' || currentPage === 'supplierTransactionMaster' || currentPage === 'transactionProducts' || currentPage === 'addProductPricing') {
       setActiveNav('transactionMenu');
     } else if (currentPage === 'settings') {
       setActiveNav('settings');
@@ -182,7 +179,7 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
       setTimeout(() => {
         const userData = JSON.parse(localStorage.getItem('userData') || '{}');
         if (userData.id) {
-          fetch(`${API_BASE_URL}/notifications?userId=${userData.id}&userType=supervisor`)
+          fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/notifications?userId=${userData.id}&userType=supervisor`)
             .then(res => res.json())
             .then(data => {
               if (data.success) {
@@ -210,9 +207,11 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
     } else if (navItem === 'customers') {
       onNavigate('customers');
     } else if (navItem === 'masterMenu') {
-      sessionStorage.setItem('supervisorLastActiveMenu', 'masterMenu');
+      // Handle masterMenu as internal state, don't navigate away
+      // Just update the activeNav state, which is already done above
     } else if (navItem === 'transactionMenu') {
-      sessionStorage.setItem('supervisorLastActiveMenu', 'transactionMenu');
+      // Handle transactionMenu as internal state, don't navigate away
+      // Just update the activeNav state, which is already done above
     } else if (navItem === 'settings') {
       onNavigate('settings');
     }
@@ -221,7 +220,7 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
   };
 
   return (
-    <div className="dashboard-container supervisor-dashboard">
+    <div className="dashboard-container">
       {/* Left Sidebar Navigation */}
       <nav className={`sidebar-nav ${sidebarOpen ? 'open' : ''}`}>
         <div 
@@ -318,7 +317,23 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
             </div>
           </div>
           <div className="header-right">
-                        <div className="menu-icon-container" ref={menuRef}>
+            <div 
+              className="notification-icon"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🔔 Supervisor: Bell clicked, opening notifications panel');
+                setShowNotificationsPanel(true);
+              }}
+              style={{ cursor: 'pointer', position: 'relative', zIndex: 10 }}
+              title="View Notifications"
+            >
+              <i className="fas fa-bell"></i>
+              {unreadCount > 0 && (
+                <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+              )}
+            </div>
+            <div className="menu-icon-container" ref={menuRef}>
               <div className="menu-icon" onClick={() => setMenuOpen((p) => !p)}>
                 <i className="fas fa-bars"></i>
               </div>
@@ -549,7 +564,27 @@ const SupervisorDashboard = ({ onNavigate, onLogout, userData, currentPage }) =>
         />
       )}
 
-      <Toast message={successMessage} type="success" onClose={() => setSuccessMessage('')} />
+      {/* Success/Warning Messages */}
+      {successMessage && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          background: '#d4edda',
+          color: '#155724',
+          padding: '15px 20px',
+          borderRadius: '8px',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+          zIndex: 10000,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          maxWidth: '400px'
+        }}>
+          <i className="fas fa-check-circle"></i>
+          <span>{successMessage}</span>
+        </div>
+      )}
 
       {warningMessage && (
         <div style={{

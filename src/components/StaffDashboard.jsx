@@ -1,12 +1,11 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useProfile } from '../hooks/useProfile';
 import ConfirmDialog from './ConfirmDialog';
-import Toast from './Toast';
 import AttendanceModal from './AttendanceModal';
 import BestSalesPerson from './BestSalesPerson';
 import NotificationsPanel from './NotificationsPanel';
 import Handler from './Handler';
-import { stockAPI, productsAPI, API_BASE_URL } from '../services/api';
+import { stockAPI, productsAPI } from '../services/api';
 import './attendanceModal.css';
 
 const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
@@ -34,8 +33,6 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
   });
   const [handlerExplicitlySelected, setHandlerExplicitlySelected] = useState(false);
   const menuRef = useRef(null);
-  const activeNavRef = useRef(activeNav);
-  useEffect(() => { activeNavRef.current = activeNav; });
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -54,7 +51,7 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
     const fetchTodayAttendance = async () => {
       try {
         const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-        const response = await fetch(`${API_BASE_URL}/attendance/today?username=${userData.username || ''}`, {
+        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/attendance/today?username=${userData.username || ''}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
           }
@@ -80,7 +77,7 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
       try {
         const userData = JSON.parse(localStorage.getItem('userData') || '{}');
         if (userData.id) {
-          const response = await fetch(`${API_BASE_URL}/notifications?userId=${userData.id}&userType=staff`, {
+          const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/notifications?userId=${userData.id}&userType=staff`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
             }
@@ -161,7 +158,7 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
         const userId = storedUserData.id || userData?.id;
         
         if (userId) {
-          const response = await fetch(`${API_BASE_URL}/staff/${userId}`, {
+          const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/staff/${userId}`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
             }
@@ -183,12 +180,13 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
 
   // Sync activeNav with currentPage
   useEffect(() => {
-    // If handler view is active and explicitly selected, keep it
-    if (handlerExplicitlySelected && activeNavRef.current === 'handler') {
+    // If handler is explicitly selected, keep it active (handler is now in master menu)
+    if (handlerExplicitlySelected && activeNav === 'handler') {
+      // Handler is explicitly selected, keep it active
       return;
     }
 
-    // Reset handler flag when navigating to a transaction or unrelated page
+    // Reset handler flag when navigating to a different page (but not when clicking master menu)
     if (currentPage !== 'staffHome' && currentPage !== 'handler' && currentPage !== 'masterMenu' && 
         currentPage !== 'products' && currentPage !== 'suppliers' && currentPage !== 'transport' && 
         currentPage !== 'chitPlans' && currentPage !== 'addChitCustomer' && currentPage !== 'chitPlanMaster' && 
@@ -197,14 +195,9 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
     }
 
     if (currentPage === 'staffHome') {
+      // Only set to home if handler wasn't explicitly selected
       if (!handlerExplicitlySelected) {
-        // Restore last explicitly chosen menu instead of always defaulting to home
-        const savedMenu = sessionStorage.getItem('staffLastActiveMenu');
-        if (savedMenu === 'masterMenu' || savedMenu === 'transactionMenu') {
-          setActiveNav(savedMenu);
-        } else {
-          setActiveNav('home');
-        }
+        setActiveNav('home');
       }
     } else if (currentPage === 'handler') {
       setActiveNav('handler');
@@ -214,8 +207,8 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
     } else if (currentPage === 'products' || currentPage === 'suppliers' || currentPage === 'transport' || 
                currentPage === 'chitPlans' || currentPage === 'addChitCustomer' || currentPage === 'chitPlanMaster' || 
                currentPage === 'addChitPlan' || currentPage === 'categoryMaster' || currentPage === 'masterMenu') {
-      if (!handlerExplicitlySelected) {
-        sessionStorage.setItem('staffLastActiveMenu', 'masterMenu');
+      // Only set to masterMenu if handler isn't active
+      if (activeNav !== 'handler') {
         setActiveNav('masterMenu');
       }
     } else if (currentPage === 'dispatch' || currentPage === 'transactionMenu' || currentPage === 'stockIn' || 
@@ -223,12 +216,11 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
                currentPage === 'transactionProducts' || currentPage === 'addProductPricing' || currentPage === 'services' ||
                currentPage === 'salesOrder' || currentPage === 'chitEntryMaster' || currentPage === 'purchaseOrderMaster' ||
                currentPage === 'paymentMaster' || currentPage === 'quotationMaster') {
-      sessionStorage.setItem('staffLastActiveMenu', 'transactionMenu');
       setActiveNav('transactionMenu');
     } else if (currentPage === 'settings') {
       setActiveNav('settings');
     }
-  }, [currentPage, handlerExplicitlySelected]);
+  }, [currentPage, handlerExplicitlySelected, activeNav]);
 
   const workingStore = useMemo(() => {
     return profile?.primary_store || 'Hyderabad Store';
@@ -244,16 +236,19 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
     setActiveNav(navItem);
     if (!onNavigate) return;
     if (navItem === 'home') {
-      sessionStorage.removeItem('staffLastActiveMenu');
       onNavigate('staffHome');
     } else if (navItem === 'handler') {
+      // Handle handler as internal state, don't navigate away
+      // Mark handler as explicitly selected so it stays active when navigating to other pages
       setHandlerExplicitlySelected(true);
     } else if (navItem === 'customers') {
       onNavigate('customers');
     } else if (navItem === 'masterMenu') {
-      sessionStorage.setItem('staffLastActiveMenu', 'masterMenu');
+      // Handle masterMenu as internal state, don't navigate away
+      // Just update the activeNav state, which is already done above
     } else if (navItem === 'transactionMenu') {
-      sessionStorage.setItem('staffLastActiveMenu', 'transactionMenu');
+      // Handle transactionMenu as internal state, don't navigate away
+      // Just update the activeNav state, which is already done above
     } else if (navItem === 'settings') {
       onNavigate('settings');
     }
@@ -299,7 +294,7 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
       setTimeout(() => {
         const userData = JSON.parse(localStorage.getItem('userData') || '{}');
         if (userData.id) {
-          fetch(`${API_BASE_URL}/notifications?userId=${userData.id}&userType=staff`)
+          fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/notifications?userId=${userData.id}&userType=staff`)
             .then(res => res.json())
             .then(data => {
               if (data.success) {
@@ -446,8 +441,40 @@ const StaffDashboard = ({ onNavigate, onLogout, userData, currentPage }) => {
 
         {/* Main Content */}
         <main className="dashboard-content">
-          <Toast message={successMessage} type="success" onClose={() => setSuccessMessage('')} />
-          <Toast message={warningMessage} type="error" onClose={() => setWarningMessage('')} />
+          {/* Success and Warning Messages */}
+          {successMessage && (
+            <div style={{ 
+              padding: '16px', 
+              background: '#d4edda', 
+              color: '#155724', 
+              borderRadius: '8px', 
+              marginBottom: '20px',
+              border: '1px solid #c3e6cb',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              <i className="fas fa-check-circle" style={{ fontSize: '20px' }}></i>
+              <span style={{ fontWeight: '500' }}>{successMessage}</span>
+            </div>
+          )}
+
+          {warningMessage && (
+            <div style={{ 
+              padding: '16px', 
+              background: '#fff3cd', 
+              color: '#856404', 
+              borderRadius: '8px', 
+              marginBottom: '20px',
+              border: '1px solid #ffeaa7',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              <i className="fas fa-exclamation-triangle" style={{ fontSize: '20px' }}></i>
+              <span style={{ fontWeight: '500' }}>{warningMessage}</span>
+            </div>
+          )}
 
           {activeNav === 'masterMenu' ? (
             <div className="master-menu-grid">

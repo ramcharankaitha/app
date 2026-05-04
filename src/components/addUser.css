@@ -33,9 +33,6 @@
 .add-user-header .back-btn {
     width: 36px;
     height: 36px;
-    min-width: 36px;
-    min-height: 36px;
-    aspect-ratio: 1;
     border-radius: 50%;
     background: #dc3545;
     border: none;
@@ -583,7 +580,7 @@
 }
 
 .form-section .form-grid {
-    margin-top: 0px;
+    margin-top: 20px;
     padding-top: 0;
 }
 
@@ -869,57 +866,6 @@ form.add-user-form .form-grid>.form-group:first-child>label {
     transform: translateY(-50%);
 }
 
-/* Shared typeahead dropdown styles */
-.typeahead-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-    z-index: 10000;
-    max-height: 250px;
-    overflow-y: auto;
-    margin-top: 4px;
-    -webkit-overflow-scrolling: touch;
-}
-
-.typeahead-dropdown > div {
-    padding: 10px 16px;
-    cursor: pointer;
-    border-bottom: 1px solid #f0f0f0;
-    transition: background 0.2s;
-}
-
-.typeahead-dropdown > div:last-child {
-    border-bottom: none;
-}
-
-.typeahead-dropdown > div:hover,
-.typeahead-dropdown > div:active {
-    background: #f8f9fa;
-}
-
-@media (max-width: 768px) {
-    .typeahead-dropdown {
-        max-height: 200px;
-        border-radius: 6px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    }
-
-    .typeahead-dropdown > div {
-        padding: 12px 14px;
-        font-size: 14px;
-    }
-
-    /* Ensure form-group with dropdown has proper z-index on mobile */
-    .form-group[style*="z-index"] {
-        z-index: 1000 !important;
-    }
-}
-
 .password-toggle {
     position: absolute;
     right: 12px;
@@ -969,77 +915,16 @@ form.add-user-form .form-grid>.form-group:first-child>label {
     display: flex;
     flex-direction: row;
     gap: 6px;
-    margin-top: 0px;
+    margin-top: 24px;
     margin-bottom: 100;
     align-items: center;
     width: 100%;
     justify-content: flex-end;
     flex-shrink: 0;
-    padding-top: 0px;
+    padding-top: 8px;
     clear: both;
     position: relative;
     z-index: 1;
-}
-
-@media (min-width: 769px) {
-    .add-stock-in-form .form-actions,
-    form.add-stock-in-form .form-actions {
-        position: static !important;
-        top: auto !important;
-        right: auto !important;
-        bottom: auto !important;
-        left: auto !important;
-        transform: none !important;
-    }
-
-    .add-stock-in-form .attendance-table-container,
-    form.add-stock-in-form .attendance-table-container {
-        max-height: none !important;
-        overflow-y: visible !important;
-        overflow-x: auto !important;
-    }
-}
-
-@media (min-width: 769px) {
-    .add-stock-in-form .product-summary-section,
-    form.add-stock-in-form .product-summary-section {
-        margin-bottom: 24px !important;
-        padding-bottom: 0 !important;
-        position: static !important;
-        z-index: auto !important;
-        overflow: visible !important;
-    }
-
-    .add-stock-in-form .product-summary-section + .form-actions,
-    form.add-stock-in-form .product-summary-section + .form-actions {
-        margin-top: 24px !important;
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
-        z-index: auto !important;
-    }
-}
-
-@media (min-width: 769px) {
-    .dashboard-container .dashboard-main form.add-user-form.add-stock-in-form .attendance-table-container,
-    .dashboard-container .dashboard-main .add-stock-in-form .attendance-table-container {
-        max-height: unset !important;
-        height: auto !important;
-        overflow-y: visible !important;
-        overflow-x: auto !important;
-    }
-}
-
-@media (min-width: 769px) {
-    .add-quotation-form .form-actions,
-    form.add-user-form.add-quotation-form .form-actions {
-        position: static !important;
-        top: auto !important;
-        right: auto !important;
-        bottom: auto !important;
-        left: auto !important;
-        transform: none !important;
-        z-index: auto !important;
-    }
 }
 
 /* Ensure form-actions is not part of the grid and appears after all fields */
@@ -1248,121 +1133,6 @@ form.add-user-form>.form-actions {
         scroll-behavior: smooth;
     }
 
-    .add-purchase-order-container {
-        overflow-x: hidden !important;
-        touch-action: pan-y !important;
-    }
-
-    .add-purchase-order-container .add-user-content {
-        overflow-x: hidden !important;
-    }
-
-    .add-purchase-order-form {
-        overflow-x: hidden !important;
-    }
-
-    .add-purchase-order-form .product-summary-section {
-        overflow-x: hidden !important;
-    }
-
-    .add-purchase-order-form .product-summary-section .attendance-table-container {
-        max-width: 100% !important;
-    }
-
-    .add-purchase-order-form .product-summary-section .attendance-table {
-        max-width: 100% !important;
-    }
-
-    .add-purchase-order-form {
-        display: flex !important;
-        flex-direction: column !important;
-    }
-
-    .add-purchase-order-form .form-grid.four-col {
-        grid-template-columns: 1fr !important;
-        gap: 12px !important;
-    }
-
-    .add-purchase-order-form .form-grid.four-col .form-group {
-        grid-column: 1 !important;
-        grid-row: auto !important;
-        width: 100% !important;
-    }
-
-    .add-purchase-order-form .form-grid.four-col .product-summary-section {
-        grid-column: 1 / -1 !important;
-        grid-row: auto !important;
-        width: 100% !important;
-        margin-top: 16px !important;
-    }
-
-    .add-purchase-order-form .form-section {
-        order: 1 !important;
-    }
-
-    .add-purchase-order-form .product-summary-section {
-        order: 2 !important;
-    }
-
-    .add-purchase-order-form .product-summary-section {
-        position: static !important;
-        z-index: auto !important;
-        transform: none !important;
-        clear: both !important;
-        float: none !important;
-        width: 100% !important;
-        display: block !important;
-        margin-top: 24px !important;
-        margin-bottom: 20px !important;
-        padding-top: 0 !important;
-        overflow: visible !important;
-    }
-
-    .add-purchase-order-form .product-summary-section .attendance-table-container {
-        overflow-x: auto !important;
-        overflow-y: visible !important;
-        max-height: none !important;
-        -webkit-overflow-scrolling: touch !important;
-        width: 100% !important;
-    }
-
-    .add-purchase-order-form .product-summary-section + .form-grid,
-    .add-purchase-order-form .product-summary-section + .form-group {
-        margin-top: 16px !important;
-    }
-
-    .add-purchase-order-form .product-summary-section .attendance-table {
-        table-layout: auto !important;
-        width: 100% !important;
-        min-width: 600px !important;
-    }
-
-    .add-purchase-order-form .product-summary-section .attendance-table th,
-    .add-purchase-order-form .product-summary-section .attendance-table td {
-        white-space: nowrap !important;
-        word-break: normal !important;
-    }
-
-    .add-purchase-order-form .product-summary-section .attendance-table th,
-    .add-purchase-order-form .product-summary-section .attendance-table td {
-        padding: 8px 6px !important;
-        font-size: 12px !important;
-    }
-
-    .add-purchase-order-form > .form-actions {
-        order: 3 !important;
-        position: static !important;
-        bottom: auto !important;
-        left: auto !important;
-        right: auto !important;
-        top: auto !important;
-        background: transparent !important;
-        box-shadow: none !important;
-        border-top: 0 !important;
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
-    }
-
     /* Photo upload section - mobile optimized */
     .photo-upload-section {
         flex-direction: column;
@@ -1423,7 +1193,6 @@ form.add-user-form>.form-actions {
     .add-user-header .page-title {
         font-size: 16px;
         line-height: 1.2;
-        white-space: nowrap;
     }
 
     .add-user-header .page-subtitle {
@@ -1965,40 +1734,6 @@ form.add-user-form>.form-actions {
         transform: none !important;
     }
 
-    /* Add bottom padding to form content to prevent overlap with fixed buttons */
-    .add-user-form {
-        padding-bottom: 120px !important;
-    }
-
-    /* Ensure image upload section has extra margin in mobile */
-    .add-user-form .form-group:has([id="imageUpload"]) {
-        margin-bottom: 20px !important;
-    }
-
-    .stock-in-container .add-stock-in-form .form-actions,
-    .stock-in-container form.add-user-form .form-actions,
-    form.add-user-form.add-stock-in-form .form-actions,
-    .stock-in-container .form-actions {
-        position: static !important;
-        bottom: auto !important;
-        left: auto !important;
-        right: auto !important;
-        width: 100% !important;
-        z-index: auto !important;
-        background: transparent !important;
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
-        padding: 10px 0 !important;
-        margin-top: 16px !important;
-        box-shadow: none !important;
-        border-top: none !important;
-        gap: 0 !important;
-        top: auto !important;
-        transform: none !important;
-        flex-direction: row !important;
-        justify-content: center !important;
-    }
-
     /* Ensure buttons are full-width and properly styled */
     .add-user-form .form-actions .create-user-btn,
     .add-user-form .form-actions .cancel-btn,
@@ -2069,24 +1804,6 @@ form.add-user-form>.form-actions {
     /* Stock In and Stock Out - Product List Table Mobile Fix - MOBILE ONLY */
     /* NOTE: React renders inline styles in kebab-case (e.g. "margin-top"), so style-attribute selectors
        like [style*="marginTop: 30px"] will NOT match in the browser. Use a stable class instead. */
-
-    .add-stock-in-form .form-grid.four-col {
-        grid-template-columns: 1fr !important;
-        gap: 12px !important;
-    }
-
-    .add-stock-in-form .form-grid.four-col .form-group {
-        grid-column: 1 !important;
-        grid-row: auto !important;
-        width: 100% !important;
-    }
-
-    .add-stock-in-form .form-grid.four-col .product-summary-section {
-        grid-column: 1 / -1 !important;
-        grid-row: auto !important;
-        width: 100% !important;
-        margin-top: 16px !important;
-    }
     .add-stock-in-form .product-summary-section,
     .add-stock-out-form .product-summary-section {
         margin-top: 40px !important;
@@ -2099,7 +1816,6 @@ form.add-user-form>.form-actions {
         width: 100% !important;
         display: block !important;
         float: none !important;
-        overflow: visible !important;
     }
 
     /* Ensure table container is properly styled on mobile */
@@ -2116,27 +1832,13 @@ form.add-user-form>.form-actions {
 
     /* Stock In button at bottom - mobile only */
     .add-stock-in-form .form-actions {
-        margin-top: 16px !important;
-        padding-top: 10px !important;
-        padding-bottom: 10px !important;
-        position: static !important;
+        margin-top: 40px !important;
+        padding-top: 24px !important;
+        padding-bottom: 24px !important;
+        position: relative !important;
         width: 100% !important;
         display: flex !important;
         justify-content: center !important;
-        background: transparent !important;
-        box-shadow: none !important;
-    }
-
-    /* Remove white space below button on mobile */
-    form.add-stock-in-form,
-    .add-stock-in-form {
-        padding-bottom: 0 !important;
-        margin-bottom: 0 !important;
-    }
-
-    /* Stock In content - no extra bottom padding since button is not fixed */
-    .stock-in-container .add-user-content {
-        padding-bottom: 16px !important;
     }
 
     .add-stock-in-form .form-section[style*="marginTop: 40px"] > .form-group,
@@ -2156,18 +1858,11 @@ form.add-user-form>.form-actions {
 
     .add-stock-in-form .attendance-table-container,
     .add-stock-out-form .attendance-table-container {
-        max-height: none !important;
-        overflow-y: visible !important;
+        max-height: 300px !important;
+        overflow-y: auto !important;
         overflow-x: auto !important;
         width: 100% !important;
         -webkit-overflow-scrolling: touch !important;
-    }
-
-    .add-stock-in-form .product-summary-section + .form-grid,
-    .add-stock-in-form .product-summary-section + .form-group,
-    .add-stock-out-form .product-summary-section + .form-grid,
-    .add-stock-out-form .product-summary-section + .form-group {
-        margin-top: 16px !important;
     }
 
     .add-stock-in-form .attendance-table,
@@ -2194,73 +1889,6 @@ form.add-user-form>.form-actions {
 
     /* Mobile: Stack Stock Out fields to single column and place actions below */
     @media (max-width: 768px) {
-        .add-stock-out-container {
-            height: 100dvh !important;
-            max-height: 100dvh !important;
-            overflow: hidden !important;
-        }
-
-        .add-stock-out-container .add-user-content {
-            max-height: calc(100dvh - 50px) !important;
-            overflow-y: auto !important;
-            overflow-x: hidden !important;
-            -webkit-overflow-scrolling: touch !important;
-            padding-bottom: 16px !important;
-        }
-
-        .add-stock-out-container .add-stock-out-form {
-            height: auto !important;
-            overflow: visible !important;
-        }
-
-        .add-stock-out-form .stock-out-bottom-sections {
-            display: flex !important;
-            flex-direction: column !important;
-        }
-
-        .add-stock-out-form .stock-out-add-product {
-            order: 1 !important;
-        }
-
-        .add-stock-out-form .stock-out-payment {
-            order: 2 !important;
-        }
-
-        .add-stock-out-form .stock-out-payment .form-actions {
-            position: static !important;
-            bottom: auto !important;
-            left: auto !important;
-            right: auto !important;
-            top: auto !important;
-            width: 100% !important;
-            z-index: auto !important;
-            background: transparent !important;
-            box-shadow: none !important;
-            border-top: 0 !important;
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
-            transform: none !important;
-            margin-top: 0 !important;
-            padding-top: 0 !important;
-            padding-bottom: 0 !important;
-            gap: 8px !important;
-        }
-
-        .add-stock-out-form .stock-out-payment .form-actions > div {
-            max-width: none !important;
-        }
-
-        .add-stock-out-form .stock-out-payment .form-actions .btn-primary {
-            width: 170px !important;
-            max-width: 170px !important;
-            padding: 10px 14px !important;
-            font-size: 13px !important;
-        }
-
-        .add-stock-out-form .stock-out-table {
-            order: 3 !important;
-        }
-
         .add-stock-out-form .form-grid.four-col {
             grid-template-columns: 1fr !important;
             gap: 12px !important;
@@ -2314,39 +1942,6 @@ form.add-user-form>.form-actions {
     position: static !important;
 }
 
-@media (min-width: 769px) {
-    .add-quotation-form .attendance-table-container {
-        max-height: none !important;
-        height: auto !important;
-        overflow-y: visible !important;
-    }
-
-    .add-quotation-form .product-summary-section > div > div {
-        overflow: visible !important;
-        max-height: none !important;
-        height: auto !important;
-    }
-
-    .add-quotation-form .form-actions,
-    form.add-user-form.add-quotation-form .form-actions {
-        margin-top: 24px !important;
-        clear: both !important;
-        z-index: 2 !important;
-    }
-}
-
-@media (hover: hover) and (pointer: fine) {
-    .add-quotation-form .form-actions,
-    form.add-user-form.add-quotation-form .form-actions {
-        position: static !important;
-        top: auto !important;
-        right: auto !important;
-        bottom: auto !important;
-        left: auto !important;
-        transform: none !important;
-    }
-}
-
 @media (max-width: 768px) {
     .add-quotation-form .form-grid.four-col {
         grid-template-columns: 1fr !important;
@@ -2356,29 +1951,10 @@ form.add-user-form>.form-actions {
         grid-column: 1 !important;
         grid-row: auto !important;
     }
-    .add-quotation-form .form-grid.four-col .product-summary-section {
-        grid-column: 1 / -1 !important;
-        grid-row: auto !important;
-        width: 100% !important;
-        margin-top: 16px !important;
-    }
     .add-quotation-form .product-summary-section {
         margin-top: 24px !important;
         position: static !important;
         z-index: auto !important;
-        overflow: visible !important;
-    }
-
-    .add-quotation-form .attendance-table-container {
-        max-height: none !important;
-        overflow-y: visible !important;
-        overflow-x: auto !important;
-        width: 100% !important;
-    }
-
-    .add-quotation-form .product-summary-section + .form-grid,
-    .add-quotation-form .product-summary-section + .form-group {
-        margin-top: 16px !important;
     }
 }
 /* Chit Entry: Fixed submit bar on mobile, centered on desktop */
@@ -2392,109 +1968,21 @@ form.add-user-form>.form-actions {
 
 @media (max-width: 768px) {
     .add-chit-entry-form {
-        padding-bottom: 120px !important;
+        padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
     }
-    
     .add-chit-entry-form .submit-bar {
-        position: fixed !important;
-        bottom: calc(80px + env(safe-area-inset-bottom)) !important;
-        left: 0 !important;
-        right: 0 !important;
-        width: 100% !important;
-        margin-top: 0 !important;
-        padding: 8px 12px !important;
-        background: rgba(255, 255, 255, 0.98) !important;
-        backdrop-filter: blur(10px) !important;
-        -webkit-backdrop-filter: blur(10px) !important;
-        border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
-        box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06) !important;
-        z-index: 999 !important;
+        position: sticky;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        margin-top: 0;
+        padding: 12px 16px;
+        background: #fff;
+        border-top: 1px solid var(--border-light);
+        z-index: 10;
     }
-    
     .add-chit-entry-form .submit-bar .btn-primary {
-        width: 100% !important;
-        max-width: none !important;
-        padding: 12px 16px !important;
-        font-size: 16px !important;
-    }
-}
-
-.add-stock-in-form .form-actions,
-form.add-stock-in-form .form-actions {
-    position: static !important;
-    top: auto !important;
-    right: auto !important;
-    bottom: auto !important;
-    left: auto !important;
-    transform: none !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    width: 100% !important;
-    z-index: auto !important;
-}
-
-.add-stock-in-form .attendance-table-container,
-form.add-stock-in-form .attendance-table-container {
-    max-height: none !important;
-    height: auto !important;
-    overflow-y: visible !important;
-    overflow-x: auto !important;
-}
-
-@media (min-width: 769px) {
-    .add-stock-in-form .product-summary-section > div > div,
-    form.add-stock-in-form .product-summary-section > div > div {
-        overflow: visible !important;
-        max-height: none !important;
-        height: auto !important;
-    }
-
-    .add-purchase-order-form .form-actions,
-    form.add-user-form.add-purchase-order-form .form-actions {
-        position: static !important;
-        top: auto !important;
-        right: auto !important;
-        bottom: auto !important;
-        left: auto !important;
-        transform: none !important;
-        z-index: auto !important;
-        margin-top: 24px !important;
-        clear: both !important;
-    }
-
-    .add-purchase-order-form .attendance-table-container,
-    form.add-purchase-order-form .attendance-table-container {
-        max-height: none !important;
-        height: auto !important;
-        overflow-y: visible !important;
-    }
-
-    .add-purchase-order-form .product-summary-section > div > div,
-    form.add-purchase-order-form .product-summary-section > div > div {
-        overflow: visible !important;
-        max-height: none !important;
-        height: auto !important;
-    }
-}
-
-/* ===== Stock In mobile: remove white space at bottom (MUST be last) ===== */
-@media (max-width: 768px) {
-    .stock-in-container .add-user-content {
-        padding-bottom: 16px !important;
-    }
-    .stock-in-container .add-user-form,
-    .stock-in-container form.add-stock-in-form {
-        padding-bottom: 0 !important;
-        margin-bottom: 0 !important;
-    }
-    .stock-in-container .form-actions {
-        position: static !important;
-        background: transparent !important;
-        box-shadow: none !important;
-    }
-}
-@media (max-width: 480px) {
-    .stock-in-container .add-user-content {
-        padding-bottom: 12px !important;
+        width: 100%;
+        max-width: none;
     }
 }
