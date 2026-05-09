@@ -216,7 +216,22 @@ router.post('/out', async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    const { itemCode, quantity, notes, createdBy, customerName, customerPhone, paymentMode, mrp, sellRate, discount } = req.body;
+    const {
+      itemCode,
+      quantity,
+      notes,
+      createdBy,
+      customerName,
+      customerPhone,
+      paymentMode,
+      mrp,
+      sellRate,
+      discount,
+      customerAddress,
+      customerCity,
+      customerState,
+      customerPincode
+    } = req.body;
     
     if (!itemCode || !quantity || quantity <= 0) {
       await client.query('ROLLBACK');
@@ -370,10 +385,14 @@ router.post('/out', async (req, res) => {
           [customerPhone.trim()]
         );
         const customerEmail = existingCustomer.rows.length > 0 ? existingCustomer.rows[0].email : null;
-        const customerAddress = existingCustomer.rows.length > 0 ? existingCustomer.rows[0].address : null;
-        const customerCity = existingCustomer.rows.length > 0 ? existingCustomer.rows[0].city : null;
-        const customerState = existingCustomer.rows.length > 0 ? existingCustomer.rows[0].state : null;
-        const customerPincode = existingCustomer.rows.length > 0 ? existingCustomer.rows[0].pincode : null;
+        const existingAddress = existingCustomer.rows.length > 0 ? existingCustomer.rows[0].address : null;
+        const existingCity = existingCustomer.rows.length > 0 ? existingCustomer.rows[0].city : null;
+        const existingState = existingCustomer.rows.length > 0 ? existingCustomer.rows[0].state : null;
+        const existingPincode = existingCustomer.rows.length > 0 ? existingCustomer.rows[0].pincode : null;
+        const finalCustomerAddress = existingAddress || customerAddress || null;
+        const finalCustomerCity = existingCity || customerCity || null;
+        const finalCustomerState = existingState || customerState || null;
+        const finalCustomerPincode = existingPincode || customerPincode || null;
         
         // Create customer purchase record with product and payment details
         const timestamp = Date.now();
@@ -389,10 +408,10 @@ router.post('/out', async (req, res) => {
             customerName.trim(),
             purchaseEmail,
             customerPhone.trim(),
-            customerAddress || null,
-            customerCity || null,
-            customerState || null,
-            customerPincode || null,
+            finalCustomerAddress,
+            finalCustomerCity,
+            finalCustomerState,
+            finalCustomerPincode,
             itemCode.trim(),
             quantityToRemove,
             finalMrp || 0,

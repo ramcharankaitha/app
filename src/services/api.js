@@ -644,7 +644,22 @@ export const stockAPI = {
       body: JSON.stringify({ itemCode, quantity, notes, createdBy }),
     });
   },
-  stockOut: async (itemCode, quantity, notes, createdBy, customerName, customerPhone, paymentMode, mrp, sellRate, discount) => {
+  stockOut: async (
+    itemCode,
+    quantity,
+    notes,
+    createdBy,
+    customerName,
+    customerPhone,
+    paymentMode,
+    mrp,
+    sellRate,
+    discount,
+    customerAddress = '',
+    customerCity = '',
+    customerState = '',
+    customerPincode = ''
+  ) => {
     return apiCall('/stock/out', {
       method: 'POST',
       body: JSON.stringify({ 
@@ -657,7 +672,11 @@ export const stockAPI = {
         paymentMode,
         mrp,
         sellRate,
-        discount
+        discount,
+        customerAddress,
+        customerCity,
+        customerState,
+        customerPincode
       }),
     });
   },

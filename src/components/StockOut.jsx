@@ -38,6 +38,8 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
+  const hasCustomerBasics = Boolean(formData.customerName?.trim() && formData.customerPhone?.trim());
+  const isNewCustomerEntry = hasCustomerBasics && !customerVerified && !isCheckingCustomer;
 
   const getUserIdentifier = () => {
     const userDataStr = localStorage.getItem('userData');
@@ -260,8 +262,9 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
   };
 
   const addProduct = () => {
-    // Validate that customer is verified
-    if (!customerVerified) {
+    // Allow stock out for both existing and new customers
+    if (!hasCustomerBasics) {
+      setError('Please enter customer name and phone number (or customer ID) first.');
       return;
     }
     
@@ -351,12 +354,6 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
       return;
     }
 
-    // Validate customer is verified
-    if (!customerVerified) {
-      setError('Please verify the customer by entering a valid phone number or customer ID.');
-      return;
-    }
-
     // Validate payment mode
     if (!formData.paymentMode || !formData.paymentMode.trim()) {
       setError('Payment mode is required. Please select a payment mode.');
@@ -424,7 +421,11 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
               formData.paymentMode || 'Cash',
               parseFloat(item.mrp) || 0,
               parseFloat(item.sellRate) || 0,
-              parseFloat(item.discount) || 0
+              parseFloat(item.discount) || 0,
+              formData.customerAddress?.trim() || '',
+              formData.customerCity?.trim() || '',
+              formData.customerState?.trim() || '',
+              formData.customerPincode?.trim() || ''
             )
           );
 
@@ -580,7 +581,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     required
                     style={{
                       paddingRight: customerVerified || isCheckingCustomer ? '40px' : '18px',
-                      borderColor: customerVerified ? '#28a745' : undefined
+                      borderColor: customerVerified ? '#28a745' : (isNewCustomerEntry ? '#ff9800' : undefined)
                     }}
                   />
                   {isCheckingCustomer && (
@@ -601,8 +602,86 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                       color: '#28a745' 
                     }}></i>
                   )}
+                  {!isCheckingCustomer && isNewCustomerEntry && (
+                    <i className="fas fa-exclamation-circle" style={{ 
+                      position: 'absolute', 
+                      right: '12px', 
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      color: '#ff9800' 
+                    }} title="New customer details can be entered and used directly"></i>
+                  )}
                 </div>
           </div>
+
+              {/* New customer detail fields */}
+              {isNewCustomerEntry && (
+                <>
+                  <div className="form-group">
+                    <label htmlFor="customerAddress">Customer Address</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-map-marker-alt input-icon"></i>
+                      <input
+                        type="text"
+                        id="customerAddress"
+                        name="customerAddress"
+                        className="form-input"
+                        placeholder="Enter address"
+                        value={formData.customerAddress}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="customerCity">City</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-city input-icon"></i>
+                      <input
+                        type="text"
+                        id="customerCity"
+                        name="customerCity"
+                        className="form-input"
+                        placeholder="Enter city"
+                        value={formData.customerCity}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="customerState">State</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-flag input-icon"></i>
+                      <input
+                        type="text"
+                        id="customerState"
+                        name="customerState"
+                        className="form-input"
+                        placeholder="Enter state"
+                        value={formData.customerState}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="customerPincode">Pincode</label>
+                    <div className="input-wrapper">
+                      <i className="fas fa-mail-bulk input-icon"></i>
+                      <input
+                        type="text"
+                        id="customerPincode"
+                        name="customerPincode"
+                        className="form-input"
+                        placeholder="Enter pincode"
+                        value={formData.customerPincode}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
 
               {/* Row 2: Item Code, Product Name */}
                   <div className="form-group">
@@ -617,7 +696,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     value={currentProduct.itemCode}
                     onChange={(e) => handleProductChange('itemCode', e.target.value)}
                     onKeyPress={handleItemCodeKeyPress}
-                    disabled={!customerVerified}
+                    disabled={!hasCustomerBasics}
                     style={{ paddingRight: currentProduct.isFetching ? '40px' : '50px' }}
                       />
                   {currentProduct.isFetching ? (
@@ -634,7 +713,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                         <button
                           type="button"
                       onClick={fetchProductByItemCode}
-                      disabled={!customerVerified}
+                      disabled={!hasCustomerBasics}
                           style={{
                             position: 'absolute',
                             right: '8px',
@@ -643,11 +722,11 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                             padding: '6px 8px',
                             width: '32px',
                             height: '32px',
-                        background: customerVerified ? '#dc3545' : '#ccc',
+                        background: hasCustomerBasics ? '#dc3545' : '#ccc',
                             color: '#fff',
                             border: 'none',
                             borderRadius: '6px',
-                        cursor: customerVerified ? 'pointer' : 'not-allowed',
+                        cursor: hasCustomerBasics ? 'pointer' : 'not-allowed',
                             fontSize: '12px',
                             display: 'flex',
                             alignItems: 'center',
@@ -729,7 +808,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                         min="1"
                     max={currentProduct.productInfo ? currentProduct.productInfo.currentQuantity : undefined}
                         step="1"
-                    disabled={!currentProduct.productInfo || !customerVerified}
+                    disabled={!currentProduct.productInfo || !hasCustomerBasics}
                       />
                     </div>
                   </div>
@@ -813,15 +892,15 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                   <button
                     type="button"
                     onClick={addProduct}
-                    disabled={!customerVerified || !currentProduct.productInfo || !currentProduct.stockOutQuantity}
+                    disabled={!hasCustomerBasics || !currentProduct.productInfo || !currentProduct.stockOutQuantity}
                     style={{
                       marginTop: '0',
                       padding: '8px 12px',
-                      background: (customerVerified && currentProduct.productInfo && currentProduct.stockOutQuantity) ? '#28a745' : '#ccc',
+                      background: (hasCustomerBasics && currentProduct.productInfo && currentProduct.stockOutQuantity) ? '#28a745' : '#ccc',
                       color: '#fff',
                       border: 'none',
                       borderRadius: '6px',
-                      cursor: (customerVerified && currentProduct.productInfo && currentProduct.stockOutQuantity) ? 'pointer' : 'not-allowed',
+                      cursor: (hasCustomerBasics && currentProduct.productInfo && currentProduct.stockOutQuantity) ? 'pointer' : 'not-allowed',
                       fontSize: '12px',
                       width: '100%',
                       display: 'flex',
@@ -835,7 +914,6 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     Add Product
                   </button>
                 </div>
-              </div>
             </div>
 
           {/* Display Added Products - Summary Table (after Add Product, before payment) */}
@@ -968,7 +1046,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
           )}
           
           {addedProducts.length > 0 && (
-            <div className="form-actions" style={{ 
+            <div style={{ 
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -989,10 +1067,10 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                     value={formData.paymentMode}
                     onChange={handleInputChange}
                     required
-                    disabled={!customerVerified}
+                    disabled={!hasCustomerBasics}
                     style={{ 
-                      background: !customerVerified ? '#f8f9fa' : '#fff',
-                      cursor: !customerVerified ? 'not-allowed' : 'pointer'
+                      background: !hasCustomerBasics ? '#f8f9fa' : '#fff',
+                      cursor: !hasCustomerBasics ? 'not-allowed' : 'pointer'
                     }}
                   >
                     <option value="">Select payment mode</option>
@@ -1010,7 +1088,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
               <button
                 type="submit"
                 className="btn-primary"
-                disabled={isLoading || !customerVerified || !formData.paymentMode || addedProducts.length === 0}
+                disabled={isLoading || !hasCustomerBasics || !formData.paymentMode || addedProducts.length === 0}
                 style={{
                   width: '200px',
                   maxWidth: '200px',
@@ -1018,12 +1096,12 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '8px',
-                  cursor: (isLoading || !customerVerified || !formData.paymentMode || addedProducts.length === 0) ? 'not-allowed' : 'pointer'
+                  cursor: (isLoading || !hasCustomerBasics || !formData.paymentMode || addedProducts.length === 0) ? 'not-allowed' : 'pointer'
                 }}
                 onClick={(e) => {
-                  if (!customerVerified) {
+                  if (!hasCustomerBasics) {
                     e.preventDefault();
-                    setError('Please verify the customer by entering a valid phone number or customer ID.');
+                    setError('Please enter customer name and phone number (or customer ID).');
                     return;
                   }
                   if (!formData.paymentMode || !formData.paymentMode.trim()) {
@@ -1050,6 +1128,7 @@ const StockOut = ({ onBack, onNavigate, userRole = 'admin' }) => {
               </button>
             </div>
           )}
+          </div>
         </form>
       </main>
     </div>
